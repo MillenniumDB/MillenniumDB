@@ -42,7 +42,7 @@ If you work on windows, you can use Windows Subsystem for Linux (WSL).
     - `sudo apt update`
     - `sudo apt install git g++ cmake libboost-all-dev`
 
-     Other linux distributions may need to install the prerequisites differenlty. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropiate versions.
+     Other linux distributions may need to install the prerequisites differently. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropiate versions.
 
 2. Clone this repository and enter to the 'MillenniumDB' folder:
 
@@ -74,7 +74,7 @@ Everything in the graph model is an **Object**, and there are 4 different types 
 
     - **NamedNodes**: they have a **Name** as identifier when you add them into the database.
 
-    - **AnonymousNodes**: they don't have a name as identifier when you add them into the database. They will have an auto-generated identifier to direcly refeer to them later.
+    - **AnonymousNodes**: they don't have a name as identifier when you add them into the database. They will have an auto-generated identifier to direcly refer to them later.
 
 3. **Connections**: a connection is an object that relates other objects, having the following attributes:
     - `ID` (always auto-generated in connections).
