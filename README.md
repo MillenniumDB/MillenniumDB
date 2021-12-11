@@ -74,7 +74,7 @@ Everything in the graph model is an **Object**, and there are 4 different types 
 
     - **NamedNodes**: they have a **Name** as identifier when you add them into the database.
 
-    - **AnonymousNodes**: they don't have a name as identifier when you add them into the database. They will have an auto-generated identifier to direcly refeer to them later.
+    - **AnonymousNodes**: they don't have a name as identifier when you add them into the database. They will have an auto-generated identifier to direcly refer to them later.
 
 3. **Connections**: a connection is an object that relates other objects, having the following attributes:
     - `ID` (always auto-generated in connections).
