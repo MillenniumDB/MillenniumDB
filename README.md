@@ -42,7 +42,7 @@ If you work on windows, you can use Windows Subsystem for Linux (WSL).
     - `sudo apt update`
     - `sudo apt install git g++ cmake libboost-all-dev`
 
-     Other linux distributions may need to install the prerequisites differenlty. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropiate versions.
+     Other linux distributions may need to install the prerequisites differently. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropiate versions.
 
 2. Clone this repository and enter to the 'MillenniumDB' folder:
 
