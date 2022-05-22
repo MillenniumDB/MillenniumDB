@@ -69,10 +69,16 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
     }
 
     if ((*value_count) < BPlusTree<N>::leaf_max_records) {
-        shift_right_records(index, (*value_count)-1);
-
-        for (uint_fast32_t i = 0; i < N; i++) {
-            records[index*N + i] = record.ids[i];
+        if ((*value_count) == 0){
+            for (uint_fast32_t i = 0; i < N; i++) {
+                records[i] = record.ids[i];
+            }
+        }
+        else {
+            shift_right_records(index, (*value_count)-1);
+            for (uint_fast32_t i = 0; i < N; i++) {
+                records[index*N + i] = record.ids[i];
+            }
         }
         ++(*value_count);
         this->page.make_dirty();
