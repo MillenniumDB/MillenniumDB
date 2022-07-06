@@ -1,5 +1,4 @@
-#ifndef STORAGE__RANDOM_ACCESS_TABLE_H_
-#define STORAGE__RANDOM_ACCESS_TABLE_H_
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -26,5 +25,3 @@ private:
     std::unique_ptr<RandomAccessTableBlock<N>> current_block;
     std::unique_ptr<RandomAccessTableBlock<N>> last_block;
 };
-
-#endif // STORAGE__RANDOM_ACCESS_TABLE_H_

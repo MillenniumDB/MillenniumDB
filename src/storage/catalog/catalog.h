@@ -1,5 +1,4 @@
-#ifndef STORAGE__CATALOG_H_
-#define STORAGE__CATALOG_H_
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -7,7 +6,7 @@
 class Catalog {
 protected:
     Catalog(const std::string& filename);
-    ~Catalog() = default;
+    ~Catalog();
 
     bool is_empty();
 
@@ -25,7 +24,5 @@ protected:
     void write_uint32(const uint_fast32_t);
 
 private:
-    std::fstream& file;
+    std::fstream file;
 };
-
-#endif // STORAGE__CATALOG_H_

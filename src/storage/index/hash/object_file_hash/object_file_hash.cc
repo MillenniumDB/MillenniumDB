@@ -4,19 +4,28 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <iostream>
 
+#include "base/exceptions.h"
 #include "storage/file_manager.h"
 #include "storage/index/hash/object_file_hash/object_file_hash_bucket.h"
-#include "storage/index/hash/hash_functions/hash_function_wrapper.h"
+#include "third_party/murmur3/murmur3.h"
 
 
 ObjectFileHash::ObjectFileHash(ObjectFile& object_file, const std::string& filename) :
     object_file     (object_file),
-    dir_file_id     (file_manager.get_file_id(filename + ".dir")),
     buckets_file_id (file_manager.get_file_id(filename + ".dat"))
 {
-    auto& dir_file = file_manager.get_file(dir_file_id);
+    auto file_path = file_manager.get_file_path(filename+ ".dir");
+    // dir_file.open(file_path, std::ios::out|std::ios::app);
+    // if (dir_file.fail()) {
+    //     throw std::runtime_error("Could not open file " + filename);
+    // }
+    // dir_file.close();
+    dir_file.open(file_path, std::ios::in|std::ios::out|std::ios::binary);
+     if (dir_file.fail()) {
+        throw std::runtime_error("Could not open file " + filename);
+    }
+
     dir_file.seekg(0, dir_file.end);
 
     // If the file is not empty, read the values
@@ -34,9 +43,9 @@ ObjectFileHash::ObjectFileHash(ObjectFile& object_file, const std::string& filen
             dir_file.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
             dir[i] = tmp;
         }
-        // check eofbit/failbit/badbit to ensure  values were read correctly
+        // check eofbit/failbit/badbit to ensure the values were read correctly
         if (!dir_file.good()) {
-            throw std::runtime_error("Error reading hash file.");
+            throw LogicException("Error reading ObjectFile hash directory. File may be corrupted.");
         }
     } else {
         global_depth = DEFAULT_GLOBAL_DEPTH;
@@ -54,7 +63,6 @@ ObjectFileHash::ObjectFileHash(ObjectFile& object_file, const std::string& filen
 
 
 ObjectFileHash::~ObjectFileHash() {
-    auto& dir_file = file_manager.get_file(dir_file_id);
     dir_file.seekg(0, dir_file.beg);
 
     dir_file.write(reinterpret_cast<const char*>(&global_depth), sizeof(uint8_t));
@@ -102,7 +110,7 @@ uint64_t ObjectFileHash::get_or_create_id(const std::string& str, bool* const cr
         auto bucket = ObjectFileHashBucket(buckets_file_id, bucket_number, object_file);
 
         bool need_split;
-        auto id = bucket.get_or_create_id(str, hash[0], hash[1], &need_split, created);
+        auto id = bucket.get_or_create_id(str, hash[0], &need_split, created);
 
         if (need_split) {
             if (*bucket.local_depth < global_depth) {
@@ -166,6 +174,6 @@ uint64_t ObjectFileHash::get_id(const std::string& str) const {
         auto bucket_number = dir[suffix];
         auto bucket = ObjectFileHashBucket(buckets_file_id, bucket_number, object_file);
 
-        return bucket.get_id(str, hash[0], hash[1]);
+        return bucket.get_id(str, hash[0]);
     }
 }

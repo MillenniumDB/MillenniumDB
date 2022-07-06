@@ -1,27 +1,24 @@
-#ifndef BASE__BINDING_ITER_H_
-#define BASE__BINDING_ITER_H_
+#pragma once
 
 #include <ostream>
 
-#include "base/binding/binding.h"
+#include "base/graph_object/graph_object.h"
+#include "base/ids/var_id.h"
 
 // Abstract class
 class BindingIter {
 public:
     virtual ~BindingIter() = default;
 
-    // returns the position where all the results will be written
-    virtual Binding& get_binding() noexcept = 0;
-
     // begin has to be called before calling next()
-    virtual void begin() = 0;
+    virtual void begin(std::ostream&) = 0;
 
-    // Returns true if there are more bindings or false otherwise.
-    // If true is returned the reference to the Binding returned in `get_binding()` is updated.
+    // returns true if there are more bindings or false otherwise.
     virtual bool next() = 0;
+
+    // gets the current value of a var for the current binding
+    virtual GraphObject operator[](VarId var_id) const = 0;
 
     // prints execution statistics into an ostream
     virtual void analyze(std::ostream&, int indent = 0) const = 0;
 };
-
-#endif // BASE__BINDING_ITER_H_

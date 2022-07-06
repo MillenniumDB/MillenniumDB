@@ -1,5 +1,4 @@
-#ifndef STORAGE__KEY_VALUE_HASH_BUCKET_H_
-#define STORAGE__KEY_VALUE_HASH_BUCKET_H_
+#pragma once
 
 #include <cstdint>
 #include <map>
@@ -25,6 +24,7 @@ public:
                        std::size_t   key_size,
                        std::size_t   value_size,
                        uint32_t      max_tuples);
+
     ~KeyValueHashBucket();
 
     void insert(const std::vector<K>& key, const std::vector<V>& value);
@@ -50,5 +50,3 @@ private:
     K*         const keys;
     V*         const values;
 };
-
-#endif // STORAGE__KEY_VALUE_HASH_BUCKET_H_

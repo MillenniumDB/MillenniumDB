@@ -6,8 +6,20 @@
 
 using namespace std;
 
-Catalog::Catalog(const string& filename) :
-    file (file_manager.get_file(file_manager.get_file_id(filename))) { }
+Catalog::Catalog(const string& filename) {
+    auto file_path = file_manager.get_file_path(filename);
+    file.open(file_path, ios::out|ios::app);
+    if (file.fail()) {
+        throw std::runtime_error("Could not open file " + filename);
+    }
+    file.close();
+    file.open(file_path, ios::in|ios::out|ios::binary);
+}
+
+
+Catalog::~Catalog() {
+    file.close();
+}
 
 
 bool Catalog::is_empty() {

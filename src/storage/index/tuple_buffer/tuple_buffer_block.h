@@ -1,5 +1,4 @@
-#ifndef STORAGE__TUPLE_BUFFER_BLOCK_H_
-#define STORAGE__TUPLE_BUFFER_BLOCK_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -43,6 +42,3 @@ private:
     uint64_t* const tuples;
     uint32_t* const tuple_count;
 };
-
-
-#endif // STORAGE__TUPLE_BUFFER_BLOCK_H_

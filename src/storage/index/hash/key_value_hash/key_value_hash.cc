@@ -6,12 +6,10 @@
 #include "base/ids/object_id.h"
 #include "storage/file_manager.h"
 #include "storage/buffer_manager.h"
-#include "storage/index/hash/hash_functions/hash_function_wrapper.h"
 #include "storage/index/hash/key_value_hash/key_value_hash_bucket.h"
+#include "storage/index/hash/key_value_hash/key_value_pair_hasher.h"
 
 using namespace std;
-
-template class KeyValueHash<ObjectId, ObjectId>;
 
 template <class K, class V>
 KeyValueHash<K, V>::KeyValueHash(std::size_t key_size, std::size_t value_size) :
@@ -605,3 +603,5 @@ void KeyValueHash<K, V>::sort_bucket(uint_fast32_t bucket_number){
         merge_size *= 2;
     }
 }
+
+template class KeyValueHash<ObjectId, ObjectId>;

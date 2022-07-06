@@ -12,11 +12,6 @@
 #include "storage/file_manager.h"
 #include "storage/index/record.h"
 
-template class OrderedFile<1>;
-template class OrderedFile<2>;
-template class OrderedFile<3>;
-template class OrderedFile<4>;
-
 using namespace std;
 
 template <std::size_t N>
@@ -39,8 +34,8 @@ OrderedFile<N>::OrderedFile(const string& filename) :
 template <std::size_t N>
 OrderedFile<N>::~OrderedFile() {
     io_buffer.reset();
-    file_manager.remove(file_id_a);
-    file_manager.remove(file_id_b);
+    // file_manager.remove(file_id_a);
+    // file_manager.remove(file_id_b);
 }
 
 template <std::size_t N>
@@ -326,3 +321,8 @@ bool OrderedFile<N>::check_order() {
     }
     return errors == 0;
 }
+
+template class OrderedFile<1>;
+template class OrderedFile<2>;
+template class OrderedFile<3>;
+template class OrderedFile<4>;

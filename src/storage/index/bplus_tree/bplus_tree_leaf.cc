@@ -3,31 +3,10 @@
 #include <iostream>
 #include <cstring>
 
-#include "storage/buffer_manager.h"
+#include "base/exceptions.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
-template class BPlusTreeLeaf<1>;
-template class BPlusTreeLeaf<2>;
-template class BPlusTreeLeaf<3>;
-template class BPlusTreeLeaf<4>;
-
 using namespace std;
-
-template <std::size_t N>
-BPlusTreeLeaf<N>::BPlusTreeLeaf(Page& page) :
-    page         (page),
-    leaf_file_id (page.page_id.file_id),
-    value_count  ( reinterpret_cast<uint32_t*>(page.get_bytes()) ),
-    next_leaf    ( reinterpret_cast<uint32_t*>(page.get_bytes() + sizeof(uint32_t)) ),
-    records      ( reinterpret_cast<uint64_t*>(page.get_bytes() + (2*sizeof(uint32_t)) ) )
-{ }
-
-
-template <std::size_t N>
-BPlusTreeLeaf<N>::~BPlusTreeLeaf() {
-    buffer_manager.unpin(page);
-}
-
 
 template <std::size_t N>
 unique_ptr<Record<N>> BPlusTreeLeaf<N>::get_record(uint_fast32_t pos) const {
@@ -40,20 +19,15 @@ unique_ptr<Record<N>> BPlusTreeLeaf<N>::get_record(uint_fast32_t pos) const {
 
 
 template <std::size_t N>
-std::unique_ptr<BPlusTreeLeaf<N>>  BPlusTreeLeaf<N>::duplicate() const {
-    return make_unique<BPlusTreeLeaf<N>>(buffer_manager.get_page(leaf_file_id, page.get_page_number()));
-}
-
-
-template <std::size_t N>
-unique_ptr<BPlusTreeLeaf<N>> BPlusTreeLeaf<N>::get_next_leaf() const {
-    Page& new_page = buffer_manager.get_page(leaf_file_id, *next_leaf);
-    return make_unique<BPlusTreeLeaf<N>>(new_page);
-}
-
-
-template <std::size_t N>
 unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) {
+    if (*value_count == 0) {
+        for (uint_fast32_t i = 0; i < N; i++) {
+            records[i] = record.ids[i];
+        }
+        ++(*value_count);
+        this->page.make_dirty();
+        return nullptr;
+    }
     uint_fast32_t index = search_index(record);
     if (equal_record(record, index)) {
         for (uint_fast32_t i = 0; i < N; i++) {
@@ -65,7 +39,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
         }
         cout << "\n";
 
-        throw std::logic_error("Inserting duplicated record into BPlusTree.");
+        throw LogicException("Inserting duplicated record into BPlusTree.");
     }
 
     if ((*value_count) < BPlusTree<N>::leaf_max_records) {
@@ -138,22 +112,12 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
 }
 
 
-// template <std::size_t N>
-// void BPlusTreeLeaf<N>::create_new(const Record<N>& record) {
-//     for (uint_fast32_t i = 0; i < N; i++) {
-//         records[i] = record.ids[i];
-//     }
-//     ++(*value_count);
-//     this->page.make_dirty();
-// }
-
-
 // returns the position of the minimum key greater or equal than the record given.
 // if there is no such key, returns (to + 1)
 template <std::size_t N>
-uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const {
-    int from = 0;
-    int to = (*value_count)-1;
+uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept {
+    int_fast32_t from = 0;
+    int_fast32_t to = (*value_count)-1;
 search_index_begin:
     if (from < to) {
         auto middle = (from + to) / 2;
@@ -186,13 +150,14 @@ search_index_begin:
 
 
 template <std::size_t N>
-void BPlusTreeLeaf<N>::shift_right_records(int from, int to) {
+void BPlusTreeLeaf<N>::shift_right_records(int_fast32_t from, int_fast32_t to) {
     for (auto i = to; i >= from; i--) {
         for (uint_fast32_t j = 0; j < N; j++) {
             records[(i+1)*N + j] = records[i*N + j];
         }
     }
 }
+
 
 template <std::size_t N>
 bool BPlusTreeLeaf<N>::equal_record(const Record<N>& record, uint_fast32_t index) {
@@ -284,3 +249,8 @@ bool BPlusTreeLeaf<N>::check() const {
     }
     return true;
 }
+
+template class BPlusTreeLeaf<1>;
+template class BPlusTreeLeaf<2>;
+template class BPlusTreeLeaf<3>;
+template class BPlusTreeLeaf<4>;

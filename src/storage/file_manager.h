@@ -19,19 +19,13 @@
  * because BufferManager needs to access the file paths from FileManager.
  */
 
-#ifndef STORAGE__FILE_MANAGER_H_
-#define STORAGE__FILE_MANAGER_H_
+#pragma once
 
-#include <fstream>
-#include <queue>
 #include <map>
-#include <memory>
-#include <mutex>
 #include <string>
-#include <vector>
+#include <unistd.h>
 
-#include "storage/file_id.h"
-#include "storage/page_id.h"
+#include "storage/page.h"
 
 class FileManager {
 friend class Page; // to allow calling file_manager.flush
@@ -48,54 +42,34 @@ public:
     // Create a new temporary file id
     TmpFileId get_tmp_file_id();
 
-    // get the file stream assignated to `file_id` as a reference. Only use this when not accessing via BufferManager
-    std::fstream& get_file(const FileId file_id) const;
-
     // count how many pages a file have
-    uint_fast32_t count_pages(const FileId file_id) const;
+    uint_fast32_t count_pages(FileId file_id) const {
+        // We don't need mutex here as long as db is readonly
+        return lseek(file_id.id, 0, SEEK_END) / Page::MDB_PAGE_SIZE;
+    }
 
-    // delete the file represented by `file_id`, pages in buffer using that file_id are cleared
-    void remove(const FileId file_id);
+    // // delete the file represented by `tmp_file_id`, pages in private buffer using that tmp_file_id are cleared
+    void remove_tmp(TmpFileId tmp_file_id);
 
-    // delete the file represented by `tmp_file_id`, pages in private buffer using that tmp_file_id are cleared
-    void remove_tmp(const TmpFileId tmp_file_id);
+    inline const std::string get_file_path(const std::string& filename) const noexcept {
+        return db_folder + "/" + filename;
+    }
 
 private:
     // folder where all the used files will be
     const std::string db_folder;
 
-    // contains all file streams that have been opened, except for these that were removed
-    std::vector< std::unique_ptr<std::fstream> > opened_files;
-
-    std::queue<FileId> available_file_ids;
-
     std::map<std::string, FileId> filename2file_id;
-
-    uint_fast32_t tmp_filename_counter; // TODO: we may need infinite files
-
-    // to avoid synchronization problems when establishing a new file_id in `get_file_id(filename)`
-    std::mutex files_mutex;
-
-    // Contains all filenames that are being used (removed files are not in this list).
-    // The position in this vector is equivalent to the FileId representing that file
-    std::vector<std::string> filenames;
 
     // private constructor, other classes must use the global object `file_manager`
     FileManager(const std::string& db_folder);
 
-    // write the data pointed by `bytes` page represented by `page_id` to disk.
-    // `bytes` must point to the start memory position of `Page::MDB_PAGE_SIZE` allocated bytes
-    void flush(PageId page_id, char* bytes) const;
+    // page back to disk
+    void flush(Page& page_id) const;
 
     // read a page from disk into memory pointed by `bytes`.
     // `bytes` must point to the start memory position of `Page::MDB_PAGE_SIZE` allocated bytes
     void read_page(PageId page_id, char* bytes) const;
-
-    inline const std::string get_file_path(const std::string& filename) const noexcept {
-        return db_folder + "/" + filename;
-    }
 };
 
 extern FileManager& file_manager; // global object
-
-#endif // STORAGE__FILE_MANAGER_H_

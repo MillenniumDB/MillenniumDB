@@ -1,5 +1,4 @@
-#ifndef STORAGE__B_PLUS_TREE_H_
-#define STORAGE__B_PLUS_TREE_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -14,7 +13,6 @@ template <std::size_t N> class OrderedFile;
 template <std::size_t N> class BptIter {
 public:
     BptIter(bool* interruption_requested, SearchLeafResult<N>&& leaf_and_pos, const Record<N>& max) noexcept;
-    ~BptIter() = default;
     std::unique_ptr<Record<N>> next();
 
 private:
@@ -32,14 +30,12 @@ public:
     static constexpr auto dir_max_records  = (Page::MDB_PAGE_SIZE - 2*sizeof(int32_t) ) / (sizeof(uint64_t)*N + sizeof(int32_t));
 
     BPlusTree(const std::string& name);
-    ~BPlusTree() = default;
 
     const FileId dir_file_id;
     const FileId leaf_file_id;
 
     void bulk_import(OrderedFile<N>&);
     void insert(const Record<N>& record);
-    // std::unique_ptr<Record<N>> get(const Record<N>& record);
 
     // returns false if an error in the BPT is found
     bool check() const;
@@ -48,12 +44,9 @@ public:
                                           const Record<N>& min,
                                           const Record<N>& max) const noexcept;
 
+    // It doesn't simply return the root, it is an unique_ptr so it pins the page
     std::unique_ptr<BPlusTreeDir<N>> get_root() const noexcept;
 
 private:
-    // bool is_empty;
     BPlusTreeDir<N> root;
-    // void create_new(const Record<N>& record); TODO: dispensable?
 };
-
-#endif // STORAGE__B_PLUS_TREE_H_

@@ -1,5 +1,4 @@
-#ifndef BASE__BINDING_ID_ITER_H_
-#define BASE__BINDING_ID_ITER_H_
+#pragma once
 
 #include <ostream>
 
@@ -22,11 +21,9 @@ public:
     // It modifies the parent_binding to include the new results.
     virtual bool next() = 0;
 
-    // Every var that the iter sets in the binding_id when it returns true is setted to null
+    // Every var that the iter sets in the binding_id when next() returns true is setted to null
     virtual void assign_nulls() = 0;
 
     // prints execution statistics
     virtual void analyze(std::ostream&, int indent = 0) const = 0;
 };
-
-#endif // BASE__BINDING_ID_ITER_H_

@@ -1,5 +1,4 @@
-#ifndef STORAGE__DISTINCT_BINDING_HASH_BUCKET_H_
-#define STORAGE__DISTINCT_BINDING_HASH_BUCKET_H_
+#pragma once
 
 #include <cstdint>
 #include <map>
@@ -29,7 +28,7 @@ public:
 private:
     Page& page;
 
-    const uint8_t MAX_TUPLES;
+    const uint_fast32_t max_tuples;
 
     T*        const tuples;
     uint64_t* const hashes; // each tuple is (hash1, hash2)
@@ -39,5 +38,3 @@ private:
 
     void redistribute(DistinctBindingHashBucket<T>& other, uint64_t mask, uint64_t other_suffix);
 };
-
-#endif // STORAGE__DISTINCT_BINDING_HASH_BUCKET_H_

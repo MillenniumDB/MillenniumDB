@@ -15,18 +15,18 @@
  * have the same sistems for pages replacement.
  */
 
-#ifndef STORAGE__BUFFER_MANAGER_H_
-#define STORAGE__BUFFER_MANAGER_H_
+#pragma once
 
-#include <mutex>
+#include <cassert>
 #include <queue>
+#include <mutex>
 #include <string>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "storage/file_id.h"
 #include "storage/page.h"
+#include "third_party/robin_hood/robin_hood.h"
 
 class Page;
 
@@ -51,7 +51,7 @@ public:
     // and put in the buffer.
     // Also it will pin the page, so calling buffer_manager.unpin(page) is expected when the caller doesn't need
     // the returned page anymore.
-    Page& get_tmp_page(TmpFileId file_id, uint_fast32_t page_number);
+    Page& get_tmp_page(TmpFileId file_id, uint_fast32_t page_number) noexcept;
 
     // Similar to get_page, but the page_number is the greatest number such that page number exist on disk.
     Page& get_last_page(FileId file_id);
@@ -64,13 +64,21 @@ public:
     // write all dirty pages to disk
     void flush();
 
+    // increases the count of objects using the page. When you get a page using the methods get_page or get_tmp_page
+    // the page is already pinned, so you shouldn't call this method unless you want to pin the page more than once
+    void pin(Page& page) {
+        page.pin();
+    }
+
     // reduces the count of objects using the page. Should be called when a object using the page is destroyed.
-    void unpin(Page& page);
+    void unpin(Page& page) {
+        page.unpin();
+    }
 
-    // invalidates all pages using `file_id`in shared buffer
-    void remove(FileId file_id);
+    // invalidates all pages using `file_id` in shared buffer
+    // void remove(FileId file_id);
 
-    // invalidates all pages using `tmp_file_id`in private buffer
+    // invalidates all pages using `tmp_file_id` in private buffer
     void remove_tmp(TmpFileId tmp_file_id);
 
     constexpr auto get_shared_buffer_pool_size() const noexcept { return shared_buffer_pool_size; }
@@ -82,26 +90,8 @@ private:
                   uint_fast32_t private_buffer_pool_size,
                   uint_fast32_t max_threads);
 
-    // maximum pages the buffer can have
-    const uint_fast32_t shared_buffer_pool_size;
-
-    // maximum pages for each private buffer
-    const uint_fast32_t private_buffer_pool_size;
-
-    // maximum number of private threads
-    const uint_fast32_t max_private_buffers;
-
-    // available private positions queue
-    std::queue<uint_fast32_t> available_private_positions;
-
-    // used to search the index in the `buffer_pool` of a certain page
-    std::unordered_map<PageId, uint_fast32_t, PageIdHasher> pages;
-
-    // map thread id -> private_thread_index
-    std::unordered_map<std::thread::id , uint_fast32_t> thread2index;
-
-    // used to search the index in the `private_buffer_pool` of a certain page
-    std::vector<std::unordered_map<PageId, uint_fast32_t, PageIdHasher>> private_tmp_pages;
+    // simple clock used to page replacement in the shared buffer
+    uint_fast32_t clock_pos;
 
     // array of `buffer_pool_size` pages
     Page* const buffer_pool;
@@ -115,14 +105,28 @@ private:
     // begining of the allocated memory for the pages of the private buffer
     char* const private_bytes;
 
-    // simple clock used to page replacement in the shared buffer
-    uint_fast32_t clock_pos;
+    std::mutex shared_buffer_mutex;
+
+    // maximum pages the buffer can have
+    const uint_fast32_t shared_buffer_pool_size;
+
+    // maximum pages for each private buffer
+    const uint_fast32_t private_buffer_pool_size;
+
+    // used to search the index in the `buffer_pool` of a certain page
+    robin_hood::unordered_map<PageId, Page*> pages;
+
+    // available private positions queue
+    std::queue<uint_fast32_t> available_private_positions;
+
+    // map thread id -> private_thread_index
+    robin_hood::unordered_flat_map<std::thread::id, uint_fast32_t> thread2index;
+
+    // used to search the index in the `private_buffer_pool` of a certain page
+    std::vector<robin_hood::unordered_flat_map<PageId, Page*>> private_tmp_pages;
 
     // simple clock used to page replacement in the private buffer
     std::vector<uint_fast32_t> private_clock_pos;
-
-    // to avoid pin/unpin synchronization problems in the shared buffer
-    std::mutex pin_mutex;
 
     // returns the index of an unpined page from shared buffer (`buffer_pool`)
     uint_fast32_t get_buffer_available();
@@ -137,5 +141,3 @@ private:
 };
 
 extern BufferManager& buffer_manager; // global object
-
-#endif // STORAGE__BUFFER_MANAGER_H_

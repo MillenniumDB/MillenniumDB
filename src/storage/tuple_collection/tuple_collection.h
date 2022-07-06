@@ -3,15 +3,12 @@
 // operations of saving and reading the tuples on disk that a physical operator requires.
 
 // TupleCollection asumes that all the arrays of GraphObject have the same size
-
-
-#ifndef STORAGE__TUPLE_COLLECTION_H_
-#define STORAGE__TUPLE_COLLECTION_H_
+#pragma once
 
 #include <map>
 #include <vector>
 
-#include "base/graph/graph_object.h"
+#include "base/graph_object/graph_object.h"
 #include "base/ids/var_id.h"
 #include "storage/file_id.h"
 #include "storage/page_id.h"
@@ -86,5 +83,3 @@ private:
 
     std::unique_ptr<TupleCollection> get_run(Page& run_page);
 };
-
-#endif // STORAGE__TUPLE_COLLECTION_H_

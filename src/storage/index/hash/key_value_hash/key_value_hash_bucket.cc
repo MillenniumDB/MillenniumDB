@@ -8,9 +8,6 @@
 
 using namespace std;
 
-// alignment works well for <ObjectId, ObjectId> but need to analyze for other cases
-template class KeyValueHashBucket<ObjectId, ObjectId>;
-
 template <class K, class V>
 KeyValueHashBucket<K, V>::KeyValueHashBucket(TmpFileId     file_id,
                                              uint_fast32_t bucket_number,
@@ -187,3 +184,6 @@ void KeyValueHashBucket<K, V>::partition(uint_fast32_t min_pos, uint_fast32_t ma
         partition(insert_min_pos + 1, max_pos);
     }
 }
+
+// alignment works well for <ObjectId, ObjectId> but need to analyze for other cases
+template class KeyValueHashBucket<ObjectId, ObjectId>;

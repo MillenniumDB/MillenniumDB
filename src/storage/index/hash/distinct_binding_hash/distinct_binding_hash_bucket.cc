@@ -4,23 +4,20 @@
 
 #include "storage/buffer_manager.h"
 #include "base/ids/object_id.h"
-#include "base/graph/graph_object.h"
+#include "base/graph_object/graph_object.h"
 
 using namespace std;
-
-template class DistinctBindingHashBucket<GraphObject>;
-template class DistinctBindingHashBucket<ObjectId>;
 
 template <class T>
 DistinctBindingHashBucket<T>::DistinctBindingHashBucket(const TmpFileId file_id,
                                                         const uint_fast32_t bucket_number,
                                                         std::size_t _tuple_size) :
     page        (buffer_manager.get_tmp_page(file_id, bucket_number)),
-    MAX_TUPLES  ( (Page::MDB_PAGE_SIZE - sizeof(*tuple_size) - sizeof(*tuple_count) - sizeof(local_depth))
+    max_tuples  ( (Page::MDB_PAGE_SIZE - sizeof(*tuple_size) - sizeof(*tuple_count) - sizeof(local_depth))
                   / (2*sizeof(*hashes) + _tuple_size*sizeof(T) ) ),
     tuples      (reinterpret_cast<T*>(page.get_bytes())),
-    hashes      (reinterpret_cast<uint64_t*>(page.get_bytes() + _tuple_size*MAX_TUPLES*sizeof(T))),
-    tuple_size  (reinterpret_cast<uint16_t*>(reinterpret_cast<uint8_t*>(hashes) + 2*MAX_TUPLES*sizeof(*hashes))),
+    hashes      (reinterpret_cast<uint64_t*>(page.get_bytes() + _tuple_size*max_tuples*sizeof(T))),
+    tuple_size  (reinterpret_cast<uint16_t*>(reinterpret_cast<uint8_t*>(hashes) + 2*max_tuples*sizeof(*hashes))),
     tuple_count (reinterpret_cast<uint8_t*> (reinterpret_cast<uint8_t*>(tuple_size) + sizeof(*tuple_size))),
     local_depth (reinterpret_cast<uint8_t*> (reinterpret_cast<uint8_t*>(tuple_count) + sizeof(*tuple_count)))
 {
@@ -80,7 +77,7 @@ bool DistinctBindingHashBucket<T>::is_in_or_insert(const std::vector<T>& tuple,
             }
         }
     }
-    if (*tuple_count == MAX_TUPLES) {
+    if (*tuple_count == max_tuples) {
         *need_split = true;
         return false; // needs to try to insert again
     }
@@ -148,3 +145,6 @@ void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& ot
     this->page.make_dirty();
     other.page.make_dirty();
 }
+
+template class DistinctBindingHashBucket<GraphObject>;
+template class DistinctBindingHashBucket<ObjectId>;

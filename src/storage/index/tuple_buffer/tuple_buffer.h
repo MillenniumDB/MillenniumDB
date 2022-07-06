@@ -1,5 +1,4 @@
-#ifndef STORAGE__TUPLE_BUFFER_H_
-#define STORAGE__TUPLE_BUFFER_H_
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -35,5 +34,3 @@ private:
     std::unique_ptr<TupleBufferBlock> last_block;
 
 };
-
-#endif // STORAGE__TUPLE_BUFFER_H_

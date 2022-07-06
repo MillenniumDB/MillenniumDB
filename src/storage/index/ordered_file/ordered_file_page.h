@@ -1,5 +1,4 @@
-#ifndef STORAGE__ORDERED_FILE_PAGE_H_
-#define STORAGE__ORDERED_FILE_PAGE_H_
+#pragma once
 
 #include "storage/index/record.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
@@ -37,5 +36,3 @@ private:
     uint32_t* const size;
     uint64_t* const records;
 };
-
-#endif // STORAGE__ORDERED_FILE_PAGE_H_

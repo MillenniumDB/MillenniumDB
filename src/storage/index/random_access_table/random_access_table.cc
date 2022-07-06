@@ -5,8 +5,6 @@
 
 using namespace std;
 
-template class RandomAccessTable<3>;
-
 template <size_t N>
 RandomAccessTable<N>::RandomAccessTable(const string& name) :
     file_id(file_manager.get_file_id(name))
@@ -39,3 +37,5 @@ void RandomAccessTable<N>::append_record(Record<N> record) {
         last_block = make_unique<RandomAccessTableBlock<N>>(buffer_manager.append_page(file_id));
     }
 }
+
+template class RandomAccessTable<3>;

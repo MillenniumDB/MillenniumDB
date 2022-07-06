@@ -1,10 +1,10 @@
 #include <climits>
-#include <experimental/filesystem>
 #include <iostream>
 #include <memory>
 
-#include "storage/file_manager.h"
 #include "storage/buffer_manager.h"
+#include "storage/file_manager.h"
+#include "storage/filesystem.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
 using namespace std;
@@ -92,8 +92,7 @@ int main(int argc, char** argv) {
 
     string db_folder = "tests/dbs/test_bpt";
     { // check db_folder is empty or does not exists
-        namespace fs = std::experimental::filesystem;
-        if (fs::exists(db_folder) && !fs::is_empty(db_folder)) {
+        if (Filesystem::exists(db_folder) && !Filesystem::is_empty(db_folder)) {
             cerr << "Database folder is not empty.\n";
             return 1;
         }

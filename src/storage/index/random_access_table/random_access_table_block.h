@@ -1,5 +1,4 @@
-#ifndef STORAGE__RANDOM_ACCESS_TABLE_BLOCK_H_
-#define STORAGE__RANDOM_ACCESS_TABLE_BLOCK_H_
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -27,5 +26,3 @@ public:
     uint64_t* const records;
     uint32_t* const record_count;
 };
-
-#endif // STORAGE__RANDOM_ACCESS_TABLE_BLOCK_H_
