@@ -4,8 +4,6 @@
 
 using namespace std;
 
-template class RandomAccessTableBlock<3>;
-
 template <std::size_t N>
 RandomAccessTableBlock<N>::RandomAccessTableBlock(Page& page) :
     page         (page),
@@ -48,3 +46,5 @@ unique_ptr<Record<N>> RandomAccessTableBlock<N>::operator[](uint_fast32_t pos) {
         return nullptr;
     }
 }
+
+template class RandomAccessTableBlock<3>;

@@ -7,8 +7,7 @@
  * Merging phase uses a temporary file to store the result.
  * */
 
-#ifndef STORAGE__ORDERED_FILE_H_
-#define STORAGE__ORDERED_FILE_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -61,5 +60,3 @@ private:
     // used in append_record and next_record
     std::unique_ptr<OrderedFilePage<N>> io_buffer;
 };
-
-#endif // STORAGE__ORDERED_FILE_H_

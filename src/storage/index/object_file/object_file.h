@@ -1,47 +1,35 @@
-/*
- * Object File is designed to contain all labels, all keys and some values (those that need more than 7 bytes to be
- * encoded). Strings are meant to be encoded in UTF-8.
- *
- * To store an object, the ObjectFile will receive the bytes from the object and it will append to the file the
- * length in bytes followed by the actual bytes. The position where the length was written is returned so
- * the object can be readed later using that position. The 8-byte ID of a graph element that represent an object
- * contains the position encoded in the last 7 bytes (and first byte is used to determine the type).
- *
- * Because the ID=0 is special (represents the null object), we need to write a trash byte when creating the
- * file so the first object will have the ID=1.
- * */
-
-#ifndef STORAGE__OBJECT_FILE_H_
-#define STORAGE__OBJECT_FILE_H_
+#pragma once
 
 #include <fstream>
 #include <memory>
-#include <stdexcept>
 #include <string>
-#include <vector>
 
 #include "base/ids/object_id.h"
+#include "base/string_manager.h"
 
-struct ObjectFileOutOfBounds : public std::runtime_error {
-	ObjectFileOutOfBounds(std::string msg)
-		: std::runtime_error(msg) { }
-};
-
-class ObjectFile {
+/*
+Object File is designed to contain all strings (from labels, property keys,
+property values and named nodes). Strings are meant to be encoded in UTF-8.
+Only those that can't be inlined (need more than 7 bytes) are saved here.
+All strings are concatenated in memory, separeted by the usual string
+terminator: '\0'. The ID is the position in the array where it starts.
+Because the ID=0 is special (represents the null object), we need to skip the
+first byte when creating the file so the first object will have the ID=1.
+*/
+class ObjectFile : public StringManager {
 public:
     static constexpr auto INITIAL_SIZE = 4096*1024;
 
     ObjectFile(const std::string& filename);
     ~ObjectFile();
 
-    const char* read(uint64_t id);
-    uint64_t write(std::vector<unsigned char>& bytes);
+    uint64_t write(const std::string& bytes);
+    std::string get_string(uint64_t id) const;
+    void print_string(std::ostream& os, uint64_t string_id) const;
 
 private:
     uint64_t current_end;
     uint64_t capacity;
-    std::fstream& file;
+    std::fstream file;
     char* objects; // All objects separated by '\0'
 };
-
-#endif // STORAGE__OBJECT_FILE_H_

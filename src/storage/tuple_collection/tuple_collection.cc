@@ -104,7 +104,7 @@ bool TupleCollection::has_priority(const std::vector<GraphObject>& lhs,
         if (search != saved_vars.end()) {
             index = search->second;
         } else {
-            throw std::logic_error("saved_vars must contain VarId(" + std::to_string(order_vars[i].id) + ")");
+            throw LogicException("saved_vars must contain VarId(" + std::to_string(order_vars[i].id) + ")");
         }
 
         auto left_value  = lhs[index];

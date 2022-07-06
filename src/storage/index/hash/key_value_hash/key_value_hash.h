@@ -1,5 +1,4 @@
-#ifndef STORAGE__KEY_VALUE_HASH__H_
-#define STORAGE__KEY_VALUE_HASH__H_
+#pragma once
 
 #include <cstdint>
 #include <queue>
@@ -13,10 +12,9 @@
 #include "storage/index/hash/key_value_hash/key_value_hash_bucket.h"
 
 // KeyValueHash is used to save two vectors, key is a vector of type K and value a vector of type V, keys and values
-// must have a constant size. 
+// must have a constant size.
 // Sorting buckets is optional, but needed if you want to use find_first method, otherwise you must search in all the 
 // bucket to check if a key is present (and could be more than once)
-
 template <class K, class V>
 class KeyValueHash {
 public:
@@ -67,5 +65,3 @@ private:
     inline uint_fast32_t get_split_treshold() const noexcept { return max_tuples * (1 << depth); }
     uint_fast32_t get_new_page_number();
 };
-
-#endif // STORAGE__KEY_VALUE_HASH__H_

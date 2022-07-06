@@ -5,11 +5,6 @@
 
 #include "storage/buffer_manager.h"
 
-template class OrderedFilePage<1>;
-template class OrderedFilePage<2>;
-template class OrderedFilePage<3>;
-template class OrderedFilePage<4>;
-
 using namespace std;
 
 template <std::size_t N>
@@ -92,3 +87,8 @@ std::array<uint64_t, N> OrderedFilePage<N>::get(const uint_fast32_t pos) const n
     }
     return res;
 }
+
+template class OrderedFilePage<1>;
+template class OrderedFilePage<2>;
+template class OrderedFilePage<3>;
+template class OrderedFilePage<4>;

@@ -8,16 +8,6 @@
 #include "storage/index/ordered_file/ordered_file.h"
 #include "storage/index/record.h"
 
-template class BPlusTree<1>;
-template class BPlusTree<2>;
-template class BPlusTree<3>;
-template class BPlusTree<4>;
-
-template class BptIter<1>;
-template class BptIter<2>;
-template class BptIter<3>;
-template class BptIter<4>;
-
 using namespace std;
 
 template <std::size_t N>
@@ -79,20 +69,6 @@ void BPlusTree<N>::insert(const Record<N>& record) {
 }
 
 
-// // Insert first key at root, create leaf
-// template <std::size_t N>
-// void BPlusTree<N>::create_new(const Record<N>& record) {
-//     auto first_leaf = BPlusTreeLeaf<N>( buffer_manager.get_page(leaf_file_id, 0) );
-//     first_leaf.create_new(record);
-// }
-
-
-// template <std::size_t N>
-// unique_ptr<Record<N>> BPlusTree<N>::get(const Record<N>& key) {
-//     return root.get(key);
-// }
-
-
 template <std::size_t N>
 bool BPlusTree<N>::check() const {
     return root.check();
@@ -143,3 +119,13 @@ unique_ptr<Record<N>> BptIter<N>::next() {
         }
     }
 }
+
+template class BPlusTree<1>;
+template class BPlusTree<2>;
+template class BPlusTree<3>;
+template class BPlusTree<4>;
+
+template class BptIter<1>;
+template class BptIter<2>;
+template class BptIter<3>;
+template class BptIter<4>;

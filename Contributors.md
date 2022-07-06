@@ -17,13 +17,15 @@
 - [Cristóbal Espinoza](https://github.com/caespinoza5)
 - [Santiago Laguna](https://github.com/santilaguna)
 - [Benjamín Farías](https://github.com/BFFV)
+- [Vicente García](https://github.com/VicenteGM123)
 
 ## External projects
-Some pieces of code were extracted from other projects and included inside our codebase.
-- [ClHash](https://github.com/lemire/clhash)
-- [CityHash](https://github.com/google/cityhash)
-- [FarmHash](https://github.com/google/farmhash)
+Some pieces of code were extracted from other projects and included inside our codebase ([third_party](third_party) and [src/third_party](src/third_party) folders).
+- [Antlr4](https://github.com/antlr/antlr4)
+- [cxxopts](https://github.com/jarro2783/cxxopts)
 - [Murmur3](https://github.com/aappleby/smhasher)
+- [Robin Hood Hashmap](https://github.com/martinus/robin-hood-hashing)
+- [xxHash](https://github.com/Cyan4973/xxHash)
 
 ## IMFD Research Team:
 - Renzo Angles -- Universidad de Talca and IMFD Chile

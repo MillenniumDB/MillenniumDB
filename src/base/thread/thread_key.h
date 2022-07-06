@@ -1,5 +1,4 @@
-#ifndef BASE__THREAD_KEY_H_
-#define BASE__THREAD_KEY_H_
+#pragma once
 
 #include <cstdint>
 
@@ -8,7 +7,8 @@ struct ThreadKey {
     uint64_t salt;
 
     ThreadKey(uint64_t timestamp, uint64_t salt) :
-        timestamp(timestamp), salt(salt) { }
+        timestamp (timestamp),
+        salt      (salt) { }
 
     bool operator==(const ThreadKey& other) const {
         return timestamp == other.timestamp && salt == other.salt;
@@ -20,5 +20,3 @@ struct ThreadKeyHasher {
         return thread_key.timestamp ^ thread_key.salt;
     }
 };
-
-#endif // BASE__THREAD_KEY_H_
