@@ -4,6 +4,7 @@
 
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
+#include "query_optimizer/quad_model/quad_model.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/record.h"
@@ -11,18 +12,12 @@
 using namespace std;
 using namespace Paths::AnyShortest;
 
-AStarIterEnum::AStarIterEnum(ThreadInfo*   thread_info,
-                             BPlusTree<1>& nodes,
-                             BPlusTree<4>& type_from_to_edge,
-                             BPlusTree<4>& to_type_from_edge,
-                             VarId         path_var,
-                             Id            start,
-                             VarId         end,
-                             PathAutomaton automaton) :
+AStarIterEnum::AStarIterEnum(ThreadInfo*  thread_info,
+                             VarId        path_var,
+                             Id           start,
+                             VarId        end,
+                             RPQAutomaton automaton) :
     thread_info       (thread_info),
-    nodes             (nodes),
-    type_from_to_edge (type_from_to_edge),
-    to_type_from_edge (to_type_from_edge),
     path_var          (path_var),
     start             (start),
     end               (end),
@@ -59,9 +54,9 @@ bool AStarIterEnum::next() {
     if (is_first) {
         is_first = false;
         auto& current_state = open.top();
-        auto start_node_iter = nodes.get_range(&thread_info->interruption_requested,
-                                               Record<1>({current_state.object_id.id}),
-                                               Record<1>({current_state.object_id.id}));
+        auto start_node_iter = quad_model.nodes->get_range(&thread_info->interruption_requested,
+                                                           Record<1>({current_state.object_id.id}),
+                                                           Record<1>({current_state.object_id.id}));
         // Return false if node does not exists in bd
         if (start_node_iter->next() == nullptr) {
             return false;
@@ -104,7 +99,7 @@ bool AStarIterEnum::next() {
 robin_hood::unordered_node_set<SearchState>::iterator AStarIterEnum::current_state_has_next() {
     auto current_state = &open.top();
     if (current_state->iter == nullptr) {
-        if (current_state->transition < automaton.transitions[current_state->state].size()) {
+        if (current_state->transition < automaton.from_to_connections[current_state->state].size()) {
             set_iter();
             current_state = &open.top(); // set_iter modifies open.top()
         } else {
@@ -112,8 +107,8 @@ robin_hood::unordered_node_set<SearchState>::iterator AStarIterEnum::current_sta
         }
     }
 
-    while (current_state->transition < automaton.transitions[current_state->state].size()) {
-        auto& transition = automaton.transitions[current_state->state][current_state->transition];
+    while (current_state->transition < automaton.from_to_connections[current_state->state].size()) {
+        auto& transition = automaton.from_to_connections[current_state->state][current_state->transition];
         auto child_record = current_state->iter->next();
         // Iterate over next_childs
         while (child_record != nullptr) {
@@ -127,7 +122,7 @@ robin_hood::unordered_node_set<SearchState>::iterator AStarIterEnum::current_sta
                                               ObjectId(child_record->ids[2]),
                                               visited.find(current_key).operator->(),
                                               transition.inverse,
-                                              transition.type);
+                                              transition.type_id);
 
             // Check child is not already visited
             auto inserted_state = visited.insert(next_state_key);
@@ -138,7 +133,7 @@ robin_hood::unordered_node_set<SearchState>::iterator AStarIterEnum::current_sta
             child_record = current_state->iter->next();
         }
         // Constructs new iter
-        if (current_state->transition < automaton.transitions[current_state->state].size()) {
+        if (current_state->transition < automaton.from_to_connections[current_state->state].size()) {
             set_iter();
             current_state = &open.top(); // set_iter modified open.top()
         }
@@ -159,24 +154,24 @@ void AStarIterEnum::set_iter() {
         new_state.transition = 0;
     }
     // Get transition
-    const auto& transition = automaton.transitions[new_state.state][new_state.transition];
+    const auto& transition = automaton.from_to_connections[new_state.state][new_state.transition];
     // Construct iter
     if (transition.inverse) {
         min_ids[0] = new_state.object_id.id;
         max_ids[0] = new_state.object_id.id;
-        min_ids[1] = transition.type.id;
-        max_ids[1] = transition.type.id;
-        new_state.iter = to_type_from_edge.get_range(&thread_info->interruption_requested,
-                                                     Record<4>(min_ids),
-                                                     Record<4>(max_ids));
+        min_ids[1] = transition.type_id.id;
+        max_ids[1] = transition.type_id.id;
+        new_state.iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
+                                                                 Record<4>(min_ids),
+                                                                 Record<4>(max_ids));
     } else {
-        min_ids[0] = transition.type.id;
-        max_ids[0] = transition.type.id;
+        min_ids[0] = transition.type_id.id;
+        max_ids[0] = transition.type_id.id;
         min_ids[1] = new_state.object_id.id;
         max_ids[1] = new_state.object_id.id;
-        new_state.iter = type_from_to_edge.get_range(&thread_info->interruption_requested,
-                                                     Record<4>(min_ids),
-                                                     Record<4>(max_ids));
+        new_state.iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
+                                                                 Record<4>(min_ids),
+                                                                 Record<4>(max_ids));
     }
     bpt_searches++;
     // Remove current_state of priority queue

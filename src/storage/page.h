@@ -27,7 +27,7 @@ public:
     inline char* get_bytes() const noexcept { return bytes; }
 
     // get page number
-    inline uint_fast32_t get_page_number() const noexcept { return page_id.page_number; };
+    inline uint32_t get_page_number() const noexcept { return page_id.page_number; };
 
 private:
     // start memory address of the page, of size `MDB_PAGE_SIZE`

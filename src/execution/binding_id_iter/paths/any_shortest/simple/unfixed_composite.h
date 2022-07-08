@@ -8,7 +8,7 @@
 #include "base/binding/binding_id_iter.h"
 #include "base/thread/thread_info.h"
 #include "execution/binding_id_iter/paths/any_shortest/iter/bfs_iter_enum.h"
-#include "parser/query/paths/path_automaton.h"
+#include "parser/query/paths/automaton/rpq_automaton.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "third_party/robin_hood/robin_hood.h"
 
@@ -27,14 +27,11 @@ BFSIterEnum class, starting from the found node.
 class UnfixedComposite : public BindingIdIter {
 private:
     // Attributes determined in the constuctor
-    ThreadInfo*   thread_info;
-    BPlusTree<1>& nodes;
-    BPlusTree<4>& type_from_to_edge;  // Used to search foward
-    BPlusTree<4>& to_type_from_edge;  // Used to search backward
-    VarId         path_var;
-    VarId         start;
-    VarId         end;
-    PathAutomaton automaton;
+    ThreadInfo*  thread_info;
+    VarId        path_var;
+    VarId        start;
+    VarId        end;
+    RPQAutomaton automaton;
 
     // Attributes determined in begin
     BindingId* parent_binding;
@@ -60,14 +57,11 @@ private:
     uint_fast32_t bpt_searches = 0;
 
 public:
-    UnfixedComposite(ThreadInfo*   thread_info,
-                     BPlusTree<1>& nodes,
-                     BPlusTree<4>& type_from_to_edge,
-                     BPlusTree<4>& to_type_from_edge,
-                     VarId path_var,
-                     VarId start,
-                     VarId end,
-                     PathAutomaton automaton);
+    UnfixedComposite(ThreadInfo*  thread_info,
+                     VarId        path_var,
+                     VarId        start,
+                     VarId        end,
+                     RPQAutomaton automaton);
 
     void analyze(std::ostream& os, int indent = 0) const override;
     void begin(BindingId& parent_binding) override;

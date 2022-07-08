@@ -1,7 +1,5 @@
 #include "binding_iter_visitor.h"
 
-#include <iostream>
-
 #include "execution/binding_id_iter/distinct_id_hash.h"
 #include "execution/binding_id_iter/index_scan.h"
 #include "execution/binding_id_iter/optional_node.h"

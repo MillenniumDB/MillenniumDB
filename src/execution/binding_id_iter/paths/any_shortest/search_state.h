@@ -1,9 +1,9 @@
 #pragma once
 
 #include <ostream>
+#include <functional>
 
 #include "base/ids/object_id.h"
-#include <functional>
 
 namespace Paths { namespace AnyShortest {
 /*
@@ -28,9 +28,6 @@ struct SearchState {
     // State of the automaton defining the path query
     const uint32_t automaton_state;
 
-    // Whether the path is inverted
-    const bool inverted_path;
-
     // Indicates in which direction the edge was traversed
     // (the language allows traversing in both directions)
     const bool inverse_direction;
@@ -39,13 +36,11 @@ struct SearchState {
                 ObjectId           node_id,
                 const SearchState* previous,
                 bool               inverse_direction,
-                ObjectId           type_id,
-                bool               inverted_path = false) :
+                ObjectId           type_id) :
         node_id           (node_id),
         previous          (previous),
         type_id           (type_id),
         automaton_state   (automaton_state),
-        inverted_path     (inverted_path),
         inverse_direction (inverse_direction) {}
 
     // For ordered set
@@ -65,7 +60,7 @@ struct SearchState {
     }
 
     SearchState duplicate() const {
-        return SearchState(automaton_state, node_id, previous, inverse_direction, type_id, inverted_path);
+        return SearchState(automaton_state, node_id, previous, inverse_direction, type_id);
     }
 
     void get_path(std::ostream& os) const;

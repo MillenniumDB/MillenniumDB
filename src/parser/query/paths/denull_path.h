@@ -20,7 +20,7 @@
 // (A* | B*)* => (A | B)*
 
 // There is another simplification when constructing a PathOptional
-// but it is not the responsability of PathDenull to do this.
+// but it's not the responsibility of PathDenull to do this.
 // When we have EXPR? and EXPR is nullable, we remove the optional
 // E.g:
 // (A*)? => A*
@@ -28,10 +28,11 @@
 
 class IPath;
 class PathAlternatives;
-class PathSequence;
 class PathAtom;
+class PathCheck;
 class PathKleeneStar;
 class PathOptional;
+class PathSequence;
 
 class PathDenull {
 public:
@@ -41,8 +42,9 @@ private:
     static std::unique_ptr<IPath> accept_denull(std::unique_ptr<IPath>);
 
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathAlternatives>);
-    static std::unique_ptr<IPath> denull(std::unique_ptr<PathSequence>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathAtom>);
+    static std::unique_ptr<IPath> denull(std::unique_ptr<PathCheck>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathKleeneStar>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathOptional>);
+    static std::unique_ptr<IPath> denull(std::unique_ptr<PathSequence>);
 };

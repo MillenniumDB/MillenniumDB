@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
+#include <functional>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "base/ids/object_id.h"
@@ -16,6 +17,9 @@ regular expression.
 struct Transition {
     uint_fast32_t from;
     uint_fast32_t to;
+
+    // Won't be setted until the end of the automaton transformation
+    ObjectId type_id;
 
     // Type of the transition. Epsilon transitions are represents with an empty string
     std::string type;
@@ -43,24 +47,9 @@ struct Transition {
 };
 
 
-// Represents a transition of the automaton like Transition class,
-// but the type is represented by its ObjectId instead of the string.
-struct TransitionId {
-    uint_fast32_t to;
-    ObjectId type;
-    bool inverse;
-    uint64_t cost = 0;
-
-    TransitionId(uint_fast32_t to, ObjectId type, bool inverse) :
-        to      (to),
-        type    (type),
-        inverse (inverse) { }
-};
-
-
 /*
-PathAutomaton represents a Non-Deterministic Finite Automaton (NFA) with  epsilon
-transitions.  This  class  builds  an  automaton, and transform it into an automaton
+RPQAutomaton represents a Non-Deterministic Finite Automaton (NFA) with  epsilon
+transitions. This class builds an automaton, and transform it into an automaton
 without epsilon transitions.
 
 The automaton is built using Thompson Algorithm, each operator allowed by the
@@ -76,22 +65,41 @@ methods:
  4.  delete_absortion_states
 
 States of automaton are not emulated by a specific class. A state is only represented
-by a number i,  that indicates that the transitions of this state are stored in the i
+by a number i, that indicates that the transitions of this state are stored in the i
 position of the from_to_connections, to_from_connections and transitions vectors.
 
 Final the distance to a final state is computed, this metric can be used as heuristic
 by a path finder algorithm to select the state which is nearest to final state.
 */
-class PathAutomaton {
-private:
+class RPQAutomaton {
+public:
     // Start state, always is 0
     uint32_t start = 0;
 
-    // Final state will be set and the end of automaton transformation
-    uint32_t final_state;
-
     // Number of states
     uint32_t total_states = 1;
+
+    // `final_state` will be set at the automaton transformation in the method
+    // `set_final_state()`, until then there can be multiple final states
+    uint32_t final_state;
+
+    // True if the start state is a final state
+    bool start_is_final = false;
+
+    // Final states before `set_final_state()` is called
+    std::set<uint32_t> end_states;
+
+    // from_to_connections[i] is a list of the transitions that start at state i
+    std::vector<std::vector<Transition>> from_to_connections;
+
+    // to_from_connections[i] is a list of the transitions that reach the state i
+    // these transitions will be invalid after transforming the automata
+    // prefer using from_to_connections since it's not invalidated
+    std::vector<std::vector<Transition>> to_from_connections;
+
+    // Stores the distance to end state. It can be used by
+    // AStar algorithm in enum and check binding_id_iter algorithms.
+    std::vector<uint32_t> distance_to_final;
 
     // ----- Methods to handle automaton transformations -----
 
@@ -129,27 +137,6 @@ private:
     void sort_state_transition(uint32_t state);
     void sort_transitions();
 
-public:
-    // Transitions that starts from a i-state (stored in i-position).
-    std::vector<std::vector<Transition>> from_to_connections;
-
-    // Transitions that reaches to a state (stored in i-position).
-    // These transitions will be invalid after transforming the automata (prefeer using from_to_connections)
-    std::vector<std::vector<Transition>> to_from_connections;
-
-    // the binding id iter operator
-    std::vector<std::vector<TransitionId>> transitions;
-
-    // End states before of the transformation to automaton transformation
-    std::set<uint32_t> end_states;
-
-    // True if the start state is final
-    bool start_is_final = false;
-
-    // Stores the distance to end state. It can be used by
-    // AStar algorithm in enum and check binding_id_iter algorithms.
-    std::vector<uint32_t> distance_to_final;
-
     // Access  and modify attibute methods
     inline uint32_t get_start() const noexcept { return start; }
     inline uint32_t get_total_states() const noexcept  { return total_states; }
@@ -159,22 +146,20 @@ public:
 
     // Add states from other to this, rename 'other' states, update 'other'
     // end states to be consistent with rename. Don't update 'other' connections
-    void rename_and_merge(PathAutomaton& other);
+    void rename_and_merge(RPQAutomaton& other);
 
     // Add a transition to automaton
-    void connect(Transition transition);
+    void add_transition(Transition transition);
 
     // Add a transition (from, to, "", false)
     void add_epsilon_transition(uint32_t from, uint32_t to);
 
     // Apply transformations to get final automaton
-    void transform_automaton();
+    void transform_automaton(std::function<ObjectId(const std::string&)>);
 
-    std::pair<PathAutomaton, PathAutomaton> partition_automaton(uint32_t split_state);
+    // bool state_partitions_to_automaton(uint32_t state);
 
-    std::pair<PathAutomaton, PathAutomaton> partition_by_transition(uint32_t from, uint32_t to);
+    // std::pair<RPQAutomaton, RPQAutomaton> partition_automaton(uint32_t split_state);
 
-    PathAutomaton invert_automaton();
-
-    bool state_partitions_to_automaton(uint32_t state);
+    // std::pair<RPQAutomaton, RPQAutomaton> partition_by_transition(uint32_t from, uint32_t to);
 };
