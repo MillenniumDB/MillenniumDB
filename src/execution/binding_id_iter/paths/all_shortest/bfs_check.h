@@ -1,14 +1,14 @@
 #pragma once
 
 #include <array>
-#include <memory>
 #include <queue>
+#include <memory>
 
 #include "base/binding/binding_id_iter.h"
 #include "base/ids/id.h"
 #include "base/thread/thread_info.h"
 #include "execution/binding_id_iter/paths/all_shortest/search_state.h"
-#include "parser/query/paths/path_automaton.h"
+#include "parser/query/paths/automaton/rpq_automaton.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "third_party/robin_hood/robin_hood.h"
 
@@ -19,13 +19,10 @@ class BFSCheck : public BindingIdIter {
 private:
     // Attributes determined in the constuctor
     ThreadInfo*   thread_info;
-    BPlusTree<1>& nodes;
-    BPlusTree<4>& type_from_to_edge; // Used to search foward
-    BPlusTree<4>& to_type_from_edge; // Used to search backward
     VarId         path_var;
     Id            start;
     Id            end;
-    PathAutomaton automaton;
+    RPQAutomaton  automaton;
 
     // Attributes determined in begin
     BindingId* parent_binding;
@@ -37,7 +34,7 @@ private:
     std::array<uint64_t, 4> max_ids;
 
     // Structs for BFS
-    robin_hood::unordered_node_set<SearchState, SearchStateHasher> visited;
+    robin_hood::unordered_node_set<SearchState> visited;
     // open stores a pointer to a Paths::All::SearchState stored in visited
     // that allows to avoid use visited.find to get a pointer and
     // use the state extracted of the open directly.
@@ -59,18 +56,15 @@ private:
     // Constructs iter according to transition
     void set_iter(const SearchState* current_state);
 
-    std::pair<robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator, bool>
+    std::pair<robin_hood::unordered_node_set<SearchState>::iterator, bool>
       current_state_has_next(const SearchState* current_state);
 
 public:
     BFSCheck(ThreadInfo*   thread_info,
-             BPlusTree<1>& nodes,
-             BPlusTree<4>& type_from_to_edge,
-             BPlusTree<4>& to_type_from_edge,
              VarId         path_var,
              Id            start,
              Id            end,
-             PathAutomaton automaton);
+             RPQAutomaton  automaton);
 
     void analyze(std::ostream& os, int indent = 0) const override;
 

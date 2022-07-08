@@ -5,6 +5,7 @@
 #include "parser/query/paths/path.h"
 #include "parser/query/paths/path_alternatives.h"
 #include "parser/query/paths/path_atom.h"
+#include "parser/query/paths/path_check.h"
 #include "parser/query/paths/path_kleene_star.h"
 #include "parser/query/paths/path_optional.h"
 #include "parser/query/paths/path_sequence.h"
@@ -59,6 +60,16 @@ unique_ptr<IPath> PathDenull::accept_denull(unique_ptr<IPath> path) {
         return denull(move(casted));
     }
 
+    case PathType::PATH_CHECK: {
+        // IPathCheck
+        PathCheck* tmp = dynamic_cast<PathCheck*>(path.get());
+
+        unique_ptr<PathCheck> casted;
+        path.release();
+        casted.reset(tmp);
+        return denull(move(casted));
+    }
+
     default: { // case PathType::PATH_OPTIONAL: {
         PathOptional* tmp = dynamic_cast<PathOptional*>(path.get());
 
@@ -107,4 +118,9 @@ unique_ptr<IPath> PathDenull::denull(unique_ptr<PathAtom> atom) {
 
 unique_ptr<IPath> PathDenull::denull(unique_ptr<PathOptional> optional) {
     return move(optional->path);
+}
+
+
+unique_ptr<IPath> PathDenull::denull(unique_ptr<PathCheck> check) {
+    return check;
 }

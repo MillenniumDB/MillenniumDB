@@ -4,6 +4,7 @@
 
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
+#include "query_optimizer/quad_model/quad_model.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/record.h"
@@ -11,22 +12,16 @@
 using namespace std;
 using namespace Paths::AllShortest;
 
-BFSEnum::BFSEnum(ThreadInfo*   thread_info,
-                 BPlusTree<1>& nodes,
-                 BPlusTree<4>& type_from_to_edge,
-                 BPlusTree<4>& to_type_from_edge,
-                 VarId         path_var,
-                 Id            start,
-                 VarId         end,
-                 PathAutomaton automaton) :
-    thread_info       (thread_info),
-    nodes             (nodes),
-    type_from_to_edge (type_from_to_edge),
-    to_type_from_edge (to_type_from_edge),
-    path_var          (path_var),
-    start             (start),
-    end               (end),
-    automaton         (automaton) { }
+BFSEnum::BFSEnum(ThreadInfo*  thread_info,
+                 VarId        path_var,
+                 Id           start,
+                 VarId        end,
+                 RPQAutomaton automaton) :
+    thread_info (thread_info),
+    path_var    (path_var),
+    start       (start),
+    end         (end),
+    automaton   (automaton) { }
 
 
 void BFSEnum::begin(BindingId& _parent_binding) {
@@ -38,7 +33,7 @@ void BFSEnum::begin(BindingId& _parent_binding) {
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
 
-    auto state_inserted = visited.emplace(automaton.get_start(), start_object_id, 0);
+    auto state_inserted = visited.emplace(start_object_id, automaton.get_start(), 0);
 
     open.push(state_inserted.first.operator->());
 
@@ -55,9 +50,9 @@ bool BFSEnum::next() {
         first_next = false;
 
         auto current_state = open.front();
-        auto node_iter     = nodes.get_range(&thread_info->interruption_requested,
-                                             Record<1>({ current_state->node_id.id }),
-                                             Record<1>({ current_state->node_id.id }));
+        auto node_iter     = quad_model.nodes->get_range(&thread_info->interruption_requested,
+                                                         Record<1>({ current_state->node_id.id }),
+                                                         Record<1>({ current_state->node_id.id }));
         if (node_iter->next() == nullptr) {
             // return false if node does not exists in bd
             open.pop();
@@ -65,7 +60,7 @@ bool BFSEnum::next() {
         }
 
         if (automaton.start_is_final) {
-            auto new_state = visited.emplace(automaton.get_final_state(), current_state->node_id, 0);
+            auto new_state = visited.emplace(current_state->node_id, automaton.get_final_state(), 0);
             auto path_id = path_manager.set_path(new_state.first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state->node_id);
@@ -115,14 +110,14 @@ enumeration:
 }
 
 
-robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator
+robin_hood::unordered_node_set<SearchState>::iterator
   BFSEnum::current_state_has_next(const SearchState* current_state)
 {
     // check if this is the first time that current_state is explored
     if (iter == nullptr) {
         current_transition = 0;
         // check if automaton state has outer transitions
-        if (automaton.transitions[current_state->automaton_state].size() == 0) {
+        if (automaton.from_to_connections[current_state->automaton_state].size() == 0) {
             return visited.end();
         }
         set_iter(current_state);
@@ -130,14 +125,14 @@ robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator
 
     // iterate over the remaining transtions of current_state.
     // don't start from the beginning, resume where it left thanks to current_transition and iter
-    while (current_transition < automaton.transitions[current_state->automaton_state].size()) {
-        auto& transition = automaton.transitions[current_state->automaton_state][current_transition];
+    while (current_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
+        auto& transition = automaton.from_to_connections[current_state->automaton_state][current_transition];
 
         // iterate over records until there is no more records or reach a new state that has not
         // been visited yet
         for (auto child_record = iter->next(); child_record != nullptr; child_record = iter->next()) {
-            SearchState next_state(transition.to,
-                                   ObjectId(child_record->ids[2]),
+            SearchState next_state(ObjectId(child_record->ids[2]),
+                                   transition.to,
                                    current_state->distance + 1);
 
             // check if next state has already been visited
@@ -145,7 +140,7 @@ robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator
             if (visited_search != visited.end()) {
                 // return next_state only if it has an optimal distance?
                 if (visited_search->distance == next_state.distance) {
-                    visited_search->path_iter.add(current_state, transition.inverse, transition.type);
+                    visited_search->path_iter.add(current_state, transition.inverse, transition.type_id);
                     if (next_state.automaton_state == automaton.get_final_state()) {
                         // return but prevent a open.pop()
                         saved_state_reached = visited_search.operator->();
@@ -153,17 +148,17 @@ robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator
                     }
                 }
             } else {
-                return visited.emplace(transition.to,
-                                       ObjectId(child_record->ids[2]),
-                                       transition.type,
+                return visited.emplace(ObjectId(child_record->ids[2]),
+                                       transition.to,
+                                       current_state->distance + 1,
                                        current_state,
                                        transition.inverse,
-                                       current_state->distance + 1).first;
+                                       transition.type_id).first;
             }
         }
         // construct new iter with the next transition (if there exists a next transition)
         current_transition++;
-        if (current_transition < automaton.transitions[current_state->automaton_state].size()) {
+        if (current_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
             set_iter(current_state);
         }
     }
@@ -173,24 +168,24 @@ robin_hood::unordered_node_set<SearchState, SearchStateHasher>::iterator
 
 void BFSEnum::set_iter(const SearchState* current_state) {
     // Gets current transition object from automaton
-    const auto& transition = automaton.transitions[current_state->automaton_state][current_transition];
+    const auto& transition = automaton.from_to_connections[current_state->automaton_state][current_transition];
     // Gets iter from correct bpt with transition.inverse
     if (transition.inverse) {
         min_ids[0] = current_state->node_id.id;
         max_ids[0] = current_state->node_id.id;
-        min_ids[1] = transition.type.id;
-        max_ids[1] = transition.type.id;
-        iter = to_type_from_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        min_ids[1] = transition.type_id.id;
+        max_ids[1] = transition.type_id.id;
+        iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     } else {
-        min_ids[0] = transition.type.id;
-        max_ids[0] = transition.type.id;
+        min_ids[0] = transition.type_id.id;
+        max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state->node_id.id;
         max_ids[1] = current_state->node_id.id;
-        iter = type_from_to_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     }
     bpt_searches++;
 }
@@ -208,7 +203,7 @@ void BFSEnum::reset() {
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
 
-    auto state_inserted = visited.emplace(automaton.get_start(), start_object_id, 0);
+    auto state_inserted = visited.emplace(start_object_id, automaton.get_start(), 0);
 
     open.push(state_inserted.first.operator->());
 }

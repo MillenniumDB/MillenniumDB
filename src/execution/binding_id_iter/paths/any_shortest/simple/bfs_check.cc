@@ -26,23 +26,18 @@ are simply checking whether the two nodes are connected by a path.
 
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
+#include "query_optimizer/quad_model/quad_model.h"
 #include "storage/index/record.h"
 
 using namespace std;
 using namespace Paths::AnyShortest;
 
-BFSCheck::BFSCheck(ThreadInfo*   thread_info,
-                   BPlusTree<1>& nodes,
-                   BPlusTree<4>& type_from_to_edge,
-                   BPlusTree<4>& to_type_from_edge,
-                   VarId         path_var,
-                   Id            start,
-                   Id            end,
-                   PathAutomaton automaton) :
+BFSCheck::BFSCheck(ThreadInfo*  thread_info,
+                   VarId        path_var,
+                   Id           start,
+                   Id           end,
+                   RPQAutomaton automaton) :
     thread_info       (thread_info),
-    nodes             (nodes),
-    type_from_to_edge (type_from_to_edge),
-    to_type_from_edge (to_type_from_edge),
     path_var          (path_var),
     start             (start),
     end               (end),
@@ -84,9 +79,9 @@ bool BFSCheck::next() {
         is_first = false;
 
         auto current_state = open.front();
-        auto node_iter = nodes.get_range(&thread_info->interruption_requested,
-                                         Record<1>({current_state->node_id.id}),
-                                         Record<1>({current_state->node_id.id}));
+        auto node_iter = quad_model.nodes->get_range(&thread_info->interruption_requested,
+                                                     Record<1>({current_state->node_id.id}),
+                                                     Record<1>({current_state->node_id.id}));
         // Return false if node does not exists in bd
         if (node_iter->next() == nullptr) {
             queue<const SearchState*> empty;
@@ -106,7 +101,7 @@ bool BFSCheck::next() {
     while (open.size() > 0) {
         auto& current_state = open.front();
         // Expand state. Only visit nodes that automatons transitions indicates
-        for (const auto& transition : automaton.transitions[current_state->automaton_state]) {
+        for (const auto& transition : automaton.from_to_connections[current_state->automaton_state]) {
             set_iter(transition, current_state);
 
             // Explore matches nodes
@@ -117,7 +112,7 @@ bool BFSCheck::next() {
                     ObjectId(child_record->ids[2]),
                     current_state,
                     transition.inverse,
-                    transition.type);
+                    transition.type_id);
 
                 auto next_state_pointer = visited.insert(next_state);
                 // Check if next_state was added to visited
@@ -147,24 +142,24 @@ bool BFSCheck::next() {
 }
 
 
-void BFSCheck::set_iter(const TransitionId& transition, const SearchState* current_state) {
+void BFSCheck::set_iter(const Transition& transition, const SearchState* current_state) {
     // Get iter from correct bpt_tree according to inverse attribute
     if (transition.inverse) {
         min_ids[0] = current_state->node_id.id;
         max_ids[0] = current_state->node_id.id;
-        min_ids[1] = transition.type.id;
-        max_ids[1] = transition.type.id;
-        iter = to_type_from_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        min_ids[1] = transition.type_id.id;
+        max_ids[1] = transition.type_id.id;
+        iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     } else {
-        min_ids[0] = transition.type.id;
-        max_ids[0] = transition.type.id;
+        min_ids[0] = transition.type_id.id;
+        max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state->node_id.id;
         max_ids[1] = current_state->node_id.id;
-        iter = type_from_to_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     }
     bpt_searches++;
 }

@@ -10,6 +10,7 @@
 #include "base/path_printer.h"
 #include "execution/binding_id_iter/paths/all_shortest/search_state.h"
 #include "execution/binding_id_iter/paths/any_shortest/search_state.h"
+#include "execution/binding_id_iter/paths/any_shortest/experimental/search_state_dijkstra.h"
 #include "third_party/robin_hood/robin_hood.h"
 
 /*
@@ -26,6 +27,7 @@ public:
     static constexpr uint64_t SEARCH_STATE_MASK  = 0x00'00'000000000000UL;
     static constexpr uint64_t ALL_STATE_MASK     = 0x00'01'000000000000UL;
     static constexpr uint64_t TWO_WAY_STATE_MASK = 0x00'02'000000000000UL;
+    static constexpr uint64_t DIJKSTRA_MASK      = 0x00'03'000000000000UL;
 
     static void init(uint_fast32_t max_threads);
 
@@ -33,6 +35,7 @@ public:
     void begin(size_t binding_size, bool materialize);
 
     ObjectId set_path(const Paths::AnyShortest::SearchState* visited_pointer, VarId path_var);
+    ObjectId set_path(const Paths::AnyShortest::SearchStateDijkstra* visited_pointer, VarId path_var);
     ObjectId set_path(const Paths::AllShortest::SearchState* visited_pointer, VarId path_var);
 
     void print(std::ostream& os, uint64_t path_id) const override;
@@ -59,7 +62,7 @@ private:
     std::vector<bool> paths_materialized;
 
     // Saves pointer when path must be materialized
-    std::vector<std::vector<robin_hood::unordered_set<Paths::AnyShortest::SearchState>>> states_materialized;
+    std::vector<std::vector<robin_hood::unordered_node_set<Paths::AnyShortest::SearchState>>> states_materialized;
     // TODO: materialize Paths::AllShortest::SearchState
 
     // To avoid synchronization problems

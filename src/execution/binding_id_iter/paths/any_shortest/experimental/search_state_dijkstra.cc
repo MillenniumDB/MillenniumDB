@@ -1,4 +1,4 @@
-#include "search_state.h"
+#include "search_state_dijkstra.h"
 
 #include <vector>
 
@@ -6,7 +6,7 @@
 
 using namespace Paths::AnyShortest;
 
-void SearchState::get_path(std::ostream& os) const {
+void SearchStateDijkstra::get_path(std::ostream& os) const {
     std::vector<ObjectId> nodes;
     std::vector<ObjectId> types;
     std::vector<bool>     directions;

@@ -46,8 +46,4 @@ private:
     bool to_assigned;
 
     PathSemantic path_semantic;
-
-    // Set the transitions of the automaton received with the corresponding ObjectId.
-    // The automaton has the transition (Type) as string and it needs to be transformed into an ObjectId.
-    void set_automaton_transition_id(PathAutomaton& automaton) const;
 };

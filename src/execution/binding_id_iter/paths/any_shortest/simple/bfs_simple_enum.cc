@@ -61,6 +61,7 @@ conforming to a* matches a path between Q1 and Q1).
 
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
+#include "query_optimizer/quad_model/quad_model.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/record.h"
@@ -69,17 +70,11 @@ using namespace std;
 using namespace Paths::AnyShortest;
 
 BFSSimpleEnum::BFSSimpleEnum(ThreadInfo*   thread_info,
-                             BPlusTree<1>& nodes,
-                             BPlusTree<4>& type_from_to_edge,
-                             BPlusTree<4>& to_type_from_edge,
                              VarId         path_var,
                              Id            start,
                              VarId         end,
-                             PathAutomaton automaton) :
+                             RPQAutomaton automaton) :
     thread_info       (thread_info),
-    nodes             (nodes),
-    type_from_to_edge (type_from_to_edge),
-    to_type_from_edge (to_type_from_edge),
     path_var          (path_var),
     start             (start),
     end               (end),
@@ -120,7 +115,7 @@ bool BFSSimpleEnum::next() {
     while (open.size() > 0) {
         auto& current_state = open.front();
         // Expand state. Explore reachable nodes with automaton transitions
-        for (const auto& transition : automaton.transitions[current_state.automaton_state]) {
+        for (const auto& transition : automaton.from_to_connections[current_state.automaton_state]) {
             // Constructs iter with current automaton transition
             auto iter = set_iter(transition, current_state);
             auto child_record = iter->next();
@@ -131,7 +126,7 @@ bool BFSSimpleEnum::next() {
                                               ObjectId(child_record->ids[2]),
                                               visited.find(current_state).operator->(),
                                               transition.inverse,
-                                              transition.type);
+                                              transition.type_id);
 
                 // Check if this node has been already visited
                 if (visited.find(next_state) == visited.end()) {
@@ -144,9 +139,9 @@ bool BFSSimpleEnum::next() {
         }
         if (is_first) {
             is_first = false;
-            auto start_node_iter = nodes.get_range(&thread_info->interruption_requested,
-                                                   Record<1>({current_state.node_id.id}),
-                                                   Record<1>({current_state.node_id.id}));
+            auto start_node_iter = quad_model.nodes->get_range(&thread_info->interruption_requested,
+                                                               Record<1>({current_state.node_id.id}),
+                                                               Record<1>({current_state.node_id.id}));
 
             // Return false if node does not exists in bd
             if (start_node_iter->next() == nullptr) {
@@ -183,7 +178,7 @@ bool BFSSimpleEnum::next() {
 }
 
 
-unique_ptr<BptIter<4>> BFSSimpleEnum::set_iter(const TransitionId& transition,
+unique_ptr<BptIter<4>> BFSSimpleEnum::set_iter(const Transition& transition,
                                                const SearchState& current_state)
 {
     unique_ptr<BptIter<4>> iter = nullptr;
@@ -191,19 +186,19 @@ unique_ptr<BptIter<4>> BFSSimpleEnum::set_iter(const TransitionId& transition,
     if (transition.inverse) {
         min_ids[0] = current_state.node_id.id;
         max_ids[0] = current_state.node_id.id;
-        min_ids[1] = transition.type.id;
-        max_ids[1] = transition.type.id;
-        iter = to_type_from_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        min_ids[1] = transition.type_id.id;
+        max_ids[1] = transition.type_id.id;
+        iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     } else {
-        min_ids[0] = transition.type.id;
-        max_ids[0] = transition.type.id;
+        min_ids[0] = transition.type_id.id;
+        max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state.node_id.id;
         max_ids[1] = current_state.node_id.id;
-        iter = type_from_to_edge.get_range(&thread_info->interruption_requested,
-                                           Record<4>(min_ids),
-                                           Record<4>(max_ids));
+        iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
+                                                       Record<4>(min_ids),
+                                                       Record<4>(max_ids));
     }
     bpt_searches++;
     return iter;

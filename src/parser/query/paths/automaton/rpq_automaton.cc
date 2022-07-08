@@ -1,4 +1,4 @@
-#include "path_automaton.h"
+#include "rpq_automaton.h"
 
 #include <iostream>
 #include <queue>
@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void PathAutomaton::print() {
+void RPQAutomaton::print() {
      for (size_t i = 0; i < from_to_connections.size(); i++) {
         for (auto& t : from_to_connections[i]) {
             cout << t.from << "=[" << (t.inverse ? "^" : "") << t.type << "]=>" << t.to << "\n";
@@ -28,7 +28,7 @@ void PathAutomaton::print() {
 }
 
 
-void PathAutomaton::rename_and_merge(PathAutomaton& other) {
+void RPQAutomaton::rename_and_merge(RPQAutomaton& other) {
     // Add and rename 'other' states to this automaton
 
     // Renaming consists in sum the original states
@@ -41,7 +41,7 @@ void PathAutomaton::rename_and_merge(PathAutomaton& other) {
                 t.from + initial_states,
                 t.to + initial_states, t.type, t.inverse);
             // Add transition to this automaton
-            connect(transition);
+            add_transition(transition);
         }
     }
 
@@ -57,20 +57,20 @@ void PathAutomaton::rename_and_merge(PathAutomaton& other) {
 }
 
 
-void PathAutomaton::connect(Transition transition) {
+void RPQAutomaton::add_transition(Transition transition) {
     // Check if connections vector has slots to save from and to
     while (from_to_connections.size() <= transition.from ||
            from_to_connections.size() <= transition.to)
-        {
-            vector<Transition> new_vec;
-            from_to_connections.push_back(new_vec);
-        }
+    {
+        vector<Transition> new_vec;
+        from_to_connections.push_back(new_vec);
+    }
     while (to_from_connections.size() <= transition.from ||
            to_from_connections.size() <= transition.to)
-        {
-            vector<Transition> new_vec;
-            to_from_connections.push_back(new_vec);
-        }
+    {
+        vector<Transition> new_vec;
+        to_from_connections.push_back(new_vec);
+    }
 
     // Check if a the connections exists
     bool exists = false;
@@ -91,12 +91,12 @@ void PathAutomaton::connect(Transition transition) {
 }
 
 
-void PathAutomaton::add_epsilon_transition(uint32_t from, uint32_t to) {
-    connect(Transition(from , to, "", false));
+void RPQAutomaton::add_epsilon_transition(uint32_t from, uint32_t to) {
+    add_transition(Transition(from , to, "", false));
 }
 
 
-void PathAutomaton::transform_automaton() {
+void RPQAutomaton::transform_automaton(std::function<ObjectId(const std::string&)> f) {
     // Reduce size by deletion of mergeable states
     delete_mergeable_states();
 
@@ -115,12 +115,19 @@ void PathAutomaton::transform_automaton() {
     calculate_distance_to_final_state();
 
     sort_transitions();
+
+    // Set transition ids
+    for (size_t i = 0; i < from_to_connections.size(); i++) {
+        for (auto& t : from_to_connections[i]) {
+            t.type_id = f(t.type);
+        }
+    }
 }
 
 
 // ----- Transformation handler methods -----
 
-void PathAutomaton::delete_mergeable_states() {
+void RPQAutomaton::delete_mergeable_states() {
     bool has_changes = true;
     // Repeat process until there are not mergeable states
     while (has_changes) {
@@ -159,7 +166,7 @@ void PathAutomaton::delete_mergeable_states() {
 }
 
 
-void PathAutomaton::delete_epsilon_transitions() {
+void RPQAutomaton::delete_epsilon_transitions() {
     for (size_t state = 0; state < from_to_connections.size(); state++) {
         // For each state, get his epsilon closure
         auto epsilon_closure = get_epsilon_closure(state);
@@ -182,7 +189,7 @@ void PathAutomaton::delete_epsilon_transitions() {
                         // Connect only if t is not epsilon transition. Always a state
                         // s connect with another state by a non epsilon transition.
                         if (!t.type.empty()) {
-                            connect(Transition(state, t.to, t.type, t.inverse));
+                            add_transition(Transition(state, t.to, t.type, t.inverse));
                         }
                     }
                 }
@@ -197,7 +204,7 @@ void PathAutomaton::delete_epsilon_transitions() {
 }
 
 
-void PathAutomaton::delete_unreachable_states() {
+void RPQAutomaton::delete_unreachable_states() {
     // Get reachable states from start state
     auto reachable_states = get_reachable_states(start, false);
     // Avoid iterate over start state
@@ -239,7 +246,7 @@ void PathAutomaton::delete_unreachable_states() {
 }
 
 
-void PathAutomaton::set_final_state() {
+void RPQAutomaton::set_final_state() {
     // Collapses end states to one final state
 
     // If only has one 'end_state' the transformation is not necessary
@@ -265,7 +272,7 @@ void PathAutomaton::set_final_state() {
                 // Check if transition reachs to end state
                 if (end_states.find(t.to) != end_states.end()) {
                     // Redirect t to new state
-                    connect(Transition(t.from, final_state, t.type, t.inverse));
+                    add_transition(Transition(t.from, final_state, t.type, t.inverse));
                 }
             }
         }
@@ -273,7 +280,7 @@ void PathAutomaton::set_final_state() {
 }
 
 
-void PathAutomaton::delete_absortion_states() {
+void RPQAutomaton::delete_absortion_states() {
     // Get state that can reach final_state
     auto end_reachable_states = get_reachable_states(final_state, true);
     for (size_t i = 0; i < from_to_connections.size(); i++) {
@@ -312,7 +319,7 @@ void PathAutomaton::delete_absortion_states() {
 // ----- Auxiliary methods -----
 
 
-set<uint32_t> PathAutomaton::get_epsilon_closure(uint32_t state) {
+set<uint32_t> RPQAutomaton::get_epsilon_closure(uint32_t state) {
     // Automaton exploration is with dfs algorithm
     set<uint32_t>  epsilon_closure;
     // It is not necesary to force to state belong to it own epsilon closure
@@ -337,7 +344,7 @@ set<uint32_t> PathAutomaton::get_epsilon_closure(uint32_t state) {
 }
 
 
-set<uint32_t> PathAutomaton::get_reachable_states(uint32_t source, bool inverse) {
+set<uint32_t> RPQAutomaton::get_reachable_states(uint32_t source, bool inverse) {
     // Return all reachable states from 'source'. Get nodes using DFS algorithm
     stack<uint32_t> open;
     set<uint32_t> reachable_states;
@@ -362,16 +369,16 @@ set<uint32_t> PathAutomaton::get_reachable_states(uint32_t source, bool inverse)
 }
 
 
-void PathAutomaton::merge_states(uint32_t destiny, uint32_t source) {
+void RPQAutomaton::merge_states(uint32_t destiny, uint32_t source) {
     if (end_states.find(source) != end_states.end()) {
         end_states.insert(destiny);
     }
     // Redirect source=[x]=>v to destiny=[x]=>v
     for (const auto& t : from_to_connections[source]) {
         if (t.from == t.to) {
-            connect(Transition(destiny, destiny, t.type, t.inverse));
+            add_transition(Transition(destiny, destiny, t.type, t.inverse));
         } else {
-            connect(Transition(destiny, t.to, t.type, t.inverse));
+            add_transition(Transition(destiny, t.to, t.type, t.inverse));
         }
         // Delete source=[x]=>v
         auto to_iterator = to_from_connections[t.to].begin();
@@ -387,9 +394,9 @@ void PathAutomaton::merge_states(uint32_t destiny, uint32_t source) {
     // Redirect v=[x]=>source to v=[x]=>destiny
     for (const auto& t : to_from_connections[source]) {
         if (t.from == t.to) {
-            connect(Transition(destiny, destiny, t.type, t.inverse));
+            add_transition(Transition(destiny, destiny, t.type, t.inverse));
         } else {
-            connect(Transition(t.from, destiny, t.type, t.inverse));
+            add_transition(Transition(t.from, destiny, t.type, t.inverse));
         }
         // Delete v=[x]=>source
         auto from_iterator = from_to_connections[t.from].begin();
@@ -407,7 +414,7 @@ void PathAutomaton::merge_states(uint32_t destiny, uint32_t source) {
 }
 
 
-void PathAutomaton::calculate_distance_to_final_state() {
+void RPQAutomaton::calculate_distance_to_final_state() {
     // BFS with initial point the final_state
     queue<pair<uint32_t, uint32_t>> open;
     set<uint32_t> visited;
@@ -433,7 +440,7 @@ void PathAutomaton::calculate_distance_to_final_state() {
 }
 
 
-void PathAutomaton::sort_transitions() {
+void RPQAutomaton::sort_transitions() {
     // Assume that distance_to_final is computed
     for (size_t state = 0; state < from_to_connections.size(); state++) {
         sort_state_transition(state);
@@ -441,7 +448,7 @@ void PathAutomaton::sort_transitions() {
 }
 
 
-void PathAutomaton::sort_state_transition(uint32_t state) {
+void RPQAutomaton::sort_state_transition(uint32_t state) {
     for (size_t i = 0; i < from_to_connections[state].size(); i++) {
         auto i_next_state = from_to_connections[state][i].to;
         size_t min_distance = distance_to_final[i_next_state];
@@ -462,134 +469,110 @@ void PathAutomaton::sort_state_transition(uint32_t state) {
 }
 
 
-std::pair<PathAutomaton, PathAutomaton> PathAutomaton::partition_automaton(uint32_t split_state) {
-    // This method assumes that split_state is a state that partitions
-    // the automata into two smaller automata
-
-    auto left_automaton = PathAutomaton();
-    auto right_automaton = PathAutomaton();
-
-    // Execute BFS from start to split_state, when this state is reached, it will
-    // not expanded. All the connections that all connections that are reached will
-    // be added to left_automaton
-    queue<uint32_t> open;
-    set<uint32_t> visited;
-    open.push(start);
-    while (!open.empty()) {
-        auto current_state = open.front();
-        open.pop();
-
-        // Check if state has not visited yet and split_state transitions will not be
-        // added to left_automaton
-        if (visited.find(current_state) == visited.end()) {
-            visited.insert(current_state);
-            auto next_states = from_to_connections[current_state];
-            for (const auto& transition : next_states) {
-                if (transition.from == split_state && transition.from == transition.to) {
-                    left_automaton.connect(transition);
-                } else if (transition.from != split_state) {
-                    left_automaton.connect(transition);
-                    open.push(transition.to);
-                }
-            }
-        }
-    }
-    // Left_automaton's final_state will be the split_state
-    left_automaton.final_state = split_state;
-
-    visited.clear(); // Clear visited to execute a new BFS from split_state
-
-    // Right_automaton will be build using the connections that are reached from BFS
-    // algorithm starting from split_state
-    open.push(split_state);
-    // Make split_state the start of the right_automaton. This allows keep the identifier
-    // of the states of the current automaton
-    right_automaton.start = split_state;
-    while (!open.empty()) {
-        auto current_state = open.front();
-        open.pop();
-
-        // Check if state has not visited yet
-        if (visited.find(current_state) == visited.end()) {
-            visited.insert(current_state);
-            auto next_states = from_to_connections[current_state];
-            for (const auto& transition : next_states) {
-                right_automaton.connect(transition);
-                open.push(transition.to);
-            }
-        }
-    }
-    // Right_automaton's final_state is the same of the current automaton
-    right_automaton.final_state = final_state;
-    return make_pair(left_automaton, right_automaton);
-}
+// bool RPQAutomaton::state_partitions_to_automaton(uint32_t state) {
+//     // Execute two BFS, at the left and right of state, visited cannot
+//     // have common states
+//     queue<uint32_t> open;
+//     set<uint32_t> visited_left;
+//     set<uint32_t> visited_right;
+//     open.push(start);
+//     while(!open.empty()) {
+//         auto current_state = open.front();
+//         open.pop();
+//         if (visited_left.find(current_state) == visited_left.end() && current_state != state) {
+//             visited_left.insert(current_state);
+//             auto next_states = from_to_connections[current_state];
+//             for (const auto& transition : next_states) {
+//                 open.push(transition.to);
+//             }
+//         }
+//     }
+//     // Start BFS from state
+//     open.push(state);
+//     while(!open.empty()) {
+//         auto current_state = open.front();
+//         open.pop();
+//         if (visited_right.find(current_state) == visited_right.end()) {
+//             if (visited_left.find(current_state) != visited_left.end()) {
+//                 return false;
+//             }
+//             visited_right.insert(current_state);
+//             auto next_states = from_to_connections[current_state];
+//             for (const auto& transition : next_states) {
+//                 open.push(transition.to);
+//             }
+//         }
+//     }
+//     return true;
+// }
 
 
-std::pair<PathAutomaton, PathAutomaton>
-PathAutomaton::partition_by_transition(uint32_t from, uint32_t to) {
-    auto left_automaton = partition_automaton(from).first;
-    auto right_automaton = partition_automaton(to).second;
-    return make_pair(left_automaton, right_automaton);
-}
+// std::pair<RPQAutomaton, RPQAutomaton> RPQAutomaton::partition_automaton(uint32_t split_state) {
+//     // This method assumes that split_state is a state that partitions
+//     // the automata into two smaller automata
+
+//     auto left_automaton = RPQAutomaton();
+//     auto right_automaton = RPQAutomaton();
+
+//     // Execute BFS from start to split_state, when this state is reached, it will
+//     // not expanded. All the connections that all connections that are reached will
+//     // be added to left_automaton
+//     queue<uint32_t> open;
+//     set<uint32_t> visited;
+//     open.push(start);
+//     while (!open.empty()) {
+//         auto current_state = open.front();
+//         open.pop();
+
+//         // Check if state has not visited yet and split_state transitions will not be
+//         // added to left_automaton
+//         if (visited.find(current_state) == visited.end()) {
+//             visited.insert(current_state);
+//             auto next_states = from_to_connections[current_state];
+//             for (const auto& transition : next_states) {
+//                 if (transition.from == split_state && transition.from == transition.to) {
+//                     left_automaton.connect(transition);
+//                 } else if (transition.from != split_state) {
+//                     left_automaton.connect(transition);
+//                     open.push(transition.to);
+//                 }
+//             }
+//         }
+//     }
+//     // Left_automaton's final_state will be the split_state
+//     left_automaton.final_state = split_state;
+
+//     visited.clear(); // Clear visited to execute a new BFS from split_state
+
+//     // Right_automaton will be build using the connections that are reached from BFS
+//     // algorithm starting from split_state
+//     open.push(split_state);
+//     // Make split_state the start of the right_automaton. This allows keep the identifier
+//     // of the states of the current automaton
+//     right_automaton.start = split_state;
+//     while (!open.empty()) {
+//         auto current_state = open.front();
+//         open.pop();
+
+//         // Check if state has not visited yet
+//         if (visited.find(current_state) == visited.end()) {
+//             visited.insert(current_state);
+//             auto next_states = from_to_connections[current_state];
+//             for (const auto& transition : next_states) {
+//                 right_automaton.connect(transition);
+//                 open.push(transition.to);
+//             }
+//         }
+//     }
+//     // Right_automaton's final_state is the same of the current automaton
+//     right_automaton.final_state = final_state;
+//     return make_pair(left_automaton, right_automaton);
+// }
 
 
-PathAutomaton PathAutomaton::invert_automaton() {
-    auto automaton_inverted = PathAutomaton();
-
-    // Add all transitions of the current automaton, but change the from and to
-    for (size_t state = 0; state < from_to_connections.size(); state++) {
-        for (auto& transition : from_to_connections[state]) {
-            automaton_inverted.connect(Transition(
-                transition.to,
-                transition.from,
-                transition.type,
-                transition.inverse
-            ));
-
-        }
-    }
-
-    automaton_inverted.start_is_final = start_is_final;
-    automaton_inverted.start = final_state;
-    automaton_inverted.final_state = start;
-
-    return automaton_inverted;
-}
-
-
-bool PathAutomaton::state_partitions_to_automaton(uint32_t state) {
-    // Execute two BFS, at the left and right of state, visited cannot
-    // have common states
-    queue<uint32_t> open;
-    set<uint32_t> visited_left;
-    set<uint32_t> visited_right;
-    open.push(start);
-    while(!open.empty()) {
-        auto current_state = open.front();
-        open.pop();
-        if (visited_left.find(current_state) == visited_left.end() && current_state != state) {
-            visited_left.insert(current_state);
-            auto next_states = from_to_connections[current_state];
-            for (const auto& transition : next_states) {
-                open.push(transition.to);
-            }
-        }
-    }
-    // Start BFS from state
-    open.push(state);
-    while(!open.empty()) {
-        auto current_state = open.front();
-        open.pop();
-        if (visited_right.find(current_state) == visited_right.end()) {
-            if (visited_left.find(current_state) != visited_left.end()) {
-                return false;
-            }
-            visited_right.insert(current_state);
-            auto next_states = from_to_connections[current_state];
-            for (const auto& transition : next_states) {
-                open.push(transition.to);
-            }
-        }
-    }
-    return true;
-}
+// std::pair<RPQAutomaton, RPQAutomaton>
+// RPQAutomaton::partition_by_transition(uint32_t from, uint32_t to) {
+//     auto left_automaton = partition_automaton(from).first;
+//     auto right_automaton = partition_automaton(to).second;
+//     return make_pair(left_automaton, right_automaton);
+// }

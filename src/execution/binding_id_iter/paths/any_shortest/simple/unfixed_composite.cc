@@ -3,23 +3,18 @@
 #include <cassert>
 
 #include "base/ids/var_id.h"
+#include "query_optimizer/quad_model/quad_model.h"
 #include "storage/index/record.h"
 
 using namespace std;
 using namespace Paths::AnyShortest;
 
-UnfixedComposite::UnfixedComposite(ThreadInfo*   thread_info,
-                                   BPlusTree<1>& nodes,
-                                   BPlusTree<4>& type_from_to_edge,
-                                   BPlusTree<4>& to_type_from_edge,
-                                   VarId         path_var,
-                                   VarId         start,
-                                   VarId         end,
-                                   PathAutomaton automaton) :
+UnfixedComposite::UnfixedComposite(ThreadInfo*  thread_info,
+                                   VarId        path_var,
+                                   VarId        start,
+                                   VarId        end,
+                                   RPQAutomaton automaton) :
     thread_info       (thread_info),
-    nodes             (nodes),
-    type_from_to_edge (type_from_to_edge),
-    to_type_from_edge (to_type_from_edge),
     path_var          (path_var),
     start             (start),
     end               (end),
@@ -29,10 +24,10 @@ UnfixedComposite::UnfixedComposite(ThreadInfo*   thread_info,
 void UnfixedComposite::begin(BindingId& _parent_binding) {
     parent_binding = &_parent_binding;
 
-    start_iter = type_from_to_edge.get_range(
+    start_iter = quad_model.type_from_to_edge->get_range(
       &thread_info->interruption_requested,
-      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id, 0, 0, 0),
-      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id,
+      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id, 0, 0, 0),
+      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id,
                          UINT64_MAX,
                          UINT64_MAX,
                          UINT64_MAX));
@@ -43,9 +38,6 @@ void UnfixedComposite::begin(BindingId& _parent_binding) {
         parent_binding->add(start, ObjectId(current_start_record->ids[1]));
         visited.emplace(current_start_record->ids[1]);
         path_enum = make_unique<BFSIterEnum>(thread_info,
-                                             nodes,
-                                             type_from_to_edge,
-                                             to_type_from_edge,
                                              path_var,
                                              start,
                                              end,
@@ -81,11 +73,11 @@ bool UnfixedComposite::next() {
                 }
             } else {
                 current_start_transition++;
-                if (current_start_transition < automaton.transitions[0].size()) {
-                    start_iter = type_from_to_edge.get_range(
+                if (current_start_transition < automaton.from_to_connections[0].size()) {
+                    start_iter = quad_model.type_from_to_edge->get_range(
                       &thread_info->interruption_requested,
-                      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id, 0, 0, 0),
-                      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id,
+                      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id, 0, 0, 0),
+                      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id,
                                          UINT64_MAX,
                                          UINT64_MAX,
                                          UINT64_MAX));
@@ -115,10 +107,10 @@ void UnfixedComposite::reset() {
     current_start_transition = 0;
     results_found            = 0;
     bpt_searches             = 0;
-    start_iter               = type_from_to_edge.get_range(
+    start_iter               = quad_model.type_from_to_edge->get_range(
       &thread_info->interruption_requested,
-      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id, 0, 0, 0),
-      RecordFactory::get(automaton.transitions[0][current_start_transition].type.id,
+      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id, 0, 0, 0),
+      RecordFactory::get(automaton.from_to_connections[0][current_start_transition].type_id.id,
                          UINT64_MAX,
                          UINT64_MAX,
                          UINT64_MAX));
@@ -128,9 +120,6 @@ void UnfixedComposite::reset() {
     if (current_start_record != nullptr) {
         parent_binding->add(start, ObjectId(current_start_record->ids[1]));
         path_enum = make_unique<BFSIterEnum>(thread_info,
-                                             nodes,
-                                             type_from_to_edge,
-                                             to_type_from_edge,
                                              path_var,
                                              start,
                                              end,

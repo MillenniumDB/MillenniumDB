@@ -86,16 +86,16 @@ void PathPlan::set_input_vars(const std::set<VarId>& input_vars) {
 
 
 unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info) const {
+    std::function<ObjectId(const std::string&)> str_to_object_id_f = [](const std::string& str) {
+        return quad_model.get_object_id(GraphObject::make_named_node(str));
+    };
+
     if (path_semantic == PathSemantic::ANY) {
         if (from_assigned) {
-            auto automaton = path.get_transformed_automaton();
-            set_automaton_transition_id(automaton);
+            auto automaton = path.get_rpq_automaton(str_to_object_id_f);
             if (to_assigned) {
                 // bool case
                 return make_unique<Paths::AnyShortest::BFSCheck>(thread_info,
-                                                                 *quad_model.nodes,
-                                                                 *quad_model.type_from_to_edge,
-                                                                 *quad_model.to_type_from_edge,
                                                                  path_var,
                                                                  from,
                                                                  to,
@@ -103,9 +103,6 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
             } else {
                 // enum starting on from
                 return make_unique<Paths::AnyShortest::BFSIterEnum>(thread_info,
-                                                                    *quad_model.nodes,
-                                                                    *quad_model.type_from_to_edge,
-                                                                    *quad_model.to_type_from_edge,
                                                                     path_var,
                                                                     from,
                                                                     std::get<VarId>(to),
@@ -115,12 +112,8 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
             if (to_assigned) {
                 // enum starting on to
                 auto inverted_path = path.invert();
-                auto automaton     = inverted_path->get_transformed_automaton();
-                set_automaton_transition_id(automaton);
+                auto automaton     = inverted_path->get_rpq_automaton(str_to_object_id_f);
                 return make_unique<Paths::AnyShortest::BFSIterEnum>(thread_info,
-                                                                    *quad_model.nodes,
-                                                                    *quad_model.type_from_to_edge,
-                                                                    *quad_model.to_type_from_edge,
                                                                     path_var,
                                                                     to,
                                                                     std::get<VarId>(from),
@@ -129,12 +122,8 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
                 if (path.nullable()) {
                     throw QuerySemanticException("Nullable property paths must have at least 1 node fixed");
                 }
-                auto automaton = path.get_transformed_automaton();
-                set_automaton_transition_id(automaton);
+                auto automaton = path.get_rpq_automaton(str_to_object_id_f);
                 return make_unique<Paths::AnyShortest::UnfixedComposite>(thread_info,
-                                                                         *quad_model.nodes,
-                                                                         *quad_model.type_from_to_edge,
-                                                                         *quad_model.to_type_from_edge,
                                                                          path_var,
                                                                          std::get<VarId>(to),
                                                                          std::get<VarId>(from),
@@ -144,14 +133,10 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
     } else {
         // ALL SHORTEST
         if (from_assigned) {
-            auto automaton = path.get_transformed_automaton();
-            set_automaton_transition_id(automaton);
+            auto automaton = path.get_rpq_automaton(str_to_object_id_f);
             if (to_assigned) {
                 // bool case
                 return make_unique<Paths::AllShortest::BFSCheck>(thread_info,
-                                                                 *quad_model.nodes,
-                                                                 *quad_model.type_from_to_edge,
-                                                                 *quad_model.to_type_from_edge,
                                                                  path_var,
                                                                  from,
                                                                  to,
@@ -159,9 +144,6 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
             } else {
                 // enum starting on from
                 return make_unique<Paths::AllShortest::BFSEnum>(thread_info,
-                                                                *quad_model.nodes,
-                                                                *quad_model.type_from_to_edge,
-                                                                *quad_model.to_type_from_edge,
                                                                 path_var,
                                                                 from,
                                                                 std::get<VarId>(to),
@@ -171,12 +153,8 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
             if (to_assigned) {
                 // enum starting on to
                 auto inverted_path = path.invert();
-                auto automaton     = inverted_path->get_transformed_automaton();
-                set_automaton_transition_id(automaton);
+                auto automaton     = inverted_path->get_rpq_automaton(str_to_object_id_f);
                 return make_unique<Paths::AllShortest::BFSEnum>(thread_info,
-                                                                *quad_model.nodes,
-                                                                *quad_model.type_from_to_edge,
-                                                                *quad_model.to_type_from_edge,
                                                                 path_var,
                                                                 to,
                                                                 std::get<VarId>(from),
@@ -188,19 +166,4 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
         }
     }
     return nullptr;
-}
-
-
-void PathPlan::set_automaton_transition_id(PathAutomaton& automaton) const {
-    // For each Transition instance in from_to vector, creates a TransitionId
-    // instance that have an object id object of string label. It will be stored
-    // in transition attribute of automaton
-    for (size_t i = 0; i < automaton.from_to_connections.size(); i++) {
-        vector<TransitionId> transition_id_vector;
-        for (const auto& t : automaton.from_to_connections[i]) {
-            transition_id_vector.push_back(
-              TransitionId(t.to, quad_model.get_object_id(GraphObject::make_named_node(t.type)), t.inverse));
-        }
-        automaton.transitions.push_back(transition_id_vector);
-    }
 }
