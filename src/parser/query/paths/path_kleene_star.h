@@ -150,6 +150,27 @@ public:
         return path_automaton;
     }
 
+    SMTAutomaton get_smt_base_automaton() const override {
+        auto path_automaton = path->get_smt_base_automaton();
+        // Heuristic for kleene star construction
+        if (path_automaton.get_total_states() == 2) {
+            // Automaton with 2 states have only one connection from 0 to 1
+            auto  new_automaton = SMTAutomaton();
+            auto& transition    = path_automaton.from_to_connections[0][0];
+            new_automaton.add_transition(SMTTransition(0, 0, transition.type, transition.inverse)); // TODO: pass formulas
+            new_automaton.end_states.insert(new_automaton.get_start());
+            return new_automaton;
+        } else {
+            // Connects all end states to start state
+            for (const auto& end_state : path_automaton.end_states) {
+                path_automaton.add_epsilon_transition(end_state, path_automaton.get_start());
+            }
+            // Makes start state final
+            path_automaton.end_states.insert(path_automaton.get_start());
+            return path_automaton;
+        }
+    }
+
     std::unique_ptr<IPath> invert() const override {
         return std::make_unique<PathKleeneStar>(path->invert());
     }

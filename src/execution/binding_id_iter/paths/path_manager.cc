@@ -116,6 +116,7 @@ ObjectId PathManager::set_path(const Paths::AnyShortest::SearchState* visited_po
     }
 }
 
+
 ObjectId PathManager::set_path(const Paths::AnyShortest::SearchStateDijkstra* visited_pointer, VarId path_var) {
     std::thread::id thread_id = std::this_thread::get_id();
     uint_fast32_t index;
@@ -128,6 +129,21 @@ ObjectId PathManager::set_path(const Paths::AnyShortest::SearchStateDijkstra* vi
     paths[index][path_var.id] = visited_pointer;
     return ObjectId(ObjectId::VALUE_PATH_MASK | DIJKSTRA_MASK | path_var.id);
 }
+
+
+ObjectId PathManager::set_path(const Paths::AnyShortest::SearchStateSMT* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid to acces a not consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    // Save visited pointer directly, visited_pointer always is valid
+    paths[index][path_var.id] = visited_pointer;
+    return ObjectId(ObjectId::VALUE_PATH_MASK | SMT_MASK | path_var.id);
+}
+
 
 ObjectId PathManager::set_path(const Paths::AllShortest::SearchState* visited_pointer, VarId path_var) {
     std::thread::id thread_id = std::this_thread::get_id();
@@ -207,6 +223,11 @@ void PathManager::print(std::ostream& os, uint64_t path_id) const {
     }
     case DIJKSTRA_MASK: {
         auto current_state = reinterpret_cast<const Paths::AnyShortest::SearchStateDijkstra*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case SMT_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AnyShortest::SearchStateSMT*>(paths[index][path_id & PATH_INDEX_MASK]);
         current_state->get_path(os);
         break;
     }

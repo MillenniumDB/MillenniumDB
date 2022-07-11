@@ -150,6 +150,22 @@ public:
         return sequence_automaton;
     }
 
+    SMTAutomaton get_smt_base_automaton() const override {
+        auto sequence_automaton = sequence[0]->get_smt_base_automaton();
+        // For each sequence child create and automaton
+        for (size_t i = 1; i < sequence.size(); i++) {
+            auto child_automaton = sequence[i]->get_smt_base_automaton();
+            sequence_automaton.rename_and_merge(child_automaton);
+            // Connect end state of sequence automaton to start of child
+            for (const auto& end_state : sequence_automaton.end_states) {
+                sequence_automaton.add_epsilon_transition(end_state, child_automaton.get_start());
+            }
+            // Replace sequence automaton's end states by child's end states
+            sequence_automaton.end_states = std::move(child_automaton.end_states);
+        }
+        return sequence_automaton;
+    }
+
 private:
     static bool get_nullable(const std::vector<std::unique_ptr<IPath>>& sequence) {
         for (const auto& seq : sequence) {

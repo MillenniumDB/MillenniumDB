@@ -69,4 +69,8 @@ public:
         automaton.add_transition(RDPQTransition::make_data_transition(0, 1, move(data_checks)));
         return automaton;
     }
+
+    SMTAutomaton get_smt_base_automaton() const override {
+        throw LogicException("not supported");
+    }
 };

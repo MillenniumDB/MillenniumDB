@@ -119,6 +119,23 @@ public:
         return alternative_automaton;
     }
 
+    SMTAutomaton get_smt_base_automaton() const override {
+        auto alternative_automaton = SMTAutomaton();
+        // For each alternative create an automaton
+        for (const auto& alternative : alternatives) {
+            auto child_automaton = alternative->get_smt_base_automaton();
+            alternative_automaton.rename_and_merge(child_automaton);
+            auto start_state = alternative_automaton.get_start();
+            // Connects start state with child start
+            alternative_automaton.add_epsilon_transition(start_state, child_automaton.get_start());
+            // Child end state is end state of alternative automaton
+            for (const auto& end_state : child_automaton.end_states) {
+                alternative_automaton.end_states.insert(end_state);
+            }
+        }
+        return alternative_automaton;
+    }
+
 private:
     static bool get_nullable(const std::vector<std::unique_ptr<IPath>>& alternatives) {
         for (const auto& alternative : alternatives) {

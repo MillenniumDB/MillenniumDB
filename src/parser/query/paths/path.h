@@ -6,12 +6,14 @@
 
 #include "parser/query/paths/automaton/rpq_automaton.h"
 #include "parser/query/paths/automaton/rdpq_automaton.h"
+#include "parser/query/paths/automaton/smt_automaton.h"
 
 enum class PathType {
     PATH_ALTERNATIVES,
     PATH_SEQUENCE,
     PATH_KLEENE_STAR,
     PATH_ATOM,
+    PATH_ATOM_SMT,
     PATH_OPTIONAL,
     PATH_CHECK,
 };
@@ -38,6 +40,12 @@ public:
         return automaton;
     }
 
+    SMTAutomaton get_smt_automaton(std::function<ObjectId(const std::string&)> f) const {
+        auto automaton = get_smt_base_automaton();
+        automaton.transform_automaton(f);
+        return automaton;
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const IPath& b) {
         return b.print_to_ostream(os);
     }
@@ -56,4 +64,6 @@ public:
     virtual RPQAutomaton get_rpq_base_automaton() const = 0;
 
     virtual RDPQAutomaton get_rdpq_base_automaton() const = 0;
+
+    virtual SMTAutomaton get_smt_base_automaton() const = 0;
 };

@@ -9,7 +9,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY bin)
 
 # set the project name and version
-project(MillenniumDB VERSION 0.2)
+project(MillenniumDB VERSION 0.1)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -pedantic -O0 -g3  \
 -pthread -march=native -funroll-loops \
@@ -44,6 +44,7 @@ set(TEST_TARGETS
     check_bpts
     check_extendible_hash
     execute_query
+    test_smt
 )
 
 foreach(target ${BUILD_TARGETS})

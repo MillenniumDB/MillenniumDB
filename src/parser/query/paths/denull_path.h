@@ -29,6 +29,7 @@
 class IPath;
 class PathAlternatives;
 class PathAtom;
+class PathAtomSMT;
 class PathCheck;
 class PathKleeneStar;
 class PathOptional;
@@ -43,6 +44,7 @@ private:
 
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathAlternatives>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathAtom>);
+    static std::unique_ptr<IPath> denull(std::unique_ptr<PathAtomSMT>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathCheck>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathKleeneStar>);
     static std::unique_ptr<IPath> denull(std::unique_ptr<PathOptional>);
