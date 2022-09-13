@@ -14,7 +14,7 @@ This project is in an early stage of development and is not production ready yet
 
 - A database can't be modified after its created.
 - Only [well-designed patterns](https://users.dcc.uchile.cl/~jperez/papers/tods-a16-perez.pdf) are supported when using the `OPTIONAL` operator.
-- More datatypes for properties values, e.g: dates, points and lists.
+- More data types for properties values, e.g: dates, points and lists.
 - Filters only support basic operations (<, <=, ==, != >=, >). We would like to support pattern matching and functions.
 
 ___
@@ -41,7 +41,7 @@ If you work on windows, you can use Windows Subsystem for Linux (WSL).
     - `sudo apt update`
     - `sudo apt install git g++ cmake libboost-all-dev`
 
-     Other linux distributions may need to install the prerequisites differently. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropiate versions.
+     Other linux distributions may need to install the prerequisites differently. Some distributions might have repositories with too old versions and the project won't compile, in that case you'll need to manually install the appropriate versions.
 
 2. Clone this repository and enter to the 'MillenniumDB' folder:
 

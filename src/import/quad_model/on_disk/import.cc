@@ -81,7 +81,7 @@ void OnDiskImport::start_import(const std::string& input_filename) {
             nodes_set.insert(tuple[0]);
         }
 
-        EdgeTableMemImport table_writer(db_folder + "/edge.table");
+        EdgeTableMemImport table_writer(db_folder + "/edges.table");
 
         edges.begin_tuple_iter();
         while (edges.has_next_tuple()) {

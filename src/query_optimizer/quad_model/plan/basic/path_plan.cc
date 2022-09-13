@@ -125,8 +125,8 @@ unique_ptr<BindingIdIter> PathPlan::get_binding_id_iter(ThreadInfo* thread_info)
                 auto automaton = path.get_rpq_automaton(str_to_object_id_f);
                 return make_unique<Paths::AnyShortest::UnfixedComposite>(thread_info,
                                                                          path_var,
-                                                                         std::get<VarId>(to),
                                                                          std::get<VarId>(from),
+                                                                         std::get<VarId>(to),
                                                                          automaton);
             }
         }
