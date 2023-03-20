@@ -2,81 +2,80 @@
 
 #include <cassert>
 
+#include "base/exceptions.h"
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
-#include "query_optimizer/quad_model/quad_model.h"
-#include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/bplus_tree/bplus_tree_leaf.h"
-#include "storage/index/record.h"
 
 using namespace std;
 using namespace Paths::AllShortest;
 
-BFSEnum::BFSEnum(ThreadInfo*  thread_info,
-                 VarId        path_var,
-                 Id           start,
-                 VarId        end,
-                 RPQAutomaton automaton) :
+template <bool MULTIPLE_FINAL>
+BFSEnum<MULTIPLE_FINAL>::BFSEnum(ThreadInfo* thread_info,
+                 VarId       path_var,
+                 Id          start,
+                 VarId       end,
+                 RPQ_DFA     automaton,
+                 unique_ptr<IndexProvider> provider) :
     thread_info (thread_info),
     path_var    (path_var),
     start       (start),
     end         (end),
-    automaton   (automaton) { }
+    automaton   (automaton),
+    provider    (move(provider)) { }
 
 
-void BFSEnum::begin(BindingId& _parent_binding) {
+template <bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::begin(BindingId& _parent_binding) {
     parent_binding = &_parent_binding;
-    first_next     = true;
+    first_next = true;
+    iter = make_unique<NullIndexIterator>();
 
-    iter = nullptr;
-    // Add start object id to open and visited
+    // Add starting states to open and visited
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
-
-    auto state_inserted = visited.emplace(start_object_id, automaton.get_start(), 0);
-
+    auto state_inserted = visited.emplace(start_object_id, automaton.start_state, 0);
     open.push(state_inserted.first.operator->());
-
-    min_ids[2] = 0;
-    max_ids[2] = 0xFFFFFFFFFFFFFFFF;
-    min_ids[3] = 0;
-    max_ids[3] = 0xFFFFFFFFFFFFFFFF;
 }
 
 
-bool BFSEnum::next() {
-    // Check if first node is final
+template <bool MULTIPLE_FINAL>
+bool BFSEnum<MULTIPLE_FINAL>::next() {
+    // Check if first state is final
     if (first_next) {
         first_next = false;
-
         auto current_state = open.front();
-        auto node_iter     = quad_model.nodes->get_range(&thread_info->interruption_requested,
-                                                         Record<1>({ current_state->node_id.id }),
-                                                         Record<1>({ current_state->node_id.id }));
-        if (node_iter->next() == nullptr) {
-            // return false if node does not exists in bd
+
+        // Return false if node does not exist in the database
+        if (!provider->node_exists(current_state->node_id.id)) {
             open.pop();
             return false;
         }
 
-        if (automaton.start_is_final) {
-            auto new_state = visited.emplace(current_state->node_id, automaton.get_final_state(), 0);
+        // Starting state is solution
+        if (automaton.is_final_state[automaton.start_state]) {
+            if (MULTIPLE_FINAL) {
+                reached_final.insert({current_state->node_id.id, 0});
+            }
+            auto new_state = visited.emplace(current_state->node_id, automaton.start_state, 0);
             auto path_id = path_manager.set_path(new_state.first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state->node_id);
-
             results_found++;
             return true;
         }
     }
-    // check for next enumeration of state_reached
+
+    // Check for next enumeration of state_reached
     if (saved_state_reached != nullptr) {
 enumeration:
+        // Timeout
+        if (__builtin_expect(!!(thread_info->interruption_requested), 0)) {
+            throw InterruptedException();
+        }
         if (saved_state_reached->path_iter.next()) {
             auto path_id = path_manager.set_path(saved_state_reached, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, saved_state_reached->node_id);
-
             results_found++;
             return true;
         } else {
@@ -84,25 +83,18 @@ enumeration:
         }
     }
 
+    // Enumerate
     while (open.size() > 0) {
         auto current_state = open.front();
-        auto state_reached = current_state_has_next(current_state);
+        bool reached_final_state = expand_neighbors(current_state);
 
-        // Check if a new state need to be added to open.
-        if (state_reached != visited.end()) {
-            open.push(state_reached.operator->());
-
-            if (state_reached->automaton_state == automaton.get_final_state()) {
-                saved_state_reached = state_reached.operator->();
-                saved_state_reached->path_iter.start_enumeration();
-                goto enumeration;
-            }
-        } else if (saved_state_reached != nullptr) {
+        // Start enumeration for reached solutions
+        if (reached_final_state) {
             saved_state_reached->path_iter.start_enumeration();
             goto enumeration;
         } else {
             // Pop and visit next state
-            iter = nullptr;
+            assert(iter->at_end());
             open.pop();
         }
     }
@@ -110,111 +102,135 @@ enumeration:
 }
 
 
-robin_hood::unordered_node_set<SearchState>::iterator
-  BFSEnum::current_state_has_next(const SearchState* current_state)
-{
-    // check if this is the first time that current_state is explored
-    if (iter == nullptr) {
+template <bool MULTIPLE_FINAL>
+bool BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState* current_state) {
+    // Check if this is the first time that current_state is explored
+    if (iter->at_end()) {
         current_transition = 0;
-        // check if automaton state has outer transitions
+        // Check if automaton state has transitions
         if (automaton.from_to_connections[current_state->automaton_state].size() == 0) {
-            return visited.end();
+            return false;
         }
         set_iter(current_state);
     }
 
-    // iterate over the remaining transtions of current_state.
-    // don't start from the beginning, resume where it left thanks to current_transition and iter
+    // Iterate over the remaining transitions of current_state
+    // Don't start from the beginning, resume where it left thanks to current_transition and iter (pipeline)
     while (current_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
         auto& transition = automaton.from_to_connections[current_state->automaton_state][current_transition];
 
-        // iterate over records until there is no more records or reach a new state that has not
-        // been visited yet
-        for (auto child_record = iter->next(); child_record != nullptr; child_record = iter->next()) {
-            SearchState next_state(ObjectId(child_record->ids[2]),
+        // Iterate over records until a final state is reached with a shortest path
+        while (iter->next()) {
+            SearchState next_state(ObjectId(iter->get_node()),
                                    transition.to,
                                    current_state->distance + 1);
 
-            // check if next state has already been visited
+            // Check if next state has already been visited
             auto visited_search = visited.find(next_state);
             if (visited_search != visited.end()) {
-                // return next_state only if it has an optimal distance?
+                // Consider next_state only if it has an optimal distance
                 if (visited_search->distance == next_state.distance) {
                     visited_search->path_iter.add(current_state, transition.inverse, transition.type_id);
-                    if (next_state.automaton_state == automaton.get_final_state()) {
-                        // return but prevent a open.pop()
-                        saved_state_reached = visited_search.operator->();
-                        return visited.end();
+
+                    // Check if path is solution
+                    if (automaton.is_final_state[next_state.automaton_state]) {
+                        if (MULTIPLE_FINAL) {
+                            auto node_reached_final = reached_final.find(next_state.node_id.id);  // must exist
+                            if (node_reached_final->second == next_state.distance) {
+                                saved_state_reached = visited_search.operator->();
+                                return true;
+                            }
+                        } else {
+                            saved_state_reached = visited_search.operator->();
+                            return true;
+                        }
                     }
                 }
             } else {
-                return visited.emplace(ObjectId(child_record->ids[2]),
-                                       transition.to,
-                                       current_state->distance + 1,
-                                       current_state,
-                                       transition.inverse,
-                                       transition.type_id).first;
+                // Add state to visited and open and keep going unless it's an optimal final state
+                auto reached_state = visited.emplace(ObjectId(iter->get_node()),
+                                                     transition.to,
+                                                     current_state->distance + 1,
+                                                     current_state,
+                                                     transition.inverse,
+                                                     transition.type_id).first;
+                open.push(reached_state.operator->());
+
+                // Check if path is solution
+                if (automaton.is_final_state[transition.to]) {
+                    if (MULTIPLE_FINAL) {
+                        auto node_reached_final = reached_final.find(next_state.node_id.id);
+                        if (node_reached_final != reached_final.end()) {
+                            if (node_reached_final->second == next_state.distance) {
+                                saved_state_reached = reached_state.operator->();
+                                return true;
+                            }
+                        } else {
+                            reached_final.insert({next_state.node_id.id, next_state.distance});
+                            saved_state_reached = reached_state.operator->();
+                            return true;
+                        }
+                    } else {
+                        saved_state_reached = reached_state.operator->();
+                        return true;
+                    }
+                }
             }
         }
-        // construct new iter with the next transition (if there exists a next transition)
+
+        // Construct new iter with the next transition (if there exists one)
         current_transition++;
         if (current_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
             set_iter(current_state);
         }
     }
-    return visited.end();
+    return false;
 }
 
 
-void BFSEnum::set_iter(const SearchState* current_state) {
-    // Gets current transition object from automaton
+template <bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::set_iter(const SearchState* current_state) {
+    // Get current transition object from automaton
     const auto& transition = automaton.from_to_connections[current_state->automaton_state][current_transition];
-    // Gets iter from correct bpt with transition.inverse
-    if (transition.inverse) {
-        min_ids[0] = current_state->node_id.id;
-        max_ids[0] = current_state->node_id.id;
-        min_ids[1] = transition.type_id.id;
-        max_ids[1] = transition.type_id.id;
-        iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
-                                                       Record<4>(min_ids),
-                                                       Record<4>(max_ids));
-    } else {
-        min_ids[0] = transition.type_id.id;
-        max_ids[0] = transition.type_id.id;
-        min_ids[1] = current_state->node_id.id;
-        max_ids[1] = current_state->node_id.id;
-        iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
-                                                       Record<4>(min_ids),
-                                                       Record<4>(max_ids));
-    }
-    bpt_searches++;
+
+    // Get iterator from custom index
+    iter = provider->get_iterator(transition.type_id.id, transition.inverse, current_state->node_id.id);
+    idx_searches++;
 }
 
 
-void BFSEnum::reset() {
+template <bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::reset() {
     // Empty open and visited
     queue<const SearchState*> empty;
     open.swap(empty);
     visited.clear();
+    if (MULTIPLE_FINAL) {
+        reached_final.clear();
+    }
     first_next = true;
-    iter       = nullptr;
+    iter = make_unique<NullIndexIterator>();
 
-    // Add start object id to open and visited
+    // Add starting states to open and visited
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
-
-    auto state_inserted = visited.emplace(start_object_id, automaton.get_start(), 0);
-
+    auto state_inserted = visited.emplace(start_object_id, automaton.start_state, 0);
     open.push(state_inserted.first.operator->());
 }
 
 
-void BFSEnum::assign_nulls() {
+template <bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::assign_nulls() {
     parent_binding->add(end, ObjectId::get_null());
 }
 
 
-void BFSEnum::analyze(std::ostream& os, int indent) const {
+template <bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::analyze(std::ostream& os, int indent) const {
     os << std::string(indent, ' ');
-    os << "Paths::AllShortest::BFSEnum(bpt_searches: " << bpt_searches << ", found: " << results_found << ")";
+    os << "Paths::AllShortest::BFSEnum(idx_searches: " << idx_searches << ", found: " << results_found << ")";
 }
+
+
+template class Paths::AllShortest::BFSEnum<true>;
+template class Paths::AllShortest::BFSEnum<false>;

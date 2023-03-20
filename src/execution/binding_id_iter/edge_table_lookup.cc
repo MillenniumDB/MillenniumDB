@@ -47,7 +47,7 @@ bool EdgeTableLookup::next() {
         } else {
             edge_assignation = std::get<ObjectId>(edge);
         }
-        if ( (ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::CONNECTION_MASK) {
+        if ( (ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::MASK_EDGE) {
             return false;
         }
         auto edge_id = ObjectId::VALUE_MASK & edge_assignation.id;
@@ -55,8 +55,7 @@ bool EdgeTableLookup::next() {
 
         auto record = table[edge_id - 1]; // first edge has the id 1, and its inserted at pos 0 in the table
 
-        // if mask was an edge this should not be nullptr
-        assert(record != nullptr);
+        if (record == nullptr) return false;
 
         auto check_id = [] (BindingId& binding, Id id, ObjectId obj_id) -> bool {
             if (std::holds_alternative<VarId>(id)) {
@@ -75,7 +74,7 @@ bool EdgeTableLookup::next() {
             return true;
         };
 
-        // check if assignated variables (not null) have the same value
+        // check if assigned variables (not null) have the same value
         if (   check_id(*parent_binding, from, ObjectId(record->ids[0]))
             && check_id(*parent_binding, to,   ObjectId(record->ids[1]))
             && check_id(*parent_binding, type, ObjectId(record->ids[2])))

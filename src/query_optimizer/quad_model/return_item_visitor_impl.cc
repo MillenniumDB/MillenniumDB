@@ -3,6 +3,8 @@
 #include "execution/binding_iter/aggregation/aggs.h"
 #include "parser/query/return_item/return_items.h"
 
+using namespace MDB;
+
 void ReturnItemVisitorImpl::visit(ReturnItemAgg& return_item) {
     auto pos = return_item.inside_var.find('.');
     if (pos != std::string::npos) {

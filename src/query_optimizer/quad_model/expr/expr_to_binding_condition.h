@@ -4,10 +4,6 @@
 #include <memory>
 #include <vector>
 
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-#include <boost/variant/multivisitors.hpp>
-
 #include "base/query/query_element.h"
 #include "base/ids/object_id.h"
 #include "base/query/var.h"

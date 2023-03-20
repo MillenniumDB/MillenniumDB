@@ -1,6 +1,7 @@
 #pragma once
 
 #include "execution/binding_iter/aggregation/agg.h"
+#include "execution/graph_object/graph_object_types.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 class AggSum : public Agg {
@@ -14,15 +15,15 @@ public:
     void process() override {
         auto graph_obj = (*binding_iter)[var_id];
         if (graph_obj.type == GraphObjectType::INT) {
-            sum += graph_obj.value.i;
+            sum += GraphObjectInterpreter::get<int64_t>(graph_obj);
         } else if (graph_obj.type == GraphObjectType::FLOAT) {
-            sum += graph_obj.value.f;
+            sum += GraphObjectInterpreter::get<float>(graph_obj);
         }
     }
 
     // indicates the end of a group
     GraphObject get() override {
-        return GraphObject::make_float(float(sum));
+        return GraphObjectFactory::make_float(float(sum));
     }
 
 private:

@@ -97,7 +97,8 @@ FileId FileManager::get_file_id(const string& filename) {
 
 
 TmpFileId FileManager::get_tmp_file_id() {
-    auto fd = open(db_folder.c_str(), O_TMPFILE|O_RDWR/*|O_DIRECT*/, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    std::FILE* tmpf = std::tmpfile();
+    auto fd = fileno(tmpf);
     if (fd == -1) {
         throw std::runtime_error("Could not open temp file");
     }

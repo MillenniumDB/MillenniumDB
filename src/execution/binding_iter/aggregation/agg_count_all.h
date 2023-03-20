@@ -14,7 +14,7 @@ public:
 
     // indicates the end of a group
     GraphObject get() override {
-        return GraphObject::make_int(count);
+        return GraphObjectFactory::make_int(count);
     }
 
 private:

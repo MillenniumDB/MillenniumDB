@@ -40,7 +40,7 @@ struct SearchStateDijkstra {
                         const SearchStateDijkstra* previous,
                         bool                       inverse_direction,
                         ObjectId                   type_id,
-                        u_int64_t                  cost = 0,
+                        uint64_t                   cost = 0,
                         bool                       inverted_path = false) :
         node_id           (node_id),
         previous          (previous),

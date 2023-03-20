@@ -9,7 +9,10 @@
 #include "base/query/var.h"
 #include "execution/binding_iter/aggregation/agg.h"
 #include "parser/query/return_item/return_item_visitor.h"
+#include "parser/query/op/mdb/ops.h"
 #include "query_optimizer/quad_model/binding_iter_visitor.h"
+
+namespace MDB {
 
 /*
 used to visit elements of RETURN and ORDER BY, populating:
@@ -19,13 +22,13 @@ used to visit elements of RETURN and ORDER BY, populating:
 */
 class ReturnItemVisitorImpl : public ReturnItemVisitor {
 public:
-    ReturnItemVisitorImpl(BindingIterVisitor& binding_iter_visitor) :
-        binding_iter_visitor (binding_iter_visitor) { }
+    ReturnItemVisitorImpl(BindingIterVisitor& binding_iter_visitor) : binding_iter_visitor(binding_iter_visitor) { }
 
-    void visit(ReturnItemAgg&)   override;
+    void visit(ReturnItemAgg&) override;
     void visit(ReturnItemCount&) override;
-    void visit(ReturnItemVar&)   override;
+    void visit(ReturnItemVar&) override;
 
 private:
     BindingIterVisitor& binding_iter_visitor;
 };
+} // namespace MDB

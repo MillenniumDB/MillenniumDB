@@ -6,7 +6,7 @@ void LeapfrogEdgeTableIter::down() {
     level++;
     if (level == 0) {
         auto record = edge_table[0];
-        current_tuple[0] = 1 | ObjectId::CONNECTION_MASK;
+        current_tuple[0] = 1 | ObjectId::MASK_EDGE;
         current_tuple[1] = (*record)[permutation[0]];
         current_tuple[2] = (*record)[permutation[1]];
         current_tuple[3] = (*record)[permutation[2]];
@@ -37,7 +37,7 @@ bool LeapfrogEdgeTableIter::seek(uint64_t key) {
     if (level == 0) {
         // level == 0 implies initial_ranges is empty
         // check if key is an edge
-        if ((key & ObjectId::TYPE_MASK) != ObjectId::CONNECTION_MASK) {
+        if ((key & ObjectId::TYPE_MASK) != ObjectId::MASK_EDGE) {
             // if key is not an edge, it must be something greater than all edges
             // else something is wrong with the leapfrog execution, because it needs to sort iterators
             // and seek calls only are going forward
@@ -68,7 +68,7 @@ bool LeapfrogEdgeTableIter::open_terms(BindingId& input_binding) {
         if (record == nullptr) {
             return false;
         } else {
-            current_tuple[0] = 1 | ObjectId::CONNECTION_MASK;
+            current_tuple[0] = 1 | ObjectId::MASK_EDGE;
             current_tuple[1] = (*record)[permutation[0]];
             current_tuple[2] = (*record)[permutation[1]];
             current_tuple[3] = (*record)[permutation[2]];
@@ -80,7 +80,7 @@ bool LeapfrogEdgeTableIter::open_terms(BindingId& input_binding) {
     auto obj = initial_ranges[0]->get_min(input_binding);
 
     // check if obj is an edge
-    if ((obj & ObjectId::TYPE_MASK) != ObjectId::CONNECTION_MASK) {
+    if ((obj & ObjectId::TYPE_MASK) != ObjectId::MASK_EDGE) {
         return false;
     }
     auto edge_value = obj & ObjectId::VALUE_MASK;
@@ -113,7 +113,7 @@ bool LeapfrogEdgeTableIter::next_enumeration(BindingId& binding) {
             return false;
         } else {
             std::array<uint64_t, 4> enum_tuple;
-            enum_tuple[0] = current_edge_enum | ObjectId::CONNECTION_MASK;
+            enum_tuple[0] = current_edge_enum | ObjectId::MASK_EDGE;
             enum_tuple[1] = (*record)[permutation[0]];
             enum_tuple[2] = (*record)[permutation[1]];
             enum_tuple[3] = (*record)[permutation[2]];

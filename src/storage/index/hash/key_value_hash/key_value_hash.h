@@ -8,7 +8,6 @@
 
 #include "base/ids/var_id.h"
 #include "storage/file_id.h"
-#include "storage/index/object_file/object_file.h"
 #include "storage/index/hash/key_value_hash/key_value_hash_bucket.h"
 
 // KeyValueHash is used to save two vectors, key is a vector of type K and value a vector of type V, keys and values

@@ -17,6 +17,7 @@
 #include "query_optimizer/quad_model/join_order/leapfrog_optimizer.h"
 #include "query_optimizer/quad_model/join_order/selinger_optimizer.h"
 
+using namespace MDB;
 using namespace std;
 
 constexpr auto MAX_SELINGER_PLANS = 0;
@@ -43,9 +44,9 @@ VarId BindingIdIterVisitor::get_var_id(const Var& var) const {
 
 void BindingIdIterVisitor::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
     // Process Isolated Terms
-    // if a term is not found we can asume the MATCH result is empty
+    // if a term is not found we can assume the MATCH result is empty
     for (auto& isolated_term : op_basic_graph_pattern.isolated_terms) {
-        if ( !term_exists(quad_model.get_object_id(isolated_term.term.to_graph_object())) ) {
+        if ( !term_exists(quad_model.get_object_id(isolated_term.term)) ) {
             tmp = make_unique<EmptyBindingIdIter>();
             return;
         }
@@ -86,7 +87,7 @@ void BindingIdIterVisitor::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
 
     // Process Labels
     for (auto& op_label : op_basic_graph_pattern.labels) {
-        auto label_id = quad_model.get_object_id(GraphObject::make_string(op_label.label));
+        auto label_id = quad_model.get_object_id(QueryElement(op_label.label));
         auto node_id  = get_id(op_label.node);
 
         base_plans.push_back(
@@ -97,8 +98,8 @@ void BindingIdIterVisitor::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
     // Process properties (value is fixed)
     for (auto& op_property : op_basic_graph_pattern.properties) {
         auto obj_id   = get_id(op_property.node);
-        auto key_id   = quad_model.get_object_id(GraphObject::make_string(op_property.key));
-        auto value_id = quad_model.get_object_id(op_property.value.to_graph_object());
+        auto key_id   = quad_model.get_object_id(QueryElement(op_property.key));
+        auto value_id = quad_model.get_object_id(op_property.value);
 
         if (op_property.node.is_var()) {
             VarId value_var = get_var_id(Var(op_property.node.to_var().name + '.' + op_property.key) );
@@ -213,7 +214,7 @@ Id BindingIdIterVisitor::get_id(const QueryElement& query_element) const {
             return var_id;
         }
     } else {
-        return quad_model.get_object_id(query_element.to_graph_object());
+        return quad_model.get_object_id(query_element);
     }
 }
 
@@ -221,10 +222,10 @@ Id BindingIdIterVisitor::get_id(const QueryElement& query_element) const {
 bool BindingIdIterVisitor::term_exists(ObjectId term) const {
     if (term.is_not_found()) {
         return false;
-    } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::ANONYMOUS_NODE_MASK) {
+    } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::MASK_ANON) {
         auto anon_id = term.id & ObjectId::VALUE_MASK;
         return anon_id <= quad_model.catalog().anonymous_nodes_count;
-    } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::CONNECTION_MASK) {
+    } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::MASK_EDGE) {
         auto conn_id = term.id & ObjectId::VALUE_MASK;
         return conn_id <= quad_model.catalog().connections_count;
     } else {

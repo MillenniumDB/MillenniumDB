@@ -1,9 +1,7 @@
 #include "expr_to_binding_condition.h"
 
-#include <iostream>
-
-#include "parser/query/expr/exprs.h"
 #include "execution/binding_iter/binding_expr/binding_exprs.h"
+#include "parser/query/expr/exprs.h"
 
 using namespace std;
 
@@ -12,8 +10,7 @@ Expr2BindingExpr::Expr2BindingExpr(const std::map<Var, VarId>& var2var_ids) :
 
 
 void Expr2BindingExpr::visit(ExprConstant& expr_constant) {
-    auto graph_object = QueryElement::deduce(expr_constant.value).to_graph_object();
-    current_binding_expr = make_unique<BindingExprAtomConstant>(graph_object);
+    current_binding_expr = make_unique<BindingExprAtomConstant>(QueryElement::deduce(expr_constant.value));
 }
 
 

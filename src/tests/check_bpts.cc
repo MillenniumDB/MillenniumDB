@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    auto model_destroyer = QuadModel::init(db_folder, buffer_size, 0, 0);
+    auto model_destroyer = QuadModel::init(db_folder, buffer_size, 0, 0, "bfs", "cache", "btree");
 
     check("node_label", *quad_model.node_label);
     check("label_node", *quad_model.label_node);

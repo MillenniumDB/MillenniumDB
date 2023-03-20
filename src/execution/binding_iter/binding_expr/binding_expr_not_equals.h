@@ -14,6 +14,6 @@ public:
         rhs (std::move(rhs)) { }
 
     GraphObject eval(const BindingIter& binding_iter) const override {
-        return GraphObject::make_bool(lhs->eval(binding_iter) != rhs->eval(binding_iter));
+        return GraphObjectFactory::make_bool(lhs->eval(binding_iter) != rhs->eval(binding_iter));
     }
 };

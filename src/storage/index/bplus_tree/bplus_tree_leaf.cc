@@ -117,7 +117,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
 template <std::size_t N>
 uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept {
     int_fast32_t from = 0;
-    int_fast32_t to = (*value_count)-1;
+    int_fast32_t to = static_cast<int_fast32_t>(*value_count)-1;
 search_index_begin:
     if (from < to) {
         auto middle = (from + to) / 2;

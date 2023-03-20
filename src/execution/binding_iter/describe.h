@@ -1,11 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "base/binding/binding_id_iter.h"
 #include "base/binding/binding_iter.h"
 #include "base/query/var.h"
-
-#include <string>
-#include <vector>
 
 class Describe : public BindingIter {
 public:

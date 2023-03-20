@@ -59,12 +59,12 @@ public:
         return std::make_unique<PathAtom>(atom, inverse, move(data_checks));
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
+    RPQ_NFA get_rpq_base_automaton() const override {
         // Create a simple automaton
-        auto automaton = RPQAutomaton();
+        auto automaton = RPQ_NFA();
         automaton.end_states.insert(1);
         // Connect states with atom as label
-        automaton.add_transition(Transition(0, 1, atom, inverse));
+        automaton.add_transition(RPQ_NFA::Transition(0, 1, &atom, inverse));
         return automaton;
     }
 

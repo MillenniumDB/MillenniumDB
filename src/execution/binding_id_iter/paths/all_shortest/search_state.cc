@@ -6,10 +6,11 @@
 
 using namespace Paths::AllShortest;
 
+
 void PathIter::add(const SearchState* previous, bool direction, ObjectId type_id) {
     assert(begin != nullptr);
     end->next = std::make_unique<IterTransition>(previous, direction, type_id);
-    end       = end->next.get();
+    end = end->next.get();
 }
 
 
@@ -41,26 +42,34 @@ bool PathIter::next() {
 
 void PathIter::start_enumeration() {
     assert(begin != nullptr);
-    if (begin->previous->path_iter.begin != nullptr ) {
+    if (begin->previous->path_iter.begin != nullptr) {
         current = end;
     }
 }
 
 
-void PathIter::get_path(ObjectId node_id, std::ostream& os) const {
-    if (begin == nullptr) {
-        // don't have a previous transition
-        os << "(" << quad_model.get_graph_object(node_id) << ")";
-        return;
+void SearchState::get_path(std::ostream& os) const {
+    std::vector<ObjectId> nodes;
+    std::vector<ObjectId> types;
+    std::vector<bool> directions;
+
+    auto* current_state = this;
+    while (current_state->path_iter.current != nullptr) {
+        nodes.push_back(current_state->node_id);
+        types.push_back(current_state->path_iter.current->type_id);
+        directions.push_back(current_state->path_iter.current->inverse_direction);
+        current_state = current_state->path_iter.current->previous;
     }
-    assert(current != nullptr);
-    if (current->previous != nullptr) {
-        os << "(" << quad_model.get_graph_object(node_id) << ")";
-        if (current->inverse_direction) {
-            os << "-[:" << quad_model.get_graph_object(current->type_id) << "]->";
+    nodes.push_back(current_state->node_id);  // First node in the path has no valid previous node
+
+    os << "(" << quad_model.get_graph_object(nodes[nodes.size() - 1]) << ")";
+
+    for (int_fast32_t i = nodes.size() - 2; i >= 0; i--) { // don't use unsigned i, will overflow
+        if (directions[i]) {
+            os << "<-[:" << quad_model.get_graph_object(types[i]) << "]-";
         } else {
-            os << "<-[:" << quad_model.get_graph_object(current->type_id) << "]-";
+            os << "-[:" << quad_model.get_graph_object(types[i]) << "]->";
         }
-        current->previous->path_iter.get_path(current->previous->node_id, os);
+        os << "(" << quad_model.get_graph_object(nodes[i]) << ")";
     }
 }

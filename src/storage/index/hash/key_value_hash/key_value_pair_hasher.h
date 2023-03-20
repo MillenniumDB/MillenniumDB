@@ -3,14 +3,11 @@
 #include <vector>
 
 #include "base/ids/object_id.h"
-#include "third_party/murmur3/murmur3.h"
+#include "third_party/xxhash/xxhash.h"
 
 template <class T>
 uint64_t hash_function_wrapper(const T* key, uint_fast32_t key_size) {
-    // murmur3:
-    uint64_t hash_[2];
-    MurmurHash3_x64_128(key, key_size * sizeof(T), 0, hash_);
-    return hash_[0];
+    return XXH3_64bits(key, key_size * sizeof(T));
 }
 
 struct KeyValuePairHasher {

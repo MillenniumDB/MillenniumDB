@@ -59,13 +59,13 @@ unique_ptr<BindingIdIter> UnjointObjectPlan::get_binding_id_iter(ThreadInfo* thr
     iters.push_back(
         make_unique<ObjectEnum>(thread_info,
                                 object_var_id,
-                                ObjectId::ANONYMOUS_NODE_MASK,
+                                ObjectId::MASK_ANON,
                                 quad_model.catalog().anonymous_nodes_count));
 
     iters.push_back(
         make_unique<ObjectEnum>(thread_info,
                                 object_var_id,
-                                ObjectId::CONNECTION_MASK,
+                                ObjectId::MASK_EDGE,
                                 quad_model.catalog().connections_count));
     return make_unique<Union>(move(iters));
 }

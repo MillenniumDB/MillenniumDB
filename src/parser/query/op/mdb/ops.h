@@ -1,0 +1,18 @@
+#pragma once
+
+#include "parser/query/op/mdb/graph_pattern/op_basic_graph_pattern.h"
+#include "parser/query/op/mdb/graph_pattern/op_edge.h"
+#include "parser/query/op/mdb/graph_pattern/op_isolated_term.h"
+#include "parser/query/op/mdb/graph_pattern/op_isolated_var.h"
+#include "parser/query/op/mdb/graph_pattern/op_label.h"
+#include "parser/query/op/mdb/graph_pattern/op_optional.h"
+#include "parser/query/op/mdb/graph_pattern/op_path.h"
+#include "parser/query/op/mdb/graph_pattern/op_property.h"
+#include "parser/query/op/mdb/op_describe.h"
+#include "parser/query/op/mdb/op_insert.h"
+#include "parser/query/op/mdb/op_group_by.h"
+#include "parser/query/op/mdb/op_match.h"
+#include "parser/query/op/mdb/op_order_by.h"
+#include "parser/query/op/mdb/op_return.h"
+#include "parser/query/op/mdb/op_set.h"
+#include "parser/query/op/mdb/op_where.h"

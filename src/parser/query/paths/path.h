@@ -26,10 +26,9 @@ public:
 
     virtual std::unique_ptr<IPath> invert() const = 0;
 
-    RPQAutomaton get_rpq_automaton(std::function<ObjectId(const std::string&)> f) const {
+    RPQ_DFA get_rpq_automaton(std::function<ObjectId(const std::string&)> f) const {
         auto automaton = get_rpq_base_automaton();
-        automaton.transform_automaton(f);
-        return automaton;
+        return automaton.transform_automaton(f);
     }
 
     RDPQAutomaton get_rdpq_automaton(std::function<ObjectId(const std::string&)> f) const {
@@ -53,7 +52,7 @@ public:
     // true if the path can be empty
     virtual bool nullable() const = 0;
 
-    virtual RPQAutomaton get_rpq_base_automaton() const = 0;
+    virtual RPQ_NFA get_rpq_base_automaton() const = 0;
 
     virtual RDPQAutomaton get_rdpq_base_automaton() const = 0;
 };

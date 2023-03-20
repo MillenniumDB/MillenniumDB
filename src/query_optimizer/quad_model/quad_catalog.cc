@@ -1,5 +1,6 @@
 #include "quad_catalog.h"
 
+#include <cassert>
 #include <iostream>
 
 using namespace std;
@@ -98,7 +99,6 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             type2equal_to_type_count.insert({ type, count });
         }
     }
-
 }
 
 
@@ -122,6 +122,11 @@ void QuadCatalog::save_changes() {
     write_uint64(equal_from_type_count);
     write_uint64(equal_to_type_count);
     write_uint64(equal_from_to_type_count);
+
+    assert(distinct_labels == label2total_count.size());
+    assert(distinct_type   == type2total_count.size());
+    assert(distinct_keys   == key2total_count.size());
+    assert(distinct_keys   == key2distinct.size());
 
     for (auto&&[k, v] : label2total_count) {
         write_uint64(k);
@@ -179,11 +184,11 @@ void QuadCatalog::print() {
     cout << "  label count:              " << label_count              << "\n";
     cout << "  properties count:         " << properties_count         << "\n";
 
-    cout << "  disinct labels:           " << distinct_labels          << "\n";
-    cout << "  disinct from's:           " << distinct_from            << "\n";
-    cout << "  disinct to's:             " << distinct_to              << "\n";
-    cout << "  disinct type's:           " << distinct_type            << "\n";
-    cout << "  disinct keys:             " << distinct_keys            << "\n";
+    cout << "  distinct labels:          " << distinct_labels          << "\n";
+    cout << "  distinct from's:          " << distinct_from            << "\n";
+    cout << "  distinct to's:            " << distinct_to              << "\n";
+    cout << "  distinct type's:          " << distinct_type            << "\n";
+    cout << "  distinct keys:            " << distinct_keys            << "\n";
 
     cout << "  equal_from_to_count:      " << equal_from_to_count      << "\n";
     cout << "  equal_from_type_count:    " << equal_from_type_count    << "\n";

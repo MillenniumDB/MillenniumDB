@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ostream>
-#include <functional>
+#include <vector>
 
 #include "base/ids/object_id.h"
 

@@ -14,14 +14,14 @@ public:
     GraphObject eval(const BindingIter& binding_iter) const override {
         for (auto& expr : or_list) {
             auto eval = expr->eval(binding_iter);
-            if (eval == GraphObject::make_bool(true)) {
-                return GraphObject::make_bool(true);
-            } else if (eval == GraphObject::make_bool(false)) {
+            if (eval == GraphObjectFactory::make_bool(true)) {
+                return GraphObjectFactory::make_bool(true);
+            } else if (eval == GraphObjectFactory::make_bool(false)) {
                 continue;
             } else {
-                return GraphObject::make_null();
+                return GraphObjectFactory::make_null();
             }
         }
-        return GraphObject::make_bool(false);
+        return GraphObjectFactory::make_bool(false);
     }
 };

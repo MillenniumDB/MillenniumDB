@@ -4,13 +4,9 @@
 #include <string>
 
 /*
-Used to represent a NamedNode when processing the query string. Query results
-won't use NamedNodes, but NamedNodeExternal and NamedNodeInlined instead.
-This class is necessary because NamedNodeExternal cannot be propertly used
-when the query has a string that doesn't exist in the graph.
-TODO: this may change if operations with strings are allowed in the
-      query language, as they may produce strings that doesn't exist in the
-      graph. Maybe NamedNode should be a GraphObject
+Used to represent a NamedNode when processing the query string.
+Query results won't use NamedNodes.
+This class is necessary because the query may have external strings that doesn't exist in the graph.
 */
 class NamedNode {
 public:

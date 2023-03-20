@@ -2,12 +2,28 @@
 
 #include <type_traits>
 
+#include "execution/binding_id_iter/paths/index_provider/path_index/path_index.h"
 #include "execution/graph_model.h"
 #include "query_optimizer/quad_model/quad_catalog.h"
-#include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/hash/object_file_hash/object_file_hash.h"
-#include "storage/index/object_file/object_file.h"
-#include "storage/index/random_access_table/random_access_table.h"
+
+template <std::size_t N> class BPlusTree;
+template <std::size_t N> class RandomAccessTable;
+
+namespace MDB {
+    class OpInsert;
+}
+
+// Execution modes for in-memory indexes
+enum class IndexMode {
+    NAIVE,  // Materialize indexes every time
+    CACHE   // Store indexes for future use
+};
+
+// Path-finding modes for operators
+enum class PathMode {
+    BFS,  // Breadth-first search
+    DFS   // Depth-first search
+};
 
 class QuadModel : public GraphModel {
     class Destroyer {
@@ -48,45 +64,63 @@ public:
     std::unique_ptr<BPlusTree<3>> equal_from_type_inverted; // (to,   from=type, edge)
     std::unique_ptr<BPlusTree<3>> equal_to_type_inverted;   // (from, to=type,   edge)
 
-    // necesary to be called before first usage
+    // Index mode to use
+    IndexMode index_mode = IndexMode::CACHE;
+
+    // Default index type
+    Paths::IndexType default_index_type = Paths::IndexType::BTREE;
+    Paths::IndexType default_trails_index_type = Paths::IndexType::BTREE;
+    bool use_default_index = true;
+
+    // Path mode to use
+    PathMode path_mode = PathMode::BFS;
+
+    // necessary to be called before first usage
     static QuadModel::Destroyer init(const std::string& db_folder,
                                      uint_fast32_t      shared_buffer_pool_size,
                                      uint_fast32_t      private_buffer_pool_size,
-                                     uint_fast32_t      max_threads);
-
+                                     uint_fast32_t      max_threads,
+                                     const std::string& path_mode,
+                                     const std::string& index_mode,
+                                     const std::string& index_type);
 
     std::unique_ptr<BindingIter> exec(Op&, ThreadInfo*) const override;
 
-    ObjectId get_object_id(const GraphObject&) const override;
+    void exec_inserts(const MDB::OpInsert&);
+
+    ObjectId get_object_id(const QueryElement&) const override;
+
+    ObjectId get_or_create_object_id(const QueryElement&);
 
     GraphObject get_graph_object(ObjectId) const override;
-
-    // Methods used by bulk_import
-    uint64_t get_or_create_object_id(const GraphObject&);
 
     inline QuadCatalog& catalog() const noexcept {
         return const_cast<QuadCatalog&>(reinterpret_cast<const QuadCatalog&>(catalog_buf));
     }
 
-    inline ObjectFile& object_file() const noexcept {
-        return const_cast<ObjectFile&>(reinterpret_cast<const ObjectFile&>(object_file_buf));
-    }
+    // Store in-memory indexes for each transition that uses one
+    std::unordered_map<uint64_t, std::unique_ptr<Paths::Index>> idx_map;
+    std::unordered_map<uint64_t, std::unique_ptr<Paths::Index>> idx_inv_map;
 
-    inline ObjectFileHash& strings_hash() const noexcept {
-        return const_cast<ObjectFileHash&>(reinterpret_cast<const ObjectFileHash&>(strings_cache_buf));
-    }
+    // Obtain in-memory index for a specific transition
+    Paths::Index* get_index(uint64_t type_id, bool inverse, Paths::IndexType idx_type, bool* int_req);
+    void save_index_stats(size_t prefix_lvl_size, size_t data_lvl_size, float creation_time);
+    Paths::Index* materialize_index(uint64_t type_id, bool inverse, Paths::IndexType idx_type, bool* int_req);
 
 private:
-    typename std::aligned_storage<sizeof(QuadCatalog), alignof(QuadCatalog)>::type       catalog_buf;
-    typename std::aligned_storage<sizeof(ObjectFile), alignof(ObjectFile)>::type         object_file_buf;
-    typename std::aligned_storage<sizeof(ObjectFileHash), alignof(ObjectFileHash)>::type strings_cache_buf;
+    typename std::aligned_storage<sizeof(QuadCatalog), alignof(QuadCatalog)>::type catalog_buf;
 
     QuadModel(const std::string& db_folder,
               uint_fast32_t      shared_buffer_pool_size,
               uint_fast32_t      private_buffer_pool_size,
-              uint_fast32_t      max_threads);
+              uint_fast32_t      max_threads,
+              const std::string& s_path_mode,
+              const std::string& s_index_mode,
+              const std::string& s_index_type);
 
     ~QuadModel();
+
+    void try_add_node(ObjectId);
 };
 
 extern QuadModel& quad_model; // global object

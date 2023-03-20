@@ -10,23 +10,7 @@ public:
         return this->id == rhs.id;
     }
 
-    inline bool operator!=(const AnonymousNode& rhs) const noexcept {
-        return this->id != rhs.id;
-    }
-
-    inline bool operator<=(const AnonymousNode& rhs) const noexcept {
-        return this->id <= rhs.id;
-    }
-
-    inline bool operator>=(const AnonymousNode& rhs) const noexcept {
-        return this->id >= rhs.id;
-    }
-
     inline bool operator<(const AnonymousNode& rhs) const noexcept {
         return this->id < rhs.id;
-    }
-
-    inline bool operator>(const AnonymousNode& rhs) const noexcept {
-        return this->id > rhs.id;
     }
 };

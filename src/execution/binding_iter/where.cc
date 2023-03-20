@@ -1,5 +1,7 @@
 #include "where.h"
 
+#include "execution/graph_object/graph_object_factory.h"
+
 using namespace std;
 
 Where::Where(unique_ptr<BindingIter> child_iter,
@@ -16,7 +18,7 @@ void Where::begin(std::ostream& os) {
 bool Where::next() {
     while (child_iter->next()) {
         checked++;
-        if (binding_expr->eval(*child_iter) == GraphObject::make_bool(true)) {
+        if (binding_expr->eval(*child_iter) == GraphObjectFactory::make_bool(true)) {
             ++results;
             return true;
         }

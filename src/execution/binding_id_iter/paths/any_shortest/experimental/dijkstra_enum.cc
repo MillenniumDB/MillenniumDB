@@ -33,9 +33,9 @@ bool DijkstraEnum::eval_data_check(uint64_t obj, vector<tuple<Operators, string,
         // Extract tuple <operator,key,value>
         auto op = get<0>(property_check);
         auto key = get<1>(property_check);
-        auto key_id = quad_model.get_object_id(GraphObject::make_string(key)).id;
+        auto key_id = quad_model.get_object_id(QueryElement(key)).id;
         auto value = get<2>(property_check);
-        auto value_id = quad_model.get_object_id(value.to_graph_object()).id;
+        auto value_id = quad_model.get_object_id(value).id;
 
         // Search B+Tree for *values* given <obj,key>
         array<uint64_t, 3> min_prop_ids;
@@ -216,7 +216,7 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
                     // TODO: Discuss what to do if the cost is negative, float or non numeric
                     if (prop_record != nullptr) {
                         auto record_value_id = prop_record->ids[2];
-                        edge_cost = quad_model.get_graph_object(ObjectId(record_value_id)).value.i;
+                        edge_cost = GraphObjectInterpreter::get<int64_t>(quad_model.get_graph_object(ObjectId(record_value_id)));
                     } else {
                         // If the key is not present, discard this path
                         edge_succeeded = false;

@@ -62,8 +62,8 @@ public:
         return is_nullable;
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
-        auto alternative_automaton = RPQAutomaton();
+    RPQ_NFA get_rpq_base_automaton() const override {
+        auto alternative_automaton = RPQ_NFA();
         // For each alternative create an automaton
         for (const auto& alternative : alternatives) {
             auto child_automaton = alternative->get_rpq_base_automaton();

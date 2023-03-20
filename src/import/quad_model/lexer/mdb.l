@@ -1,5 +1,6 @@
 %option noyywrap
 %option nounput
+%option noinput
 %{
 #include "lexer.h"
 %}

@@ -3,7 +3,7 @@
 #include <set>
 
 #include "base/query/var.h"
-#include "parser/query/op_visitor/op_visitor.h"
+#include "parser/query/op/op_visitor.h"
 
 class Op {
 public:
@@ -15,7 +15,9 @@ public:
 
     virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const = 0;
 
-    friend std::ostream& operator<<(std::ostream& os, const Op& b) {
-        return b.print_to_ostream(os);
+    virtual bool read_only() const { return true; }
+
+    friend std::ostream& operator<<(std::ostream& os, const Op& op) {
+        return op.print_to_ostream(os);
     }
 };

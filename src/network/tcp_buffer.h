@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 #include <boost/asio.hpp>
 
 #include "base/exceptions.h"
@@ -40,6 +41,26 @@ protected:
         return i;
     }
 
+    std::streamsize xsputn(const char* s, std::streamsize n) override {
+        int remaining = n;
+
+        while (remaining > 0) {
+            auto max = CommunicationProtocol::BUFFER_SIZE - current_pos;
+            if (remaining < max) {
+                memcpy(&buffer[current_pos], s, remaining);
+                current_pos += remaining;
+                break;
+            } else {
+                memcpy(&buffer[current_pos], s, max);
+                current_pos += max;
+                s += max;
+                remaining -= max;
+                send(); // send() will reset current_pos
+            }
+        }
+        return n;
+    }
+
     int sync() override {
         send();
         return 0;
@@ -68,4 +89,3 @@ private:
         }
     }
 };
-

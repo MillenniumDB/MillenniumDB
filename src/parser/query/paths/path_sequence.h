@@ -63,7 +63,7 @@ public:
         return is_nullable;
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
+    RPQ_NFA get_rpq_base_automaton() const override {
         auto sequence_automaton = sequence[0]->get_rpq_base_automaton();
         // For each sequence child create and automaton
         for (size_t i = 1; i < sequence.size(); i++) {

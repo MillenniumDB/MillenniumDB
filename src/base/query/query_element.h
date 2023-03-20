@@ -7,11 +7,11 @@
 
 #include "base/exceptions.h"
 #include "base/graph_object/graph_object.h"
-#include "base/query/query_element_to_graph_object.h"
-#include "base/query/query_element_to_string.h"
 #include "base/query/named_node.h"
+#include "base/query/query_element_to_string.h"
 #include "base/query/var.h"
 
+// TODO: move?
 class QueryElement {
 public:
     std::variant<Var, NamedNode, AnonymousNode, Edge, std::string, bool, int64_t, float> value;
@@ -104,23 +104,11 @@ public:
     }
 
     inline bool operator!=(const QueryElement& rhs) const noexcept {
-        return value != rhs.value;
+        return !(*this == rhs);
     }
 
     inline bool operator<(const QueryElement& rhs) const noexcept {
         return value < rhs.value;
-    }
-
-    inline bool operator<=(const QueryElement& rhs) const noexcept {
-        return value <= rhs.value;
-    }
-
-    inline bool operator>(const QueryElement& rhs) const noexcept {
-        return value > rhs.value;
-    }
-
-    inline bool operator>=(const QueryElement& rhs) const noexcept {
-        return value >= rhs.value;
     }
 
     inline bool is_var() const {
@@ -134,10 +122,6 @@ public:
     inline Var to_var() const {
         assert(std::holds_alternative<Var>(value));
         return std::get<Var>(value);
-    }
-
-    GraphObject to_graph_object() const {
-        return std::visit(QueryElementToGraphObject(), value);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const QueryElement& node_id) {

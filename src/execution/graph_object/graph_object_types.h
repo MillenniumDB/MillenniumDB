@@ -1,0 +1,32 @@
+#pragma once
+
+// TODO
+enum class GraphObjectType {
+    NULL_OBJ                  = 0,
+    NOT_FOUND                 = 1,
+    NAMED_INLINED             = 2,
+    NAMED_EXTERNAL            = 3,
+    NAMED_TMP                 = 4,
+    EDGE                      = 5,
+    ANON                      = 6,
+    PATH                      = 7,
+    STR_INLINED               = 8,
+    STR_EXTERNAL              = 9,
+    STR_TMP                   = 10,
+    BOOL                      = 11,
+    INT                       = 12,
+    FLOAT                     = 13,
+    IRI_INLINED               = 14,
+    IRI_EXTERNAL              = 15,
+    IRI_TMP                   = 16,
+    LITERAL_DATATYPE_INLINED  = 17,
+    LITERAL_DATATYPE_EXTERNAL = 18,
+    LITERAL_DATATYPE_TMP      = 19,
+    LITERAL_LANGUAGE_INLINED  = 20,
+    LITERAL_LANGUAGE_EXTERNAL = 21,
+    LITERAL_LANGUAGE_TMP      = 22,
+    DATETIME                  = 23,
+    DECIMAL_INLINED           = 24,
+    DECIMAL_EXTERNAL          = 25,
+    DECIMAL_TMP               = 26,
+};

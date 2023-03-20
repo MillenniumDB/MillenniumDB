@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+
+#include "execution/graph_object/graph_object_factory.h"
 #include "execution/binding_iter/aggregation/agg.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
@@ -17,7 +20,7 @@ public:
 
     // indicates the end of a group
     GraphObject get() override {
-        return GraphObject::make_int(count);
+        return GraphObjectFactory::make_int(count);
     }
 
 private:

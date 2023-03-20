@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -9,7 +9,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY bin)
 
 # set the project name and version
-project(MillenniumDB VERSION 0.2)
+project(MillenniumDB VERSION 0.1)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -pedantic -O0 -g3  \
 -pthread -march=native -funroll-loops \
@@ -34,16 +34,22 @@ list(REMOVE_ITEM sources ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/*)
 add_library(millenniumdb STATIC ${sources})
 
 set(BUILD_TARGETS
-    create_db
-    query
     server
+    # server_sparql
+    create_db
+    # create_db_sparql
+    query
 )
 
 set(TEST_TARGETS
-    create_bpt
-    check_bpts
-    check_extendible_hash
-    execute_query
+    # compare_datetime
+    # compare_decimal_both_ext
+    # compare_decimal_both_inl
+    # compare_decimal_inl_ext
+    # normalize_decimal
+    # create_bpt
+    # check_bpts
+    # execute_query
 )
 
 foreach(target ${BUILD_TARGETS})
@@ -55,6 +61,7 @@ foreach(target ${BUILD_TARGETS})
     )
 endforeach(target)
 
+enable_testing()
 foreach(target ${TEST_TARGETS})
     add_executable(${target} ${CMAKE_SOURCE_DIR}/src/tests/${target}.cc)
     target_link_libraries(${target}
@@ -62,5 +69,5 @@ foreach(target ${TEST_TARGETS})
         antlr4_cpp_runtime
         stdc++fs
     )
-    # add_test(NAME ${target} COMMAND ${target})
+    add_test(NAME ${target} COMMAND $<TARGET_FILE:${target}>)
 endforeach(target)

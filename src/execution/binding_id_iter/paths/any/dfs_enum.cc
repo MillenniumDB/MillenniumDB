@@ -4,82 +4,99 @@
 
 #include "base/ids/var_id.h"
 #include "execution/binding_id_iter/paths/path_manager.h"
-#include "query_optimizer/quad_model/quad_model.h"
-#include "storage/index/bplus_tree/bplus_tree.h"
 
 using namespace std;
 using namespace Paths::Any;
 
-DFSEnum::DFSEnum(ThreadInfo*  thread_info,
-                 VarId        path_var,
-                 Id           start,
-                 VarId        end,
-                 RPQAutomaton automaton) :
+template <bool MULTIPLE_FINAL>
+DFSEnum<MULTIPLE_FINAL>::DFSEnum(ThreadInfo* thread_info,
+                                 VarId       path_var,
+                                 Id          start,
+                                 VarId       end,
+                                 RPQ_DFA     automaton,
+                                 unique_ptr<IndexProvider> provider) :
     thread_info (thread_info),
     path_var    (path_var),
     start       (start),
     end         (end),
-    automaton   (automaton) { }
+    automaton   (automaton),
+    provider    (move(provider)) {}
 
 
-void DFSEnum::begin(BindingId& _parent_binding) {
+template <bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::begin(BindingId& _parent_binding) {
     parent_binding = &_parent_binding;
-    first_next     = true;
+    first_next = true;
 
-    // Add inital state to queue
+    // Add starting state to open and visited
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
-
-    open.emplace(start_object_id, automaton.get_start());
-
-    visited.emplace(automaton.get_start(), start_object_id, nullptr, true, ObjectId::get_null());
-
-    min_ids[2] = 0;
-    max_ids[2] = 0xFFFFFFFFFFFFFFFF;
-    min_ids[3] = 0;
-    max_ids[3] = 0xFFFFFFFFFFFFFFFF;
+    open.emplace(start_object_id, automaton.start_state);
+    visited.emplace(automaton.start_state, start_object_id, nullptr, true, ObjectId::get_null());
 }
 
 
-bool DFSEnum::next() {
-    // Check if first node is final
+template <bool MULTIPLE_FINAL>
+bool DFSEnum<MULTIPLE_FINAL>::next() {
+    // Check if first state is final
     if (first_next) {
-        first_next            = false;
-        auto& current_state   = open.top();
-        auto  start_node_iter = quad_model.nodes->get_range(&thread_info->interruption_requested,
-                                                            Record<1>({ current_state.object_id.id }),
-                                                            Record<1>({ current_state.object_id.id }));
+        first_next = false;
+        auto& current_state = open.top();
 
-        // Return false if node does not exists in bd
-        if (start_node_iter->next() == nullptr) {
+        // Return false if node does not exist in the database
+        if (!provider->node_exists(current_state.node_id.id)) {
+            open.pop();
             return false;
         }
-        if (automaton.start_is_final) {
-            auto current_key =
-              Paths::AnyShortest::SearchState(automaton.get_final_state(), open.top().object_id, nullptr, true, ObjectId::get_null());
 
-            auto path_id = path_manager.set_path(visited.insert(current_key).first.operator->(), path_var);
-
+        // Starting state is solution
+        if (automaton.is_final_state[automaton.start_state]) {
+            auto reached_state = Paths::AnyShortest::SearchState(
+                automaton.start_state, open.top().node_id, nullptr, true, ObjectId::get_null());
+            if (MULTIPLE_FINAL) {
+                reached_final.insert(current_state.node_id.id);
+            }
+            auto path_id = path_manager.set_path(visited.insert(reached_state).first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
-            parent_binding->add(end, open.top().object_id);
+            parent_binding->add(end, open.top().node_id);
             results_found++;
             return true;
         }
     }
+
+    // Enumerate
     while (open.size() > 0) {
         auto& current_state = open.top();
-        auto  reached_state = current_state_has_next(current_state);
+
+        // Get next state info (potential solution)
+        auto reached_state = current_state_has_next(current_state);
+
+        // A state was reached
         if (reached_state != visited.end()) {
             open.emplace(reached_state->node_id, reached_state->automaton_state);
-            if (reached_state->automaton_state == automaton.get_final_state()) {
-                auto path_id = path_manager.set_path(reached_state.operator->(), path_var);
-                // set binding;
-                parent_binding->add(path_var, path_id);
-                parent_binding->add(end, reached_state->node_id);
-                results_found++;
-                return true;
+
+            // Check if new path is solution
+            if (automaton.is_final_state[reached_state->automaton_state]) {
+                if (MULTIPLE_FINAL) {
+                    auto node_reached_final = reached_final.find(reached_state->node_id.id);
+                    if (node_reached_final == reached_final.end()) {
+                        reached_final.insert(reached_state->node_id.id);
+                        auto path_id = path_manager.set_path(reached_state.operator->(), path_var);
+                        parent_binding->add(path_var, path_id);
+                        parent_binding->add(end, reached_state->node_id);
+                        results_found++;
+                        return true;
+                    }
+                } else {
+                    auto path_id = path_manager.set_path(reached_state.operator->(), path_var);
+                    parent_binding->add(path_var, path_id);
+                    parent_binding->add(end, reached_state->node_id);
+                    results_found++;
+                    return true;
+                }
             }
         } else {
+            // Pop and visit next state
             open.pop();
         }
     }
@@ -87,42 +104,43 @@ bool DFSEnum::next() {
 }
 
 
+template <bool MULTIPLE_FINAL>
 robin_hood::unordered_node_set<Paths::AnyShortest::SearchState>::iterator
-  DFSEnum::current_state_has_next(DFSSearchState& state)
+  DFSEnum<MULTIPLE_FINAL>::current_state_has_next(DFSSearchState& state)
 {
-    if (state.iter == nullptr) { // if is first time that State is explore
+    if (state.iter->at_end()) {  // Check if this is the first time that current_state is explored
         state.current_transition = 0;
-        // Check automaton has transitions
-        if (state.current_transition >= automaton.from_to_connections[state.state].size()) {
+        // Check if automaton state has transitions
+        if (automaton.from_to_connections[state.state].size() == 0) {
             return visited.end();
         }
-        // Constructs iter
         set_iter(state);
     }
-    // Iterate over automaton_start state transtions
+
+    // Iterate over the remaining transitions of current_state
+    // Don't start from the beginning, resume where it left thanks to state transition + iter (pipeline)
     while (state.current_transition < automaton.from_to_connections[state.state].size()) {
-        auto& transition   = automaton.from_to_connections[state.state][state.current_transition];
-        auto  child_record = state.iter->next();
-        // Iterate over next_childs
-        while (child_record != nullptr) {
-            auto current_key = Paths::AnyShortest::SearchState(state.state, state.object_id, nullptr, true, ObjectId::get_null());
+        auto& transition = automaton.from_to_connections[state.state][state.current_transition];
 
-            auto next_state_key = Paths::AnyShortest::SearchState(transition.to,
-                                              ObjectId(child_record->ids[2]),
-                                              visited.find(current_key).operator->(),
-                                              transition.inverse,
-                                              transition.type_id);
+        // Iterate over records and return paths
+        while (state.iter->next()) {
+            auto current_state = Paths::AnyShortest::SearchState(state.state, state.node_id, nullptr, true, ObjectId::get_null());
+            auto next_state = Paths::AnyShortest::SearchState(transition.to,
+                                                              ObjectId(state.iter->get_node()),
+                                                              visited.find(current_state).operator->(),
+                                                              transition.inverse,
+                                                              transition.type_id);
 
-            // Check child is not already visited
-            auto inserted_state = visited.insert(next_state_key);
+            // Check if child state is not already visited
+            auto inserted_state = visited.insert(next_state);
             // Inserted_state.second = true if and only if state was inserted
             if (inserted_state.second) {
                 // Returns pointer to state
                 return inserted_state.first;
             }
-            child_record = state.iter->next();
         }
-        // Constructs new iter
+
+        // Construct new iter with the next transition (if there exists one)
         state.current_transition++;
         if (state.current_transition < automaton.from_to_connections[state.state].size()) {
             set_iter(state);
@@ -132,54 +150,48 @@ robin_hood::unordered_node_set<Paths::AnyShortest::SearchState>::iterator
 }
 
 
-void DFSEnum::set_iter(DFSSearchState& state) {
-    // Gets current transition object from automaton
+template <bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::set_iter(DFSSearchState& state) {
+    // Get current transition object from automaton
     const auto& transition = automaton.from_to_connections[state.state][state.current_transition];
-    // Gets iter from correct bpt with transition.inverse
-    if (transition.inverse) {
-        min_ids[0] = state.object_id.id;
-        max_ids[0] = state.object_id.id;
-        min_ids[1] = transition.type_id.id;
-        max_ids[1] = transition.type_id.id;
-        state.iter = quad_model.to_type_from_edge->get_range(&thread_info->interruption_requested,
-                                                             Record<4>(min_ids),
-                                                             Record<4>(max_ids));
-    } else {
-        min_ids[0] = transition.type_id.id;
-        max_ids[0] = transition.type_id.id;
-        min_ids[1] = state.object_id.id;
-        max_ids[1] = state.object_id.id;
-        state.iter = quad_model.type_from_to_edge->get_range(&thread_info->interruption_requested,
-                                                             Record<4>(min_ids),
-                                                             Record<4>(max_ids));
-    }
-    bpt_searches++;
+
+    // Get iterator from custom index
+    state.iter = provider->get_iterator(transition.type_id.id, transition.inverse, state.node_id.id);
+    idx_searches++;
 }
 
 
-void DFSEnum::reset() {
+template <bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::reset() {
     // Empty open and visited
     stack<DFSSearchState> empty;
     open.swap(empty);
     visited.clear();
+    if (MULTIPLE_FINAL) {
+        reached_final.clear();
+    }
     first_next = true;
 
-    // Add start object id to open and visited
+    // Add starting state to open and visited
     ObjectId start_object_id(std::holds_alternative<ObjectId>(start) ? std::get<ObjectId>(start)
                                                                      : (*parent_binding)[std::get<VarId>(start)]);
-
-    open.emplace(start_object_id, automaton.get_start());
-
-    visited.emplace(automaton.get_start(), start_object_id, nullptr, true, ObjectId::get_null());
+    open.emplace(start_object_id, automaton.start_state);
+    visited.emplace(automaton.start_state, start_object_id, nullptr, true, ObjectId::get_null());
 }
 
 
-void DFSEnum::assign_nulls() {
+template <bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::assign_nulls() {
     parent_binding->add(end, ObjectId::get_null());
 }
 
 
-void DFSEnum::analyze(std::ostream& os, int indent) const {
+template <bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::analyze(std::ostream& os, int indent) const {
     os << std::string(indent, ' ');
-    os << "Paths::Any::DFSEnum(bpt_searches: " << bpt_searches << ", found: " << results_found << ")";
+    os << "Paths::Any::DFSEnum(idx_searches: " << idx_searches << ", found: " << results_found << ")";
 }
+
+
+template class Paths::Any::DFSEnum<true>;
+template class Paths::Any::DFSEnum<false>;

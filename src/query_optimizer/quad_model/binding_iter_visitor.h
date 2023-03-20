@@ -14,7 +14,7 @@
 #include "base/graph_object/graph_object.h"
 #include "base/thread/thread_info.h"
 #include "execution/binding_iter/aggregation/agg.h"
-#include "parser/query/op/ops.h"
+#include "parser/query/op/mdb/ops.h"
 
 class BindingIterVisitor : public OpVisitor {
 public:
@@ -60,21 +60,21 @@ public:
 
     static std::map<Var, VarId> construct_var2var_id(std::set<Var>& var_names);
 
-    void visit(OpDescribe&) override;
-    void visit(OpGroupBy&)  override;
-    void visit(OpMatch&)    override;
-    void visit(OpOrderBy&)  override;
-    void visit(OpReturn&)   override;
-    void visit(OpSet&)      override;
-    void visit(OpWhere&)    override;
+    void visit(MDB::OpDescribe&) override;
+    void visit(MDB::OpGroupBy&)  override;
+    void visit(MDB::OpMatch&)    override;
+    void visit(MDB::OpOrderBy&)  override;
+    void visit(MDB::OpReturn&)   override;
+    void visit(MDB::OpSet&)      override;
+    void visit(MDB::OpWhere&)    override;
 
     /* BindingIdIterVisitor manages these ops */
-    void visit(OpBasicGraphPattern&) override { }
-    void visit(OpEdge&)              override { }
-    void visit(OpIsolatedTerm&)      override { }
-    void visit(OpIsolatedVar&)       override { }
-    void visit(OpLabel&)             override { }
-    void visit(OpOptional&)          override { }
-    void visit(OpPath&)              override { }
-    void visit(OpProperty&)          override { }
+    void visit(MDB::OpBasicGraphPattern&) override { }
+    void visit(MDB::OpEdge&)              override { }
+    void visit(MDB::OpIsolatedTerm&)      override { }
+    void visit(MDB::OpIsolatedVar&)       override { }
+    void visit(MDB::OpLabel&)             override { }
+    void visit(MDB::OpOptional&)          override { }
+    void visit(MDB::OpPath&)              override { }
+    void visit(MDB::OpProperty&)          override { }
 };

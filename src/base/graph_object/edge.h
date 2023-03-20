@@ -10,23 +10,7 @@ public:
         return this->id == rhs.id;
     }
 
-    inline bool operator!=(const Edge& rhs) const noexcept {
-        return this->id != rhs.id;
-    }
-
-    inline bool operator<=(const Edge& rhs) const noexcept {
-        return this->id <= rhs.id;
-    }
-
-    inline bool operator>=(const Edge& rhs) const noexcept {
-        return this->id >= rhs.id;
-    }
-
     inline bool operator<(const Edge& rhs) const noexcept {
         return this->id < rhs.id;
-    }
-
-    inline bool operator>(const Edge& rhs) const noexcept {
-        return this->id > rhs.id;
     }
 };

@@ -41,14 +41,14 @@ public:
         return std::make_unique<PathKleeneStar>(*this);
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
+    RPQ_NFA get_rpq_base_automaton() const override {
         auto path_automaton = path->get_rpq_base_automaton();
         // Heuristic for kleene star construction
         if (path_automaton.get_total_states() == 2) {
             // Automaton with 2 states have only one connection from 0 to 1
-            auto  new_automaton = RPQAutomaton();
-            auto& transition    = path_automaton.from_to_connections[0][0];
-            new_automaton.add_transition(Transition(0, 0, transition.type, transition.inverse));
+            auto  new_automaton = RPQ_NFA();
+            auto& transition    = path_automaton.outer_transitions[0][0];
+            new_automaton.add_transition(RPQ_NFA::Transition(0, 0, transition.type, transition.inverse));
             new_automaton.end_states.insert(new_automaton.get_start());
             return new_automaton;
         } else {

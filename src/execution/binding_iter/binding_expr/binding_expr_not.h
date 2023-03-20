@@ -13,12 +13,12 @@ public:
 
     GraphObject eval(const BindingIter& binding_iter) const override {
         auto expr_eval = expr->eval(binding_iter);
-        if (expr_eval == GraphObject::make_bool(true)) {
-            return GraphObject::make_bool(false);
-        } else if (expr_eval == GraphObject::make_bool(false)) {
-            return GraphObject::make_bool(true);
+        if (expr_eval == GraphObjectFactory::make_bool(true)) {
+            return GraphObjectFactory::make_bool(false);
+        } else if (expr_eval == GraphObjectFactory::make_bool(false)) {
+            return GraphObjectFactory::make_bool(true);
         } else {
-            return GraphObject::make_null();
+            return GraphObjectFactory::make_null();
         }
     }
 };

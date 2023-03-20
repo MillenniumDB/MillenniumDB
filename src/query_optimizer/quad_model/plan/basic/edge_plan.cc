@@ -25,7 +25,7 @@ void EdgePlan::print(std::ostream& os, int indent, const std::vector<std::string
     for (int i = 0; i < indent; ++i) {
         os << ' ';
     }
-    os << "Connection(";
+    os << "Edge(";
     if (std::holds_alternative<ObjectId>(from)) {
         os << "from: " << quad_model.get_graph_object(std::get<ObjectId>(from));
     } else {
@@ -43,9 +43,9 @@ void EdgePlan::print(std::ostream& os, int indent, const std::vector<std::string
     }
 
     if (std::holds_alternative<ObjectId>(edge)) {
-        os << ", edge: " << quad_model.get_graph_object(std::get<ObjectId>(edge));
+        os << ", id: " << quad_model.get_graph_object(std::get<ObjectId>(edge));
     } else {
-        os << ", edge: " << var_names[std::get<VarId>(edge).id];
+        os << ", id: " << var_names[std::get<VarId>(edge).id];
     }
     os << ")";
 
@@ -346,9 +346,9 @@ unique_ptr<BindingIdIter> EdgePlan::get_binding_id_iter(ThreadInfo* thread_info)
 
 
 bool EdgePlan::get_leapfrog_iter(ThreadInfo*                                 thread_info,
-                                       std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
-                                       vector<VarId>&                              var_order,
-                                       uint_fast32_t&                              enumeration_level) const
+                                 std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
+                                 vector<VarId>&                              var_order,
+                                 uint_fast32_t&                              enumeration_level) const
 {
     // TODO: support special cases
     if (   (std::holds_alternative<VarId>(from) && from == to)

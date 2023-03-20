@@ -12,9 +12,7 @@ private:
 public:
     const std::size_t size;
 
-    BindingId(std::size_t size) :
-        object_ids (new ObjectId[size]),
-        size       (size) { }
+    BindingId(std::size_t size) : object_ids(new ObjectId[size]), size(size) { }
 
     // to prevent using
     // auto b = op.begin()

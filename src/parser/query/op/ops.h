@@ -10,6 +10,7 @@
 #include "parser/query/op/graph_pattern/op_property.h"
 #include "parser/query/op/op_describe.h"
 #include "parser/query/op/op_group_by.h"
+#include "parser/query/op/op_insert.h"
 #include "parser/query/op/op_match.h"
 #include "parser/query/op/op_order_by.h"
 #include "parser/query/op/op_return.h"

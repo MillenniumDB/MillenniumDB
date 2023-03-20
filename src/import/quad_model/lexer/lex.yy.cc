@@ -479,10 +479,11 @@ int yy_flex_debug = 0;
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
 #line 1 "mdb.l"
-#line 4 "mdb.l"
+#define YY_NO_INPUT 1
+#line 5 "mdb.l"
 #include "lexer.h"
-#line 485 "lex.yy.cc"
 #line 486 "lex.yy.cc"
+#line 487 "lex.yy.cc"
 
 #define INITIAL 0
 
@@ -697,9 +698,9 @@ YY_DECL
 		}
 
 	{
-#line 21 "mdb.l"
+#line 22 "mdb.l"
 
-#line 703 "lex.yy.cc"
+#line 704 "lex.yy.cc"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -758,87 +759,87 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 22 "mdb.l"
+#line 23 "mdb.l"
 { return Import::Token::COLON; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 23 "mdb.l"
+#line 24 "mdb.l"
 { return Import::Token::L_ARROW; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 24 "mdb.l"
+#line 25 "mdb.l"
 { return Import::Token::R_ARROW; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 25 "mdb.l"
+#line 26 "mdb.l"
 { return Import::Token::IMPLICIT; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 26 "mdb.l"
+#line 27 "mdb.l"
 { return Import::Token::TRUE; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 27 "mdb.l"
+#line 28 "mdb.l"
 { return Import::Token::FALSE; }
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 28 "mdb.l"
+#line 29 "mdb.l"
 { return Import::Token::STRING; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 29 "mdb.l"
+#line 30 "mdb.l"
 { return Import::Token::IDENTIFIER; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 30 "mdb.l"
+#line 31 "mdb.l"
 { return Import::Token::IRI; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 31 "mdb.l"
+#line 32 "mdb.l"
 { return Import::Token::ANON; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 32 "mdb.l"
+#line 33 "mdb.l"
 { return Import::Token::INTEGER; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 33 "mdb.l"
+#line 34 "mdb.l"
 { return Import::Token::FLOAT; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 34 "mdb.l"
+#line 35 "mdb.l"
 { return Import::Token::WHITESPACE; }
 	YY_BREAK
 case 14:
 /* rule 14 can match eol */
 YY_RULE_SETUP
-#line 35 "mdb.l"
+#line 36 "mdb.l"
 { return Import::Token::ENDLINE; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 36 "mdb.l"
+#line 37 "mdb.l"
 { return Import::Token::UNRECOGNIZED; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 37 "mdb.l"
+#line 38 "mdb.l"
 ECHO;
 	YY_BREAK
-#line 842 "lex.yy.cc"
+#line 843 "lex.yy.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1806,7 +1807,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 37 "mdb.l"
+#line 38 "mdb.l"
 
 
 void Import::Lexer::begin(const std::string& file) {

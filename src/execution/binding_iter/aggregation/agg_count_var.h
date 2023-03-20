@@ -11,14 +11,14 @@ public:
     }
 
     void process() override {
-        if ((*binding_iter)[var_id] != GraphObject::make_null() ) {
+        if ((*binding_iter)[var_id] != GraphObjectFactory::make_null() ) {
             count++;
         }
     }
 
     // indicates the end of a group
     GraphObject get() override {
-        return GraphObject::make_int(count);
+        return GraphObjectFactory::make_int(count);
     }
 
 private:

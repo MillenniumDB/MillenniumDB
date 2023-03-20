@@ -22,6 +22,7 @@
 #include "query_optimizer/quad_model/return_item_visitor_impl.h"
 #include "query_optimizer/quad_model/quad_model.h"
 
+using namespace MDB;
 using namespace std;
 
 BindingIterVisitor::BindingIterVisitor(std::set<Var> vars, ThreadInfo* thread_info) :
@@ -55,10 +56,7 @@ void BindingIterVisitor::visit(OpDescribe& op_describe) {
     unique_ptr<BindingIdIter> outgoing_connections;
     unique_ptr<BindingIdIter> incoming_conenctions;
 
-    QueryElementToGraphObject visitor;
-    auto graph_obj = std::visit(visitor, op_describe.node.value);
-
-    ObjectId object_id = quad_model.get_object_id(graph_obj);
+    ObjectId object_id = quad_model.get_object_id(op_describe.node);
 
     VarId label_var(0);
     VarId key_var(0);
@@ -203,7 +201,7 @@ void BindingIterVisitor::visit(OpMatch& op_match) {
     for (const auto& [var, prop_name] : var_properties) {
         auto obj_var_id = get_var_id(var);
         auto value_var  = get_var_id(Var(var.name + '.' + prop_name));
-        auto key_id     = quad_model.get_object_id(GraphObject::make_string(prop_name));
+        auto key_id     = quad_model.get_object_id(QueryElement(prop_name));
 
         // Check value_var does not have a constant value
         if (fixed_vars.find(value_var) == fixed_vars.end()) {
@@ -292,7 +290,7 @@ void BindingIterVisitor::visit(OpGroupBy& op_group_by) {
 void BindingIterVisitor::visit(OpSet& op_set) {
     for (auto& set_item : op_set.set_items) {
         fixed_vars.insert({ get_var_id(set_item.first),
-                            quad_model.get_object_id(set_item.second.to_graph_object())});
+                            quad_model.get_object_id(set_item.second)});
     }
     op_set.op->accept_visitor(*this);
 }

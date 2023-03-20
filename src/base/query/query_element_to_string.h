@@ -4,6 +4,7 @@
 
 #include "base/graph_object/anonymous_node.h"
 #include "base/graph_object/edge.h"
+#include "base/query/named_node.h"
 #include "base/query/var.h"
 
 struct QueryElementToString {

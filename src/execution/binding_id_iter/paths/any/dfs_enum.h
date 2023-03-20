@@ -1,76 +1,74 @@
 #pragma once
 
-#include <array>
 #include <memory>
 #include <stack>
-#include <variant>
+#include <type_traits>
 
 #include "base/binding/binding_id_iter.h"
+#include "base/ids/id.h"
 #include "base/thread/thread_info.h"
-#include "parser/query/paths/automaton/rpq_automaton.h"
+#include "execution/binding_id_iter/paths/any/search_state.h"
 #include "execution/binding_id_iter/paths/any_shortest/search_state.h"
-#include "execution/binding_id_iter/scan_ranges/scan_range.h"
-#include "storage/index/bplus_tree/bplus_tree.h"
+#include "parser/query/paths/automaton/rpq_automaton.h"
 #include "third_party/robin_hood/robin_hood.h"
 
-/*
-DFSEnum enumerates paths from/to a specifc node using DFS algorithm.
-
-Open memory usage is linear, but shortest path is not guaranteed.
-This can ralentize the search due to long paths that must be constructed
-*/
 namespace Paths { namespace Any {
 
-struct DFSSearchState {
-    const ObjectId object_id;
-
-    const uint32_t state;
-
-    uint32_t current_transition = 0;
-
-    std::unique_ptr<BptIter<4>> iter = nullptr;
-
-    DFSSearchState(ObjectId object_id, uint32_t state) : object_id(object_id), state(state) { }
+// Dummy structure for template usage
+class DummySet {
+public:
+    static inline void clear() { }
+    static inline int end() {return 0;}
+    static inline int find(uint64_t) {return 0;}
+    static inline void insert(uint64_t) { }
 };
 
-
-class DFSEnum : public BindingIdIter {
+/*
+DFSEnum returns a single path to all reachable nodes from a starting node, using DFS.
+*/
+template <bool MULTIPLE_FINAL> class DFSEnum : public BindingIdIter {
 private:
-    // Attributes determined in the constuctor
-    ThreadInfo*  thread_info;
-    VarId        path_var;
-    Id           start;
-    VarId        end;
-    RPQAutomaton automaton;
+    // Attributes determined in the constructor
+    ThreadInfo*   thread_info;
+    VarId         path_var;
+    Id            start;
+    VarId         end;
+    const RPQ_DFA automaton;
+    std::unique_ptr<IndexProvider> provider;
 
     // Attributes determined in begin
     BindingId* parent_binding;
-    bool       first_next = true;
+    bool first_next = true;
 
-    // Ranges to search in BPT. They are not local variables because some positions are reused.
-    std::array<uint64_t, 4> min_ids;
-    std::array<uint64_t, 4> max_ids;
+    // Structs for DFS
 
-    // Structs for BFS
+    // Set of visited SearchStates
     robin_hood::unordered_node_set<Paths::AnyShortest::SearchState> visited;
 
+    // Stack of DFSSearchStates
     std::stack<DFSSearchState> open;
 
     // Statistics
     uint_fast32_t results_found = 0;
-    uint_fast32_t bpt_searches  = 0;
+    uint_fast32_t idx_searches  = 0;
 
+    // Get next state of interest
     robin_hood::unordered_node_set<Paths::AnyShortest::SearchState>::iterator
       current_state_has_next(DFSSearchState& current_state);
 
+    // Set iterator for current node + transition
     void set_iter(DFSSearchState& current_state);
 
+    // Template type for storing reached nodes with a final state
+    typename std::conditional<MULTIPLE_FINAL, robin_hood::unordered_set<uint64_t>, DummySet>::type reached_final;
+
 public:
-    DFSEnum(ThreadInfo*  thread_info,
-            VarId        path_var,
-            Id           start,
-            VarId        end,
-            RPQAutomaton automaton);
+    DFSEnum(ThreadInfo* thread_info,
+            VarId       path_var,
+            Id          start,
+            VarId       end,
+            RPQ_DFA     automaton,
+            std::unique_ptr<IndexProvider> provider);
 
     void analyze(std::ostream& os, int indent = 0) const override;
     void begin(BindingId& parent_binding) override;

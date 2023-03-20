@@ -7,11 +7,9 @@ class Var {
 public:
     std::string name;
 
-    explicit Var(std::string&& name) :
-        name (std::move(name)) { }
+    explicit Var(std::string&& name) : name(std::move(name)) { }
 
-    explicit Var(const std::string& name) :
-        name (name) { }
+    explicit Var(const std::string& name) : name(name) { }
 
     inline bool operator<(const Var& rhs) const noexcept {
         return name < rhs.name;

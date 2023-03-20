@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "execution/graph_object/graph_object_factory.h"
 #include "execution/binding_iter/binding_expr/binding_expr.h"
 
 class BindingExprAnd: public BindingExpr {
@@ -14,14 +15,14 @@ public:
     GraphObject eval(const BindingIter& binding_iter) const override {
         for (auto& expr : and_list) {
             auto eval = expr->eval(binding_iter);
-            if (eval == GraphObject::make_bool(true)) {
+            if (eval == GraphObjectFactory::make_bool(true)) {
                 continue;
-            } else if (eval == GraphObject::make_bool(false)) {
-                return GraphObject::make_bool(false);
+            } else if (eval == GraphObjectFactory::make_bool(false)) {
+                return GraphObjectFactory::make_bool(false);
             } else {
-                return GraphObject::make_null();
+                return GraphObjectFactory::make_null();
             }
         }
-        return GraphObject::make_bool(true);
+        return GraphObjectFactory::make_bool(true);
     }
 };

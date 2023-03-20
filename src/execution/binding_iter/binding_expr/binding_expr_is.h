@@ -4,6 +4,7 @@
 
 #include "parser/query/expr/bool_expr/expr_comaprision/expr_is.h"
 #include "execution/binding_iter/binding_expr/binding_expr.h"
+#include "execution/graph_object/graph_object_types.h"
 
 class BindingExprIs : public BindingExpr {
 public:
@@ -23,41 +24,41 @@ public:
         switch (type) {
             case ExprTypeName::NULL_:
                 if (eval.type == GraphObjectType::NULL_OBJ) {
-                    return GraphObject::make_bool(true ^ negation);
+                    return GraphObjectFactory::make_bool(true ^ negation);
                 } else {
-                    return GraphObject::make_bool(false ^ negation);
+                    return GraphObjectFactory::make_bool(false ^ negation);
                 }
 
             case ExprTypeName::INTEGER:
                 if (eval.type == GraphObjectType::INT) {
-                    return GraphObject::make_bool(true ^ negation);
+                    return GraphObjectFactory::make_bool(true ^ negation);
                 } else {
-                    return GraphObject::make_bool(false ^ negation);
+                    return GraphObjectFactory::make_bool(false ^ negation);
                 }
 
             case ExprTypeName::FLOAT:
                 if (eval.type == GraphObjectType::FLOAT) {
-                    return GraphObject::make_bool(true ^ negation);
+                    return GraphObjectFactory::make_bool(true ^ negation);
                 } else {
-                    return GraphObject::make_bool(false ^ negation);
+                    return GraphObjectFactory::make_bool(false ^ negation);
                 }
 
             case ExprTypeName::BOOL:
                 if (eval.type == GraphObjectType::BOOL) {
-                    return GraphObject::make_bool(true ^ negation);
+                    return GraphObjectFactory::make_bool(true ^ negation);
                 } else {
-                    return GraphObject::make_bool(false ^ negation);
+                    return GraphObjectFactory::make_bool(false ^ negation);
                 }
 
             case ExprTypeName::STRING:
                 if (eval.type == GraphObjectType::STR_INLINED
                     || eval.type == GraphObjectType::STR_EXTERNAL)
                 {
-                    return GraphObject::make_bool(true ^ negation);
+                    return GraphObjectFactory::make_bool(true ^ negation);
                 } else {
-                    return GraphObject::make_bool(false ^ negation);
+                    return GraphObjectFactory::make_bool(false ^ negation);
                 }
         }
-        return GraphObject::make_bool(false ^ negation);
+        return GraphObjectFactory::make_bool(false ^ negation);
     }
 };

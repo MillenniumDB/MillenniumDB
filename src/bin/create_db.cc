@@ -1,7 +1,6 @@
 ﻿#include <iostream>
 
-#include "import/quad_model/on_memory/import.h"
-#include "import/quad_model/on_disk/import.h"
+#include "import/quad_model/import.h"
 #include "storage/filesystem.h"
 #include "storage/file_manager.h"
 #include "third_party/cxxopts/cxxopts.h"
@@ -50,7 +49,6 @@ int main(int argc, char **argv) {
         cout << "  db folder:   " << db_folder << "\n";
 
         FileManager::init(db_folder);
-        // Import::InMemoryImport importer(db_folder, buffer_size);
         Import::OnDiskImport importer(db_folder, buffer_size);
         importer.start_import(input_filename);
 

@@ -5,7 +5,7 @@
 class ExprConstant : public Expr {
 public:
     // e.g: true, false, "string", 123, 0.12
-    std::string value;
+    std::string value; // TODO: use QueryElement?
 
     ExprConstant(const std::string& value) :
         value (value) { }

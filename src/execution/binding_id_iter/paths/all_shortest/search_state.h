@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "base/ids/object_id.h"
 
@@ -9,7 +10,7 @@ namespace Paths { namespace AllShortest {
 struct SearchState;
 struct PathIter;
 
-/* Used to hold the relevant information of previous transitions */
+// Holds relevant information from previous transitions
 struct IterTransition {
     const SearchState* const previous;
     bool inverse_direction;
@@ -24,8 +25,7 @@ struct IterTransition {
         next              (nullptr) { }
 };
 
-
-/* Allows to iterate over all previous transitions of a state */
+// Iterates over all previous transitions of a state
 struct PathIter {
     std::unique_ptr<IterTransition> begin;
     IterTransition* end;
@@ -42,14 +42,9 @@ struct PathIter {
         current (nullptr) { }
 
     void add(const SearchState* previous, bool inverse_direction, ObjectId type_id);
-
-    void get_path(ObjectId node_id, std::ostream& os) const;
-
     void start_enumeration();
-
     bool next();
 };
-
 
 struct SearchState {
     const ObjectId node_id;
@@ -77,6 +72,8 @@ struct SearchState {
     bool operator==(const SearchState& other) const {
         return automaton_state == other.automaton_state && node_id == other.node_id;
     }
+
+    void get_path(std::ostream& os) const;
 };
 
 }} // namespace Paths::AllShortest
@@ -88,4 +85,3 @@ struct std::hash<Paths::AllShortest::SearchState> {
         return lhs.automaton_state ^ lhs.node_id.id;
     }
 };
-

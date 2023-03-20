@@ -1,7 +1,5 @@
 #include "search_state.h"
 
-#include <vector>
-
 #include "query_optimizer/quad_model/quad_model.h"
 
 using namespace Paths::AnyShortest;
@@ -9,7 +7,7 @@ using namespace Paths::AnyShortest;
 void SearchState::get_path(std::ostream& os) const {
     std::vector<ObjectId> nodes;
     std::vector<ObjectId> types;
-    std::vector<bool>     directions;
+    std::vector<bool> directions;
 
     for (auto* current_state = this; current_state != nullptr; current_state = current_state->previous) {
         nodes.push_back(current_state->node_id);

@@ -9,7 +9,7 @@
 #include "base/graph_object/graph_object.h"
 #include "storage/file_manager.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash_bucket.h"
-#include "third_party/murmur3/murmur3.h"
+#include "third_party/xxhash/xxhash.h"
 
 template <class T>
 DistinctBindingHash<T>::DistinctBindingHash(std::size_t tuple_size) :
@@ -40,16 +40,15 @@ template <class T>
 bool DistinctBindingHash<T>::is_in(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash[2];
-    MurmurHash3_x64_128(tuple.data(), tuple.size() * sizeof(T), 0, hash);
+    uint64_t hash = XXH3_64bits(tuple.data(), tuple.size() * sizeof(T));
 
     // global_depth must be <= 64
     auto mask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - global_depth);
-    auto suffix = hash[0] & mask;
+    auto suffix = hash & mask;
     auto bucket_number = dir[suffix];
     auto bucket = DistinctBindingHashBucket<T>(buckets_file_id, bucket_number, tuple_size);
 
-    return bucket.is_in(tuple, hash[0], hash[1]);
+    return bucket.is_in(tuple, hash);
 }
 
 
@@ -57,19 +56,18 @@ template <class T>
 bool DistinctBindingHash<T>::is_in_or_insert(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash[2];
-    MurmurHash3_x64_128(tuple.data(), tuple.size() * sizeof(T), 0, hash);
+    uint64_t hash = XXH3_64bits(tuple.data(), tuple.size() * sizeof(T));
 
     // After a bucket split, need to try insert again.
     while (true) {
         // global_depth must be <= 64
         auto mask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - global_depth);
-        auto suffix = hash[0] & mask;
+        auto suffix = hash & mask;
         auto bucket_number = dir[suffix];
         auto bucket = DistinctBindingHashBucket<T>(buckets_file_id, bucket_number, tuple_size);
 
         bool need_split;
-        bool is_in = bucket.is_in_or_insert(tuple, hash[0], hash[1], &need_split);
+        bool is_in = bucket.is_in_or_insert(tuple, hash, &need_split);
         if (need_split) {
             if (*bucket.local_depth < global_depth) {
                 // new_bucket_number = 2^local_depth + bucket_number

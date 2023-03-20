@@ -33,7 +33,7 @@ void PathManager::begin(size_t binding_size, bool materialize) {
     std::thread::id thread_id = std::this_thread::get_id();
     uint_fast32_t index;
     {
-        // Avoid sychronizations problems with extractions and insertions
+        // Avoid synchronizations problems with extractions and insertions
         std::lock_guard<std::mutex> lck(lock_mutex);
         index = available_index.front();
         available_index.pop();
@@ -63,7 +63,7 @@ ObjectId PathManager::set_path(const Paths::AnyShortest::SearchState* visited_po
     std::thread::id thread_id = std::this_thread::get_id();
     uint_fast32_t index;
     {
-        // Avoid to acces a not consistent pointer with find()
+        // Avoid access to a non consistent pointer with find()
         std::lock_guard<std::mutex> lck(lock_mutex);
         index = thread_paths.find(thread_id)->second;
     }
@@ -108,32 +108,34 @@ ObjectId PathManager::set_path(const Paths::AnyShortest::SearchState* visited_po
         // Points to last element of set
         uint64_t path_id = paths[index].size();
         paths[index].push_back(states_set.find(*visited_pointer).operator->());
-        return ObjectId(ObjectId::VALUE_PATH_MASK | path_id);
+        return ObjectId(ObjectId::MASK_PATH | path_id);
     } else {
         // Save visited pointer directly, visited_pointer always is valid
         paths[index][path_var.id] = visited_pointer;
-        return ObjectId(ObjectId::VALUE_PATH_MASK | path_var.id);
+        return ObjectId(ObjectId::MASK_PATH | path_var.id);
     }
 }
+
 
 ObjectId PathManager::set_path(const Paths::AnyShortest::SearchStateDijkstra* visited_pointer, VarId path_var) {
     std::thread::id thread_id = std::this_thread::get_id();
     uint_fast32_t index;
     {
-        // Avoid to acces a not consistent pointer with find()
+        // Avoid access to a non consistent pointer with find()
         std::lock_guard<std::mutex> lck(lock_mutex);
         index = thread_paths.find(thread_id)->second;
     }
     // Save visited pointer directly, visited_pointer always is valid
     paths[index][path_var.id] = visited_pointer;
-    return ObjectId(ObjectId::VALUE_PATH_MASK | DIJKSTRA_MASK | path_var.id);
+    return ObjectId(ObjectId::MASK_PATH | DIJKSTRA_MASK | path_var.id);
 }
+
 
 ObjectId PathManager::set_path(const Paths::AllShortest::SearchState* visited_pointer, VarId path_var) {
     std::thread::id thread_id = std::this_thread::get_id();
     uint_fast32_t index;
     {
-        // Avoid to acces a not consistent pointer with find()
+        // Avoid access to a non consistent pointer with find()
         std::lock_guard<std::mutex> lck(lock_mutex);
         index = thread_paths.find(thread_id)->second;
     }
@@ -179,11 +181,163 @@ ObjectId PathManager::set_path(const Paths::AllShortest::SearchState* visited_po
         //// Points to last element of set
         //uint64_t path_id = paths[index].size();
         //paths[index].push_back(states_set.find(*visited_pointer).operator->());
-        //return ObjectId(GraphModel::VALUE_PATH_MASK | path_id);
+        //return ObjectId(GraphModel::MASK_PATH | path_id);
     } else {
         // Save visited pointer directly, visited_pointer always is valid
         paths[index][path_var.id] = visited_pointer;
-        return ObjectId(ObjectId::VALUE_PATH_MASK | ALL_STATE_MASK | path_var.id);
+        return ObjectId(ObjectId::MASK_PATH | ALL_STATE_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AnySimple::PathState* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ANY_SIMPLE_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AnySimple::SearchStateDFS* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ANY_SIMPLE_DFS_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AllSimple::PathState* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ALL_SIMPLE_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AllSimple::SearchStateDFS* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ALL_SIMPLE_DFS_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AnyTrails::PathState* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ANY_TRAILS_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AnyTrails::SearchStateDFS* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ANY_TRAILS_DFS_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AllTrails::PathState* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ALL_TRAILS_MASK | path_var.id);
+    }
+}
+
+
+ObjectId PathManager::set_path(const Paths::AllTrails::SearchStateDFS* visited_pointer, VarId path_var) {
+    std::thread::id thread_id = std::this_thread::get_id();
+    uint_fast32_t index;
+    {
+        // Avoid access to a non consistent pointer with find()
+        std::lock_guard<std::mutex> lck(lock_mutex);
+        index = thread_paths.find(thread_id)->second;
+    }
+    auto materialize = paths_materialized[index];
+    if (materialize) { // visited_pointer will be not valid
+        return ObjectId::get_null();
+    } else {
+        // Save visited pointer directly, visited_pointer always is valid
+        paths[index][path_var.id] = visited_pointer;
+        return ObjectId(ObjectId::MASK_PATH | ALL_TRAILS_DFS_MASK | path_var.id);
     }
 }
 
@@ -202,11 +356,51 @@ void PathManager::print(std::ostream& os, uint64_t path_id) const {
     }
     case ALL_STATE_MASK: {
         auto current_state = reinterpret_cast<const Paths::AllShortest::SearchState*>(paths[index][path_id & PATH_INDEX_MASK]);
-        current_state->path_iter.get_path(current_state->node_id, os);
+        current_state->get_path(os);
         break;
     }
     case DIJKSTRA_MASK: {
         auto current_state = reinterpret_cast<const Paths::AnyShortest::SearchStateDijkstra*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ANY_SIMPLE_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AnySimple::PathState*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ANY_SIMPLE_DFS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AnySimple::SearchStateDFS*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ALL_SIMPLE_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AllSimple::PathState*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ALL_SIMPLE_DFS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AllSimple::SearchStateDFS*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ANY_TRAILS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AnyTrails::PathState*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ANY_TRAILS_DFS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AnyTrails::SearchStateDFS*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ALL_TRAILS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AllTrails::PathState*>(paths[index][path_id & PATH_INDEX_MASK]);
+        current_state->get_path(os);
+        break;
+    }
+    case ALL_TRAILS_DFS_MASK: {
+        auto current_state = reinterpret_cast<const Paths::AllTrails::SearchStateDFS*>(paths[index][path_id & PATH_INDEX_MASK]);
         current_state->get_path(os);
         break;
     }
@@ -225,7 +419,7 @@ void PathManager::clear() {
         thread_paths.erase(thread_id);
         paths[index].clear();
         states_materialized[index].clear();
-        // Paths materialized deletion is not necesary
+        // Paths materialized deletion is not necessary
 
         // Add new index to available
         available_index.push(index);

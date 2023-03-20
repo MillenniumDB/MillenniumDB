@@ -38,7 +38,7 @@ public:
         return std::make_unique<PathOptional>(path->invert());
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
+    RPQ_NFA get_rpq_base_automaton() const override {
         auto automaton = path->get_rpq_base_automaton();
         // Make start state a end state
         automaton.end_states.insert(automaton.get_start());

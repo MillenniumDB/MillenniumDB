@@ -29,9 +29,9 @@ bool BFS_RDPQCheck::eval_data_check(uint64_t obj, vector<tuple<Operators, string
         // Extract tuple <operator,key,value>
         auto op = get<0>(property_check);
         auto key = get<1>(property_check);
-        auto key_id = quad_model.get_object_id(GraphObject::make_string(key)).id;
+        auto key_id = quad_model.get_object_id(QueryElement(key)).id;
         auto value = get<2>(property_check);
-        auto value_id = quad_model.get_object_id(value.to_graph_object()).id;
+        auto value_id = quad_model.get_object_id(value).id;
 
         // Search B+Tree for *values* given <obj,key>
         array<uint64_t, 3> min_prop_ids;

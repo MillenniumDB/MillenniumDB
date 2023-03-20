@@ -5,7 +5,7 @@
 
 struct ThreadInfo {
     bool interruption_requested = false;
-    std::chrono::system_clock::time_point timeout;
+    bool finished               = false;
 
-    ThreadInfo(std::chrono::system_clock::time_point timeout) : timeout(timeout) { }
+    std::chrono::system_clock::time_point timeout;
 };

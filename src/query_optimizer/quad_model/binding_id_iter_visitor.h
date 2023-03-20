@@ -10,7 +10,7 @@
 #include "base/ids/id.h"
 #include "base/query/var.h"
 #include "base/thread/thread_info.h"
-#include "parser/query/op/ops.h"
+#include "parser/query/op/mdb/ops.h"
 
 class BindingIdIter;
 class NodeId;
@@ -44,25 +44,25 @@ public:
     VarId get_var_id(const Var& var) const;
 
     /* This visitor only process these 2 Ops */
-    void visit(OpBasicGraphPattern&) override;
-    void visit(OpOptional&)          override;
+    void visit(MDB::OpBasicGraphPattern&) override;
+    void visit(MDB::OpOptional&)          override;
 
     /* These are processed in BindingIterVisitor */
-    void visit(OpDescribe&) override { }
-    void visit(OpGroupBy&)  override { }
-    void visit(OpMatch&)    override { }
-    void visit(OpOrderBy&)  override { }
-    void visit(OpReturn&)   override { }
-    void visit(OpSet&)      override { }
-    void visit(OpWhere&)    override { }
+    void visit(MDB::OpDescribe&) override { }
+    void visit(MDB::OpGroupBy&)  override { }
+    void visit(MDB::OpMatch&)    override { }
+    void visit(MDB::OpOrderBy&)  override { }
+    void visit(MDB::OpReturn&)   override { }
+    void visit(MDB::OpSet&)      override { }
+    void visit(MDB::OpWhere&)    override { }
 
     /* These are processed inside OpBasicGraphPattern */
-    void visit(OpEdge&)         override { }
-    void visit(OpIsolatedTerm&) override { }
-    void visit(OpIsolatedVar&)  override { }
-    void visit(OpLabel&)        override { }
-    void visit(OpPath&)         override { }
-    void visit(OpProperty&)     override { }
+    void visit(MDB::OpEdge&)         override { }
+    void visit(MDB::OpIsolatedTerm&) override { }
+    void visit(MDB::OpIsolatedVar&)  override { }
+    void visit(MDB::OpLabel&)        override { }
+    void visit(MDB::OpPath&)         override { }
+    void visit(MDB::OpProperty&)     override { }
 
 private:
     Id get_id(const QueryElement&) const;

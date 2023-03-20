@@ -1,6 +1,7 @@
 #pragma once
 
-#include "parser/query/op/graph_pattern/op_path.h"
+#include "execution/binding_id_iter/paths/index_provider/path_index/path_index.h"
+#include "parser/query/op/mdb/graph_pattern/op_path.h"
 #include "parser/query/paths/path.h"
 #include "query_optimizer/quad_model/plan/plan.h"
 
@@ -35,6 +36,9 @@ public:
                            uint_fast32_t&) const override { return false; }
 
     void print(std::ostream& os, int indent, const std::vector<std::string>& var_names) const override;
+
+    // Construct index provider for this automaton
+    std::unique_ptr<Paths::IndexProvider> get_provider(RPQ_DFA automaton, ThreadInfo* thread_info) const;
 
 private:
     const VarId path_var;

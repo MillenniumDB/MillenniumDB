@@ -5,8 +5,7 @@
 #include "base/exceptions.h"
 #include "base/binding/binding_iter.h"
 #include "base/exceptions.h"
-#include "parser/query/query_parser.h"
-#include "base/thread/thread_key.h"
+#include "parser/query/mdb_query_parser.h"
 #include "query_optimizer/quad_model/quad_model.h"
 #include "storage/buffer_manager.h"
 #include "storage/file_manager.h"
@@ -16,12 +15,12 @@ using namespace std;
 
 void execute_query(const std::string& query) {
     unique_ptr<BindingIter> physical_plan;
-    ThreadInfo thread_info(chrono::system_clock::now()); // timeout is not considered in this test
+    ThreadInfo thread_info; // timeout is not considered in this test
 
     // start timer
     auto start = chrono::system_clock::now();
     try {
-        auto logical_plan = QueryParser::get_query_plan(query);
+        auto logical_plan = MDB::QueryParser::get_query_plan(query);
         physical_plan = quad_model.exec(*logical_plan, &thread_info);
     }
     catch (const QueryException& e) {
@@ -75,6 +74,11 @@ int main(int argc, char **argv) {
     int private_buffer_size;
     string db_folder;
 
+    // Flags
+    string path_mode;  // "bfs" or "dfs"
+    string index_mode;  // "cache" or "naive"
+    string index_type;  // "btree" or "trie"
+
     try {
         // Parse arguments
         cxxopts::Options options("server", "MillenniumDB server");
@@ -85,6 +89,9 @@ int main(int argc, char **argv) {
                 cxxopts::value<int>(shared_buffer_size)->default_value(std::to_string(BufferManager::DEFAULT_SHARED_BUFFER_POOL_SIZE)))
             ("private-buffer-size", "set private buffer pool size for each thread",
                 cxxopts::value<int>(private_buffer_size)->default_value(std::to_string(BufferManager::DEFAULT_PRIVATE_BUFFER_POOL_SIZE)))
+            ("path-mode", "set path mode (\"bfs\" or \"dfs\")", cxxopts::value<string>(path_mode)->default_value("bfs"))
+            ("index-mode", "set index mode (\"cache\" or \"naive\")", cxxopts::value<string>(index_mode)->default_value("cache"))
+            ("index-type", "set index type (\"btree\" or \"trie\")", cxxopts::value<string>(index_type)->default_value("btree"))
         ;
         options.positional_help("db-folder");
         options.parse_positional({"db-folder"});
@@ -113,7 +120,7 @@ int main(int argc, char **argv) {
         }
 
         // Initialize model
-        auto model_destroyer = QuadModel::init(db_folder, shared_buffer_size, private_buffer_size, 1);
+        auto model_destroyer = QuadModel::init(db_folder, shared_buffer_size, private_buffer_size, 1, path_mode, index_mode, index_type);
 
         cout << "Initializing server...\n";
         quad_model.catalog().print();

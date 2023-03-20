@@ -47,7 +47,7 @@ public:
         return false;
     }
 
-    RPQAutomaton get_rpq_base_automaton() const override {
+    RPQ_NFA get_rpq_base_automaton() const override {
         throw LogicException("Data checks not supported in RPQ");
     }
 

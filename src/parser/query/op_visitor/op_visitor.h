@@ -4,6 +4,7 @@ class OpBasicGraphPattern;
 class OpDescribe;
 class OpEdge;
 class OpGroupBy;
+class OpInsert;
 class OpIsolatedTerm;
 class OpIsolatedVar;
 class OpLabel;
@@ -24,6 +25,7 @@ public:
     virtual void visit(OpDescribe&)          = 0;
     virtual void visit(OpEdge&)              = 0;
     virtual void visit(OpGroupBy&)           = 0;
+    virtual void visit(OpInsert&) { } // TODO: make empty default for all Ops?
     virtual void visit(OpIsolatedTerm&)      = 0;
     virtual void visit(OpIsolatedVar&)       = 0;
     virtual void visit(OpLabel&)             = 0;

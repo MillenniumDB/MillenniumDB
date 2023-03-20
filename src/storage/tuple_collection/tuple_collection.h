@@ -2,10 +2,11 @@
 // of GraphObjects on disk, the purpose of this class is to abstract the
 // operations of saving and reading the tuples on disk that a physical operator requires.
 
-// TupleCollection asumes that all the arrays of GraphObject have the same size
+// TupleCollection assumes that all the arrays of GraphObject have the same size
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "base/graph_object/graph_object.h"
