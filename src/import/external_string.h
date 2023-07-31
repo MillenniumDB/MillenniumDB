@@ -6,7 +6,7 @@
 
 #include "storage/page.h"
 #include "storage/string_manager.h"
-#include "third_party/xxhash/xxhash.h"
+#include "third_party/hashes/hash_function_wrapper.h"
 
 namespace Import {
 
@@ -51,6 +51,6 @@ struct std::hash<Import::ExternalString> {
         size_t len = StringManager::get_string_len(ptr, &bytes_for_len);
         ptr += bytes_for_len;
 
-        return XXH3_64bits(ptr, len);
+        return HashFunctionWrapper(ptr, len);
     }
 };

@@ -82,7 +82,7 @@ template <class K, class V>
 void KeyValueHash<K, V>::insert(const std::vector<K>& key, const std::vector<V>& value) {
     assert(key.size() == key_size);
 
-    uint64_t hash_ = hash_function_wrapper(key.data(), key_size);
+    uint64_t hash_ = HashFunctionWrapper(key.data(), key_size*sizeof(K));
     // assuming enough memory in each bucket
     uint64_t mask = (1 << depth) - 1;  // last depth bits
     uint64_t bucket_number = hash_ & mask;  // suffix = bucket_number in this case
@@ -237,7 +237,7 @@ void KeyValueHash<K, V>::split() {
                 // auto pair = current_buckets_pages[bucket_number]->get_pair(tuple_number);
                 auto tuple_key = reading_old_bucket_page->get_key(tuple_number);
                 auto tuple_value = reading_old_bucket_page->get_value(tuple_number);
-                uint64_t hash_ = hash_function_wrapper(tuple_key, key_size);
+                uint64_t hash_ = HashFunctionWrapper(tuple_key, key_size*sizeof(K));
                 uint64_t mask = number_of_buckets - 1;  // last (depth) bits
                 uint64_t insert_bucket_number = hash_ & mask;  // suffix = bucket_number
                 assert(insert_bucket_number == bucket_number || insert_bucket_number == previous_number_of_buckets + bucket_number);
@@ -297,7 +297,7 @@ template <class K, class V>
 uint_fast32_t KeyValueHash<K, V>::get_bucket(const std::vector<K>& key) const {
     assert(key.size() == key_size);
 
-    uint64_t hash_ = hash_function_wrapper(key.data(), key_size);
+    uint64_t hash_ = HashFunctionWrapper(key.data(), key_size*sizeof(K));
     uint64_t mask = (1 << depth) - 1;
     uint_fast32_t bucket_number = hash_ & mask;  // suffix = bucket_number in this case
     return bucket_number;

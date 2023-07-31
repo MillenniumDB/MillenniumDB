@@ -382,7 +382,7 @@ struct GraphObjectManager {
             default:
                 throw LogicException("Unmanaged case");
         }
-        if (lhs.type == lhs.type) {
+        if (lhs.type == rhs.type) {
             switch (lhs.type) {
             // case GraphObjectType::IRI_INLINED:
             // case GraphObjectType::IRI_EXTERNAL:
