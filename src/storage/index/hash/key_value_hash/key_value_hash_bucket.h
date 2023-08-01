@@ -6,8 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include "base/ids/object_id.h"
-#include "base/ids/var_id.h"
+#include "graph_models/object_id.h"
+#include "query/var_id.h"
 #include "storage/file_id.h"
 #include "storage/page.h"
 

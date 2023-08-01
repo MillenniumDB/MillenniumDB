@@ -5,6 +5,11 @@ obj/*
 bin/*
 build/
 
+# editor metadata
+tags
+compile_commands.json
+cscope.out
+
 ### C++ ###
 # Prerequisites
 *.d
@@ -42,19 +47,12 @@ build/
 # End of https://www.gitignore.io/api/c++
 makefile_out
 
-# Testing
-tests/dbs/*.*
-tests/dbs/*
-tests/query_debug
-tests/manual_query_debug
-tests/outputs/*
-
 ### CMake ###
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
-Testing
+# Testing
 Makefile
 cmake_install.cmake
 install_manifest.txt
@@ -66,8 +64,31 @@ _deps
 # External projects
 *-prefix/
 
+# TODO files
+TODO/*
+
 # environment
 .env
 
 # python cache
 *__pycache__/
+
+.antlr
+
+third_party/boost_1_81
+
+# Python virtual environment
+.venv
+
+# clangd
+/.cache
+
+/Notes.md
+/query.rq
+
+/data/
+/tests/sparql/tmp
+/tests/sparql/test-status-last.txt
+/tests/mql/tmp
+/tests/mql/test-status-last.txt
+/tests/trie/tmp-db

@@ -9,88 +9,87 @@
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/record.h"
 
-using namespace std;
+// requires first insert manually
+// template <std::size_t N>
+// std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::bulk_insert(BPlusTreeLeaf<N>& leaf) {
+//     int32_t page_pointer = children[*key_count];
+//     std::unique_ptr<BPlusTreeSplit<N>> split;
 
-// requieres first insert manually
-template <std::size_t N>
-std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::bulk_insert(BPlusTreeLeaf<N>& leaf) {
-    int32_t page_pointer = children[*key_count];
-    std::unique_ptr<BPlusTreeSplit<N>> split;
+//     if (page_pointer < 0) { // negative number: pointer to dir
+//         auto& child_page = buffer_manager.get_page(dir_file_id, page_pointer*-1);
+//         auto child =  BPlusTreeDir<N>(leaf_file_id, child_page);
+//         split = child.bulk_insert(leaf);
+//     }
+//     else { // positive number: pointer to leaf
+//         // TODO: pending
+//         split = std::make_unique<BPlusTreeSplit<N>>(*leaf.get_record(0), leaf.page.get_page_number());
+//     }
 
-    if (page_pointer < 0) { // negative number: pointer to dir
-        auto& child_page = buffer_manager.get_page(dir_file_id, page_pointer*-1);
-        auto child =  BPlusTreeDir<N>(leaf_file_id, child_page);
-        split = child.bulk_insert(leaf);
-    }
-    else { // positive number: pointer to leaf
-        split = make_unique<BPlusTreeSplit<N>>(*leaf.get_record(0), leaf.page.get_page_number());
-    }
+//     if (split != nullptr) {
+//         // Case 1: no need to split this node
+//         if (*key_count < BPlusTree<N>::dir_max_records) {
+//             update_key(*key_count, split->record);
+//             ++(*key_count);
+//             update_child(*key_count, split->encoded_page_number);
+//             page.make_dirty();
+//             return nullptr;
+//         }
+//         // Case 2: we need to split this node and this node is the root
+//         else if (page.get_page_number() == 0) {
+//             auto& new_left_page = buffer_manager.append_page(dir_file_id);
+//             auto& new_right_page = buffer_manager.append_page(dir_file_id);
 
-    if (split != nullptr) {
-        // Case 1: no need to split this node
-        if (*key_count < BPlusTree<N>::dir_max_records) {
-            update_key(*key_count, split->record);
-            ++(*key_count);
-            update_child(*key_count, split->encoded_page_number);
-            page.make_dirty();
-            return nullptr;
-        }
-        // Case 2: we need to split this node and this node is the root
-        else if (page.get_page_number() == 0) {
-            auto& new_left_page = buffer_manager.append_page(dir_file_id);
-            auto& new_right_page = buffer_manager.append_page(dir_file_id);
+//             auto new_left_dir = BPlusTreeDir<N>(leaf_file_id, new_left_page);
+//             auto new_right_dir = BPlusTreeDir<N>(leaf_file_id, new_right_page);
 
-            auto new_left_dir = BPlusTreeDir<N>(leaf_file_id, new_left_page);
-            auto new_right_dir = BPlusTreeDir<N>(leaf_file_id, new_right_page);
+//             // write left keys from 0 to (key_count-1)
+//             std::memcpy(
+//                 new_left_dir.keys,
+//                 keys,
+//                 (*key_count) * N * sizeof(uint64_t)
+//             );
+//             // write left children-pointers from 0 to key_count
+//             std::memcpy(
+//                 new_left_dir.children,
+//                 children,
+//                 ((*key_count) + 1) * sizeof(int32_t)
+//             );
 
-            // write left keys from 0 to (key_count-1)
-            std::memcpy(
-                new_left_dir.keys,
-                keys,
-                (*key_count) * N * sizeof(uint64_t)
-            );
-            // write left children-pointers from 0 to key_count
-            std::memcpy(
-                new_left_dir.children,
-                children,
-                ((*key_count) + 1) * sizeof(int32_t)
-            );
+//             // write right dirs
+//             new_right_dir.children[0] = split->encoded_page_number;
 
-            // write right dirs
-            new_right_dir.children[0] = split->encoded_page_number;
+//             // update counts
+//             *new_left_dir.key_count = *this->key_count;
+//             *this->key_count = 1;
+//             *new_right_dir.key_count = 0;
 
-            // update counts
-            *new_left_dir.key_count = *this->key_count;
-            *this->key_count = 1;
-            *new_right_dir.key_count = 0;
+//             std::memcpy(
+//                 keys,
+//                 split->record.data(),
+//                 N * sizeof(uint64_t)
+//             );
+//             children[0] = new_left_dir.page.get_page_number() * -1;
+//             children[1] = new_right_dir.page.get_page_number() * -1;
+//             new_left_page.make_dirty();
+//             new_right_page.make_dirty();
+//             this->page.make_dirty();
 
-            std::memcpy(
-                keys,
-                split->record.ids.data(),
-                N * sizeof(uint64_t)
-            );
-            children[0] = new_left_dir.page.get_page_number() * -1;
-            children[1] = new_right_dir.page.get_page_number() * -1;
-            new_left_page.make_dirty();
-            new_right_page.make_dirty();
-            this->page.make_dirty();
-
-            return nullptr;
-        }
-        // Case 3: no-root split
-        else {
-            auto& new_page = buffer_manager.append_page(dir_file_id);
-            auto new_dir = BPlusTreeDir<N>(leaf_file_id, new_page);
-            new_dir.children[0] = split->encoded_page_number;
-            *new_dir.key_count = 0;
-            // this->key_count does not change
-            new_page.make_dirty();
-            this->page.make_dirty();
-            return std::make_unique<BPlusTreeSplit<N>>(split->record, new_page.get_page_number()*-1);
-        }
-    }
-    return nullptr;
-}
+//             return nullptr;
+//         }
+//         // Case 3: no-root split
+//         else {
+//             auto& new_page = buffer_manager.append_page(dir_file_id);
+//             auto new_dir = BPlusTreeDir<N>(leaf_file_id, new_page);
+//             new_dir.children[0] = split->encoded_page_number;
+//             *new_dir.key_count = 0;
+//             // this->key_count does not change
+//             new_page.make_dirty();
+//             this->page.make_dirty();
+//             return std::make_unique<BPlusTreeSplit<N>>(split->record, new_page.get_page_number()*-1);
+//         }
+//     }
+//     return nullptr;
+// }
 
 
 template <std::size_t N>
@@ -108,7 +107,7 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
     }
     else { // positive number: pointer to leaf
         auto& child_page = buffer_manager.get_page(leaf_file_id, page_pointer);
-        auto child =  BPlusTreeLeaf<N>(child_page);
+        auto child =  BPlusTreeLeaf<N>(&child_page);
         split = child.insert(record);
     }
 
@@ -126,13 +125,13 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
         }
         // Case 2: we need to split this node and this node is the root
         else if (page.get_page_number() == 0) {
-            // poner nuevo record/dir y guardar el ultimo (que no cabe)
+            // put new record/dir and save the last (that does not fit)
             std::array<uint64_t, N> last_key;
             int_fast32_t last_dir;
             if (splitted_index == *key_count) { // splitted key is the last key
                 std::memcpy(
                     last_key.data(),
-                    split->record.ids.data(),
+                    split->record.data(),
                     N * sizeof(uint64_t)
                 );
                 last_dir = split->encoded_page_number;
@@ -209,13 +208,13 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
         }
         // Case 3: normal split (this node is not the root)
         else {
-            // poner nuevo record/dir y guardar el ultimo (que no cabe)
+            // put new record/dir and save the last (that does not fit)
             std::array<uint64_t, N> last_key;
             int_fast32_t last_dir;
             if (splitted_index == *key_count) { // splitted key is the last key
                 std::memcpy(
                     last_key.data(),
-                    split->record.ids.data(),
+                    split->record.data(),
                     N * sizeof(uint64_t)
                 );
                 last_dir = split->encoded_page_number;
@@ -268,7 +267,7 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
             );
             new_page.make_dirty();
             this->page.make_dirty();
-            return std::make_unique<BPlusTreeSplit<N>>(move(split_key), new_page.get_page_number()*-1);
+            return std::make_unique<BPlusTreeSplit<N>>(std::move(split_key), new_page.get_page_number()*-1);
         }
     }
     return nullptr;
@@ -279,7 +278,7 @@ template <std::size_t N>
 void BPlusTreeDir<N>::update_key(int_fast32_t index, const Record<N>& record) {
     std::memcpy(
         &keys[index*N],
-        record.ids.data(),
+        record.data(),
         N * sizeof(uint64_t)
     );
 }
@@ -321,15 +320,15 @@ SearchLeafResult<N> BPlusTreeDir<N>::search_leaf(const Record<N>& min) const noe
     }
     else { // positive number: pointer to leaf
         auto& child_page = buffer_manager.get_page(leaf_file_id, page_pointer);
-        auto child = make_unique<BPlusTreeLeaf<N>>(child_page);
-        auto index = child->search_index(min);
-        return SearchLeafResult(move(child), index);
+        BPlusTreeLeaf<N> child(&child_page);
+        auto index = child.search_index(min);
+        return SearchLeafResult(std::move(child), index);
     }
 }
 
 
 template <std::size_t N>
-SearchLeafResult<N> BPlusTreeDir<N>::search_leaf(stack< unique_ptr<BPlusTreeDir<N>> >& stack,
+SearchLeafResult<N> BPlusTreeDir<N>::search_leaf(std::stack< std::unique_ptr<BPlusTreeDir<N>> >& stack,
                                                  const Record<N>& min) const noexcept
 {
     auto dir_index = search_child_index(min);
@@ -337,15 +336,15 @@ SearchLeafResult<N> BPlusTreeDir<N>::search_leaf(stack< unique_ptr<BPlusTreeDir<
 
     if (page_pointer < 0) { // negative number: pointer to dir
         auto& child_page = buffer_manager.get_page(dir_file_id, page_pointer*-1);
-        auto child = make_unique<BPlusTreeDir<N>>(leaf_file_id, child_page);
+        auto child = std::make_unique<BPlusTreeDir<N>>(leaf_file_id, child_page);
         stack.push( std::move(child) );
         return stack.top()->search_leaf(stack, min);
     }
     else { // positive number: pointer to leaf
         auto& child_page = buffer_manager.get_page(leaf_file_id, page_pointer);
-        auto child = make_unique<BPlusTreeLeaf<N>>(child_page);
-        auto index = child->search_index(min);
-        return SearchLeafResult(move(child), index);
+        BPlusTreeLeaf<N> child(&child_page);
+        auto index = child.search_index(min);
+        return SearchLeafResult(std::move(child), index);
     }
 }
 
@@ -363,10 +362,10 @@ search_child_index_begin:
 
     for (uint_fast32_t i = 0; i < N; i++) {
         auto id = keys[middle_record*N + i];
-        if (record.ids[i] < id) {
+        if (record[i] < id) {
             dir_to = middle_record;
             goto search_child_index_begin;
-        } else if (record.ids[i] > id) {
+        } else if (record[i] > id) {
             dir_from = middle_record+1;
             goto search_child_index_begin;
         }
@@ -389,7 +388,7 @@ bool BPlusTreeDir<N>::check_range(const Record<N>& r) const {
         max[i] = keys[(*key_count-1)*N + i];
     }
 
-    return min <= r.ids && r.ids <= max;
+    return min <= r && r <= max;
 }
 
 
@@ -411,13 +410,13 @@ bool BPlusTreeDir<N>::check() const {
 
         uint_fast32_t current_pos = 0;
         while (current_pos < N) {
-            x.ids[current_pos] = keys[current_pos];
+            x[current_pos] = keys[current_pos];
             current_pos++;
         }
 
         for (uint_fast32_t k = 1; k < *key_count; k++) {
             for (uint_fast32_t i = 0; i < N; i++) {
-                y.ids[i] = keys[current_pos++];
+                y[i] = keys[current_pos++];
             }
             if (y <= x) {
                 std::cerr << "  bad key order at BPlusTreeDir:\n";
@@ -437,7 +436,7 @@ bool BPlusTreeDir<N>::check() const {
         auto smallest_right_key = Record<N>(std::array<uint64_t, N>());
 
         for (uint_fast32_t j = 0; j < N; j++) {
-            key.ids[j] = keys[current_pos++];
+            key[j] = keys[current_pos++];
         }
 
         // Set greatest_left_key
@@ -446,14 +445,14 @@ bool BPlusTreeDir<N>::check() const {
             auto& left_page = buffer_manager.get_page(dir_file_id, left_pointer*-1);
             auto left_child =  BPlusTreeDir(leaf_file_id, left_page);
             for (uint_fast32_t j = 0; j < N; j++) {
-                greatest_left_key.ids[j] = left_child.keys[((*left_child.key_count-1) * N) + j];
+                greatest_left_key[j] = left_child.keys[((*left_child.key_count-1) * N) + j];
             }
         }
         else { // positive number: pointer to leaf
             auto& left_page = buffer_manager.get_page(leaf_file_id, left_pointer);
-            auto left_child =  BPlusTreeLeaf<N>(left_page);
+            auto left_child =  BPlusTreeLeaf<N>(&left_page);
             for (uint_fast32_t j = 0; j < N; j++) {
-                greatest_left_key.ids[j] = left_child.records[((*left_child.value_count-1) * N) + j];
+                greatest_left_key[j] = left_child.records[((*left_child.value_count-1) * N) + j];
             }
         }
 
@@ -464,7 +463,7 @@ bool BPlusTreeDir<N>::check() const {
             Page& right_page = buffer_manager.get_page(dir_file_id, right_pointer*-1);
             auto right_child =  BPlusTreeDir(leaf_file_id, right_page);
             for (uint_fast32_t j = 0; j < N; j++) {
-                smallest_right_key.ids[j] = right_child.keys[j];
+                smallest_right_key[j] = right_child.keys[j];
             }
             if (*right_child.key_count == 0) {
                 right_empty = true;
@@ -472,9 +471,9 @@ bool BPlusTreeDir<N>::check() const {
         }
         else { // positive number: pointer to leaf
             Page& right_page = buffer_manager.get_page(leaf_file_id, right_pointer);
-            auto right_child =  BPlusTreeLeaf<N>(right_page);
+            auto right_child =  BPlusTreeLeaf<N>(&right_page);
             for (uint_fast32_t j = 0; j < N; j++) {
-                smallest_right_key.ids[j] = right_child.records[j];
+                smallest_right_key[j] = right_child.records[j];
             }
             if (*right_child.value_count == 0) {
                 right_empty = true;
@@ -507,7 +506,7 @@ bool BPlusTreeDir<N>::check() const {
         }
         else { // positive number: pointer to leaf
             auto& child_page = buffer_manager.get_page(leaf_file_id, page_pointer);
-            auto child = BPlusTreeLeaf<N>(child_page);
+            auto child = BPlusTreeLeaf<N>(&child_page);
             if (!child.check())
                 return false;
         }

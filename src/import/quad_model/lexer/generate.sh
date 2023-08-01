@@ -1,2 +1,2 @@
 #!/bin/sh
-flex -o lex.yy.cc mdb.l
+flex -o lex.yy.cc mql.l

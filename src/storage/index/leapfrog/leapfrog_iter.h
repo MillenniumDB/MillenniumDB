@@ -3,12 +3,11 @@
 #include <stack>
 #include <vector>
 
-#include "execution/binding_id_iter/scan_ranges/scan_range.h"
+#include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "storage/index/random_access_table/random_access_table.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/bplus_tree/bplus_tree_dir.h"
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
-#include "storage/index/tuple_buffer/tuple_buffer.h"
 
 class LeapfrogIter {
 public:
@@ -18,7 +17,7 @@ public:
 
     virtual void up() { level--; }
     virtual void down() = 0;
-    virtual bool open_terms(BindingId& input_binding) = 0;
+    virtual bool open_terms(Binding& input_binding) = 0;
     virtual bool next() = 0;
     virtual bool seek(uint64_t key) = 0;
     virtual uint64_t get_key() const = 0;
@@ -28,7 +27,7 @@ public:
 
     virtual void begin_enumeration() = 0;
     virtual void reset_enumeration() = 0;
-    virtual bool next_enumeration(BindingId&) = 0;
+    virtual bool next_enumeration(Binding&) = 0;
 
 protected:
     const std::vector<std::unique_ptr<ScanRange>> initial_ranges;

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "base/ids/var_id.h"
+#include "query/var_id.h"
 #include "storage/file_id.h"
 
 template <class T>
@@ -13,6 +13,9 @@ public:
 
     DistinctBindingHash(std::size_t vars_size);
     ~DistinctBindingHash();
+
+    // Clears all stored tuples
+    void reset();
 
     bool is_in(const std::vector<T>& tuple);
 

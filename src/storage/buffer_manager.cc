@@ -4,7 +4,7 @@
 #include <new>         // placement new
 #include <type_traits> // aligned_storage
 
-#include "base/exceptions.h"
+#include "query/exceptions.h"
 #include "storage/file_manager.h"
 
 using namespace std;
@@ -63,6 +63,7 @@ void BufferManager::flush() {
     // this is important to check to avoid segfault when program terminates before calling init()
     assert(buffer_pool != nullptr);
     for (uint_fast32_t i = 0; i < shared_buffer_pool_size; i++) {
+        assert(buffer_pool[i].pins == 0);
         if (buffer_pool[i].dirty) {
             file_manager.flush(buffer_pool[i]);
         }

@@ -32,7 +32,7 @@ public:
         buffer_manager.unpin(page);
     }
 
-    std::unique_ptr<BPlusTreeSplit<N>> bulk_insert(BPlusTreeLeaf<N>& leaf);
+    // std::unique_ptr<BPlusTreeSplit<N>> bulk_insert(BPlusTreeLeaf<N>& leaf);
 
     // returns not null when it needs to split
     std::unique_ptr<BPlusTreeSplit<N>> insert(const Record<N>& record);

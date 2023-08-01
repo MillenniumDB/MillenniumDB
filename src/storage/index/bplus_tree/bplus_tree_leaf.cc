@@ -3,18 +3,16 @@
 #include <iostream>
 #include <cstring>
 
-#include "base/exceptions.h"
+#include "query/exceptions.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
 using namespace std;
 
 template <std::size_t N>
-unique_ptr<Record<N>> BPlusTreeLeaf<N>::get_record(uint_fast32_t pos) const {
-    std::array<uint64_t, N> ids;
+void BPlusTreeLeaf<N>::get_record(uint_fast32_t pos, Record<N>* out) const {
     for (uint_fast32_t i = 0; i < N; i++) {
-        ids[i] = records[pos*N + i];
+        (*out)[i] = records[pos*N + i];
     }
-    return make_unique<Record<N>>(move(ids));
 }
 
 
@@ -22,16 +20,16 @@ template <std::size_t N>
 unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) {
     if (*value_count == 0) {
         for (uint_fast32_t i = 0; i < N; i++) {
-            records[i] = record.ids[i];
+            records[i] = record[i];
         }
         ++(*value_count);
-        this->page.make_dirty();
+        this->page->make_dirty();
         return nullptr;
     }
     uint_fast32_t index = search_index(record);
     if (equal_record(record, index)) {
         for (uint_fast32_t i = 0; i < N; i++) {
-            cout << record.ids[i] << " ";
+            cout << record[i] << " ";
         }
         cout << "\n";
         for (uint_fast32_t i = 0; i < N; i++) {
@@ -46,38 +44,38 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
         shift_right_records(index, (*value_count)-1);
 
         for (uint_fast32_t i = 0; i < N; i++) {
-            records[index*N + i] = record.ids[i];
+            records[index*N + i] = record[i];
         }
         ++(*value_count);
-        this->page.make_dirty();
+        this->page->make_dirty();
         return nullptr;
     }
     else {
-        // poner nuevo record y guardar el ultimo (que no cabe)
+        // put new record and save the last (that does not fit)
         auto last_key = std::array<uint64_t, N>();
-        if (index == (*value_count)) { // la llave a insertar es la ultima
+        if (index == (*value_count)) { // the last_key will be inserted
             for (uint_fast32_t i = 0; i < N; i++) {
-                last_key[i] = record.ids[i];
+                last_key[i] = record[i];
             }
         }
         else {
-            // guardar ultima llave
+            // save last key
             for (uint_fast32_t i = 0; i < N; i++) {
                 last_key[i] = records[((*value_count)-1)*N + i];
             }
 
             shift_right_records(index, (*value_count)-2);
             for (uint_fast32_t i = 0; i < N; i++) {
-                records[index*N + i] = record.ids[i];
+                records[index*N + i] = record[i];
             }
         }
 
-        // crear nueva hoja
+        // create new leaf
         auto& new_page = buffer_manager.append_page(leaf_file_id);
-        auto new_leaf = BPlusTreeLeaf<N>(new_page);
+        auto new_leaf = BPlusTreeLeaf<N>(&new_page);
 
         *new_leaf.next_leaf = *next_leaf;
-        *next_leaf = new_leaf.page.get_page_number();
+        *next_leaf = new_leaf.page->get_page_number();
 
         // write records
         auto middle_index = ((*value_count)+1)/2;
@@ -103,8 +101,8 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
         for (uint_fast32_t i = 0; i < N; i++) {
             split_key[i] = new_leaf.records[i];
         }
-        auto split_record = Record<N>(move(split_key));
-        this->page.make_dirty();
+        auto split_record = Record<N>(std::move(split_key));
+        this->page->make_dirty();
         new_page.make_dirty();
 
         return make_unique<BPlusTreeSplit<N>>(split_record, new_page.get_page_number());
@@ -117,17 +115,17 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
 template <std::size_t N>
 uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept {
     int_fast32_t from = 0;
-    int_fast32_t to = (*value_count)-1;
+    int_fast32_t to = static_cast<int_fast32_t>(*value_count)-1;
 search_index_begin:
     if (from < to) {
         auto middle = (from + to) / 2;
 
         for (uint_fast32_t i = 0; i < N; i++) {
             auto id = records[middle*N + i];
-            if (record.ids[i] < id) { // record is smaller
+            if (record[i] < id) { // record is smaller
                 to = middle - 1;
                 goto search_index_begin;
-            } else if (record.ids[i] > id) { // record is greater
+            } else if (record[i] > id) { // record is greater
                 from = middle + 1;
                 goto search_index_begin;
             }
@@ -138,9 +136,9 @@ search_index_begin:
     // from >= to
     for (uint_fast32_t i = 0; i < N; ++i) {
         auto id = records[from*N + i];
-        if (record.ids[i] < id) {
+        if (record[i] < id) {
             return from;
-        } else if (record.ids[i] > id) {
+        } else if (record[i] > id) {
             return from + 1;
         }
         // continue if they were equal
@@ -162,7 +160,7 @@ void BPlusTreeLeaf<N>::shift_right_records(int_fast32_t from, int_fast32_t to) {
 template <std::size_t N>
 bool BPlusTreeLeaf<N>::equal_record(const Record<N>& record, uint_fast32_t index) {
     for (uint_fast32_t i = 0; i < N; i++) {
-        if (records[N*index + i] != record.ids[i]) {
+        if (records[N*index + i] != record[i]) {
             return false;
         }
     }
@@ -182,7 +180,7 @@ bool BPlusTreeLeaf<N>::check_range(const Record<N>& r) const {
         max[i] = records[(*value_count-1)*N + i];
     }
 
-    return min <= r.ids && r.ids <= max;
+    return min <= r && r <= max;
 }
 
 
@@ -204,10 +202,10 @@ void BPlusTreeLeaf<N>::print() const {
 template <std::size_t N>
 bool BPlusTreeLeaf<N>::check() const {
     if ((*value_count) == 0) {
-        if (page.get_page_number() == 0) {
+        if (page->get_page_number() == 0) {
             cout << "  WARNING: empty leaf. Ok only if the b+tree is empty.\n";
         } else {
-            cerr << "  ERROR: BPlusTreeLeaf empty (page: " << page.get_page_number() << ")\n";
+            cerr << "  ERROR: BPlusTreeLeaf empty (page: " << page->get_page_number() << ")\n";
             return false;
         }
     } else {
@@ -230,7 +228,7 @@ bool BPlusTreeLeaf<N>::check() const {
                 y[i] = records[current_pos++];
             }
             if (y <= x) {
-                cerr << "  ERROR: bad record order at BPlusTreeLeaf(page: " << page.get_page_number() << ")\n";
+                cerr << "  ERROR: bad record order at BPlusTreeLeaf(page: " << page->get_page_number() << ")\n";
                 for (size_t n = 0; n < N; n++) {
                     cerr << "\t" << x[n];
                 }
