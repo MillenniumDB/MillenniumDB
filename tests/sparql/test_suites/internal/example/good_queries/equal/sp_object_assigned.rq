@@ -1,0 +1,6 @@
+PREFIX eq: <http://www.equals.com/>
+
+SELECT ?sp
+WHERE {
+    ?sp ?sp eq:o1 .
+}

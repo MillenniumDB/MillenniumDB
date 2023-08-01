@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "s", "count_star" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/a" },
+        "count_star": { "type": "literal", "value": "8", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/b" },
+        "count_star": { "type": "literal", "value": "7", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/c" },
+        "count_star": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

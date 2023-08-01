@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+DESCRIBE *
+WHERE {
+    :l1 :list ?person .
+}

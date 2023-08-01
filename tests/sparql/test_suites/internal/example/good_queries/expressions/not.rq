@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && ! false
+        && !(!true)
+        && !(!(!false))
+        && !(1=2)
+    )
+}

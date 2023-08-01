@@ -1,0 +1,1 @@
+{"head":{"vars":["s","p","o"]},"results":{"bindings":[{"s":{"type":"uri","value":"http://www.absolute1.com/absoluteSubject"},"p":{"type":"uri","value":"http://www.absolute2.com/absolutePredicate"},"o":{"type":"uri","value":"http://www.absolute3.com/absoluteObject"}}]}}

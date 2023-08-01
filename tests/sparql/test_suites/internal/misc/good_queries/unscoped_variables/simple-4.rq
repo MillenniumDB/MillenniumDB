@@ -1,0 +1,10 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o ?x
+WHERE {
+  {
+    BIND(1 AS ?x)
+    :a :t3 ?o .
+    # ?x is in scope at the time of filter execution.
+    FILTER(BOUND(?x))
+  }
+}

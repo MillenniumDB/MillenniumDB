@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?double ?bool (sum(?o) AS ?sum_o)
+WHERE {
+  ?s :t7 ?o .
+}
+GROUP BY (?o * 1e0 AS ?double) (?double > 1 AS ?bool)

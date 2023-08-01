@@ -1,0 +1,9 @@
+{
+  "head": { "vars": [ "p" ] },
+  "results": {
+    "bindings": [
+      { "p": { "type": "uri", "value": "http://a.c/p1" } },
+      { "p": { "type": "uri", "value": "http://a.c/p2" } }
+    ]
+  }
+}

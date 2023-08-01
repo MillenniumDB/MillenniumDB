@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+SELECT (sum(?o) as ?sum_o) (sum(?o + 1) AS ?sum_o_plus_1)
+WHERE {
+  ?s :t2 ?o .
+}

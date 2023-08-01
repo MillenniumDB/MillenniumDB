@@ -1,0 +1,8 @@
+PREFIX prefixoptext: <http://www.prefixedExternal.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s prefixoptext:externalp1 prefixoptext:externalo1 .
+    prefixoptext:externals2 ?p prefixoptext:externalo2 .
+    prefixoptext:externals3 prefixoptext:externalp3 ?o .
+}

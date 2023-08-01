@@ -1,0 +1,226 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && (2                                                >= 1                                              )
+        && (2.0                                              >= 1                                              )
+        && (2e0                                              >= 1                                              )
+        && (2                                                >= 1.0                                            )
+        && (2.0                                              >= 1.0                                            )
+        && (2e0                                              >= 1.0                                            )
+        && (2                                                >= 1e0                                            )
+        && (2.0                                              >= 1e0                                            )
+        && (2e0                                              >= 1e0                                            )
+
+        && (-1                                               >= -2                                             )
+        && (-1                                               >= -2.0                                           )
+        && (-1                                               >= -2e0                                           )
+        && (-1.0                                             >= -2                                             )
+        && (-1.0                                             >= -2.0                                           )
+        && (-1.0                                             >= -2e0                                           )
+        && (-1e0                                             >= -2                                             )
+        && (-1e0                                             >= -2.0                                           )
+        && (-1e0                                             >= -2e0                                           )
+
+        && !(1                                               >= 2                                              )
+        && !(1                                               >= 2.0                                            )
+        && !(1                                               >= 2e0                                            )
+        && !(1.0                                             >= 2                                              )
+        && !(1.0                                             >= 2.0                                            )
+        && !(1.0                                             >= 2e0                                            )
+        && !(1e0                                             >= 2                                              )
+        && !(1e0                                             >= 2.0                                            )
+        && !(1e0                                             >= 2e0                                            )
+
+        && !(-2                                              >= -1                                             )
+        && !(-2.0                                            >= -1                                             )
+        && !(-2e0                                            >= -1                                             )
+        && !(-2                                              >= -1.0                                           )
+        && !(-2.0                                            >= -1.0                                           )
+        && !(-2e0                                            >= -1.0                                           )
+        && !(-2                                              >= -1e0                                           )
+        && !(-2.0                                            >= -1e0                                           )
+        && !(-2e0                                            >= -1e0                                           )
+
+        &&  (1                                               >= 1                                              )
+        &&  (1.0                                             >= 1                                              )
+        &&  (1e0                                             >= 1                                              )
+        &&  (1                                               >= 1.0                                            )
+        &&  (1.0                                             >= 1.0                                            )
+        &&  (1e0                                             >= 1.0                                            )
+        &&  (1                                               >= 1e0                                            )
+        &&  (1.0                                             >= 1e0                                            )
+        &&  (1e0                                             >= 1e0                                            )
+
+        && !(1e0                                             >= 1e20                                           )
+        && !(1e0                                             >= 1e20                                           )
+        && !(1e0                                             >= 1e20                                           )
+        && !(1.0                                             >= 1000000000000000000000000000000000.0           )
+        && !(1.0                                             >= 1000000000000000000000000000000000.0           )
+        && !(1.0                                             >= 1000000000000000000000000000000000.0           )
+
+        && (1e20                                             >= 1e0                                            )
+        && (1e20                                             >= 1e0                                            )
+        && (1e20                                             >= 1e0                                            )
+        && (1000000000000000000000000000000000.0             >= 1.0                                            )
+        && (1000000000000000000000000000000000.0             >= 1.0                                            )
+        && (1000000000000000000000000000000000.0             >= 1.0                                            )
+
+        &&  (123.456789                                      >= 123.456                                        )
+        && !(123.456                                         >= 123.456789                                     )
+        &&  (123.456789                                      >= 123.456789                                     )
+
+        &&  ("fhs"                                           >= "fhs"                                          )
+        &&  ("b"                                             >= "a"                                            )
+        &&  ("aaa"                                           >= "aa"                                           )
+        &&  ("aab"                                           >= "aaa"                                          )
+        &&  ("aab"                                           >= "aaaa"                                         )
+        &&  ("aba"                                           >= "ab"                                           )
+        && !("a"                                             >= "b"                                            )
+        && !("aa"                                            >= "aaa"                                          )
+        && !("aaa"                                           >= "aab"                                          )
+        && !("aaaa"                                          >= "aab"                                          )
+        && !("ab"                                            >= "aba"                                          )
+
+        &&  ("Кириллица"                                     >= "Кириллица"                                    )
+        &&  ("Кириллица"                                     >= "zzzzz"                                        )
+        &&  ("漢字"                                            >= "zzzzz"                                        )
+        &&  ("漢字"                                            >= "Кириллица"                                    )
+        &&  ("zzzzz"                                         >= "aaКириллица"                                  )
+        && !("zzzzz"                                         >= "Кириллица"                                    )
+        && !("aaКириллица"                                   >= "zzzzz"                                        )
+        && !("zzzzz"                                         >= "漢字"                                           )
+        && !("Кириллица"                                     >= "漢字"                                           )
+
+        &&  ("fes"^^xsd:string                               >= "fes"^^xsd:string                              )
+        &&  ("b"^^xsd:string                                 >= "a"^^xsd:string                                )
+        &&  ("aaa"^^xsd:string                               >= "aa"^^xsd:string                               )
+        &&  ("aab"^^xsd:string                               >= "aaa"^^xsd:string                              )
+        &&  ("aab"^^xsd:string                               >= "aaaa"^^xsd:string                             )
+        &&  ("aba"^^xsd:string                               >= "ab"^^xsd:string                               )
+        && !("a"^^xsd:string                                 >= "b"^^xsd:string                                )
+        && !("aa"^^xsd:string                                >= "aaa"^^xsd:string                              )
+        && !("aaa"^^xsd:string                               >= "aab"^^xsd:string                              )
+        && !("aaaa"^^xsd:string                              >= "aab"^^xsd:string                              )
+        && !("ab"^^xsd:string                                >= "aba"^^xsd:string                              )
+
+
+        &&  ("fes"@en-US                                     >= "fes"@en-US                                    )
+        &&  ("b"@en-US                                       >= "a"@en-US                                      )
+        &&  ("aaa"@en-US                                     >= "aa"@en-US                                     )
+        &&  ("aab"@en-US                                     >= "aaa"@en-US                                    )
+        &&  ("aab"@en-US                                     >= "aaaa"@en-US                                   )
+        &&  ("aba"@en-US                                     >= "ab"@en-US                                     )
+        && !("a"@en-US                                       >= "b"@en-US                                      )
+        && !("aa"@en-US                                      >= "aaa"@en-US                                    )
+        && !("aaa"@en-US                                     >= "aab"@en-US                                    )
+        && !("aaaa"@en-US                                    >= "aab"@en-US                                    )
+        && !("ab"@en-US                                      >= "aba"@en-US                                    )
+
+        &&  ("aaa"@en-US                                     >= "zzz"                                          )
+        &&  ("aaa"@fr-CA                                     >= "zzz"@en-US                                    )
+        && !("zzz"                                           >= "aaa"@en-US                                    )
+        && !("zzz"@en-US                                     >= "aaa"@fr-CA                                    )
+
+        &&  ("aaaa"^^<http://www.datatype.com/dt1>           >= "zzzz"^^xsd:string                             )
+        && !("zzzz"^^xsd:string                              >= "aaaa"^^<http://www.datatype.com/dt1>          )
+
+        &&  ("aaaa"^^<http://www.datatype.com/dt2>           >= "zzzz"^^<http://www.datatype.com/dt1>          )
+        && !("zzzz"^^<http://www.datatype.com/dt1>           >= "aaaa"^^<http://www.datatype.com/dt2>          )
+
+        && Coalesce((1 + "a")               >= <http://example.com/zz>, "null") = "null"
+        && Coalesce(<http://example.com/zz> >= "a"                    , "null") = "null"
+        && Coalesce(<http://example.com/zz> >= "a"^^xsd:string        , "null") = "null"
+        && Coalesce(<http://example.com/zz> >= "a"@en-US              , "null") = "null"
+        && Coalesce("a"                     >= 1                      , "null") = "null"
+        && Coalesce("a"                     >= 1.0                    , "null") = "null"
+        && Coalesce("a"                     >= 1e0                    , "null") = "null"
+        && Coalesce(<http://example.com/zz> >= (1 + "a")              , "null") = "null"
+        && Coalesce("a"                     >= <http://example.com/zz>, "null") = "null"
+        && Coalesce("a"^^xsd:string         >= <http://example.com/zz>, "null") = "null"
+        && Coalesce("a"@en-US               >= <http://example.com/zz>, "null") = "null"
+        && Coalesce(1                       >= "a"                    , "null") = "null"
+        && Coalesce(1.0                     >= "a"                    , "null") = "null"
+        && Coalesce(1e0                     >= "a"                    , "null") = "null"
+
+        &&  (<http://www.path.com/fes>                       >= <http://www.path.com/fes>                      )
+        &&  (<http://www.path.com/b>                         >= <http://www.path.com/a>                        )
+        &&  (<http://www.path.com/aaa>                       >= <http://www.path.com/aa>                       )
+        &&  (<http://www.path.com/aab>                       >= <http://www.path.com/aaa>                      )
+        &&  (<http://www.path.com/aab>                       >= <http://www.path.com/aaaa>                     )
+        &&  (<http://www.path.com/aba>                       >= <http://www.path.com/ab>                       )
+        && !(<http://www.path.com/a>                         >= <http://www.path.com/b>                        )
+        && !(<http://www.path.com/aa>                        >= <http://www.path.com/aaa>                      )
+        && !(<http://www.path.com/aaa>                       >= <http://www.path.com/aab>                      )
+        && !(<http://www.path.com/aaaa>                      >= <http://www.path.com/aab>                      )
+        && !(<http://www.path.com/ab>                        >= <http://www.path.com/aba>                      )
+
+        &&  (<http://www.path.com/Ки>                        >= <http://www.path.com/zz>                       )
+        &&  (<http://www.path.com/漢字>                        >= <http://www.path.com/zz>                       )
+        &&  (<http://www.path.com/漢字>                        >= <http://www.path.com/Ки>                       )
+        &&  (<http://www.path.com/zz>                        >= <http://www.path.com/aaКи>                     )
+        && !(<http://www.path.com/zz>                        >= <http://www.path.com/Ки>                       )
+        && !(<http://www.path.com/aaКи>                      >= <http://www.path.com/zz>                       )
+        && !(<http://www.path.com/zz>                        >= <http://www.path.com/漢字>                       )
+        && !(<http://www.path.com/Ки>                        >= <http://www.path.com/漢字>                       )
+
+        &&  (<http://example.com/xxxxxxxxxxfes>              >= <http://example.com/xxxxxxxxxxfes>             )
+        &&  (<http://example.com/xxxxxxxxxxb>                >= <http://example.com/xxxxxxxxxxa>               )
+        &&  (<http://example.com/xxxxxxxxxxaaa>              >= <http://example.com/xxxxxxxxxxaa>              )
+        &&  (<http://example.com/xxxxxxxxxxaab>              >= <http://example.com/xxxxxxxxxxaaa>             )
+        &&  (<http://example.com/xxxxxxxxxxaab>              >= <http://example.com/xxxxxxxxxxaaaa>            )
+        &&  (<http://example.com/xxxxxxxxxxaba>              >= <http://example.com/xxxxxxxxxxab>              )
+        && !(<http://example.com/xxxxxxxxxxa>                >= <http://example.com/xxxxxxxxxxb>               )
+        && !(<http://example.com/xxxxxxxxxxaa>               >= <http://example.com/xxxxxxxxxxaaa>             )
+        && !(<http://example.com/xxxxxxxxxxaaa>              >= <http://example.com/xxxxxxxxxxaab>             )
+        && !(<http://example.com/xxxxxxxxxxaaaa>             >= <http://example.com/xxxxxxxxxxaab>             )
+        && !(<http://example.com/xxxxxxxxxxab>               >= <http://example.com/xxxxxxxxxxaba>             )
+
+        &&  (<http://example.com/xxxxxxxxxxКириллица>        >= <http://example.com/xxxxxxxxxxzzzzz>           )
+        &&  (<http://example.com/xxxxxxxxxx漢字>               >= <http://example.com/xxxxxxxxxxzzzzz>           )
+        &&  (<http://example.com/xxxxxxxxxx漢字>               >= <http://example.com/xxxxxxxxxxКириллица>       )
+        &&  (<http://example.com/xxxxxxxxxxzzzzz>            >= <http://example.com/xxxxxxxxxxaaКириллица>     )
+        && !(<http://example.com/xxxxxxxxxxzzzzz>            >= <http://example.com/xxxxxxxxxxКириллица>       )
+        && !(<http://example.com/xxxxxxxxxxaaКириллица>      >= <http://example.com/xxxxxxxxxxzzzzz>           )
+        && !(<http://example.com/xxxxxxxxxxzzzzz>            >= <http://example.com/xxxxxxxxxx漢字>              )
+        && !(<http://example.com/xxxxxxxxxxКириллица>        >= <http://example.com/xxxxxxxxxx漢字>              )
+
+
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-12-22T22:22:22"^^xsd:dateTime            )
+
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-12-22T22:22:21"^^xsd:dateTime            )
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-12-22T22:21:22"^^xsd:dateTime            )
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-12-22T21:22:22"^^xsd:dateTime            )
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-12-21T22:22:22"^^xsd:dateTime            )
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2222-11-22T22:22:22"^^xsd:dateTime            )
+        &&  ("2222-12-22T22:22:22"^^xsd:dateTime             >= "2221-12-22T22:22:22"^^xsd:dateTime            )
+
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-2222-12-22T22:22:21"^^xsd:dateTime           )
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-2222-12-22T22:21:22"^^xsd:dateTime           )
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-2222-12-22T21:22:22"^^xsd:dateTime           )
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-2222-12-21T22:22:22"^^xsd:dateTime           )
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-2222-11-22T22:22:22"^^xsd:dateTime           )
+
+        &&  ("-2221-12-22T22:22:22"^^xsd:dateTime            >= "-2222-12-22T22:22:22"^^xsd:dateTime           )
+
+        &&  ("222222222222222-12-22T22:22:22"^^xsd:dateTime  >= "222222222222221-12-22T22:22:22"^^xsd:dateTime )
+        &&  ("-222222222222221-12-22T22:22:22"^^xsd:dateTime >= "-222222222222222-12-22T22:22:22"^^xsd:dateTime)
+
+        &&  ("222222222222222-12-22T22:22:22"^^xsd:dateTime  >= "2222-12-22T22:22:22"^^xsd:dateTime            )
+        &&  ("-2222-12-22T22:22:22"^^xsd:dateTime            >= "-222222222222222-12-22T22:22:22"^^xsd:dateTime)
+
+        &&  (true                                            >= false                                          )
+        && !(false                                           >= true                                           )
+        &&  (true                                            >= true                                           )
+        &&  (false                                           >= false                                          )
+
+        &&  ("ooooooox"@en-US                                >= "oooooooo"@en-US                               )
+        && !("oooooooo"@en-US                                >= "ooooooox"@en-US                               )
+        &&  ("oooooooo"@en-US                                >= "oooooooo"@en-US                               )
+
+        &&  ("ooooooox"^^<http://www.datatype.com/dt1>       >= "oooooooo"^^<http://www.datatype.com/dt1>      )
+        && !("oooooooo"^^<http://www.datatype.com/dt1>       >= "ooooooox"^^<http://www.datatype.com/dt1>      )
+        &&  ("oooooooo"^^<http://www.datatype.com/dt1>       >= "oooooooo"^^<http://www.datatype.com/dt1>      )
+    )
+}

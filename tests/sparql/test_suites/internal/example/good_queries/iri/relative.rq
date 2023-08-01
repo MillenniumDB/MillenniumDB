@@ -1,0 +1,10 @@
+PREFIX rel1: <http://www.relative1.com/>
+PREFIX rel2: <http://www.relative2.com/>
+PREFIX rel3: <http://www.relative3.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s rel1:relativePredicate rel1:relativeObject .
+    rel2:relativeSubject ?p rel2:relativeObject .
+    rel3:relativeSubject rel3:relativePredicate ?o .
+}

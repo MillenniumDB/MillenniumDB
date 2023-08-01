@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "min_p" ] },
+  "results": {
+    "bindings": [
+      { "min_p": { "type": "uri", "value": "http://example.org/p" } }
+    ]
+  }
+}

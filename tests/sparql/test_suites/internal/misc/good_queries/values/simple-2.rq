@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o
+WHERE {
+    ?s :t17 ?o
+    VALUES ?o { 4 2 }
+}

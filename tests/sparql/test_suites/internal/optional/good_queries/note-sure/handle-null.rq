@@ -1,0 +1,11 @@
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE
+{
+    :1 :t1 ?o1
+    {
+        :1 :t1 ?o2
+        OPTIONAL
+        { :x :x ?o1 }
+    }
+}

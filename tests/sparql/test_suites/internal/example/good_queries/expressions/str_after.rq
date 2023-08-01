@@ -1,0 +1,54 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && strafter("",                      ""               ) = ""
+        && strafter("",                      ""^^xsd:string   ) = ""
+        && strafter(""@en,                   ""               ) = ""@en
+        && strafter(""@en,                   ""@en            ) = ""@en
+        && strafter(""@en,                   ""^^xsd:string   ) = ""@en
+        && strafter(""^^xsd:string,          ""               ) = ""^^xsd:string
+        && strafter(""^^xsd:string,          ""^^xsd:string   ) = ""^^xsd:string
+
+        && strafter("xxxyyyzzz",             ""               ) = "xxxyyyzzz"
+        && strafter("xxxyyyzzz",             ""^^xsd:string   ) = "xxxyyyzzz"
+        && strafter("xxxyyyzzz"@en,          ""               ) = "xxxyyyzzz"@en
+        && strafter("xxxyyyzzz"@en,          ""@en            ) = "xxxyyyzzz"@en
+        && strafter("xxxyyyzzz"@en,          ""^^xsd:string   ) = "xxxyyyzzz"@en
+        && strafter("xxxyyyzzz"^^xsd:string, ""               ) = "xxxyyyzzz"^^xsd:string
+        && strafter("xxxyyyzzz"^^xsd:string, ""^^xsd:string   ) = "xxxyyyzzz"^^xsd:string
+
+        && strafter("xxxyyyzzz",             "yyy"            ) = "zzz"
+        && strafter("xxxyyyzzz",             "yyy"^^xsd:string) = "zzz"
+        && strafter("xxxyyyzzz"@en,          "yyy"            ) = "zzz"@en
+        && strafter("xxxyyyzzz"@en,          "yyy"@en         ) = "zzz"@en
+        && strafter("xxxyyyzzz"@en,          "yyy"^^xsd:string) = "zzz"@en
+        && strafter("xxxyyyzzz"^^xsd:string, "yyy"            ) = "zzz"^^xsd:string
+        && strafter("xxxyyyzzz"^^xsd:string, "yyy"^^xsd:string) = "zzz"^^xsd:string
+
+        && strafter("xxxyyyzzz",             "zzz"            ) = ""
+        && strafter("xxxyyyzzz",             "zzz"^^xsd:string) = ""
+        && strafter("xxxyyyzzz"@en,          "zzz"            ) = ""@en
+        && strafter("xxxyyyzzz"@en,          "zzz"@en         ) = ""@en
+        && strafter("xxxyyyzzz"@en,          "zzz"^^xsd:string) = ""@en
+        && strafter("xxxyyyzzz"^^xsd:string, "zzz"            ) = ""^^xsd:string
+        && strafter("xxxyyyzzz"^^xsd:string, "zzz"^^xsd:string) = ""^^xsd:string
+
+        && strafter("",                      "xyz"            ) = ""
+        && strafter("",                      "xyz"^^xsd:string) = ""
+        && strafter(""@en,                   "xyz"            ) = ""
+        && strafter(""@en,                   "xyz"@en         ) = ""
+        && strafter(""@en,                   "xyz"^^xsd:string) = ""
+        && strafter(""^^xsd:string,          "xyz"            ) = ""
+        && strafter(""^^xsd:string,          "xyz"^^xsd:string) = ""
+
+        && strafter("xxxyyyzzz",             "xyz"            ) = ""
+        && strafter("xxxyyyzzz",             "xyz"^^xsd:string) = ""
+        && strafter("xxxyyyzzz"@en,          "xyz"            ) = ""
+        && strafter("xxxyyyzzz"@en,          "xyz"@en         ) = ""
+        && strafter("xxxyyyzzz"@en,          "xyz"^^xsd:string) = ""
+        && strafter("xxxyyyzzz"^^xsd:string, "xyz"            ) = ""
+        && strafter("xxxyyyzzz"^^xsd:string, "xyz"^^xsd:string) = ""
+    )
+}

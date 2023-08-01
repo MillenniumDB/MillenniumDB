@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (count(*) AS ?count_star)
+WHERE {
+  ?s :t2 ?o .
+}
+GROUP BY ?s

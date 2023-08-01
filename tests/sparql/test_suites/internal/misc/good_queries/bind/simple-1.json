@@ -1,0 +1,15 @@
+{
+  "head": { "vars": [ "o", "x" ] },
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

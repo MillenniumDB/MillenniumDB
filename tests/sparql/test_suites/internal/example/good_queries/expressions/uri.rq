@@ -1,0 +1,13 @@
+BASE <http://www.baseirifortesting.com/>
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(true
+        && URI("http://www.example.com/")    = <http://www.example.com/>
+        && URI("http://www.example.com/abc") = <http://www.example.com/abc>
+        && URI("hello_world")                = <hello_world>
+        && URI(<http://www.example.com/>)    = <http://www.example.com/>
+        && URI(<http://www.example.com/abc>) = <http://www.example.com/abc>
+    )
+}

@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "z", "s1" ] },
+  "results": {
+    "bindings": [
+      {
+        "z": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s1": { "type": "uri", "value": "http://example.org/s2" }
+      },
+      {
+        "z": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s1": { "type": "uri", "value": "http://example.org/s3" }
+      },
+      {
+        "z": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s1": { "type": "uri", "value": "http://example.org/s4" }
+      }
+    ]
+  }
+}

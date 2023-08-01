@@ -1,0 +1,22 @@
+{
+  "head": { "vars": [ "s", "sum_doble", "sum_double_neg" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/a" },
+        "sum_doble":      { "type": "literal", "value":  "1.1024E4", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "sum_double_neg": { "type": "literal", "value": "-1.1024E4", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/b" },
+        "sum_doble":      { "type": "literal", "value":  "2.09972E5", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "sum_double_neg": { "type": "literal", "value": "-2.09972E5", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/c" },
+        "sum_doble":      { "type": "literal", "value":  "2.31936E5", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "sum_double_neg": { "type": "literal", "value": "-2.31936E5", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      }
+    ]
+  }
+}

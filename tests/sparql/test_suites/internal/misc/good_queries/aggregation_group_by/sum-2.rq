@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (2 * (sum(?o) + sum(?o * ?o)) as ?sum_doble) (-1 * ?sum_doble AS ?sum_double_neg)
+WHERE {
+  ?s :t2 ?o .
+}
+GROUP BY ?s

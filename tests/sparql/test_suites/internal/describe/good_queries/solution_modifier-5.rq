@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+DESCRIBE ?person
+WHERE {
+    ?list :list ?person .
+}
+GROUP BY ?person
+HAVING (COUNT(*) > 1)

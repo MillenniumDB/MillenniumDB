@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+CONSTRUCT WHERE { ?p :name ?n }
+ORDER BY DESC(?p)
+OFFSET 1
+LIMIT 2

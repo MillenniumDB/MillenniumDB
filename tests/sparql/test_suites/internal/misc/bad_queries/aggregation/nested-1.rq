@@ -1,0 +1,4 @@
+SELECT (sum(sum(?o)))
+WHERE {
+    ?s ?p ?o .
+}

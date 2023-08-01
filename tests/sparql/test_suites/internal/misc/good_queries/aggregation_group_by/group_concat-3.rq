@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (GROUP_CONCAT(?o; SEPARATOR="-") as ?concat_o)
+WHERE {
+  :t5 :cases ?c .
+  ?s ?c ?o .
+}
+GROUP BY ?s

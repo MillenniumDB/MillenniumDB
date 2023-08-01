@@ -1,0 +1,4 @@
+SELECT (?o AS ?y) (sum(?o) AS ?x)
+WHERE {
+    ?s ?p ?o .
+}

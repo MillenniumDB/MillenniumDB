@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+
+SELECT *
+{
+  {?x :p :o} MINUS {?x :p :o2}
+}

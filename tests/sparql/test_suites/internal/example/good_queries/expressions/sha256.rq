@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        SHA256("abc")          = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" &&
+        SHA256("MillenniumDB") = "d30f83caa15fec17f3aaed884e135539b3a0806cd91b3d4d329197af8c383e20" &&
+        SHA256("Año")          = "9100502b8574b07bc4ae48827184a18ed5c5f0774df74ed99b966c404f867606" &&
+        SHA256("Pingüino")     = "bf5b4ce1454f85bc37150bc037b650d869515116d076f7ebe792d6f93d6099f2"
+    )
+}

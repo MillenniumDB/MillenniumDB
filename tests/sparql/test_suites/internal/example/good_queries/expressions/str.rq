@@ -1,0 +1,47 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && STR(                  ""            )                    = ""
+        && STR(                 "a"            )                    = "a"
+        && STR("aasdfasdkjhwfdhjsg"            )                    = "aasdfasdkjhwfdhjsg"
+        && STR(                  ""^^xsd:string)                    = ""
+        && STR(                 "a"^^xsd:string)                    = "a"
+        && STR("aasdfasdkjhwfdhjsg"^^xsd:string)                    = "aasdfasdkjhwfdhjsg"
+
+        && STR(                  ""@en-US)                          = ""
+        && STR(                 "a"@en-US)                          = "a"
+        && STR("aasdfasdkjhwfdhjsg"@en-US)                          = "aasdfasdkjhwfdhjsg"
+        && STR(                  ""@fuxh )                          = ""
+        && STR(                 "a"@fuxh )                          = "a"
+        && STR("aasdfasdkjhwfdhjsg"@fuxh )                          = "aasdfasdkjhwfdhjsg"
+
+        && STR(                  ""^^<http://www.datatype.com/dt3>) = ""
+        && STR(                 "a"^^<http://www.datatype.com/dt3>) = "a"
+        && STR("aasdfasdkjhwfdhjsg"^^<http://www.datatype.com/dt3>) = "aasdfasdkjhwfdhjsg"
+        && STR(                  ""^^<http://hf38fgh3kf8f.com/j8c>) = ""
+        && STR(                 "a"^^<http://hf38fgh3kf8f.com/j8c>) = "a"
+        && STR("aasdfasdkjhwfdhjsg"^^<http://hf38fgh3kf8f.com/j8c>) = "aasdfasdkjhwfdhjsg"
+
+        && STR(1)                                                   = "1"
+        && STR(-1)                                                  = "-1"
+        && STR(1.0)                                                 = "1.0"
+        && STR(-1.0)                                                = "-1.0"
+        && STR(111111111111111111111111.0)                          = "111111111111111111111111.0"
+        && STR(-11111111111111111111111.0)                          = "-11111111111111111111111.0"
+        && STR(1e0)                                                 = "1"
+        && STR(-1e0)                                                = "-1"
+
+        && STR(  "2022-09-18T13:30:00"^^xsd:dateTime)               =   "2022-09-18T13:30:00"
+        && STR("100000-09-18T13:30:00"^^xsd:dateTime)               = "100000-01-01T00:00:00"
+
+        && STR( "true"^^xsd:boolean)                                = "true"
+        && STR("false"^^xsd:boolean)                                = "false"
+        && STR(true)                                                = "true"
+        && STR(false)                                               = "false"
+
+        && STR(:s)                                                  = "http://www.firstPrefix.com/s"
+        && STR(:asdfasdfasdf)                                       = "http://www.firstPrefix.com/asdfasdfasdf"
+    )
+}

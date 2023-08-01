@@ -1,0 +1,26 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && strlen(""                                           ) = 0
+        && strlen(""@en                                        ) = 0
+        && strlen(""^^xsd:string                               ) = 0
+
+        && strlen("x"                                          ) = 1
+        && strlen("x"@en                                       ) = 1
+        && strlen("x"^^xsd:string                              ) = 1
+
+        && strlen("xx"                                         ) = 2
+        && strlen("xx"@en                                      ) = 2
+        && strlen("xx"^^xsd:string                             ) = 2
+
+        && strlen("external1"                                  ) = 9
+        && strlen("external1"@en                               ) = 9
+        && strlen("external1"^^xsd:string                      ) = 9
+
+        && strlen("tmp-tmp-tmp-tmp-tmp-tmp-tmp-tmp"            ) = 31
+        && strlen("tmp-tmp-tmp-tmp-tmp-tmp-tmp-tmp"@en         ) = 31
+        && strlen("tmp-tmp-tmp-tmp-tmp-tmp-tmp-tmp"^^xsd:string) = 31
+    )
+}

@@ -1,0 +1,32 @@
+{
+  "head": {
+    "vars": [
+      "t",
+      "x",
+      "y",
+      "z"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "t": {
+          "type": "uri",
+          "value": "http://www.path.com/1"
+        },
+        "x": {
+          "type": "uri",
+          "value": "http://www.path.com/2"
+        },
+        "y": {
+          "type": "uri",
+          "value": "http://www.path.com/4"
+        },
+        "z": {
+          "type": "uri",
+          "value": "http://www.path.com/2"
+        }
+      }
+    ]
+  }
+}

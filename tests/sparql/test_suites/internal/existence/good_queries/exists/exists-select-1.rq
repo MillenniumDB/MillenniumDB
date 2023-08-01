@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?y (EXISTS {?x ?p :o } as ?exists)
+WHERE {
+  ?x :p ?y
+}

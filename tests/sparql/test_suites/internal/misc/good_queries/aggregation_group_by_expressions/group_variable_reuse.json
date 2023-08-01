@@ -1,0 +1,17 @@
+{
+  "head": { "vars": [ "double", "bool", "sum_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "double": { "type": "literal", "value": "1.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double"  },
+        "bool" :  { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "sum_o":  { "type": "literal", "value": "3.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double"  }
+      },
+      {
+        "double": { "type": "literal", "value": "2.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double"  },
+        "bool" :  { "type": "literal", "value": "true",  "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "sum_o":  { "type": "literal", "value": "6.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double"  }
+      }
+    ]
+  }
+}

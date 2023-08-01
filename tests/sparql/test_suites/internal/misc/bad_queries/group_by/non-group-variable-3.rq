@@ -1,0 +1,6 @@
+# ?o is not in GROUP BY
+SELECT ?s ?p ?o
+WHERE {
+  ?s ?p ?o .
+}
+GROUP BY ?s ?o

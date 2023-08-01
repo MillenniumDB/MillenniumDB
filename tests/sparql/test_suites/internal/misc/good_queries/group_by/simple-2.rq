@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s ?o
+WHERE {
+  ?s :t3 ?o .
+}
+GROUP BY ?s ?o

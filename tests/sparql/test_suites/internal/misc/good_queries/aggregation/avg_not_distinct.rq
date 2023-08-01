@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (avg(?o) AS ?avg_o)
+WHERE {
+  :t9 :cases ?c .
+  ?s ?c ?o .
+}

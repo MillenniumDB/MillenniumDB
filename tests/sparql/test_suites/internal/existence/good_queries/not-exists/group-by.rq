@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?exists (count(*) AS ?count)
+WHERE {
+  ?x :p ?y
+}
+GROUP BY (NOT EXISTS {?x ?p :o } as ?exists)

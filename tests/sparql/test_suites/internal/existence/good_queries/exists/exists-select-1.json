@@ -1,0 +1,32 @@
+{
+  "head": { "vars": [ "x", "y", "exists" ] },
+  "results": {
+    "bindings": [
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/s" },
+        "y": { "type": "uri", "value": "http://www.path.com/o" },
+        "exists": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/s" },
+        "y": { "type": "uri", "value": "http://www.path.com/o1" },
+        "exists": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/t" },
+        "y": { "type": "uri", "value": "http://www.path.com/o1" },
+        "exists": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/s" },
+        "y": { "type": "uri", "value": "http://www.path.com/o2" },
+        "exists": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/t" },
+        "y": { "type": "uri", "value": "http://www.path.com/o2" },
+        "exists": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      }
+    ]
+  }
+}

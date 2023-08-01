@@ -1,0 +1,7 @@
+p1,p2,n
+P1,P1,"JJ"
+P2,P2,"xPx"
+P3,P3,"Deny"
+P4,P4,"Deny"
+P3,P4,"Deny"
+P4,P3,"Deny"

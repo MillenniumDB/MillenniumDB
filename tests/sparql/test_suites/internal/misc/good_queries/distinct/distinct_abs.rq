@@ -1,0 +1,3 @@
+PREFIX : <http://www.path.com/>
+SELECT DISTINCT (abs(?o) AS ?abs_o)
+WHERE { ?s :t14 ?o }

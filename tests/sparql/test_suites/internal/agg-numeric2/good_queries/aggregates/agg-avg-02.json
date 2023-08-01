@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "s", "avg" ] },
+  "results": {
+    "bindings": [
+      {
+        "s":   { "type": "uri", "value": "http://www.example.org/ints" },
+        "avg": { "type": "literal", "value": "2.0", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s":   { "type": "uri", "value": "http://www.example.org/mixed1" },
+        "avg": { "type": "literal", "value": "1.6", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s":   { "type": "uri", "value": "http://www.example.org/mixed2" },
+        "avg": { "type": "literal", "value": "2.0E-1", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "head": { "vars": [ "s" ] },
+  "results": {
+    "bindings": [
+      { "s": { "type": "uri", "value": "http://www.path.com/2" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/3" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/4" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/5" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/6" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/7" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/8" } }
+    ]
+  }
+}

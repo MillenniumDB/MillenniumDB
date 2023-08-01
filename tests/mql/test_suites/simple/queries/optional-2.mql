@@ -1,0 +1,2 @@
+MATCH (?p)-[:owns]->(?v :vehicle)-[:made_by]->(?c {name:"Trek"})
+RETURN ?p, ?p.name, ?v, ?v.type, ?c, ?c.name

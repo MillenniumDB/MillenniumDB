@@ -1,0 +1,28 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && regex("XXooXX",                    "XX"    ) = true
+        && regex("oXoXXoXXXo",                "XX*"   ) = true
+        && regex("oXoXXoXXXo",                "X{2,3}") = true
+        && regex("oXaXoXbXoXaaX",             "X.?X"  ) = true
+
+        && regex("XXooXX"@en,                 "XX"    ) = true
+        && regex("oXoXXoXXXo"@en,             "XX*"   ) = true
+        && regex("oXoXXoXXXo"@en,             "X{2,3}") = true
+        && regex("oXaXoXbXoXaaX"@en,          "X.?X"  ) = true
+
+        && regex("XXooXX"^^xsd:string,        "XX"    ) = true
+        && regex("oXoXXoXXXo"^^xsd:string,    "XX*"   ) = true
+        && regex("oXoXXoXXXo"^^xsd:string,    "X{2,3}") = true
+        && regex("oXaXoXbXoXaaX"^^xsd:string, "X.?X"  ) = true
+
+        && regex("XXooXX",                    "XXX"   ) = false
+        && regex("XXooXX"@en,                 "XXX"   ) = false
+        && regex("XXooXX"^^xsd:string,        "XXX"   ) = false
+
+        && regex("xxXX", "xXxX", "i") = true
+        && regex("xxXX", "xXxX")      = false
+    )
+}

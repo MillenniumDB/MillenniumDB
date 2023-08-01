@@ -1,0 +1,13 @@
+{
+  "head": { "vars": [ "o", "x", "y" ] },
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "uri", "value": "http://www.firstPrefix.com/objectFirstPrefix" },
+        "x": { "type": "uri", "value": "http://www.firstPrefix.com/objectFirstPrefix" },
+        "y": { "type": "uri", "value": "http://www.firstPrefix.com/objectFirstPrefix"
+        }
+      }
+    ]
+  }
+}

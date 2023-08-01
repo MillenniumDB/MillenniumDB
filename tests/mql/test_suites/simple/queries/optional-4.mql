@@ -1,0 +1,4 @@
+MATCH (?p :person)
+OPTIONAL {(?p)-[:owns]->(?v :vehicle)-[:made_by]->(?c {name:"Trek"})}
+OPTIONAL {(?p)-[:savings]->(?s)}
+RETURN ?p, ?p.name, ?v, ?v.type, ?c, ?c.name, ?s

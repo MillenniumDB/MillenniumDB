@@ -1,0 +1,2 @@
+MATCH (?p :person {long_name:"Deny Deny Deny"})
+RETURN ?p

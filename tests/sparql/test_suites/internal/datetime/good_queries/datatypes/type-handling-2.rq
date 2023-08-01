@@ -1,0 +1,11 @@
+PREFIX : <http://www.path.com/>
+SELECT ?p ?o
+WHERE {
+  VALUES (?p ?o) {
+    (:d    "2010-10-10Z"^^xsd:date)
+    (:t    "10:10:10Z"^^xsd:time)
+    (:dt   "2010-10-10T10:10:10Z"^^xsd:dateTime)
+    (:dtlp "9999999999999-10-10T10:10:10Z"^^xsd:dateTime)
+    (:dts  "2010-10-10T10:10:10Z"^^xsd:dateTimeStamp)
+  }
+}

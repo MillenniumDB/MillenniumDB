@@ -1,0 +1,9 @@
+{
+  "head": { "vars": [ "str_s" ] },
+  "results": {
+    "bindings": [
+      { "str_s": { "type": "literal", "value": "http://www.path.com/2" } },
+      { "str_s": { "type": "literal", "value": "http://www.path.com/1" } }
+    ]
+  }
+}

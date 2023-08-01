@@ -1,0 +1,4 @@
+SELECT (?o AS ?x)
+WHERE {
+    <http://www.firstPrefix.com/subjectFirstPrefix> <http://www.firstPrefix.com/predicateFirstPrefix> ?o .
+}

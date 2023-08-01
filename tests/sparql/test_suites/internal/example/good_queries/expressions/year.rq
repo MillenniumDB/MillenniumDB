@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        YEAR("2023-01-01T00:00:00Z"^^xsd:dateTime)        = 2023        &&
+        YEAR("500-01-01T00:00:00Z"^^xsd:dateTime)         = 500         &&
+        YEAR("-2500000-01-01T00:00:00Z"^^xsd:dateTime)    = -2500000    &&
+        YEAR("-5000000000-01-01T00:00:00Z"^^xsd:dateTime) = -5000000000
+    )
+}

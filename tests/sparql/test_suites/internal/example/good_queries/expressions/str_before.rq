@@ -1,0 +1,54 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && strbefore("",                      ""               ) = ""
+        && strbefore("",                      ""^^xsd:string   ) = ""
+        && strbefore(""@en,                   ""               ) = ""@en
+        && strbefore(""@en,                   ""@en            ) = ""@en
+        && strbefore(""@en,                   ""^^xsd:string   ) = ""@en
+        && strbefore(""^^xsd:string,          ""               ) = ""^^xsd:string
+        && strbefore(""^^xsd:string,          ""^^xsd:string   ) = ""^^xsd:string
+
+        && strbefore("xxxyyyzzz",             ""               ) = ""
+        && strbefore("xxxyyyzzz",             ""^^xsd:string   ) = ""
+        && strbefore("xxxyyyzzz"@en,          ""               ) = ""@en
+        && strbefore("xxxyyyzzz"@en,          ""@en            ) = ""@en
+        && strbefore("xxxyyyzzz"@en,          ""^^xsd:string   ) = ""@en
+        && strbefore("xxxyyyzzz"^^xsd:string, ""               ) = ""^^xsd:string
+        && strbefore("xxxyyyzzz"^^xsd:string, ""^^xsd:string   ) = ""^^xsd:string
+
+        && strbefore("xxxyyyzzz",             "yyy"            ) = "xxx"
+        && strbefore("xxxyyyzzz",             "yyy"^^xsd:string) = "xxx"
+        && strbefore("xxxyyyzzz"@en,          "yyy"            ) = "xxx"@en
+        && strbefore("xxxyyyzzz"@en,          "yyy"@en         ) = "xxx"@en
+        && strbefore("xxxyyyzzz"@en,          "yyy"^^xsd:string) = "xxx"@en
+        && strbefore("xxxyyyzzz"^^xsd:string, "yyy"            ) = "xxx"^^xsd:string
+        && strbefore("xxxyyyzzz"^^xsd:string, "yyy"^^xsd:string) = "xxx"^^xsd:string
+
+        && strbefore("xxxyyyzzz",             "xxx"            ) = ""
+        && strbefore("xxxyyyzzz",             "xxx"^^xsd:string) = ""
+        && strbefore("xxxyyyzzz"@en,          "xxx"            ) = ""@en
+        && strbefore("xxxyyyzzz"@en,          "xxx"@en         ) = ""@en
+        && strbefore("xxxyyyzzz"@en,          "xxx"^^xsd:string) = ""@en
+        && strbefore("xxxyyyzzz"^^xsd:string, "xxx"            ) = ""^^xsd:string
+        && strbefore("xxxyyyzzz"^^xsd:string, "xxx"^^xsd:string) = ""^^xsd:string
+
+        && strbefore("",                      "xyz"            ) = ""
+        && strbefore("",                      "xyz"^^xsd:string) = ""
+        && strbefore(""@en,                   "xyz"            ) = ""
+        && strbefore(""@en,                   "xyz"@en         ) = ""
+        && strbefore(""@en,                   "xyz"^^xsd:string) = ""
+        && strbefore(""^^xsd:string,          "xyz"            ) = ""
+        && strbefore(""^^xsd:string,          "xyz"^^xsd:string) = ""
+
+        && strbefore("xxxyyyzzz",             "xyz"            ) = ""
+        && strbefore("xxxyyyzzz",             "xyz"^^xsd:string) = ""
+        && strbefore("xxxyyyzzz"@en,          "xyz"            ) = ""
+        && strbefore("xxxyyyzzz"@en,          "xyz"@en         ) = ""
+        && strbefore("xxxyyyzzz"@en,          "xyz"^^xsd:string) = ""
+        && strbefore("xxxyyyzzz"^^xsd:string, "xyz"            ) = ""
+        && strbefore("xxxyyyzzz"^^xsd:string, "xyz"^^xsd:string) = ""
+    )
+}

@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (sum(?o) AS ?sum_o)
+WHERE {
+  ?s :t3 ?o .
+}
+GROUP BY (?o > 3)

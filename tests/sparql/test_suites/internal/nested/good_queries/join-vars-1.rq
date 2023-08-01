@@ -1,0 +1,15 @@
+PREFIX : <http://a.c/>
+SELECT * {
+    VALUES (?s ?p1 ?o) {
+        (:s1 :p1 "s1p1")
+        (:s1 :p2 "s1p2")
+        (:s1 :p3 "s1p3")
+        (:s2 :p1 "s2p1")
+        (:s2 :p2 "s2p2")
+        (:s2 UNDEF "s2p2")
+    }
+    { SELECT * {
+        ?s ?p2 ?o
+        VALUES ?p1 { :p2 }
+    }}
+}

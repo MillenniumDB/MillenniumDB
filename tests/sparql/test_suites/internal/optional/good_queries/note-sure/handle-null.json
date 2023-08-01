@@ -1,0 +1,11 @@
+{
+  "head": { "vars": [ "o1", "o2" ] },
+  "results": {
+    "bindings": [
+      {
+        "o1": { "type": "uri", "value": "http://www.path.com/2" },
+        "o2": { "type": "uri", "value": "http://www.path.com/2" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+BASE <http://www.base.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s <basePredicate1> <baseObject1> .
+    <baseSubject2> ?p <baseObject2> .
+    <baseSubject3> <basePredicate3> ?o .
+}

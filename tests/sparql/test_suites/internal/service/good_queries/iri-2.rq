@@ -1,0 +1,8 @@
+PREFIX : <http://www.p.c/>
+SELECT * {
+    ?s :t1 ?o .
+    ?s :t2 ?iri .
+    SERVICE ?iri {
+        VALUES (?o ?x) { ("2" "x2") (UNDEF "x3") }
+    }
+}

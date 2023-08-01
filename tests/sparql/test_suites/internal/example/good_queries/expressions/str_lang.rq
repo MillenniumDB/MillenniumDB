@@ -1,0 +1,16 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+       && STRLANG("hnf74hdk37u3jd63kwejh", "en-US") = "hnf74hdk37u3jd63kwejh"@en-US # string_language_tmp
+       && STRLANG("inl",                   "en-US") =                   "inl"@en-US # string_language_inline
+       && STRLANG("external1",             "en-US") =             "external1"@en-US # string_language_external
+       && STRLANG("hnf74hdk37u3jd63kwejh", "en-CL") = "hnf74hdk37u3jd63kwejh"@en-CL # string_language_tmp
+       && STRLANG("inl",                   "en-CL") =                   "inl"@en-CL # string_language_inline
+       && STRLANG("external1",             "en-CL") =             "external1"@en-CL # string_language_external
+       && STRLANG("hnf74hdk37u3jd63kwejh", "xx-ZZ") = "hnf74hdk37u3jd63kwejh"@xx-ZZ # string_language_tmp
+       && STRLANG("inl",                   "xx-ZZ") =                   "inl"@xx-ZZ # string_language_inline
+       && STRLANG("external1",             "xx-ZZ") =             "external1"@xx-ZZ # string_language_external
+    )
+}

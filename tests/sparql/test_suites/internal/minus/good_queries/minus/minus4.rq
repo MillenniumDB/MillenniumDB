@@ -1,0 +1,14 @@
+PREFIX : <http://www.path.com/>
+
+SELECT *
+{
+  {{{{{ ?x :p ?b } MINUS {?x :p :o}} UNION {:s :p ?b}} MINUS {?x :p :o2}}
+  OPTIONAL {
+    ?x :p ?b
+  } MINUS {
+    ?x :p :o
+  }} MINUS {
+    :t :p ?b
+    FILTER(?b != :o1)
+  }
+}

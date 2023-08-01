@@ -1,0 +1,167 @@
+P1 :person name:"Juan" age:10 strength:7.3 long_name:"Juan Juan Juan"
+P1->100 :savings type:"value"
+P1->112.3 :height type:"value"
+P1->"JJ" :nick_name type:"value"
+P1->1.12 :stars type:"value"
+
+P2 :person name:"Pedro" age:22 strength:40.3 long_name:"Pedro Pedro Pedro"
+P2->150 :savings type:"value"
+P2->188.2 :height type:"value"
+P2->"xPx" :nick_name type:"value"
+P2->1.88 :stars type:"value"
+
+P3 :person name:"Denise" age:56 strength:23.4 long_name:"Deny Deny Deny"
+P3->1000 :savings type:"value"
+P3->175.3 :height type:"value"
+P3->"Deny" :nick_name type:"value"
+P3->1.75 :stars type:"value"
+
+P4 :person name:"Denise" age:56 strength:23.4 long_name:"Deny Deny Deny"
+P4->1000 :savings type:"value"
+P4->175.3 :height type:"value"
+P4->"Deny" :nick_name type:"value"
+P4->1.75 :stars type:"value"
+
+P5 :person name:"Qwerty"
+P6 :person name:"Asdf"
+
+P1->P2 :friend key:"best"
+P1->P3 :friend key:"average"
+
+M1 :company name:"Trek"
+M1->NAME1 :called
+M2 :company name:"Toyota"
+M2->NAME2 :called
+
+NAME1 value:"Trek Name Node"
+NAME2 value:"Toyota Name Node"
+
+V1 :vehicle type:"bike" max_speed:10
+V1->M1 :made_by
+
+V2 :vehicle type:"car" max_speed:100
+V2->M2 :made_by
+
+P1->V1 :owns
+P2->V1 :owns
+P2->V2 :owns
+P3->V2 :owns
+
+H1 :home type:"apartment" size:40
+H2 :home type:"house" size:76
+
+P2->H1 :owns
+P3->H2 :owns
+
+
+NUMBER->-3 :e
+NUMBER->-2.6 :e
+NUMBER->-2.5 :e
+NUMBER->-2.4 :e
+NUMBER->-2 :e
+NUMBER->-1.1 :e
+NUMBER->-1 :e
+NUMBER->-0.6 :e
+NUMBER->-0.5 :e
+NUMBER->-0.4 :e
+NUMBER->0 :e
+NUMBER->0.4 :e
+NUMBER->0.5 :e
+NUMBER->0.6 :e
+NUMBER->1 :e
+NUMBER->1.1 :e
+NUMBER->2 :e
+NUMBER->2.4 :e
+NUMBER->2.5 :e
+NUMBER->2.6 :e
+NUMBER->3 :e
+
+STRING->"A" :e
+STRING->"AA" :e
+STRING->"AAAAAAAAAA" :e
+STRING->"AABAAAAAAA" :e
+STRING->"AB" :e
+STRING->"ABAAAAAAAA" :e
+STRING->"ABBAAAAAAA" :e
+STRING->"B" :e
+STRING->"BA" :e
+STRING->"BAABBBBBBB" :e
+STRING->"BABBBBBBBB" :e
+STRING->"BB" :e
+STRING->"BBABBBBBBB" :e
+STRING->"BBBBBBBBBB" :e
+STRING->"a" :e
+STRING->"aa" :e
+STRING->"aaaaaaaaaa" :e
+STRING->"aabaaaaaaa" :e
+STRING->"ab" :e
+STRING->"abaaaaaaaa" :e
+STRING->"abbaaaaaaa" :e
+STRING->"b" :e
+STRING->"ba" :e
+STRING->"baabbbbbbb" :e
+STRING->"babbbbbbbb" :e
+STRING->"bb" :e
+STRING->"bbabbbbbbb" :e
+STRING->"bbbbbbbbbb" :e
+
+NP :NUMBER_PROP value:-3
+NP :NUMBER_PROP value:-2.6
+NP :NUMBER_PROP value:-2.5
+NP :NUMBER_PROP value:-2.4
+NP :NUMBER_PROP value:-2
+NP :NUMBER_PROP value:-1.1
+NP :NUMBER_PROP value:-1
+NP :NUMBER_PROP value:-0.6
+NP :NUMBER_PROP value:-0.5
+NP :NUMBER_PROP value:-0.4
+NP :NUMBER_PROP value:0
+NP :NUMBER_PROP value:0.4
+NP :NUMBER_PROP value:0.5
+NP :NUMBER_PROP value:0.6
+NP :NUMBER_PROP value:1
+NP :NUMBER_PROP value:1.1
+NP :NUMBER_PROP value:2
+NP :NUMBER_PROP value:2.4
+NP :NUMBER_PROP value:2.5
+NP :NUMBER_PROP value:2.6
+NP :NUMBER_PROP value:3
+
+SP :STRING_PROP value:"A"
+SP :STRING_PROP value:"AA"
+SP :STRING_PROP value:"AAAAAAAAAA"
+SP :STRING_PROP value:"AABAAAAAAA"
+SP :STRING_PROP value:"AB"
+SP :STRING_PROP value:"ABAAAAAAAA"
+SP :STRING_PROP value:"ABBAAAAAAA"
+SP :STRING_PROP value:"B"
+SP :STRING_PROP value:"BA"
+SP :STRING_PROP value:"BAABBBBBBB"
+SP :STRING_PROP value:"BABBBBBBBB"
+SP :STRING_PROP value:"BB"
+SP :STRING_PROP value:"BBABBBBBBB"
+SP :STRING_PROP value:"BBBBBBBBBB"
+SP :STRING_PROP value:"a"
+SP :STRING_PROP value:"aa"
+SP :STRING_PROP value:"aaaaaaaaaa"
+SP :STRING_PROP value:"aabaaaaaaa"
+SP :STRING_PROP value:"ab"
+SP :STRING_PROP value:"abaaaaaaaa"
+SP :STRING_PROP value:"abbaaaaaaa"
+SP :STRING_PROP value:"b"
+SP :STRING_PROP value:"ba"
+SP :STRING_PROP value:"baabbbbbbb"
+SP :STRING_PROP value:"babbbbbbbb"
+SP :STRING_PROP value:"bb"
+SP :STRING_PROP value:"bbabbbbbbb"
+SP :STRING_PROP value:"bbbbbbbbbb"
+
+B1->false :BOOL
+B2->true :BOOL
+B3->true :BOOL
+B4->false :BOOL
+
+BP1 :BOOL_PROP value:false
+BP2 :BOOL_PROP value:true
+BP3 :BOOL_PROP value:true
+BP4 :BOOL_PROP value:false

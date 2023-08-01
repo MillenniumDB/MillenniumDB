@@ -1,0 +1,82 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && BNODE() != BNODE()
+        && BNODE() != BNODE()
+        && BNODE() != BNODE()
+
+
+        && BNODE("a") = BNODE("a")
+        && BNODE("a") = BNODE("a")
+
+        && BNODE("b") = BNODE("b")
+        && BNODE("b") = BNODE("b")
+
+        && BNODE("a") != BNODE("b")
+        && BNODE("a") != BNODE("b")
+
+        && BNODE("a") != BNODE()
+        && BNODE("a") != BNODE()
+
+        && BNODE("b") != BNODE()
+        && BNODE("b") != BNODE()
+
+
+        && BNODE("aaajkhdfsfsd") = BNODE("aaajkhdfsfsd")
+        && BNODE("aaajkhdfsfsd") = BNODE("aaajkhdfsfsd")
+
+        && BNODE("bbbkfeiefjfk") = BNODE("bbbkfeiefjfk")
+        && BNODE("bbbkfeiefjfk") = BNODE("bbbkfeiefjfk")
+
+        && BNODE("aaajkhdfsfsd") != BNODE("bbbkfeiefjfk")
+        && BNODE("aaajkhdfsfsd") != BNODE("bbbkfeiefjfk")
+
+        && BNODE("aaajkhdfsfsd") != BNODE()
+        && BNODE("aaajkhdfsfsd") != BNODE()
+
+        && BNODE("bbbkfeiefjfk") != BNODE()
+        && BNODE("bbbkfeiefjfk") != BNODE()
+
+        # -----------------------
+        #  Duplicated on purpose
+        # -----------------------
+
+        && BNODE() != BNODE()
+        && BNODE() != BNODE()
+        && BNODE() != BNODE()
+
+
+        && BNODE("a") = BNODE("a")
+        && BNODE("a") = BNODE("a")
+
+        && BNODE("b") = BNODE("b")
+        && BNODE("b") = BNODE("b")
+
+        && BNODE("a") != BNODE("b")
+        && BNODE("a") != BNODE("b")
+
+        && BNODE("a") != BNODE()
+        && BNODE("a") != BNODE()
+
+        && BNODE("b") != BNODE()
+        && BNODE("b") != BNODE()
+
+
+        && BNODE("aaajkhdfsfsd") = BNODE("aaajkhdfsfsd")
+        && BNODE("aaajkhdfsfsd") = BNODE("aaajkhdfsfsd")
+
+        && BNODE("bbbkfeiefjfk") = BNODE("bbbkfeiefjfk")
+        && BNODE("bbbkfeiefjfk") = BNODE("bbbkfeiefjfk")
+
+        && BNODE("aaajkhdfsfsd") != BNODE("bbbkfeiefjfk")
+        && BNODE("aaajkhdfsfsd") != BNODE("bbbkfeiefjfk")
+
+        && BNODE("aaajkhdfsfsd") != BNODE()
+        && BNODE("aaajkhdfsfsd") != BNODE()
+
+        && BNODE("bbbkfeiefjfk") != BNODE()
+        && BNODE("bbbkfeiefjfk") != BNODE()
+    )
+}

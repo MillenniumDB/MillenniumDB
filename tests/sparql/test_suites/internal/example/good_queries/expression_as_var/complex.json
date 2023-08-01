@@ -1,0 +1,62 @@
+{
+  "head": { "vars": [ "o", "mult_2", "mult_2_2" ] },
+  "results": {
+    "bindings": [
+      {
+        "o":        { "type": "literal", "value": "-20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value": "-40", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value": "-80", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value": "-10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value": "-20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value": "-40", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":  "-1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":  "-2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":  "-4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":   "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":   "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":   "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":   "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":   "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":   "8", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":   "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":   "6", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":  "12", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":   "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":   "8", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":  "16", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":  "10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":  "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":  "40", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":  "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":  "40", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value":  "80", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":  "30", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":  "60", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value": "120", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "o":        { "type": "literal", "value":  "40", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2":   { "type": "literal", "value":  "80", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "mult_2_2": { "type": "literal", "value": "160", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

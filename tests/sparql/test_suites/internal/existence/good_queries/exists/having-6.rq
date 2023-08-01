@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (count(*) AS ?count)
+WHERE {
+  ?x :p ?y
+}
+HAVING (EXISTS {?x ?p :o})

@@ -1,0 +1,8 @@
+PREFIX prefixoptinl: <http://www.prefixedInlined.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s prefixoptinl:ip1 prefixoptinl:io1 .
+    prefixoptinl:is2 ?p prefixoptinl:io2 .
+    prefixoptinl:is3 prefixoptinl:ip3 ?o .
+}

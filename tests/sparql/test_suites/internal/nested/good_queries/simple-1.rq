@@ -1,0 +1,13 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX : <http://a.c/>
+
+SELECT *
+WHERE {
+    :s2 ?p ?o2
+    {
+        SELECT *
+        WHERE {
+            :s1 ?p ?o1
+        }
+    }
+}

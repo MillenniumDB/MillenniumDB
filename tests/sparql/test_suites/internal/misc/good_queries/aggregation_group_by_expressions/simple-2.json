@@ -1,0 +1,15 @@
+{
+  "head": { "vars": [ "cond", "sum_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "cond":  { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "sum_o": { "type": "literal", "value":     "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "cond":  { "type": "literal", "value":  "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "sum_o": { "type": "literal", "value":    "15", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

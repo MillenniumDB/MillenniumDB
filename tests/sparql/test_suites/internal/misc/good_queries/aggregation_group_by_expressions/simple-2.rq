@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?cond (sum(?o) as ?sum_o)
+WHERE {
+  ?s :t8 ?o .
+}
+GROUP BY ((?o - 1) > 0 AS ?cond)

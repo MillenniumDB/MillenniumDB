@@ -1,0 +1,10 @@
+{
+  "head": { "vars": [ "s" ] },
+  "results": {
+    "bindings": [
+      { "s": { "type": "uri", "value": "http://www.path.com/d" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/f" } },
+      { "s": { "type": "uri", "value": "http://www.path.com/i" } }
+    ]
+  }
+}

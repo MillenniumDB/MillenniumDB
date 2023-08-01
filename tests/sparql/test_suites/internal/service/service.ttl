@@ -1,0 +1,6 @@
+@prefix : <http://www.p.c/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:s1 :t1 "1", "2" .
+
+:s1 :t2 <https://query.wikidata.org/sparql> .

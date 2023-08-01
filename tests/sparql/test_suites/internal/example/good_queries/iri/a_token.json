@@ -1,0 +1,1 @@
+{"head":{"vars":["s","o"]},"results":{"bindings":[{"s":{"type":"uri","value":"http://www.type.com/sa1"},"o":{"type":"uri","value":"http://www.type.com/oa1"}},{"s":{"type":"uri","value":"http://www.type.com/sa1"},"o":{"type":"uri","value":"http://www.type.com/oa2"}},{"s":{"type":"uri","value":"http://www.type.com/sa1"},"o":{"type":"uri","value":"http://www.type.com/oa3"}}]}}

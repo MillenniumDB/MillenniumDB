@@ -1,0 +1,2 @@
+MATCH (?p :person)-[:owns]->(?h :home)
+RETURN ?p, ?h, ?p.strength

@@ -1,0 +1,22 @@
+{
+    "head": { "vars": [ "o" ] },
+    "results": {
+      "bindings": [
+        {
+          "o": { "type": "uri", "value": "http://www.blanknode.com/o1" }
+        },
+        {
+          "o": { "type": "uri", "value": "http://www.blanknode.com/o2" }
+        },
+        {
+          "o": { "type": "uri", "value": "http://www.blanknode.com/o3" }
+        },
+        {
+          "o": { "type": "uri", "value": "https://query.wikidata.org/sparql" }
+        },
+        {
+          "o": { "type": "uri", "value": "https://dbpedia.org/sparql" }
+        }
+      ]
+    }
+  }

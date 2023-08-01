@@ -1,0 +1,2 @@
+MATCH (?p:person) =[?e (:owns|:made_by|:called)* ]=> (NAME2)
+RETURN ?p, ?e

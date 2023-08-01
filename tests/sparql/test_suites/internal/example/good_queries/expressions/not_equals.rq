@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(true
+        && "s" != "ss"
+        && 1.0 != 1.01
+        && 1e1 != 11
+        && "1.0"^^xsd:decimal != "1.01"^^xsd:decimal
+    )
+}

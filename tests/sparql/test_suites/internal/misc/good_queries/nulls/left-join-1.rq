@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s ?o ?x
+{
+  VALUES (?s ?x) { (UNDEF "x") }
+  OPTIONAL { ?s :t21 ?o }
+}

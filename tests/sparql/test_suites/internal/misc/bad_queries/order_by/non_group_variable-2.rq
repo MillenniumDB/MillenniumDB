@@ -1,0 +1,5 @@
+SELECT ?o (avg(?o) as ?avg_o)
+WHERE {
+  ?s ?p ?o .
+}
+ORDER BY ?o

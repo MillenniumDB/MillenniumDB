@@ -1,0 +1,52 @@
+{
+  "head": {
+    "vars": [
+      "t",
+      "x",
+      "y",
+      "z"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "t": {
+          "type": "uri",
+          "value": "http://www.path.com/1"
+        },
+        "x": {
+          "type": "uri",
+          "value": "http://www.path.com/1"
+        },
+        "y": {
+          "type": "uri",
+          "value": "http://www.path.com/2"
+        },
+        "z": {
+          "type": "uri",
+          "value": "http://www.path.com/3"
+        }
+      },
+      {
+        "t": {
+          "type": "uri",
+          "value": "http://www.path.com/1"
+        },
+        "x": {
+          "type": "uri",
+          "value": "http://www.path.com/2"
+        }
+      },
+      {
+        "x": {
+          "type": "uri",
+          "value": "http://www.path.com/1"
+        },
+        "y": {
+          "type": "uri",
+          "value": "http://www.path.com/2"
+        }
+      }
+    ]
+  }
+}

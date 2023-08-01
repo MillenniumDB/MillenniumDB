@@ -1,0 +1,23 @@
+[SUMMARY] ------------------- paths -------------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :   1          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :   1          
+[SUMMARY] 
+[SUMMARY] ------------------ simple -------------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :  30          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   1          
+[SUMMARY]             ignored           :   1          
+[SUMMARY]           TOTAL               :  31          
+[SUMMARY] 
+[SUMMARY] ----------------- All Tests -----------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :  31          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   1          
+[SUMMARY]             ignored           :   1          
+[SUMMARY]           TOTAL               :  32          
+[SUMMARY] 

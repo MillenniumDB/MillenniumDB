@@ -1,0 +1,3 @@
+MATCH (?p :person)-[{type:"value"}]->(?v)
+ORDER BY ?v, ?p
+RETURN ?p, ?v

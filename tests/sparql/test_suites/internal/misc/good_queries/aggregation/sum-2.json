@@ -1,0 +1,11 @@
+{
+  "head": { "vars": [ "sum_doble", "sum_double_neg" ] },
+  "results": {
+    "bindings": [
+      {
+        "sum_doble":      { "type": "literal", "value": "-1.6E1", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "sum_double_neg": { "type": "literal", "value":  "1.6E1", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      }
+    ]
+  }
+}

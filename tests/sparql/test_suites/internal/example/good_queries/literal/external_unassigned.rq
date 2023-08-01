@@ -1,0 +1,6 @@
+PREFIX litext: <http://www.litext.com/>
+
+SELECT ?o
+WHERE {
+    litext:sle litext:ple ?o .
+}

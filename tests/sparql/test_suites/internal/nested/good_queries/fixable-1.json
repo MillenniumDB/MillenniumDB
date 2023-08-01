@@ -1,0 +1,22 @@
+{
+  "head": { "vars": [ "o", "p", "s" ] },
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "literal", "value": "s1p1" },
+        "p": { "type": "uri", "value": "http://a.c/p1" },
+        "s": { "type": "uri", "value": "http://a.c/s1" }
+      },
+      {
+        "o": { "type": "literal", "value": "s1p2" },
+        "p": { "type": "uri", "value": "http://a.c/p2" },
+        "s": { "type": "uri", "value": "http://a.c/s1" }
+      },
+      {
+        "o": { "type": "literal", "value": "s1p3" },
+        "p": { "type": "uri", "value": "http://a.c/p3" },
+        "s": { "type": "uri", "value": "http://a.c/s1" }
+      }
+    ]
+  }
+}

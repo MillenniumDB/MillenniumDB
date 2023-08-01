@@ -1,0 +1,6 @@
+PREFIX dt: <http://www.datetime.com/>
+
+SELECT ?o
+WHERE {
+    dt:s dt:p ?o .
+}

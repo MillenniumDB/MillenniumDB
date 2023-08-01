@@ -1,0 +1,11 @@
+<http://www.path.com/p1> <http://www.path.com/friend> <http://www.path.com/p2> .
+
+<http://www.path.com/p2> <http://www.path.com/name> "Anna" .
+<http://www.path.com/p2> <http://www.path.com/age> 56 .
+<http://www.path.com/p2> <http://www.path.com/country> "Argentina" .
+<http://www.path.com/p2> <http://www.path.com/hobby> "Climbing" .
+<http://www.path.com/p2> <http://www.path.com/hobby> "Bird watching\n" .
+<http://www.path.com/p2> <http://www.path.com/friend> <http://www.path.com/p1> .
+
+
+<http://www.path.com/l1> <http://www.path.com/list> <http://www.path.com/p2> .

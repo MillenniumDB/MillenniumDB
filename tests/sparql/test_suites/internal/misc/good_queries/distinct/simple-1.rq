@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT DISTINCT ?o
+WHERE { 
+  :t9 :cases ?c .
+  ?s ?c ?o .
+}

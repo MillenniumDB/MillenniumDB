@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "C" ] },
+  "results": {
+    "bindings": [
+      { "C": { "type": "literal", "value": "5", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } }
+    ]
+  }
+}

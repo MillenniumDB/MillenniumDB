@@ -1,0 +1,35 @@
+{
+  "head": { "vars": [ "s", "avg_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/2" },
+        "avg_o": { "type": "literal", "value": "1.0", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/3" },
+        "avg_o": { "type": "literal", "value": "1.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/4" },
+        "avg_o": { "type": "literal", "value": "1.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/5" },
+        "avg_o": { "type": "literal", "value": "1.5", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/6" },
+        "avg_o": { "type": "literal", "value": "1.5", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/7" },
+        "avg_o": { "type": "literal", "value": "1.5E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/8" },
+        "avg_o": { "type": "literal", "value": "1.5E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      }
+    ]
+  }
+}

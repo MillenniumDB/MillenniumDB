@@ -1,0 +1,6 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?s ?p 
+WHERE {
+    ?s ?p "2022-09-18T13:30:00Z"^^xsd:dateTime .
+}

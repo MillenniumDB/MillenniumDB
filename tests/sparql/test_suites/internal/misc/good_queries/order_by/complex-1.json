@@ -1,0 +1,22 @@
+{
+  "head": { "vars": [ "s", "group_str_s", "select_sum_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/a" },
+        "group_str_s": { "type": "literal", "value": "http://www.path.com/a" },
+        "select_sum_o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/b" },
+        "group_str_s": { "type": "literal", "value": "http://www.path.com/b" },
+        "select_sum_o": { "type": "literal", "value": "5", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/c" },
+        "group_str_s": { "type": "literal", "value": "http://www.path.com/c" },
+        "select_sum_o": { "type": "literal", "value": "15", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

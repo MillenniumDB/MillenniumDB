@@ -1,0 +1,62 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && strends("",                      ""               ) = true
+        && strends("",                      ""^^xsd:string   ) = true
+        && strends(""@en,                   ""               ) = true
+        && strends(""@en,                   ""@en            ) = true
+        && strends(""@en,                   ""^^xsd:string   ) = true
+        && strends(""^^xsd:string,          ""               ) = true
+        && strends(""^^xsd:string,          ""^^xsd:string   ) = true
+
+        && strends("xxxyyyzzz",             ""               ) = true
+        && strends("xxxyyyzzz",             ""^^xsd:string   ) = true
+        && strends("xxxyyyzzz"@en,          ""               ) = true
+        && strends("xxxyyyzzz"@en,          ""@en            ) = true
+        && strends("xxxyyyzzz"@en,          ""^^xsd:string   ) = true
+        && strends("xxxyyyzzz"^^xsd:string, ""               ) = true
+        && strends("xxxyyyzzz"^^xsd:string, ""^^xsd:string   ) = true
+
+        && strends("xxxyyyzzz",             "zzz"            ) = true
+        && strends("xxxyyyzzz",             "zzz"^^xsd:string) = true
+        && strends("xxxyyyzzz"@en,          "zzz"            ) = true
+        && strends("xxxyyyzzz"@en,          "zzz"@en         ) = true
+        && strends("xxxyyyzzz"@en,          "zzz"^^xsd:string) = true
+        && strends("xxxyyyzzz"^^xsd:string, "zzz"            ) = true
+        && strends("xxxyyyzzz"^^xsd:string, "zzz"^^xsd:string) = true
+
+        && strends("xxxyyyzzz",             "yyy"            ) = false
+        && strends("xxxyyyzzz",             "yyy"^^xsd:string) = false
+        && strends("xxxyyyzzz"@en,          "yyy"            ) = false
+        && strends("xxxyyyzzz"@en,          "yyy"@en         ) = false
+        && strends("xxxyyyzzz"@en,          "yyy"^^xsd:string) = false
+        && strends("xxxyyyzzz"^^xsd:string, "yyy"            ) = false
+        && strends("xxxyyyzzz"^^xsd:string, "yyy"^^xsd:string) = false
+
+        && strends("xxxyyyzzz",             "xxx"            ) = false
+        && strends("xxxyyyzzz",             "xxx"^^xsd:string) = false
+        && strends("xxxyyyzzz"@en,          "xxx"            ) = false
+        && strends("xxxyyyzzz"@en,          "xxx"@en         ) = false
+        && strends("xxxyyyzzz"@en,          "xxx"^^xsd:string) = false
+        && strends("xxxyyyzzz"^^xsd:string, "xxx"            ) = false
+        && strends("xxxyyyzzz"^^xsd:string, "xxx"^^xsd:string) = false
+
+        && strends("",                      "xyz"            ) = false
+        && strends("",                      "xyz"^^xsd:string) = false
+        && strends(""@en,                   "xyz"            ) = false
+        && strends(""@en,                   "xyz"@en         ) = false
+        && strends(""@en,                   "xyz"^^xsd:string) = false
+        && strends(""^^xsd:string,          "xyz"            ) = false
+        && strends(""^^xsd:string,          "xyz"^^xsd:string) = false
+
+        && strends("xxxyyyzzz",             "xyz"            ) = false
+        && strends("xxxyyyzzz",             "xyz"^^xsd:string) = false
+        && strends("xxxyyyzzz"@en,          "xyz"            ) = false
+        && strends("xxxyyyzzz"@en,          "xyz"@en         ) = false
+        && strends("xxxyyyzzz"@en,          "xyz"^^xsd:string) = false
+        && strends("xxxyyyzzz"^^xsd:string, "xyz"            ) = false
+        && strends("xxxyyyzzz"^^xsd:string, "xyz"^^xsd:string) = false
+    )
+}

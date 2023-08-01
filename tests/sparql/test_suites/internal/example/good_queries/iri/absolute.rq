@@ -1,0 +1,6 @@
+SELECT ?s ?p ?o
+WHERE {
+    ?s <http://www.absolute1.com/absolutePredicate> <http://www.absolute1.com/absoluteObject> .
+    <http://www.absolute2.com/absoluteSubject> ?p <http://www.absolute2.com/absoluteObject> .
+    <http://www.absolute3.com/absoluteSubject> <http://www.absolute3.com/absolutePredicate> ?o .
+}

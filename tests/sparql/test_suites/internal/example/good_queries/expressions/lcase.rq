@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(true
+        && LCASE("abcdefghijklmnopqrstuvwxyz") = "abcdefghijklmnopqrstuvwxyz"
+        && LCASE("ABCDEFGHIJKLMNOPQRSTUVWXYZ") = "abcdefghijklmnopqrstuvwxyz"
+        && LCASE("áéíóúñ") = "áéíóúñ"
+        && LCASE("ÁÉÍÓÚÑ") = "áéíóúñ"
+    )
+}

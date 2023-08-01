@@ -1,0 +1,6 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?s ?p
+WHERE {
+    ?s ?p  "123456789-01-01T00:00:00Z"^^xsd:dateTime .
+}

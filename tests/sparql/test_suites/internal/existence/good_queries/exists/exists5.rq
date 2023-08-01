@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+select * where {
+  ?s ?p :o
+  filter exists { ?s ?p :o1  filter not exists { ?s ?p :o2 } }
+}

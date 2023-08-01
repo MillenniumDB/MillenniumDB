@@ -1,0 +1,4 @@
+PREFIX : <http://www.path.com/>
+SELECT DISTINCT (max(?o) AS ?max_o)
+WHERE { ?s :t8 ?o }
+GROUP BY ?s

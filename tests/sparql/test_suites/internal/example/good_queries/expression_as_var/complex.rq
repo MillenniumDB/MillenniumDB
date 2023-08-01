@@ -1,0 +1,5 @@
+SELECT ?o (2 * ?o as ?mult_2)  (2 * ?mult_2 as ?mult_2_2)
+WHERE {
+  ?s ?p ?o .
+  FILTER(DATATYPE(?o) = xsd:integer)
+}

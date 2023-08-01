@@ -1,0 +1,20 @@
+SELECT *
+WHERE  {
+    <http://www.firstPrefix.com/subjectFirstPrefix> <http://www.firstPrefix.com/predicateFirstPrefix> ?o .
+    FILTER(TRUE
+        && ENCODE_FOR_URI("")                        = ""
+        && ENCODE_FOR_URI("-")                       = "-"
+        && ENCODE_FOR_URI(".")                       = "."
+        && ENCODE_FOR_URI("_")                       = "_"
+        && ENCODE_FOR_URI("~")                       = "~"
+        && ENCODE_FOR_URI("a")                       = "a"
+        && ENCODE_FOR_URI("a/a/a/a")                 = "a%2Fa%2Fa%2Fa"
+        && ENCODE_FOR_URI("À")                       = "%C3%80"
+        && ENCODE_FOR_URI("ア")                       = "%E3%82%A2"
+        && ENCODE_FOR_URI("-À-")                     = "-%C3%80-"
+        && ENCODE_FOR_URI("-ア-")                     = "-%E3%82%A2-"
+        && ENCODE_FOR_URI("Los Angeles")             = "Los%20Angeles"
+        && ENCODE_FOR_URI("Los Angeles"@en)          = "Los%20Angeles"
+        && ENCODE_FOR_URI("Los Angeles"^^xsd:string) = "Los%20Angeles"
+    )
+}

@@ -1,0 +1,9 @@
+PREFIX : <http://www.p.c/>
+SELECT * {
+    SERVICE <https://query.wikidata.org/sparql> {
+        VALUES (?s ?x) { (<https://query.wikidata.org/sparql> "x1") (<https://query.wikidata.org/sparql> "x2") }
+    }
+    SERVICE ?s {
+        VALUES (?o ?x) { ("2" "x2") ("3" "x3") }
+    }
+}

@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?y
+WHERE {
+  ?x :p ?y
+}
+ORDER BY (NOT EXISTS {?x ?p :o }) ?y

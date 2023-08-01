@@ -1,0 +1,22 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && LANG(1)                          = ""
+        && LANG(-1)                         = ""
+        && LANG(1.0)                        = ""
+        && LANG(-1.0)                       = ""
+        && LANG(111111111111111111111111.0) = ""
+        && LANG(-11111111111111111111111.0) = ""
+        && LANG(1e0)                        = ""
+        && LANG(-1e0)                       = ""
+        && LANG("")                         = ""
+        && LANG("asdf")                     = ""
+        && LANG("fhj327832khefsef")         = ""
+        && LANG("asdf"@en-US)               = "en-US"
+        && LANG("fhj327832khefsef"@en-US)   = "en-US"
+        && LANG("asdf"@kogtv)               = "kogtv"
+        && LANG("fhj327832khefsef"@kogtv)   = "kogtv"
+    )
+}

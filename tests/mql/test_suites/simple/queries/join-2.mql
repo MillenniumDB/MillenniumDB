@@ -1,0 +1,2 @@
+MATCH (?p1 :person)-[:height]->(?h), (?p2 :person)-[:height]->(?h)
+RETURN ?p1, ?p2, ?h
