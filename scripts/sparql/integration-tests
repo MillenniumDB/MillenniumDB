@@ -1,0 +1,21 @@
+#!/usr/bin/bash
+set -e
+
+# To enable debugging uncomment this line:
+#set -x
+
+# Configure build
+cmake -Bbuild/Debug -DCMAKE_BUILD_TYPE=Debug
+
+# Build
+cmake --build build/Debug/ -j $(($(getconf _NPROCESSORS_ONLN)-1))
+
+# Remove tmp dir
+[[ -d tests/sparql/tmp/ ]] && echo Remove tmp dir && rm -r tests/sparql/tmp/
+
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Run integration tests
+printf "${BLUE}INTEGRATION TESTS${NC}\n"
+python3 tests/sparql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' > tests/sparql/test-status-last.txt)
