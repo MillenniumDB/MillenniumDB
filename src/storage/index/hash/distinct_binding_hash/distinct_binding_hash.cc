@@ -9,7 +9,7 @@
 #include "base/graph_object/graph_object.h"
 #include "storage/file_manager.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash_bucket.h"
-#include "third_party/xxhash/xxhash.h"
+#include "third_party/hashes/hash_function_wrapper.h"
 
 template <class T>
 DistinctBindingHash<T>::DistinctBindingHash(std::size_t tuple_size) :
@@ -40,7 +40,7 @@ template <class T>
 bool DistinctBindingHash<T>::is_in(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash = XXH3_64bits(tuple.data(), tuple.size() * sizeof(T));
+    uint64_t hash = HashFunctionWrapper(tuple.data(), tuple.size() * sizeof(T));
 
     // global_depth must be <= 64
     auto mask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - global_depth);
@@ -56,7 +56,7 @@ template <class T>
 bool DistinctBindingHash<T>::is_in_or_insert(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash = XXH3_64bits(tuple.data(), tuple.size() * sizeof(T));
+    uint64_t hash = HashFunctionWrapper(tuple.data(), tuple.size() * sizeof(T));
 
     // After a bucket split, need to try insert again.
     while (true) {

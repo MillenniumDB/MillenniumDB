@@ -8,7 +8,7 @@
 #include "base/exceptions.h"
 #include "storage/file_manager.h"
 #include "storage/index/hash/strings_hash/strings_hash_bucket.h"
-#include "third_party/xxhash/xxhash.h"
+#include "third_party/hashes/hash_function_wrapper.h"
 
 
 StringsHash::StringsHash(const std::string& filename) :
@@ -92,7 +92,7 @@ void StringsHash::duplicate_dirs() {
 
 
 uint64_t StringsHash::get_or_create_str_id(const std::string& str) {
-    uint64_t hash = XXH3_64bits(str.data(), str.length());
+    uint64_t hash = HashFunctionWrapper(str.data(), str.length());
 
     // After a bucket split, need to try insert again.
     while (true) {
@@ -156,7 +156,7 @@ uint64_t StringsHash::get_or_create_str_id(const std::string& str) {
 
 
 uint64_t StringsHash::get_str_id(const std::string& str) const {
-    uint64_t hash = XXH3_64bits(str.data(), str.length());
+    uint64_t hash = HashFunctionWrapper(str.data(), str.length());
 
     // After a bucket split, need to try insert again.
     while (true) {

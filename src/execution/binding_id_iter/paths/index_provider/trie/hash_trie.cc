@@ -54,13 +54,13 @@ void HashTrie::print() {
 
     // Generate ordered map for printing
     auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
-    for (const auto e : offsets) {
+    for (const auto& e : offsets) {
         prefix_offsets.insert({e.first, e.second});
     }
 
     // Prefix level
     cout << "L0: ";
-    for (const auto prefix : prefix_offsets) {
+    for (const auto& prefix : prefix_offsets) {
         if (prefix.first != invalid_object_id) {
             cout << prefix.first << ",";
         }
@@ -86,13 +86,13 @@ void HashTrie::print() {
 void HashTrie::print_offsets() {
     // Generate ordered map for printing
     auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
-    for (const auto e : offsets) {
+    for (const auto& e : offsets) {
         prefix_offsets.insert({e.first, e.second});
     }
 
     // Offsets
     cout << "Offsets: \n" << endl;
-    for (const auto prefix : prefix_offsets) {
+    for (const auto& prefix : prefix_offsets) {
         if (prefix.first != invalid_object_id) {
             cout << prefix.first << ": (" << prefix.second.first << "," << prefix.second.second << ")" << endl;
         }
