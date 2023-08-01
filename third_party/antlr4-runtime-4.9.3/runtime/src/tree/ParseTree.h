@@ -19,7 +19,7 @@ namespace tree {
   // ml: This class unites 4 Java classes: RuleNode, ParseTree, SyntaxTree and Tree.
   class ANTLR4CPP_PUBLIC ParseTree {
   public:
-    ParseTree();
+    ParseTree() : parent(nullptr) { }
     ParseTree(ParseTree const&) = delete;
     virtual ~ParseTree() {}
 
@@ -45,8 +45,6 @@ namespace tree {
     /// Specialize toStringTree so that it can print out more information
     /// based upon the parser.
     virtual std::string toStringTree(Parser *parser, bool pretty = false) = 0;
-
-    virtual bool operator == (const ParseTree &other) const;
 
     /// The <seealso cref="ParseTreeVisitor"/> needs a double dispatch method.
     // ml: This has been changed to use Any instead of a template parameter, to avoid the need of a virtual template function.
