@@ -264,36 +264,14 @@ Any QueryVisitor::visitReturnItemVar(MQL_Parser::ReturnItemVarContext* ctx) {
 }
 
 
-Any QueryVisitor::visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* ctx) {
+Any QueryVisitor::visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* /*ctx*/) {
     // TODO:
-    // auto var_name = ctx->VARIABLE()->getText();
-    // var_name.erase(0, 1); // remove leading '?'
-    // if (ctx->KEY() != nullptr) {
-    //     var += ctx->KEY()->getText();
-    // }
-    // return_items.push_back(
-    //     std::make_unique<ReturnItemAgg>(
-    //         ascii_str_to_lower(ctx->aggregateFunc()->getText()),
-    //         std::move(var)
-    //     )
-    // );
     return 0;
 }
 
 
-Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx) {
+Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* /*ctx*/) {
     // TODO:
-    // std::string inside_var;
-    // if (ctx->VARIABLE() != nullptr) {
-    //     inside_var = ctx->VARIABLE()->getText();
-    //     if (ctx->KEY() != nullptr) {
-    //         inside_var += ctx->KEY()->getText();
-    //     }
-    // } else {
-    //     inside_var = "*";
-    // }
-    // return_items.push_back(std::make_unique<ReturnItemCount>(ctx->K_DISTINCT() != nullptr,
-    //                                                             std::move(inside_var)));
     return 0;
 }
 
@@ -333,45 +311,26 @@ Any QueryVisitor::visitOrderByItemVar(MQL_Parser::OrderByItemVarContext* ctx) {
 }
 
 
-Any QueryVisitor::visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* ctx) {
-    // auto var = ctx->VARIABLE()->getText();
-    // if (ctx->KEY() != nullptr) {
-    //     var += ctx->KEY()->getText();
-    // }
-    // order_by_items.push_back(std::make_unique<ReturnItemAgg>(ascii_str_to_lower(ctx->aggregateFunc()->getText()), std::move(var)));
-    // order_by_ascending_order.push_back(ctx->K_DESC() == nullptr);
+Any QueryVisitor::visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* /*ctx*/) {
+    // TODO:
     return 0;
 }
 
 
-Any QueryVisitor::visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* ctx) {
-    // auto var = ctx->VARIABLE()->getText();
-    // if (ctx->KEY() != nullptr) {
-    //     var += ctx->KEY()->getText();
-    // }
-    // order_by_items.push_back(std::make_unique<ReturnItemCount>(ctx->K_DISTINCT() != nullptr, std::move(var)));
-    // order_by_ascending_order.push_back(ctx->K_DESC() == nullptr);
+Any QueryVisitor::visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* /*ctx*/) {
+    // TODO:
     return 0;
 }
 
 
-Any QueryVisitor::visitGroupByStatement(MQL_Parser::GroupByStatementContext* ctx) {
-    // for (auto group_by_item : ctx->groupByItem()) {
-    //     group_by_item->accept(this);
-    // }
-
-    // current_op = std::make_unique<OpGroupBy>(std::move(current_op),
-    //                                             std::move(group_by_vars));
+Any QueryVisitor::visitGroupByStatement(MQL_Parser::GroupByStatementContext* /*ctx*/) {
+    // TODO:
     return 0;
 }
 
 
-Any QueryVisitor::visitGroupByItem(MQL_Parser::GroupByItemContext* ctx) {
-    // auto var = ctx->VARIABLE()->getText();
-    // if (ctx->KEY() != nullptr) {
-    //     var += ctx->KEY()->getText();
-    // }
-    // group_by_vars.emplace_back(Var(var));
+Any QueryVisitor::visitGroupByItem(MQL_Parser::GroupByItemContext* /*ctx*/) {
+    // TODO:
     return 0;
 }
 

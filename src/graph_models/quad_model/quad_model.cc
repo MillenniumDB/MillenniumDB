@@ -124,124 +124,8 @@ QuadModel::~QuadModel() {
 }
 
 
-// ObjectId get_or_create_object_id(Id id) {
-//     // TODO: transform TMPs into real ids
-//     // should be done here or before (query_parser)?
-//     assert(id.is_OID());
-//     auto oid = id.get_OID();
-//     const auto mask        = oid.id & ObjectId::TYPE_MASK;
-//     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
-//     switch (mask) {
-
-//     // TODO: implement ObjectId::MASK_ANON_TMP if supported in the future
-//     // case ObjectId::MASK_ANON_TMP:
-//     case ObjectId::MASK_NAMED_NODE_TMP: {
-//         tmp_manager.print_str(os, unmasked_id);
-//         break;
-//     }
-//     case ObjectId::MASK_STRING_SIMPLE_TMP: {
-//         os << '"';
-//         tmp_manager.print_str(escaped_os, unmasked_id);
-//         os << '"';
-//         break;
-//     }
-
-//     default:
-//         throw std::logic_error("Unmanaged mask in CSVReturnExecutor print: "
-//             + std::to_string(mask));
-//     }
-// }
-
-
 // TODO: create executor to do this
-void QuadModel::exec_inserts(const MQL::OpInsert& op_insert) {
-    // for (auto& op_label : op_insert.labels) {
-    //     auto label_id = get_or_create_object_id(op_label.label);
-    //     auto node_id  = get_or_create_object_id(op_label.node);
-
-    //     try_add_node(node_id);
-
-    //     label_node->insert(Record<2>({label_id.id, node_id.id}));
-    //     node_label->insert(Record<2>({node_id.id, label_id.id}));
-
-    //     catalog().label_count++;
-    //     catalog().label2total_count[label_id.id]++;
-    //     catalog().distinct_labels = catalog().label2total_count.size();
-    // }
-
-    // for (auto& op_property : op_insert.properties) {
-    //     auto obj_id = get_or_create_object_id(op_property.node);
-    //     auto key_id = get_or_create_object_id(op_property.key);
-    //     auto val_id = get_or_create_object_id(op_property.value);
-
-    //     try_add_node(obj_id);
-
-    //     key_value_object->insert(Record<3>({key_id.id, val_id.id, obj_id.id}));
-    //     object_key_value->insert(Record<3>({obj_id.id, key_id.id, val_id.id}));
-
-    //     catalog().properties_count++;
-    //     catalog().key2total_count[key_id.id]++;
-
-    //     {
-    //         bool interruption_requested = false;
-    //         auto iter = key_value_object->get_range(&interruption_requested,
-    //                                                 Record<3>({key_id.id, val_id.id, 0}),
-    //                                                 Record<3>({key_id.id, val_id.id, UINT64_MAX}));
-    //         if (iter.next() != nullptr) {
-    //             catalog().key2distinct[key_id.id]++;
-    //         }
-    //     }
-
-
-    //     catalog().distinct_keys = catalog().key2total_count.size();
-    // }
-
-    // // insert edges
-    // for (auto& op_edge : op_insert.edges) {
-    //     auto from = get_or_create_object_id(op_edge.from);
-    //     auto to   = get_or_create_object_id(op_edge.to);
-    //     auto type = get_or_create_object_id(op_edge.type);
-    //     // TODO: reuse edge_ids from recycler when deletes are implemented
-    //     auto edge_id = ++catalog().connections_count | ObjectId::MASK_EDGE;
-
-    //     try_add_node(from);
-    //     try_add_node(to);
-    //     try_add_node(type);
-
-    //     type_from_to_edge->insert(Record<4>({type.id, from.id, to.id, edge_id}));
-    //     type_to_from_edge->insert(Record<4>({type.id, to.id, from.id, edge_id}));
-    //     from_to_type_edge->insert(Record<4>({from.id, to.id, type.id, edge_id}));
-    //     to_type_from_edge->insert(Record<4>({to.id, type.id, from.id, edge_id}));
-
-    //     edge_table->append_record(Record<3>({from.id, to.id, type.id}));
-
-    //     catalog().type2total_count[type.id]++;
-    //     catalog().distinct_type = catalog().type2total_count.size();
-
-    //     if (from == to) {
-    //         equal_from_to->insert(Record<3>({from.id, type.id, edge_id}));
-    //         equal_from_to_inverted->insert(Record<3>({type.id, from.id, edge_id}));
-    //         catalog().equal_from_to_count++;
-    //         catalog().type2equal_from_to_count[type.id]++;
-    //         if (from == type) {
-    //             equal_from_to_type->insert(Record<2>({from.id, edge_id}));
-    //             catalog().equal_from_to_type_count++;
-    //             catalog().type2equal_from_to_type_count[type.id]++;
-    //         }
-    //     }
-    //     if (from == type) {
-    //         equal_from_type->insert(Record<3>({from.id, to.id, edge_id}));
-    //         equal_from_type_inverted->insert(Record<3>({to.id, from.id, edge_id}));
-    //         catalog().equal_from_type_count++;
-    //         catalog().type2equal_from_type_count[type.id]++;
-    //     }
-    //     if (type == to) {
-    //         equal_to_type->insert(Record<3>({to.id, from.id, edge_id}));
-    //         equal_to_type_inverted->insert(Record<3>({from.id, to.id, edge_id}));
-    //         catalog().equal_to_type_count++;
-    //         catalog().type2equal_to_type_count[type.id]++;
-    //     }
-    // }
+void QuadModel::exec_inserts(const MQL::OpInsert& /*op_insert*/) {
 }
 
 
@@ -255,7 +139,7 @@ void QuadModel::try_add_node(ObjectId node_id) {
         } else {
             catalog().identifiable_nodes_count++;
         }
-    } catch (const LogicException& e) { // TODO: use custom exception?
+    } catch (const LogicException& e) {
         // do nothing
     }
 }
