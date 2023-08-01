@@ -17,7 +17,7 @@ Everything in our graph model is an **Object**, and there are different 4 types 
 
     2.1. **Named Nodes**: they have a string as identifier when you add them into the database.
 
-    2.2. **Anonymous Nodes**: they don't have a string as identifier when you add them into the database. They will have an auto-generated identifier to direcly refeer to them later.
+    2.2. **Anonymous Nodes**: they don't have a string as identifier when you add them into the database. They will have an auto-generated identifier to directly refer to them later.
 
 
 3. **Edges**: an edge is an object that relates other objects, having the following attributes:
@@ -33,15 +33,15 @@ Everything in our graph model is an **Object**, and there are different 4 types 
 
 - **String**: sequence of characters. They often are delimited by double quotes (`""`). The only exception is when you are working with keys. For that reason, property keys cannot be any string, they must match the regular expression `[A-Za-z][A-Za-z0-9_]*`.
 
-- **Float**: same as in C language. Use with caution as they may lose presicion.
+- **Float**: same as in C language. Use with caution as they may lose precision.
 
 - **Boolean** `true` or `false`.
 
-- **Named Nodes**: they must match the regular expresion `[A-Za-z][A-Za-z0-9_]*`. There are exceptions for `true` and `false` because they are interpreted as booleans. Identifiers are case sensitive.
+- **Named Nodes**: they must match the regular expression `[A-Za-z][A-Za-z0-9_]*`. There are exceptions for `true` and `false` because they are interpreted as booleans. Identifiers are case sensitive.
 
-- **Anonymous Nodes** The auto-generated identifier will match the regular expresion `_a[1-9][0-9]*`.
+- **Anonymous Nodes** The auto-generated identifier will match the regular expression `_a[1-9][0-9]*`.
 
-- **Edges** The auto-generated identifier will match the regular expresion `_e[1-9][0-9]*`.
+- **Edges** The auto-generated identifier will match the regular expression `_e[1-9][0-9]*`.
 
 # Model constraints
 The model presented before is very flexible, but most of the time we have some constrains we could take advantage on.
@@ -51,4 +51,4 @@ For that reason, we allow having multiples models depending on what constrains d
 Currently this is the only model implemented. The only restriction to the generic model is that **every edge must have one type**.
 
 ## Triple Model
-We are planning to implkeent this in the future, will be something similar to RDF. As in Quad Model, edges have one type, but also they don't have an ID, so they can't have propreties or being part of another edge.
+We are planning to implement this in the future, will be something similar to RDF. As in Quad Model, edges have one type, but also they don't have an ID, so they can't have properties or being part of another edge.

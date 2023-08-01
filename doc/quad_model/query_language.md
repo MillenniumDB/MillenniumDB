@@ -57,7 +57,7 @@ And similar as in **node patterns**, **edges** may contain other some things:
 - A **type variable** (after the edge variable or fixed edge if they are present):
     - `(?x)-[:?t]->(?y)`
     - `(?x)-[?e :?t]->(?y)`
-- Or instad of a **type variable**, a **fixed type** (after the edge variable or fixed edge if they are present):
+- Or instead of a **type variable**, a **fixed type** (after the edge variable or fixed edge if they are present):
     - `(?x)-[:Type1]->(?y)`
     - `(?x)-[?e :Type2]->(?y)`
 - A set of properties (at the end)
@@ -96,7 +96,7 @@ Then a **linear pattern** is a set of one or more **node patterns** linked by ed
 - `(John)=[:Knows+]=>(?x)-[:WorksIn]->(?y)`
 
 ## Basic graph pattern
-A set of one or more **linear patterns** (separeted by comma) forms a **basic graph pattern**
+A set of one or more **linear patterns** (separated by comma) forms a **basic graph pattern**
 - `(?x :Person)-[:Knows]->(?y)<-[:Knows]-(John), (?y)-[:LivesIn]->(Chile)`
 
 ## Graph pattern

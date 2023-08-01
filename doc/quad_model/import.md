@@ -31,4 +31,4 @@ Joe->John :Follows
 Joe->20 :Age
 Joe->"Hello World" :Posted date:"06-10-2010"
 ```
-Note the distinction betweem **Node Name** and **string literal**, `"Joe"` is a string literal, and `Joe` is a Node Name.
+Note the distinction between **Node Name** and **string literal**, `"Joe"` is a string literal, and `Joe` is a Node Name.
