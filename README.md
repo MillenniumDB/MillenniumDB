@@ -80,8 +80,8 @@ Clone the repository
 --------------------------------------------------------------------------------
  Clone this repository, enter the repository root directory and set `MDB_HOME`:
 ```
-git clone git@github.com:MillenniumDB/MillenniumDB-Dev.git
-cd MillenniumDB-Dev
+git clone git@github.com:MillenniumDB/MillenniumDB.git
+cd MillenniumDB
 export MDB_HOME=$(pwd)
 ```
 
