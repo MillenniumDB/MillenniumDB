@@ -92,9 +92,7 @@ cd boost_1_81_0/
 Run the following:
 ```
 ./bootstrap.sh --prefix=$MDB_HOME/third_party/boost_1_81
-
 ./b2 --prefix=$MDB_HOME/third_party/boost_1_81
-
 ./b2 install
 ```
 
