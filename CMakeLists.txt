@@ -45,8 +45,6 @@ list(REMOVE_ITEM sources ${TEST_SRCS})
 add_library(millenniumdb STATIC ${sources})
 
 set(BUILD_TARGETS
-    # check_strings_sparql
-    # try_bpt_compression
     create_db_mql
     create_db_sparql
     query_mql
