@@ -10,19 +10,11 @@ This project is still in active development and is not production ready yet, som
 
 Table of Contents
 ================================================================================
-- [Other Documents](#other-documents)
 - [SPARQL Support](#sparql-support)
 - [Project Build](#project-build)
 - [Using MillenniumDB](#using-millenniumdb)
 - [Example](#example)
 - [Docker](#docker)
-
-
-
-[Other Documents](#millenniumdb)
-================================================================================
-- [Developer Documentation](doc/developer.md)
-- [SPARQL Deviations](doc/sparql/sparql_deviations.md)
 
 
 
@@ -100,18 +92,16 @@ cd boost_1_81_0/
 Run the following:
 ```
 ./bootstrap.sh --prefix=$MDB_HOME/third_party/boost_1_81
-```
-```
+
 ./b2 --prefix=$MDB_HOME/third_party/boost_1_81
-```
-```
+
 ./b2 install
 ```
 
 
 Build the Project:
 --------------------------------------------------------------------------------
-Configure and build MillenniumDB:
+Go back into the repository root directory and configure and build MillenniumDB:
 ```
 cmake -B build/Release -D CMAKE_BUILD_TYPE=Release && cmake --build build/Release/
 ```

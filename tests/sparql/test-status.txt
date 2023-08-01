@@ -1,9 +1,9 @@
 [SUMMARY] -------------- Internal tests ---------------
 [SUMMARY] 
-[SUMMARY]           CORRECT             : 379          
+[SUMMARY]           CORRECT             : 382          
 [SUMMARY]           ERROR               :   0          
 [SUMMARY]           SKIPPED             :   0          
-[SUMMARY]           TOTAL               : 379          
+[SUMMARY]           TOTAL               : 382          
 [SUMMARY] 
 [SUMMARY] ----- sparql10/manifest-evaluation.ttl ------
 [SUMMARY] 
@@ -36,7 +36,7 @@
 [SUMMARY] 
 [SUMMARY] ----------------- All Tests -----------------
 [SUMMARY] 
-[SUMMARY]           CORRECT             : 761          
+[SUMMARY]           CORRECT             : 764          
 [SUMMARY]           ERROR               :   0          
 [SUMMARY]           SKIPPED             :  65          
 [SUMMARY]             has named graph   :   2          
@@ -44,5 +44,5 @@
 [SUMMARY]             kw: from          :  13          
 [SUMMARY]             kw: graph         :  23          
 [SUMMARY]             non-ttl database  :   4          
-[SUMMARY]           TOTAL               : 826          
+[SUMMARY]           TOTAL               : 829          
 [SUMMARY] 

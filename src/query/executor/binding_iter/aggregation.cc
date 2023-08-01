@@ -2,13 +2,16 @@
 
 void Aggregation::begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
+
     group_vars_binding = Binding(parent_binding->size);
     child_binding = Binding(parent_binding->size);
+
     child->begin(child_binding);
-    saved_next = child->next();
+    new_group = child->next();
 
     for (auto&& [var_id, agg] : aggregations) {
         agg->set_binding(child_binding);
+        agg->begin();
     }
 }
 
@@ -18,7 +21,7 @@ void Aggregation::reset() {
 
 
 bool Aggregation::next() {
-    if (saved_next) {
+    if (new_group) {
         // remember group
         for (auto& var_id : group_vars) {
             group_vars_binding.add(var_id, child_binding[var_id]);
@@ -28,12 +31,20 @@ bool Aggregation::next() {
             agg->process();
         }
     } else {
-        if (has_returned || group_vars.size() > 0) {
+        if (!has_returned and group_vars.size() == 0) {
+            // We have aggregation without grouping and have never returned a binding.
+            // But for aggregation without grouping we have to return at least once.
+            for (auto&& [var_id, agg] : aggregations) {
+                parent_binding->add(var_id, agg->get());
+            }
+            has_returned = true;
+            return true;
+        } else {
             return false;
         }
     }
 
-    saved_next = false;
+    new_group = false;
     while (child->next()) {
         bool same_group = true;
         // check if group is changed
@@ -47,7 +58,7 @@ bool Aggregation::next() {
                 agg->process();
             }
         } else {
-            saved_next = true;
+            new_group = true;
             break;
         }
     }

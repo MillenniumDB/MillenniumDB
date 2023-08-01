@@ -24,6 +24,9 @@ public:
 
     // indicates the end of a group
     ObjectId get() override {
+        if (min == ObjectId(ObjectId::MASK_MAX)) {
+            return ObjectId::get_null();
+        }
         return min;
     }
 

@@ -823,7 +823,16 @@ bool Decimal::operator<(const Decimal& rhs) const {
         if (lhs_msp != rhs_msp) {
             return lhs_msp > rhs_msp;
         }
-        return this->digits > rhs.digits;
+        auto lhs_s = this->digits.size();
+        auto rhs_s = rhs.digits.size();
+        for (unsigned i = 0; i < std::min(lhs_s, rhs_s); i++) {
+            auto ld = this->digits[lhs_s - i - 1];
+            auto rd = rhs.digits[rhs_s - i - 1];
+            if (ld != rd) {
+                return ld > rd;
+            }
+        }
+        return lhs_s > rhs_s;
     }
 
     throw LogicException("This should never be reached");

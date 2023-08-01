@@ -40,6 +40,8 @@ def get_test_suites() -> list[TestSuite]:
 
         log(Level.END, test_suite)
 
+    test_suites.sort(key=lambda ts: ts.name)
+
     log(Level.END, "GET TESTS")
     return test_suites
 

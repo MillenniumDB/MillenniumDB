@@ -68,8 +68,8 @@ INTERNAL_TESTS: List[str] = [
     "negation-set-data",
     "nested",
     "optional",
-    # "service",
     "union",
+    # "service",
 ]
 
 # If the following list is not empty, only those tests will be executed

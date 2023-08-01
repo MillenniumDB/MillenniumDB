@@ -45,6 +45,6 @@ private:
     Binding* parent_binding;
     Binding child_binding;
 
-    bool saved_next;
+    bool new_group;
     bool has_returned = false;
 };

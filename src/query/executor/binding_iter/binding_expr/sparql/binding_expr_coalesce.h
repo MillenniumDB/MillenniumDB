@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "graph_models/object_id.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"

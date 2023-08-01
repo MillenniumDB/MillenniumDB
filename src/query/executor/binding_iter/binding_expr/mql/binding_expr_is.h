@@ -22,7 +22,7 @@ public:
 
     ObjectId eval(const Binding& binding) override {
         auto oid = expr->eval(binding);
-        bool res;
+        bool res = false;
         switch (type) {
         case ExprTypeName::NULL_:
             res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_NULL;

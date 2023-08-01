@@ -6,52 +6,23 @@
 #include <string>
 #include <vector>
 
-// TODO: remove and use real functions
-int compare_external(std::string& lhs, std::string& rhs) {
-    // *** ASSUMPTIONS ***
-    // The format of both strings is:
-    // (-)?(0|[1-9][0-9]*).(0|[0-9]*[1-9])
-
-    // 1. Compare signs
-    bool lhs_neg = lhs[0] == '-';
-    bool rhs_neg = rhs[0] == '-';
-    int sign_diff = lhs_neg - rhs_neg;
-    if (sign_diff != 0) {
-        return sign_diff > 0 ? -1 : 1;
-    }
-
-    // 2. Compare integer part
-    size_t lhs_sep = lhs.find('.');
-    size_t rhs_sep = rhs.find('.');
-    // Compare integer part length
-    int intlen_diff = lhs_sep - rhs_sep;
-    if (intlen_diff != 0) {
-        return lhs_neg ? -intlen_diff : intlen_diff;
-    }
-    // NOTE: lhs_sep == rhs_sep at this point
-    // Compare integer part digits
-    int int_diff = strncmp(lhs.c_str(), rhs.c_str(), lhs_sep);
-    if (int_diff != 0) {
-        return lhs_neg ? -int_diff : int_diff;
-    }
-    // 3. Compare fractional part (if it exists)
-    // Compare fractional part digits
-    int frac_diff = strcmp(lhs.c_str() + lhs_sep, rhs.c_str() + rhs_sep);
-    if (frac_diff != 0) {
-        return lhs_neg ? -frac_diff : frac_diff;
-    }
-
-    return 0;
-}
 
 int compare(std::string& lhs, std::string& rhs) {
     bool error;
-    std::string lhs_normalized = Decimal(lhs, &error).to_string();
-    assert(!error);
-    std::string rhs_normalized = Decimal(rhs, &error).to_string();
+
+    auto lhs_decimal = Decimal(lhs, &error);
     assert(!error);
 
-    return compare_external(lhs_normalized, rhs_normalized);
+    auto rhs_decimal = Decimal(rhs, &error);
+    assert(!error);
+
+    if (lhs_decimal < rhs_decimal) {
+        return -1;
+    } else if (lhs_decimal == rhs_decimal) {
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 int main() {

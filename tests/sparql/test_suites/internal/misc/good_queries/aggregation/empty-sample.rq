@@ -1,0 +1,5 @@
+PREFIX : <http://p.c/>
+SELECT (COALESCE(SAMPLE(?o), "sample-is-null") AS ?sample)
+WHERE {
+  :x :x :x
+}

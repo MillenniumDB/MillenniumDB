@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "min" ] },
+  "results": {
+    "bindings": [
+      { "min": { "type": "literal", "value": "min-is-null" } }
+    ]
+  }
+}
