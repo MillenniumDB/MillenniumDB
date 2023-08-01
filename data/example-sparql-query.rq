@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT *
+WHERE {
+    ?s ?p ?o .
+}
