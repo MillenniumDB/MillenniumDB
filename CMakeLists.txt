@@ -11,7 +11,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 # set the project name and version
-project(MillenniumDB VERSION 0.1)
+project(MillenniumDB VERSION 0.2)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
