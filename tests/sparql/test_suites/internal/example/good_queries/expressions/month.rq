@@ -1,0 +1,12 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        MONTH("2023-05-01T00:00:00Z"^^xsd:dateTime)        = 5 &&
+        MONTH("500-08-01T00:00:00Z"^^xsd:dateTime)         = 8 &&
+        # Default value for month is 1 when year is greater than 9999
+        MONTH("-2500000-12-01T00:00:00Z"^^xsd:dateTime)    = 1 &&
+        MONTH("130000000-09-01T00:00:00Z"^^xsd:dateTime)   = 1
+    )
+}

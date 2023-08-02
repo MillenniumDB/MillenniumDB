@@ -1,0 +1,12 @@
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE{
+
+    { :s1 :t16 ?y1 . }
+      :s1 :t16 ?y2 .
+    { :s1 :t16 ?y3 . }
+    BIND(?y1 * ?y2 * ?y3 AS ?x)
+    { :s1 :t16 ?y4 . }
+      :s1 :t16 ?y5
+    { :s1 :t16 ?y6 . }
+}

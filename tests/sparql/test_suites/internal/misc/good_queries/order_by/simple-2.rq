@@ -1,0 +1,4 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o (- ?o AS ?minus_o)
+WHERE { ?s :t3 ?o }
+ORDER BY ?minus_o

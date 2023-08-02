@@ -1,0 +1,48 @@
+[SUMMARY] -------------- Internal tests ---------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             : 382          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               : 382          
+[SUMMARY] 
+[SUMMARY] ----- sparql10/manifest-evaluation.ttl ------
+[SUMMARY] 
+[SUMMARY]           CORRECT             : 204          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :  41          
+[SUMMARY]             has named graph   :   2          
+[SUMMARY]             ignored           :  15          
+[SUMMARY]             kw: from          :  12          
+[SUMMARY]             kw: graph         :  12          
+[SUMMARY]           TOTAL               : 245          
+[SUMMARY] 
+[SUMMARY] --- sparql11/manifest-sparql11-query.ttl ----
+[SUMMARY] 
+[SUMMARY]           CORRECT             : 171          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :  24          
+[SUMMARY]             ignored           :   8          
+[SUMMARY]             kw: from          :   1          
+[SUMMARY]             kw: graph         :  11          
+[SUMMARY]             non-ttl database  :   4          
+[SUMMARY]           TOTAL               : 195          
+[SUMMARY] 
+[SUMMARY] -- sparql11/manifest-sparql11-results.ttl ---
+[SUMMARY] 
+[SUMMARY]           CORRECT             :   7          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :   7          
+[SUMMARY] 
+[SUMMARY] ----------------- All Tests -----------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             : 764          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :  65          
+[SUMMARY]             has named graph   :   2          
+[SUMMARY]             ignored           :  23          
+[SUMMARY]             kw: from          :  13          
+[SUMMARY]             kw: graph         :  23          
+[SUMMARY]             non-ttl database  :   4          
+[SUMMARY]           TOTAL               : 829          
+[SUMMARY] 

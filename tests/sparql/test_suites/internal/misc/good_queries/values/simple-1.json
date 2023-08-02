@@ -1,0 +1,47 @@
+{
+  "head": { "vars": [ "o", "x", "y" ] },
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "a" }
+      },
+      {
+        "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "b" }
+      },
+      {
+        "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "a" }
+      },
+      {
+        "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "b" }
+      },
+      {
+        "o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "a" }
+      },
+      {
+        "o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "10", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "b" }
+      },
+      {
+        "o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "a" }
+      },
+      {
+        "o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "x": { "type": "literal", "value": "20", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "y": { "type": "literal", "value": "b" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,229 @@
+# 1. Base overwrite
+@base <http://www.firstBase.com/> .
+<#subjectFirstBase> <#predicateFirstBase> <#objectFirstBase> .
+@base <http://www.secondBase.com/> .
+<#subjectSecondBase> <#predicateSecondBase> <#objectSecondBase> .
+@base <http://www.thirdBase.com/> .
+<#subjectThirdBase> <#predicateThirdBase> <#objectThirdBase> .
+
+
+# 2. Prefix overwrite
+@prefix : <http://www.firstPrefix.com/> .
+:subjectFirstPrefix :predicateFirstPrefix :objectFirstPrefix .
+@prefix : <http://www.secondPrefix.com/> .
+:subjectSecondPrefix :predicateSecondPrefix :objectSecondPrefix .
+@prefix : <http://www.thirdPrefix.com/> .
+:subjectThirdPrefix :predicateThirdPrefix :objectThirdPrefix .
+
+
+# 3. Iri types
+# 3.1. Absolute
+<http://www.absolute1.com/absoluteSubject> <http://www.absolute1.com/absolutePredicate> <http://www.absolute1.com/absoluteObject> .
+<http://www.absolute2.com/absoluteSubject> <http://www.absolute2.com/absolutePredicate> <http://www.absolute2.com/absoluteObject> .
+<http://www.absolute3.com/absoluteSubject> <http://www.absolute3.com/absolutePredicate> <http://www.absolute3.com/absoluteObject> .
+# 3.2. Relative
+@prefix rel1: <http://www.relative1.com/> .
+@prefix rel2: <http://www.relative2.com/> .
+@prefix rel3: <http://www.relative3.com/> .
+rel1:relativeSubject rel1:relativePredicate rel1:relativeObject .
+rel2:relativeSubject rel2:relativePredicate rel2:relativeObject .
+rel3:relativeSubject rel3:relativePredicate rel3:relativeObject .
+# 3.3. Base
+@base <http://www.base.com/> .
+<baseSubject1> <basePredicate1> <baseObject1> .
+<baseSubject2> <basePredicate2> <baseObject2> .
+<baseSubject3> <basePredicate3> <baseObject3> .
+# 3.4. Inlined
+@prefix inl: <http://www.inlined.com/> .
+inl:is1 inl:ip1 inl:io1 .
+inl:is2 inl:ip2 inl:io2 .
+inl:is3 inl:ip3 inl:io3 .
+# 3.5. External
+@prefix ext: <http://www.external.com/> .
+ext:externals1 ext:externalp1 ext:externalo1 .
+ext:externals2 ext:externalp2 ext:externalo2 .
+ext:externals3 ext:externalp3 ext:externalo3 .
+# 3.6. Prefix optimization (import file, {test_name}_prefixes.txt)
+@prefix prefixoptinl: <http://www.prefixedInlined.com/> .
+@prefix prefixoptext: <http://www.prefixedExternal.com/> .
+# 3.6.1. Inlined
+prefixoptinl:is1 prefixoptinl:ip1 prefixoptinl:io1 .
+prefixoptinl:is2 prefixoptinl:ip2 prefixoptinl:io2 .
+prefixoptinl:is3 prefixoptinl:ip3 prefixoptinl:io3 .
+# 3.6.2. External
+prefixoptext:externals1 prefixoptext:externalp1 prefixoptext:externalo1 .
+prefixoptext:externals2 prefixoptext:externalp2 prefixoptext:externalo2 .
+prefixoptext:externals3 prefixoptext:externalp3 prefixoptext:externalo3 .
+
+
+# 4. Literals
+# 4.1. Inlined
+# 4.1.1. Literal
+@prefix litinl: <http://www.litinl.com/> .
+litinl:sli litinl:pli
+    "inl1",
+    "inl2",
+    "inl3" .
+# 4.1.2. Literal with Datatype
+litinl:slid litinl:plid
+    "inl1"^^<http://www.datatype.com/dt1>,
+    "inl2"^^<http://www.datatype.com/dt1>,
+    "inl3"^^<http://www.datatype.com/dt2>,
+    "inl4"^^<http://www.datatype.com/dt2>,
+    "inl5"^^<http://www.datatype.com/dt3>,
+    "inl6"^^<http://www.datatype.com/dt3> .
+# 4.1.3. Literal with Language
+litinl:slil litinl:plil
+    "inl1"@en-US,
+    "inl2"@en-US,
+    "inl3"@es-CL,
+    "inl4"@es-CL,
+    "inl5"@fr-CA,
+    "inl6"@fr-CA .
+# 4.2. External
+# 4.2.1. Literal
+@prefix litext: <http://www.litext.com/> .
+litext:sle litext:ple
+    "external1",
+    "external2",
+    "external3" .
+# 4.2.2. Literal with Datatype
+litext:sled litext:pled
+    "external1"^^<http://www.datatype.com/dt1>,
+    "external2"^^<http://www.datatype.com/dt1>,
+    "external3"^^<http://www.datatype.com/dt2>,
+    "external4"^^<http://www.datatype.com/dt2>,
+    "external5"^^<http://www.datatype.com/dt3>,
+    "external6"^^<http://www.datatype.com/dt3> .
+# 4.2.3. Literal with Language
+litext:slel litext:plel
+    "external1"@en-US,
+    "external2"@en-US,
+    "external3"@es-CL,
+    "external4"@es-CL,
+    "external5"@fr-CA,
+    "external6"@fr-CA .
+
+
+# 5. Token "a" for predicates
+@prefix type: <http://www.type.com/> .
+type:sa1 a
+    type:oa1,
+    type:oa2,
+    type:oa3 .
+
+# 6. Equals
+@prefix eq: <http://www.equals.com/> .
+# 6.1. S=P=O
+eq:spo1 eq:spo1 eq:spo1 .
+eq:spo2 eq:spo2 eq:spo2 .
+eq:spo3 eq:spo3 eq:spo3 .
+# 6.2. S=P
+eq:sp1 eq:sp1 eq:o1 .
+eq:sp2 eq:sp2 eq:o2 .
+eq:sp3 eq:sp3 eq:o3 .
+# 6.3. S=O
+eq:so1 eq:p1 eq:so1 .
+eq:so2 eq:p2 eq:so2 .
+eq:so3 eq:p3 eq:so3 .
+# 6.4. P=O
+eq:s1 eq:po1 eq:po1 .
+eq:s2 eq:po2 eq:po2 .
+eq:s3 eq:po3 eq:po3 .
+
+# 7. Joins
+# src=https://www.w3.org/2008/07/MappingRules/StemMapping
+@prefix emplP: <http://hr.example/DB/Employee#> .
+@prefix emplN: <http://hr.example/DB/Employee/> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+emplN:id.18    emplP:lastName   "Johnson"^^xsd:string .
+emplN:id.253   emplP:lastName   "Smith"^^xsd:string .
+emplN:id.253   emplP:manager    emplN:id.18 .
+
+# 8. Supported datatypes
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# 8.1. Datetime
+@prefix dt: <http://www.datetime.com/> .
+dt:s dt:p "2022-09-18T13:30:00Z"^^xsd:dateTime,
+          "123456789-01-01T00:00:00Z"^^xsd:dateTime,
+          "1975-03-12T16:20:00.1314159-05:30"^^xsd:dateTime .
+
+# 8.2. Decimal
+# 8.2.1. Inlined
+@prefix decinl: <http://www.decinl.com/> .
+decinl:s decinl:p "-.100"^^xsd:decimal,
+                  "0.0"^^xsd:decimal,
+                  "+100"^^xsd:decimal .
+# 8.2.2. External
+@prefix decext: <http://www.decext.com/> .
+decext:s decext:p "-123456789123456789123456789123456789.123456789123456789123456789123456789"^^xsd:decimal,
+                  "-.123456789123456789123456789123456789123456789123456789123456789123456789"^^xsd:decimal,
+                  "+123456789123456789123456789123456789123456789123456789123456789123456789"^^xsd:decimal .
+
+# 8.3. Boolean
+@prefix bool: <http://www.boolean.com/> .
+bool:s bool:p "true"^^xsd:boolean,
+              "false"^^xsd:boolean .
+
+# 8.4. Paths
+# src=https://www.oxfordsemantic.tech/fundamentals/what-is-a-property-path
+@prefix path: <http://www.path.com/> .
+# 8.4.1. Path sequence
+path:Jane path:knows path:John .
+path:Jane path:knows path:Mary .
+path:Jane path:knows path:Vicente .
+
+path:John    path:livesIn path:London .
+path:Mary    path:livesIn path:Spain .
+path:Vicente path:livesIn path:Chile .
+# 8.4.2. Path repetition
+path:Cain       path:hasParent path:Adam .
+path:Enoch      path:hasParent path:Cain .
+path:Irad       path:hasParent path:Enoch .
+path:Mehujael   path:hasParent path:Irad .
+path:Methushael path:hasParent path:Mehujael .
+path:Lamech     path:hasParent path:Methushael .
+path:TubalCain  path:hasParent path:Lamech .
+# 8.4.3. Path alternative
+path:NikeBlazers      path:ItemType path:Product .
+path:ConverseAllStars path:ItemType path:Product .
+path:AdidasSuperStar  path:ItemType path:Product .
+path:VansOldSkool     path:ItemType path:Product .
+path:ReebokClassic    path:ItemType path:Product .
+
+path:NikeBlazers      path:hasColor     path:Black .
+path:ConverseAllStars path:hasStyle     path:Vintage .
+path:AdidasSuperStar  path:hasCategory  path:Classic .
+path:VansOldSkool     path:hasColor     path:White .
+path:ReebokClassic    path:hasCategory  path:Classic .
+
+# 9. Integer
+@prefix num: <http://www.integer.com/> .
+num:s num:p "-20"^^xsd:nonPositiveInteger,
+            "-10"^^xsd:negativeInteger .
+
+num:s num:p "-1"^^xsd:integer,
+            "1"^^xsd:long,
+            "2"^^xsd:int,
+            "3"^^xsd:short,
+            "4"^^xsd:byte .
+
+num:s num:p "10"^^xsd:nonNegativeInteger,
+            "20"^^xsd:unsignedLong,
+            "30"^^xsd:unsignedInt,
+            "40"^^xsd:unsignedShort .
+# 10. Float
+num:s num:p "-1.0"^^xsd:float,
+            "7.5e5"^^xsd:double .
+
+# 11. Blank nodes
+@prefix bn: <http://www.blanknode.com/> .
+_:b1 bn:p1 bn:o1 .
+_:b2 bn:p2 bn:o2 .
+_:b3 bn:p3 bn:o3 .
+
+# 12. Service iri
+@prefix void: <http://rdfs.org/ns/void#> .
+[] void:sparqlEndpoint <https://query.wikidata.org/sparql> ,
+                       <https://dbpedia.org/sparql> .

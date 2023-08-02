@@ -1,0 +1,15 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX : <http://a.c/>
+
+SELECT *
+WHERE {
+    :s2 ?p ?o2
+    {
+        SELECT ?p ?o1
+        WHERE {
+            :s1 ?p ?o1 .
+            # The ?bind_o1 should not apprear outside of this select
+            BIND (?o1 AS ?bind_o1)
+        }
+    }
+}

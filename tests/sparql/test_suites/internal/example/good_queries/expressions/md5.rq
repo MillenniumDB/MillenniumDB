@@ -1,0 +1,11 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        MD5("abc")          = "900150983cd24fb0d6963f7d28e17f72" &&
+        MD5("MillenniumDB") = "af1dc637ed0dee1157ddae2cd681aabe" &&
+        MD5("Año")          = "c55baca5e562cecdd18fb070c0ff8f80" &&
+        MD5("Pingüino")     = "ee87eea2427e33b6df2824284c5ef4a8"
+    )
+}

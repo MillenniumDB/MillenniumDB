@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+CONSTRUCT { :x :y ?name } WHERE {
+    :l2 :list ?person .
+    ?person :name ?name .
+}

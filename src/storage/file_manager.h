@@ -1,18 +1,18 @@
 /*
- * FileManager mantains a list (`opened_files`) with all files that are opened,
+ * FileManager maintains a list (`opened_files`) with all files that are opened,
  * and another list (`filenames`) with the string of their names.
  * The FileId its just the index, so both lists must have the same size
  * and objects at the same index are related to each other.
  *
- * All the other clases that need to work with files should use the FileManager to obtain a reference to a
+ * All the other classes that need to work with files should use the FileManager to obtain a reference to a
  * fstream.
  *
  * This can be done with temporary or permanent files, using 'get_tmp_file_id' or 'get_file_id', in the first case, the
- * file_manager will ask for a pages in the private buffer of the specific thread, in the second case the file_maneger
+ * file_manager will ask for a pages in the private buffer of the specific thread, in the second case the file_manager
  * will ask for pages to the shared or public buffer.
  *
  * `file_manager` is a global object and is available when this file is included. Before using it, somebody
- * needs to call the method FileManager::init(), usually is the responsability of the model (e.g. RelationalModel)
+ * needs to call the method FileManager::init(), usually is the responsibility of the model (e.g. RelationalModel)
  * to call it.
  *
  * The instance `file_manager` cannot be destroyed before the BufferManager flushes its dirty pages on exit
@@ -30,10 +30,11 @@
 class FileManager {
 friend class Page; // to allow calling file_manager.flush
 friend class BufferManager; // to calling file_manager.read_page
+friend class StringManager; // to calling file_manager.read_page
 public:
     ~FileManager() = default;
 
-    // necesary to be called before first usage
+    // necessary to be called before first usage
     static void init(const std::string& db_folder);
 
     // Get an id for the corresponding file, creating it if it's necessary

@@ -1,0 +1,62 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        &&  contains("foobar",             "foo"            )
+        &&  contains("foobar",             "foo"^^xsd:string)
+        &&  contains("foobar"@en,          "foo"            )
+        &&  contains("foobar"@en,          "foo"@en         )
+        &&  contains("foobar"@en,          "foo"^^xsd:string)
+        &&  contains("foobar"^^xsd:string, "foo"            )
+        &&  contains("foobar"^^xsd:string, "foo"^^xsd:string)
+
+        &&  contains("foobar",             "oba"            )
+        &&  contains("foobar",             "oba"^^xsd:string)
+        &&  contains("foobar"@en,          "oba"            )
+        &&  contains("foobar"@en,          "oba"@en         )
+        &&  contains("foobar"@en,          "oba"^^xsd:string)
+        &&  contains("foobar"^^xsd:string, "oba"            )
+        &&  contains("foobar"^^xsd:string, "oba"^^xsd:string)
+
+        &&  contains("foobar",             "bar"            )
+        &&  contains("foobar",             "bar"^^xsd:string)
+        &&  contains("foobar"@en,          "bar"            )
+        &&  contains("foobar"@en,          "bar"@en         )
+        &&  contains("foobar"@en,          "bar"^^xsd:string)
+        &&  contains("foobar"^^xsd:string, "bar"            )
+        &&  contains("foobar"^^xsd:string, "bar"^^xsd:string)
+
+        && !contains("foobar",             "ooo"            )
+        && !contains("foobar",             "ooo"^^xsd:string)
+        && !contains("foobar"@en,          "ooo"            )
+        && !contains("foobar"@en,          "ooo"@en         )
+        && !contains("foobar"@en,          "ooo"^^xsd:string)
+        && !contains("foobar"^^xsd:string, "ooo"            )
+        && !contains("foobar"^^xsd:string, "ooo"^^xsd:string)
+
+        &&  contains("foobar",             ""               )
+        &&  contains("foobar",             ""^^xsd:string   )
+        &&  contains("foobar"@en,          ""               )
+        &&  contains("foobar"@en,          ""@en            )
+        &&  contains("foobar"@en,          ""^^xsd:string   )
+        &&  contains("foobar"^^xsd:string, ""               )
+        &&  contains("foobar"^^xsd:string, ""^^xsd:string   )
+
+        &&  contains("",                   ""               )
+        &&  contains("",                   ""^^xsd:string   )
+        &&  contains(""@en,                ""               )
+        &&  contains(""@en,                ""@en            )
+        &&  contains(""@en,                ""^^xsd:string   )
+        &&  contains(""^^xsd:string,       ""               )
+        &&  contains(""^^xsd:string,       ""^^xsd:string   )
+
+        && !contains("",                   "a"              )
+        && !contains("",                   "a"^^xsd:string  )
+        && !contains(""@en,                "a"              )
+        && !contains(""@en,                "a"@en           )
+        && !contains(""@en,                "a"^^xsd:string  )
+        && !contains(""^^xsd:string,       "a"              )
+        && !contains(""^^xsd:string,       "a"^^xsd:string  )
+    )
+}

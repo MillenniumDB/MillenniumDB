@@ -1,0 +1,122 @@
+{
+  "head": {
+    "vars": [
+      "subset",
+      "superset"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/b"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/d"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/c"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/a"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/c"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/e"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/d"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/b"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/e"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/a"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/e"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/c"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/empty"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/a"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/empty"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/b"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/empty"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/c"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/empty"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/d"
+        }
+      },
+      {
+        "subset": {
+          "type": "uri",
+          "value": "http://example/empty"
+        },
+        "superset": {
+          "type": "uri",
+          "value": "http://example/e"
+        }
+      }
+    ]
+  }
+}

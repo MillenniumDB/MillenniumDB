@@ -1,0 +1,11 @@
+{
+  "head": { "vars": [ "sum_o", "sum_o_plus_1" ] },
+  "results": {
+    "bindings": [
+      {
+        "sum_o":        { "type": "literal", "value": "-1.3E1", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "sum_o_plus_1": { "type": "literal", "value":   "5.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      }
+    ]
+  }
+}

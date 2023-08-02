@@ -1,0 +1,7 @@
+prefix : <http://www.path.com/>
+select ?x ?y {
+  ?x :t22 ?y
+  FILTER (?x = ?y || EXISTS {
+    VALUES (?x ?y) { (UNDEF :5) (:1 UNDEF) }
+  })
+}

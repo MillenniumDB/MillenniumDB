@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "sum_o" ] },
+  "results": {
+    "bindings": [
+      { "sum_o": { "type": "literal", "value": "9.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" } }
+    ]
+  }
+}

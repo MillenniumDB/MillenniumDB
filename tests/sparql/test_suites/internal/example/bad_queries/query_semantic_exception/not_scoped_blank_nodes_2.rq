@@ -1,0 +1,10 @@
+SELECT *
+WHERE {
+    ?a ?b ?c .
+    OPTIONAL {
+        ?d ?e _:a .
+    }
+    OPTIONAL {
+        ?f ?g _:a .
+    }
+}

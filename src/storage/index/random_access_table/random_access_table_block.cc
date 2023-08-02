@@ -2,8 +2,6 @@
 
 #include "storage/buffer_manager.h"
 
-using namespace std;
-
 template <std::size_t N>
 RandomAccessTableBlock<N>::RandomAccessTableBlock(Page& page) :
     page         (page),
@@ -23,7 +21,7 @@ template <std::size_t N>
 bool RandomAccessTableBlock<N>::try_append_record(Record<N> record) {
     if (*record_count < max_records) {
         for (std::size_t i = 0; i < N; ++i) {
-            records[ (*record_count)*N + i ] = record.ids[i];
+            records[ (*record_count)*N + i ] = record[i];
         }
         ++(*record_count);
         page.make_dirty();
@@ -35,13 +33,13 @@ bool RandomAccessTableBlock<N>::try_append_record(Record<N> record) {
 
 
 template <std::size_t N>
-unique_ptr<Record<N>> RandomAccessTableBlock<N>::operator[](uint_fast32_t pos) {
+std::unique_ptr<Record<N>> RandomAccessTableBlock<N>::operator[](uint_fast32_t pos) {
     if (pos < max_records) {
         std::array<uint64_t, N> ids;
         for (uint_fast32_t i = 0; i < N; i++) {
             ids[i] = records[pos*N + i];
         }
-        return make_unique<Record<N>>(move(ids));
+        return std::make_unique<Record<N>>(std::move(ids));
     } else {
         return nullptr;
     }

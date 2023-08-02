@@ -1,0 +1,3 @@
+<http://www.path.com/p1> <http://www.path.com/name> "John" .
+<http://www.path.com/p2> <http://www.path.com/name> "Anna" .
+<http://www.path.com/p3> <http://www.path.com/name> "Juan" .

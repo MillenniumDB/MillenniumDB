@@ -1,6 +1,7 @@
 #include "catalog.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include "storage/file_manager.h"
 
@@ -32,10 +33,6 @@ void Catalog::start_io() {
     file.seekg(0, file.beg);
 }
 
-bool Catalog::check_no_error_flags() {
-    return file.good();
-}
-
 
 uint64_t Catalog::read_uint64() {
     uint64_t res = 0;
@@ -45,6 +42,11 @@ uint64_t Catalog::read_uint64() {
     for (int i = 0, shift = 0; i < 8; ++i, shift += 8) {
         res |= static_cast<uint64_t>(buf[i]) << shift;
     }
+
+    if (!file.good()) {
+        throw std::runtime_error("Error reading uint64");
+    }
+
     return res;
 }
 
@@ -57,7 +59,29 @@ uint_fast32_t Catalog::read_uint32() {
     for (int i = 0, shift = 0; i < 4; ++i, shift += 8) {
         res |= static_cast<uint_fast32_t>(buf[i]) << shift;
     }
+
+    if (!file.good()) {
+        throw std::runtime_error("Error reading uint32");
+    }
     return res;
+}
+
+string Catalog::read_string() {
+    uint_fast32_t len = read_uint32();
+    char* buf = new char[len];
+    file.read(buf, len);
+    string res(buf, len);
+    delete[] buf;
+    return res;
+}
+
+vector<string> Catalog::read_strvec() {
+    vector<string> ret;
+    uint64_t size = read_uint32();
+    for (uint64_t i = 0; i < size; ++i) {
+        ret.push_back(read_string());
+    }
+    return ret;
 }
 
 
@@ -76,4 +100,16 @@ void Catalog::write_uint32(const uint_fast32_t n) {
         buf[i] = (n >> shift) & 0xFF;
     }
     file.write(reinterpret_cast<const char*>(buf), sizeof(buf));
+}
+
+void Catalog::write_string(const string& s) {
+    write_uint32(s.size());
+    file.write(s.c_str(), s.size());
+}
+
+void Catalog::write_strvec(const vector<string>& strvec) {
+    write_uint32(strvec.size());
+    for (const auto& str : strvec) {
+        write_string(str);
+    }
 }

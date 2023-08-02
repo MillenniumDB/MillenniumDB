@@ -1,0 +1,5 @@
+SELECT sum(?o)
+WHERE {
+  ?s ?p ?o .
+}
+GROUP BY sum(?o)

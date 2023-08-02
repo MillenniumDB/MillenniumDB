@@ -1,18 +1,18 @@
 /*
  * BufferManager contains all pages in memory and is used to get a page, making transparent if the page is
- * already in memory or needs to be readed from disk.
+ * already in memory or needs to be read from disk.
  *
  * `buffer_manager` is a global object and is available when this file is included. Before using it, somebody
- * must call the method BufferManager::init(), usually is the responsability of the model (e.g. QuadModel)
+ * must call the method BufferManager::init(), usually is the responsibility of the model (e.g. QuadModel)
  * to call it.
  *
  * A mutex object is used to prevent conflict between different threads when asking for a page or
- * unpining a page (shared buffer).
+ * unpinning a page (shared buffer).
  *
  * When asked for a page it can be done with a FileId or a TmpFileId, in the first case, the page returned will be
  * a page from the shared buffer. In the second case, the page will be returned from the private buffer of current thread
  * (that asked for it). Private and shared buffer doesn't need to have the same sizes. All buffers (shared and each private)
- * have the same sistems for pages replacement.
+ * have the same systems for pages replacement.
  */
 
 #pragma once
@@ -37,7 +37,7 @@ public:
 
     ~BufferManager();
 
-    // necesary to be called before first usage
+    // necessary to be called before first usage
     static void init(uint_fast32_t shared_buffer_pool_size,
                      uint_fast32_t private_buffer_pool_size,
                      uint_fast32_t max_threads);
@@ -57,7 +57,7 @@ public:
     Page& get_last_page(FileId file_id);
 
     // Similar to get_page, but the page_number is the smallest number such that page number does not exist on disk.
-    // The page returned has all its bytes initialized to 0. This operation perform a disk write inmediately
+    // The page returned has all its bytes initialized to 0. This operation perform a disk write immediately
     // so 2 append_page in a row will work as expected.
     Page& append_page(FileId file_id);
 
@@ -99,10 +99,10 @@ private:
     // private buffer pools
     Page* const private_buffer_pool;
 
-    // begining of the allocated memory for the pages of the shared buffer
+    // beginning of the allocated memory for the pages of the shared buffer
     char* const bytes;
 
-    // begining of the allocated memory for the pages of the private buffer
+    // beginning of the allocated memory for the pages of the private buffer
     char* const private_bytes;
 
     std::mutex shared_buffer_mutex;
@@ -128,13 +128,13 @@ private:
     // simple clock used to page replacement in the private buffer
     std::vector<uint_fast32_t> private_clock_pos;
 
-    // returns the index of an unpined page from shared buffer (`buffer_pool`)
+    // returns the index of an unpinned page from shared buffer (`buffer_pool`)
     uint_fast32_t get_buffer_available();
 
-    // returns the index of an unpined page from the private buffer (`private_buffer_pool[thread_number]`)
+    // returns the index of an unpinned page from the private buffer (`private_buffer_pool[thread_number]`)
     uint_fast32_t get_private_buffer_available(uint_fast32_t thread_number);
 
-    // auxiliar method for getting page
+    // helper method for getting page
     inline Page& get_private_page(uint_fast32_t thread_pos, uint_fast32_t page_pos) const noexcept {
         return private_buffer_pool[thread_pos * private_buffer_pool_size + page_pos];
     }

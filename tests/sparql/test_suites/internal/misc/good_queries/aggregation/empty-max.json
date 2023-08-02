@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "max" ] },
+  "results": {
+    "bindings": [
+      { "max": { "type": "literal", "value": "max-is-null" } }
+    ]
+  }
+}

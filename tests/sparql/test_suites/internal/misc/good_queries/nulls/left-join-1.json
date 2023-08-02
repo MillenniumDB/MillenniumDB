@@ -1,0 +1,27 @@
+{
+    "head": { "vars": [ "s", "o", "x" ] },
+    "results": {
+      "bindings": [
+        {
+          "s": { "type": "uri", "value": "http://www.path.com/s1" },
+          "o": { "type": "literal", "value": "o1" },
+          "x": { "type": "literal", "value": "x" }
+        },
+        {
+          "s": { "type": "uri", "value": "http://www.path.com/s2" },
+          "o": { "type": "literal", "value": "o2" },
+          "x": { "type": "literal", "value": "x" }
+        },
+        {
+          "s": { "type": "uri", "value": "http://www.path.com/s3" },
+          "o": { "type": "literal", "value": "o3" },
+          "x": { "type": "literal", "value": "x" }
+        },
+        {
+          "s": { "type": "uri", "value": "http://www.path.com/s4" },
+          "o": { "type": "literal", "value": "o4" },
+          "x": { "type": "literal", "value": "x" }
+        }
+      ]
+    }
+  }

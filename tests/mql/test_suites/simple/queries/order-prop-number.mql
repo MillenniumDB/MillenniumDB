@@ -1,0 +1,3 @@
+MATCH (?n :NUMBER_PROP)
+ORDER BY ?n.value
+RETURN ?n.value

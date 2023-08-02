@@ -1,0 +1,2 @@
+<http://www.path.com/x> <http://www.path.com/y> "John" .
+<http://www.path.com/x> <http://www.path.com/y> "Juan" .

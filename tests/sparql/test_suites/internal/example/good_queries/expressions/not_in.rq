@@ -1,0 +1,17 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT ?o
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(true
+        #  SPARQL spec examples
+        && !(2 NOT IN (1, 2, 3))
+        &&  (2 NOT IN ())
+        && !(2 NOT IN (<http://example/iri>, "str", 2.0))
+        && !(2 NOT IN (1/0, 2))
+        && !(2 NOT IN (2, 1/0))
+
+        && !(6 NOT IN (1, 2*3))
+        && !(6 NOT IN (2*3))
+        &&  (5 NOT IN (2*3))
+    )
+}

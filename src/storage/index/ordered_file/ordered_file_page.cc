@@ -1,7 +1,6 @@
 #include "ordered_file_page.h"
 
 #include <cassert>
-#include <iostream>
 
 #include "storage/buffer_manager.h"
 
@@ -64,7 +63,7 @@ void OrderedFilePage<N>::order() noexcept {
                 records[(j+1)*N + n] = records[j*N + n];
             }
 
-            if (j == 0) { // necesary to check this because j is unsigned
+            if (j == 0) { // necessary to check this because j is unsigned
                 j--; // this will overflow but we will use j+1 to overflow back to 0
                 break;
             }

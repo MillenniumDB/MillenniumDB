@@ -1,0 +1,40 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && !LANGMATCHES("", "en")
+        && !LANGMATCHES("", "*")
+
+        &&  LANGMATCHES("en", "*")
+        &&  LANGMATCHES("EN", "*")
+
+        &&  LANGMATCHES("en", "en")
+        &&  LANGMATCHES("EN", "en")
+        &&  LANGMATCHES("en", "EN")
+        &&  LANGMATCHES("EN", "EN")
+        &&  LANGMATCHES("En", "eN")
+
+        && !LANGMATCHES("en", "es")
+        && !LANGMATCHES("en", "es-cl")
+        && !LANGMATCHES("en", "en-us")
+
+        &&  LANGMATCHES("en-us", "en")
+        &&  LANGMATCHES("en-us", "EN")
+        &&  LANGMATCHES("EN-US", "en")
+        &&  LANGMATCHES("eN-uS", "En")
+
+        &&  LANGMATCHES("en-us", "en-us")
+        &&  LANGMATCHES("eN-uS", "En-Us")
+
+        &&  LANGMATCHES("en-us-1990", "en-us")
+        &&  LANGMATCHES("eN-uS-1990", "En-Us")
+        &&  LANGMATCHES("eN-uS-1990", "*")
+
+        && !LANGMATCHES("en-us", "en-us-1990")
+
+        &&  LANGMATCHES( "en-us-a", "en-us")
+        && !LANGMATCHES( "en-usa" , "en-us")
+        && !LANGMATCHES("een-us"  , "en-us")
+    )
+}

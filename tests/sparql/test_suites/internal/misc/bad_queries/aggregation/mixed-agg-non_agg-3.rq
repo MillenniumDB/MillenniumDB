@@ -1,0 +1,4 @@
+SELECT (?o + 1 AS ?y) (max(?y) AS ?z) (sum(?o) AS ?x)
+WHERE {
+    ?s ?p ?o .
+}

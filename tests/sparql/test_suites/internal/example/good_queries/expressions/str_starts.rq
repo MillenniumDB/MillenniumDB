@@ -1,0 +1,62 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && strstarts("",                      ""               ) = true
+        && strstarts("",                      ""^^xsd:string   ) = true
+        && strstarts(""@en,                   ""               ) = true
+        && strstarts(""@en,                   ""@en            ) = true
+        && strstarts(""@en,                   ""^^xsd:string   ) = true
+        && strstarts(""^^xsd:string,          ""               ) = true
+        && strstarts(""^^xsd:string,          ""^^xsd:string   ) = true
+
+        && strstarts("xxxyyyzzz",             ""               ) = true
+        && strstarts("xxxyyyzzz",             ""^^xsd:string   ) = true
+        && strstarts("xxxyyyzzz"@en,          ""               ) = true
+        && strstarts("xxxyyyzzz"@en,          ""@en            ) = true
+        && strstarts("xxxyyyzzz"@en,          ""^^xsd:string   ) = true
+        && strstarts("xxxyyyzzz"^^xsd:string, ""               ) = true
+        && strstarts("xxxyyyzzz"^^xsd:string, ""^^xsd:string   ) = true
+
+        && strstarts("xxxyyyzzz",             "xxx"            ) = true
+        && strstarts("xxxyyyzzz",             "xxx"^^xsd:string) = true
+        && strstarts("xxxyyyzzz"@en,          "xxx"            ) = true
+        && strstarts("xxxyyyzzz"@en,          "xxx"@en         ) = true
+        && strstarts("xxxyyyzzz"@en,          "xxx"^^xsd:string) = true
+        && strstarts("xxxyyyzzz"^^xsd:string, "xxx"            ) = true
+        && strstarts("xxxyyyzzz"^^xsd:string, "xxx"^^xsd:string) = true
+
+        && strstarts("xxxyyyzzz",             "yyy"            ) = false
+        && strstarts("xxxyyyzzz",             "yyy"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"@en,          "yyy"            ) = false
+        && strstarts("xxxyyyzzz"@en,          "yyy"@en         ) = false
+        && strstarts("xxxyyyzzz"@en,          "yyy"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "yyy"            ) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "yyy"^^xsd:string) = false
+
+        && strstarts("xxxyyyzzz",             "zzz"            ) = false
+        && strstarts("xxxyyyzzz",             "zzz"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"@en,          "zzz"            ) = false
+        && strstarts("xxxyyyzzz"@en,          "zzz"@en         ) = false
+        && strstarts("xxxyyyzzz"@en,          "zzz"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "zzz"            ) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "zzz"^^xsd:string) = false
+
+        && strstarts("",                      "xyz"            ) = false
+        && strstarts("",                      "xyz"^^xsd:string) = false
+        && strstarts(""@en,                   "xyz"            ) = false
+        && strstarts(""@en,                   "xyz"@en         ) = false
+        && strstarts(""@en,                   "xyz"^^xsd:string) = false
+        && strstarts(""^^xsd:string,          "xyz"            ) = false
+        && strstarts(""^^xsd:string,          "xyz"^^xsd:string) = false
+
+        && strstarts("xxxyyyzzz",             "xyz"            ) = false
+        && strstarts("xxxyyyzzz",             "xyz"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"@en,          "xyz"            ) = false
+        && strstarts("xxxyyyzzz"@en,          "xyz"@en         ) = false
+        && strstarts("xxxyyyzzz"@en,          "xyz"^^xsd:string) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "xyz"            ) = false
+        && strstarts("xxxyyyzzz"^^xsd:string, "xyz"^^xsd:string) = false
+    )
+}

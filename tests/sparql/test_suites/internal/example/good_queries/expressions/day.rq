@@ -1,0 +1,12 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        DAY("2023-05-15T00:00:00Z"^^xsd:dateTime)        = 15 &&
+        DAY("500-08-30T00:00:00Z"^^xsd:dateTime)         = 30 &&
+        # Default value for day is 1 when year is greater than 9999
+        DAY("-2500000-12-11T00:00:00Z"^^xsd:dateTime)    = 1  &&
+        DAY("130000000-09-21T00:00:00Z"^^xsd:dateTime)   = 1
+    )
+}

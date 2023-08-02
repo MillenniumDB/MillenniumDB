@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -12,14 +14,49 @@ template <std::size_t N> class OrderedFile;
 
 template <std::size_t N> class BptIter {
 public:
-    BptIter(bool* interruption_requested, SearchLeafResult<N>&& leaf_and_pos, const Record<N>& max) noexcept;
-    std::unique_ptr<Record<N>> next();
+    // shouldn't use a BptIter constructed like this.
+    // This exists only to allow reserving space and then reassign to a valid BptIter
+    BptIter() noexcept :
+        interruption_requested (nullptr) { }
+
+    BptIter(bool* interruption_requested,
+            SearchLeafResult<N>&& leaf_and_pos,
+            const Record<N>& max) noexcept :
+        interruption_requested (interruption_requested),
+        current_pos            (leaf_and_pos.result_index),
+        max                    (max),
+        current_leaf           (std::move(leaf_and_pos.leaf)) { }
+
+    BptIter(BptIter&& other) noexcept :
+        interruption_requested (other.interruption_requested),
+        current_pos            (other.current_pos),
+        max                    (std::move(other.max)),
+        current_leaf           (std::move(other.current_leaf)) { }
+
+    void operator=(BptIter&& other) noexcept {
+        interruption_requested = other.interruption_requested;
+        current_pos            = other.current_pos;
+        max                    = std::move(other.max);
+        current_leaf           = std::move(other.current_leaf);
+    }
+
+    const Record<N>* next();
+
+    inline bool is_null() const {
+        return interruption_requested == nullptr;
+    }
+
+    inline void set_null() {
+        this->interruption_requested = nullptr;
+        // current_leaf = BPlusTreeLeaf<N>();
+    }
 
 private:
-    bool* const interruption_requested;
-    const Record<N> max;
-    uint32_t current_pos;
-    std::unique_ptr<BPlusTreeLeaf<N>> current_leaf;
+    bool* interruption_requested;
+    uint_fast32_t current_pos;
+    Record<N> current_record;
+    Record<N> max;
+    BPlusTreeLeaf<N> current_leaf;
 };
 
 
@@ -34,15 +71,15 @@ public:
     const FileId dir_file_id;
     const FileId leaf_file_id;
 
-    void bulk_import(OrderedFile<N>&);
+    // void bulk_import(OrderedFile<N>&);
     void insert(const Record<N>& record);
 
     // returns false if an error in the BPT is found
     bool check() const;
 
-    std::unique_ptr<BptIter<N>> get_range(bool* interruption_requested,
-                                          const Record<N>& min,
-                                          const Record<N>& max) const noexcept;
+    BptIter<N> get_range(bool* interruption_requested,
+                         const Record<N>& min,
+                         const Record<N>& max) const noexcept;
 
     // It doesn't simply return the root, it is an unique_ptr so it pins the page
     std::unique_ptr<BPlusTreeDir<N>> get_root() const noexcept;

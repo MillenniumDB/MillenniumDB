@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (count(DISTINCT ?o * 1e0) AS ?count_o)
+WHERE {
+  :t1 :cases ?c .
+  ?s ?c ?o .
+}

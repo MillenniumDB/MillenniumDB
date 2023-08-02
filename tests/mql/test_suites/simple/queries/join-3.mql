@@ -1,0 +1,2 @@
+MATCH (?p1 :person)-[:nick_name]->(?n), (?p2 :person)-[:nick_name]->(?n)
+RETURN ?p1, ?p2, ?n

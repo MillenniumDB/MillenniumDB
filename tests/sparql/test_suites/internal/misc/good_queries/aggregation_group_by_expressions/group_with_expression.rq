@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (sum(?o) AS ?sum_o)
+WHERE {
+  ?s :t7 ?o .
+}
+GROUP BY (?o * 1e0)

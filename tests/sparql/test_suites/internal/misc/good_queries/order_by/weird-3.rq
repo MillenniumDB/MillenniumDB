@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s WHERE {
+  :t10 :cases ?c .
+  ?s ?c ?o .
+}
+GROUP BY ?s
+ORDER BY (SUM(?o))

@@ -1,0 +1,13 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o (STR(?o) AS ?str)
+WHERE {
+  VALUES (?s ?o) {
+    (:1 ""^^xsd:decimal)
+    (:2 "x"^^xsd:decimal)
+    (:3 "asdfasdfasdf"^^xsd:decimal)
+    (:4 "1.5"^^xsd:decimal)
+    (:5 1.0)
+    (:6 "1"^^xsd:decimal)
+  }
+}
+ORDER BY ?s

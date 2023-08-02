@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+DESCRIBE ?person
+WHERE {
+    :l1 :list ?person .
+}
+OFFSET 1
+LIMIT 1

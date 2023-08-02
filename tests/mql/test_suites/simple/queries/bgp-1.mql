@@ -1,0 +1,2 @@
+MATCH (?p :person)-[:owns]->(?o)
+RETURN ?p, ?o

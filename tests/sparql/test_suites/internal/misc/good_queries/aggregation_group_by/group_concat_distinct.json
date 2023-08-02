@@ -1,0 +1,21 @@
+{ "head": { "vars": [ "s", "concat_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/a" },
+        "concat_o": { "type": "literal", "value": "aa" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/b" },
+        "concat_o": { "type": "literal", "value": "aa", "xml:lang": "en" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/c" },
+        "concat_o": { "type": "literal", "value": "aa aa" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/d" }
+      }
+    ]
+  }
+}

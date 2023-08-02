@@ -1,0 +1,12 @@
+{
+  "head": { "vars": [ "s", "x", "o" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "https://query.wikidata.org/sparql" },
+        "x": { "type": "literal", "value": "x2" },
+        "o": { "type": "literal", "value": "2" }
+      }
+    ]
+  }
+}

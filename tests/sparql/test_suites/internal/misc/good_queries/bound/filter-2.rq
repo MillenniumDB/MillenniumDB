@@ -1,0 +1,9 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s2 ?o ?s1
+WHERE { 
+    ?s2 :t17 ?o
+    OPTIONAL {
+        ?s1 :t16 ?o
+    }
+    FILTER(BOUND(?s1))
+}

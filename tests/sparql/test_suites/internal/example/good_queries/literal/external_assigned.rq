@@ -1,0 +1,6 @@
+PREFIX litext: <http://www.litext.com/>
+
+SELECT *
+WHERE {
+    litext:sle litext:ple "external1" .
+}

@@ -1,0 +1,7 @@
+p,p.name,v,v.type,c,c.name,s
+P1,"Juan",V1,"bike",M1,"Trek",100
+P2,"Pedro",V1,"bike",M1,"Trek",150
+P3,"Denise",null,null,null,null,1000
+P4,"Denise",null,null,null,null,1000
+P5,"Qwerty",null,null,null,null,null
+P6,"Asdf",null,null,null,null,null

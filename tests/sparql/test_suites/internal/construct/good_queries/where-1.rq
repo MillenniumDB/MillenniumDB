@@ -1,0 +1,2 @@
+PREFIX : <http://www.path.com/>
+CONSTRUCT WHERE { ?p :name ?n }

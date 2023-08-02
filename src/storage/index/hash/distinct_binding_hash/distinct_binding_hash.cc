@@ -5,11 +5,10 @@
 #include <cmath>
 #include <cstring>
 
-#include "base/ids/object_id.h"
-#include "base/graph_object/graph_object.h"
+#include "graph_models/object_id.h"
 #include "storage/file_manager.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash_bucket.h"
-#include "third_party/murmur3/murmur3.h"
+#include "third_party/hashes/hash_function_wrapper.h"
 
 template <class T>
 DistinctBindingHash<T>::DistinctBindingHash(std::size_t tuple_size) :
@@ -40,16 +39,15 @@ template <class T>
 bool DistinctBindingHash<T>::is_in(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash[2];
-    MurmurHash3_x64_128(tuple.data(), tuple.size() * sizeof(T), 0, hash);
+    uint64_t hash = HashFunctionWrapper(tuple.data(), tuple.size() * sizeof(T));
 
     // global_depth must be <= 64
     auto mask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - global_depth);
-    auto suffix = hash[0] & mask;
+    auto suffix = hash & mask;
     auto bucket_number = dir[suffix];
     auto bucket = DistinctBindingHashBucket<T>(buckets_file_id, bucket_number, tuple_size);
 
-    return bucket.is_in(tuple, hash[0], hash[1]);
+    return bucket.is_in(tuple, hash);
 }
 
 
@@ -57,19 +55,18 @@ template <class T>
 bool DistinctBindingHash<T>::is_in_or_insert(const std::vector<T>& tuple) {
     assert(tuple.size() == tuple_size);
 
-    uint64_t hash[2];
-    MurmurHash3_x64_128(tuple.data(), tuple.size() * sizeof(T), 0, hash);
+    uint64_t hash = HashFunctionWrapper(tuple.data(), tuple.size() * sizeof(T));
 
     // After a bucket split, need to try insert again.
     while (true) {
         // global_depth must be <= 64
         auto mask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - global_depth);
-        auto suffix = hash[0] & mask;
+        auto suffix = hash & mask;
         auto bucket_number = dir[suffix];
         auto bucket = DistinctBindingHashBucket<T>(buckets_file_id, bucket_number, tuple_size);
 
         bool need_split;
-        bool is_in = bucket.is_in_or_insert(tuple, hash[0], hash[1], &need_split);
+        bool is_in = bucket.is_in_or_insert(tuple, hash, &need_split);
         if (need_split) {
             if (*bucket.local_depth < global_depth) {
                 // new_bucket_number = 2^local_depth + bucket_number
@@ -140,5 +137,19 @@ void DistinctBindingHash<T>::duplicate_dirs() {
     dir = new_dir;
 }
 
-template class DistinctBindingHash<GraphObject>;
+
+template <class T>
+void DistinctBindingHash<T>::reset() {
+    uint64_t dir_size = 1UL << global_depth;
+
+    for (uint_fast32_t i = 0; i < dir_size; ++i) {
+        DistinctBindingHashBucket<T> bucket(buckets_file_id, i, tuple_size);
+        *bucket.tuple_count = 0;
+        *bucket.local_depth = DEFAULT_GLOBAL_DEPTH;
+        dir[i]              = i;
+        bucket.page.make_dirty();
+    }
+}
+
+
 template class DistinctBindingHash<ObjectId>;

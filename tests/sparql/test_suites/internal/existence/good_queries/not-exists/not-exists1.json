@@ -1,0 +1,22 @@
+{
+  "head": {
+    "vars": [
+      "x",
+      "y"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": {
+          "type": "uri",
+          "value": "http://www.path.com/bob"
+        },
+        "y": {
+          "type": "uri",
+          "value": "http://www.path.com/alice"
+        }
+      }
+    ]
+  }
+}

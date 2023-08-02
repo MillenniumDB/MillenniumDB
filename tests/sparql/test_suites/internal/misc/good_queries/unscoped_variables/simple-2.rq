@@ -1,0 +1,10 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o ?x
+WHERE {
+  {
+    BIND(1 AS ?x)
+    :s3 :t18 ?o .
+    # ?x is in scope at the time of filter execution.
+    FILTER(2*?o = 2*?x)
+  }
+}

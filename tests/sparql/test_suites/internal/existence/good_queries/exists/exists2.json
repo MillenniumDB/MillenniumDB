@@ -1,0 +1,55 @@
+{
+  "head": {
+    "vars": [
+      "o",
+      "p",
+      "s"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "o": {
+          "type": "uri",
+          "value": "http://www.path.com/o"
+        },
+        "p": {
+          "type": "uri",
+          "value": "http://www.path.com/p"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://www.path.com/s"
+        }
+      },
+      {
+        "o": {
+          "type": "uri",
+          "value": "http://www.path.com/o1"
+        },
+        "p": {
+          "type": "uri",
+          "value": "http://www.path.com/p"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://www.path.com/s"
+        }
+      },
+      {
+        "o": {
+          "type": "uri",
+          "value": "http://www.path.com/o2"
+        },
+        "p": {
+          "type": "uri",
+          "value": "http://www.path.com/p"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://www.path.com/s"
+        }
+      }
+    ]
+  }
+}

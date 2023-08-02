@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+DESCRIBE *
+WHERE {
+    :l1 :list ?person .
+    FILTER(?person = :p1)
+}

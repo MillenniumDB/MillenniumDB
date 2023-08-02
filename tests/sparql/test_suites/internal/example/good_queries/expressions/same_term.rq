@@ -1,0 +1,19 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(true
+        && sameTerm("s", "s")
+        && sameTerm("s"@en, "s"@en)
+        && !sameTerm("s"@en, "s")
+        && sameTerm("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf", "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
+
+        && sameTerm(-10, -10)
+        && !sameTerm("-10.0"^^xsd:decimal, "-1e1"^^xsd:float)
+        && !sameTerm("-10.0"^^xsd:float, "-10.0"^^xsd:decimal)
+        && !sameTerm("-10.0"^^xsd:float, "-10"^^xsd:integer)
+
+        && sameTerm(<http://www.example.com/>, <http://www.example.com/>)
+        && !sameTerm(<http://www.example.com/>, "http://www.example.com/")
+    )
+}

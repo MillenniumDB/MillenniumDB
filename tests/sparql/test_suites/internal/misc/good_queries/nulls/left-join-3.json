@@ -1,0 +1,11 @@
+{
+    "head": { "vars": [ "s1", "s2", "o" ] },
+    "results": {
+      "bindings": [
+        {
+          "s1": { "type": "uri", "value": "http://www.path.com/s1" },
+          "s2": { "type": "uri", "value": "http://www.path.com/s2" }
+        }
+      ]
+    }
+  }

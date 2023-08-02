@@ -1,0 +1,9 @@
+{
+  "head": { "vars": [ "o" ] },
+  "results": {
+    "bindings": [
+      { "o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "o": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } }
+    ]
+  }
+}

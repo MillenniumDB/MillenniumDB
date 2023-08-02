@@ -1,0 +1,25 @@
+{
+  "head": { "vars": [ "s", "o", "x", "iri" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.p.c/s1" },
+        "o": { "type": "literal", "value": "1" },
+        "x": { "type": "literal", "value": "x3" },
+        "iri": { "type": "uri", "value": "https://query.wikidata.org/sparql" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.p.c/s1" },
+        "o": { "type": "literal", "value": "2" },
+        "x": { "type": "literal", "value": "x2" },
+        "iri": { "type": "uri", "value": "https://query.wikidata.org/sparql" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.p.c/s1" },
+        "o": { "type": "literal", "value": "2" },
+        "x": { "type": "literal", "value": "x3" },
+        "iri": { "type": "uri", "value": "https://query.wikidata.org/sparql" }
+      }
+    ]
+  }
+}

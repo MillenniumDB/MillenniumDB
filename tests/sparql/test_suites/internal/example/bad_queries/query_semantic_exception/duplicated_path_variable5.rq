@@ -1,0 +1,7 @@
+SELECT ?pname
+WHERE {
+    ?s ?pname ?o .
+    OPTIONAL {
+        ?s ANY_SHORTEST(<http://www.absolute1.com/absolutePredicate>+ AS ?pname) <http://www.absolute1.com/absoluteObject> .
+    }
+}

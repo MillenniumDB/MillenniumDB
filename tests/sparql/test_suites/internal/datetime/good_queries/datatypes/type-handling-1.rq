@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+SELECT ?p ?o
+WHERE {
+  :1 ?p ?o .
+}

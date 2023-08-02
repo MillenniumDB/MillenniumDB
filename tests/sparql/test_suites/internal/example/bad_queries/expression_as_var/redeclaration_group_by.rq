@@ -1,0 +1,5 @@
+SELECT ?s
+WHERE {
+    ?s ?p ?o .
+}
+GROUP BY (?s AS ?s)

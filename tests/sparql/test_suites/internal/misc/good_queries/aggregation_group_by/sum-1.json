@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "s", "sum_o" ] },
+  "results": {
+    "bindings": [
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/d" },
+        "sum_o": { "type": "literal", "value": "3.0", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/f" },
+        "sum_o": { "type": "literal", "value": "2.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" }
+      },
+      {
+        "s": { "type": "uri", "value": "http://www.path.com/i" },
+        "sum_o": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

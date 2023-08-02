@@ -1,0 +1,4 @@
+SELECT (1 + sum(1 + sum(1 + ?o)))
+WHERE {
+    ?s ?p ?o .
+}

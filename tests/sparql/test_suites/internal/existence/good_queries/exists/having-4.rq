@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (COUNT(*) AS ?count)
+WHERE {
+  ?s ?p ?o
+}
+HAVING ( NOT EXISTS { ?s ?p :o } )

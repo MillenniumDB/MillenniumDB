@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (sum(?o) as ?sum_o)
+WHERE {
+  :t1 :cases ?c .
+  ?s ?c ?o .
+}
+GROUP BY ?s

@@ -1,0 +1,6 @@
+PREFIX litinl: <http://www.litinl.com/>
+
+SELECT ?o
+WHERE {
+    litinl:slid litinl:plid ?o .
+}

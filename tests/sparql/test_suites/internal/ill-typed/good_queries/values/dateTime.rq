@@ -1,0 +1,15 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o (STR(?o) AS ?str)
+WHERE {
+  VALUES (?s ?o) {
+    (:1 ""^^xsd:dateTime)
+    (:2 "x"^^xsd:dateTime)
+    (:3 "asdf"^^xsd:dateTime)
+    (:4 "1-01-01T00:00:00"^^xsd:dateTime)
+    (:5 "2010-00-00T00:00:00"^^xsd:dateTime)
+    (:6 "2010-00-00T00:00:00+14:01"^^xsd:dateTime)
+    (:7 "2010-00-00T00:00:00X"^^xsd:dateTime)
+    (:8 "2010-01-01T00:00:00"^^xsd:dateTime)
+  }
+}
+ORDER BY ?s

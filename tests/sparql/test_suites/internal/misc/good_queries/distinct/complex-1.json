@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "max_o" ] },
+  "results": {
+    "bindings": [
+      { "max_o": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+PREFIX litinl: <http://www.litinl.com/>
+
+SELECT *
+WHERE {
+    litinl:slil litinl:plil "inl1"@en-US .
+}

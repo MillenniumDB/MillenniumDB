@@ -1,0 +1,19 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        TZ(           "2022-01-01T00:00:00"^^xsd:dateTime) = ""       &&
+        TZ(      "123456789-01-01T00:00:00"^^xsd:dateTime) = ""       &&
+        TZ(          "1986-01-01T00:00:00Z"^^xsd:dateTime) = "Z"      &&
+        TZ(     "123456789-01-01T00:00:00Z"^^xsd:dateTime) = ""       &&
+        TZ(     "1986-01-01T00:00:00-00:00"^^xsd:dateTime) = "-00:00" &&
+        TZ(     "1986-01-01T00:00:00+00:00"^^xsd:dateTime) = "+00:00" &&
+        TZ(     "1899-01-01T00:00:00-05:00"^^xsd:dateTime) = "-05:00" &&
+        TZ(     "1899-01-01T00:00:00+05:00"^^xsd:dateTime) = "+05:00" &&
+        TZ("123456789-01-01T00:00:00+00:00"^^xsd:dateTime) = ""       &&
+        TZ("123456789-01-01T00:00:00-00:00"^^xsd:dateTime) = ""       &&
+        TZ("123456789-01-01T00:00:00+01:00"^^xsd:dateTime) = ""       &&
+        TZ("123456789-01-01T00:00:00-01:00"^^xsd:dateTime) = ""
+    )
+}

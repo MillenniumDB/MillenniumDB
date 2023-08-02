@@ -1,0 +1,6 @@
+prefix : <http://www.path.com/>
+select ?x ?y ?z {
+  ?x :t22 ?y .
+  ?y :t22 ?z .
+  VALUES (?x ?z) { (:1 UNDEF) (UNDEF UNDEF) }
+}

@@ -1,0 +1,9 @@
+{
+  "head": { "vars": [ "avg_o" ] },
+  "results": {
+    "bindings": [
+      { "avg_o": { "type": "literal", "value": "3.9", "datatype": "http://www.w3.org/2001/XMLSchema#decimal" } }
+
+    ]
+  }
+}

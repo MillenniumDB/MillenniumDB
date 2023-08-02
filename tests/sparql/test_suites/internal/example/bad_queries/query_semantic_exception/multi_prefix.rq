@@ -1,0 +1,7 @@
+PREFIX pre: <http://www.example.com/prefix/first>
+PREFIX pre: <http://www.example.com/prefix/second>
+
+SELECT *
+WHERE {
+    pre:s pre:p pre:o .
+}

@@ -1,0 +1,5 @@
+SELECT ?x ?y
+WHERE {
+    VALUES (?x ?y) { (4 40) (1 UNDEF) (2 20) }
+    VALUES (?x ?y) { (4 40) (1 UNDEF) (2 20) }
+}

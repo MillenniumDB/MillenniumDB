@@ -1,0 +1,26 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+       && CONCAT("") = ""
+       && CONCAT(""@en-US) = ""@en-US
+
+       && CONCAT("", "a", "", "b", "") = "ab"
+       && CONCAT(""@en-US, "a"@en-US, ""@en-US, "b"@en-US, ""@en-US) = "ab"@en-US
+
+       && CONCAT("a") = "a"
+       && CONCAT("a"@en-US) = "a"@en-US
+
+       && CONCAT("a", "b") = "ab"
+       && CONCAT("a", "b"@en-US) = "ab"
+       && CONCAT("a"@en-US, "b") = "ab"
+       && CONCAT("a"@en-US, "b"@en-US) = "ab"@en-US
+
+       && CONCAT("a", "b", "asdf") = "abasdf"
+       && CONCAT("a", "b"@en-US, "asdf") = "abasdf"
+       && CONCAT("a"@en-US, "b"@en-US, "asdf"@en-US) = "abasdf"@en-US
+
+       && CONCAT("zz"@en-US, "xxx"@en-US, "yyyy"@en-US) = "zzxxxyyyy"@en-US
+    )
+}

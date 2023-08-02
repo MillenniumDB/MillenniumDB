@@ -1,0 +1,18 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+       && STRDT("hnf74hdk37u3jd63kwejh", <http://www.datatype.com/dt2>) = "hnf74hdk37u3jd63kwejh"^^<http://www.datatype.com/dt2> # string_datatype_tmp
+       && STRDT("inl",                   <http://www.datatype.com/dt2>) =                   "inl"^^<http://www.datatype.com/dt2> # string_datatype_inline
+       && STRDT("external1",             <http://www.datatype.com/dt2>) =             "external1"^^<http://www.datatype.com/dt2> # string_datatype_external
+
+       && STRDT("hnf74hdk37u3jd63kwejh", <http://www.datatype.com/dt3>) = "hnf74hdk37u3jd63kwejh"^^<http://www.datatype.com/dt3> # string_datatype_tmp
+       && STRDT("inl",                   <http://www.datatype.com/dt3>) =                   "inl"^^<http://www.datatype.com/dt3> # string_datatype_inline
+       && STRDT("external1",             <http://www.datatype.com/dt3>) =             "external1"^^<http://www.datatype.com/dt3> # string_datatype_external
+
+       && STRDT("hnf74hdk37u3jd63kwejh", <http://fdde495d.com/fh3xh3l>) = "hnf74hdk37u3jd63kwejh"^^<http://fdde495d.com/fh3xh3l> # string_datatype_tmp
+       && STRDT("inl",                   <http://fdde495d.com/fh3xh3l>) =                   "inl"^^<http://fdde495d.com/fh3xh3l> # string_datatype_inline
+       && STRDT("external1",             <http://fdde495d.com/fh3xh3l>) =             "external1"^^<http://fdde495d.com/fh3xh3l> # string_datatype_external
+    )
+}

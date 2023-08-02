@@ -1,0 +1,2 @@
+MATCH (?p1 :person)-[:savings]->(?s), (?p2 :person)-[:savings]->(?s)
+RETURN ?p1, ?p2, ?s

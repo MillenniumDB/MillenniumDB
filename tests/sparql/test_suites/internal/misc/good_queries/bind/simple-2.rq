@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s1 ?o ?s2 ?x
+WHERE{
+    ?s1 :t16 ?o .
+    BIND(2*?o AS ?x)
+    ?s2 :t17 ?x .
+}

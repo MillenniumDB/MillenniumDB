@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o ?x
+WHERE {
+    ?s :t17 ?o
+    VALUES (?o ?x) { (4 40) (1 10) (2 20) }
+}
+ORDER BY ?o ?x

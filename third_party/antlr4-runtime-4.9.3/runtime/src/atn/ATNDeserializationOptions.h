@@ -12,7 +12,6 @@ namespace atn {
 
   class ANTLR4CPP_PUBLIC ATNDeserializationOptions {
   private:
-    static const ATNDeserializationOptions defaultOptions;
 
     bool readOnly;
     bool verifyATN;

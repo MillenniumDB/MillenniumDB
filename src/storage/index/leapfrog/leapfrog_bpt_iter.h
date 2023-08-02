@@ -5,13 +5,13 @@
 template <std::size_t N>
 class LeapfrogBptIter : public LeapfrogIter {
 public:
-    LeapfrogBptIter(bool*                                   interruption_requested,
-                    const BPlusTree<N>&                     btree,
-                    std::vector<std::unique_ptr<ScanRange>> initial_ranges,
-                    std::vector<VarId>                      intersection_vars,
-                    std::vector<VarId>                      enumeration_vars);
+    LeapfrogBptIter(bool*                                     interruption_requested,
+                    const BPlusTree<N>&                       btree,
+                    std::vector<std::unique_ptr<ScanRange>>&& initial_ranges,
+                    std::vector<VarId>&&                      intersection_vars,
+                    std::vector<VarId>&&                      enumeration_vars);
 
-    inline uint64_t get_key() const override { return (*current_tuple)[level]; }
+    inline uint64_t get_key() const override { return current_tuple[level]; }
 
     // Increases the level and sets the current_tuple
     void down() override;
@@ -27,17 +27,17 @@ public:
 
     void begin_enumeration() override;
     void reset_enumeration() override;
-    bool next_enumeration(BindingId&) override;
+    bool next_enumeration(Binding&) override;
 
     // returns true if the terms and parent_binding were found
-    bool open_terms(BindingId& input_binding) override;
+    bool open_terms(Binding& input_binding) override;
 
 private:
-    std::unique_ptr<Record<N>> current_tuple;
+    Record<N> current_tuple;
 
-    std::unique_ptr<BPlusTreeLeaf<N>> current_leaf;
+    BPlusTreeLeaf<N> current_leaf;
 
-    std::unique_ptr<BptIter<N>> enum_bpt_iter;
+    BptIter<N> enum_bpt_iter;
 
     uint32_t current_pos_in_leaf;
 

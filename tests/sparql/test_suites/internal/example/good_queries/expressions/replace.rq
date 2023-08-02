@@ -1,0 +1,31 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && replace("XXooXX",                    "XX",     "I") = "IooI"
+        && replace("XXooXX",                    "Z",      "I") = "XXooXX"
+        && replace("oXoXXoXXXo",                "XX*",    "I") = "oIoIoIo"
+        && replace("oXoXXoXXXo",                "X{2,3}", "I") = "oXoIoIo"
+        && replace("oXaXoXbXoXaaX",             "X.?X",   "I") = "oIoIoXaaX"
+
+        && replace("XXooXX"@en,                 "XX",     "I") = "IooI"@en
+        && replace("XXooXX"@en,                 "Z",      "I") = "XXooXX"@en
+        && replace("oXoXXoXXXo"@en,             "XX*",    "I") = "oIoIoIo"@en
+        && replace("oXoXXoXXXo"@en,             "X{2,3}", "I") = "oXoIoIo"@en
+        && replace("oXaXoXbXoXaaX"@en,          "X.?X",   "I") = "oIoIoXaaX"@en
+
+        && replace("XXooXX"^^xsd:string,        "XX",     "I") = "IooI"^^xsd:string
+        && replace("XXooXX"^^xsd:string,        "Z",      "I") = "XXooXX"^^xsd:string
+        && replace("oXoXXoXXXo"^^xsd:string,    "XX*",    "I") = "oIoIoIo"^^xsd:string
+        && replace("oXoXXoXXXo"^^xsd:string,    "X{2,3}", "I") = "oXoIoIo"^^xsd:string
+        && replace("oXaXoXbXoXaaX"^^xsd:string, "X.?X",   "I") = "oIoIoXaaX"^^xsd:string
+
+        && replace("XXooXX",                    "XXX",    "I") = "XXooXX"
+        && replace("XXooXX"@en,                 "XXX",    "I") = "XXooXX"@en
+        && replace("XXooXX"^^xsd:string,        "XXX",    "I") = "XXooXX"^^xsd:string
+
+        && replace("xxXX", "xXxX", "-", "i") = "-"
+        && replace("xxXX", "xXxX", "-")      = "xxXX"
+    )
+}

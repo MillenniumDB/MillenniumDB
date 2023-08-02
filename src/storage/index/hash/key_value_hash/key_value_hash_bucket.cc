@@ -1,10 +1,9 @@
 #include "key_value_hash_bucket.h"
 
 #include <cstring>
-#include <iostream>
 
 #include "storage/buffer_manager.h"
-#include "base/ids/object_id.h"
+#include "graph_models/object_id.h"
 
 using namespace std;
 
@@ -82,7 +81,7 @@ pair<vector<K>, vector<V>> KeyValueHashBucket<K, V>::get_pair(std::uint_fast32_t
     for (uint_fast16_t i = 0; i < value_size; i++) {
         value[i] = values[(value_size * pos) + i];
     }
-    return make_pair(move(key), move(value));
+    return make_pair(std::move(key), std::move(value));
 }
 
 

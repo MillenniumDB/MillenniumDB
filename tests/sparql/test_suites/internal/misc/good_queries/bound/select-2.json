@@ -1,0 +1,53 @@
+{
+  "head": { "vars": [ "o", "s3", "s2", "s1", "c" ] },
+  "results": {
+    "bindings": [
+      {
+        "o":  { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "s1": { "type": "uri", "value": "http://www.path.com/s1" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s1" }
+      },
+      {
+        "o":  { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "s1": { "type": "uri", "value": "http://www.path.com/s1" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s1" }
+      },
+      {
+        "o":  { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s2" }
+      },
+      {
+        "o":  { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s2" }
+      },
+      {
+        "o":  { "type": "literal", "value": "5", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s3" }
+      },
+      {
+        "o":  { "type": "literal", "value": "6", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s3" }
+      },
+      {
+        "o":  { "type": "literal", "value": "7", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s3" }
+      },
+      {
+        "o":  { "type": "literal", "value": "8", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "c":  { "type": "uri", "value": "http://www.path.com/s3" }
+      }
+    ]
+  }
+}

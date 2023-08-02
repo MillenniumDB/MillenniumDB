@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s ?o (count(?o) AS ?count_o)
+WHERE {
+  ?s :t3 ?o .
+}
+GROUP BY ?s ?o

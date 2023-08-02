@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "x", "y" ] },
+  "results": {
+    "bindings": [
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/1" },
+        "y": { "type": "uri", "value": "http://www.path.com/2" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/2" },
+        "y": { "type": "uri", "value": "http://www.path.com/3" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/3" },
+        "y": { "type": "uri", "value": "http://www.path.com/4" }
+      }
+    ]
+  }
+}

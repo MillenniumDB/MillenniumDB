@@ -1,0 +1,3 @@
+SELECT (min(?p) AS ?min_p)
+WHERE { ?s ?p ?o }
+ORDER BY (avg(?o))

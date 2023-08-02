@@ -1,0 +1,23 @@
+{
+  "head": { "vars": [ "s1", "o1", "s2", "o2", "s3", "o3" ] },
+  "results": {
+    "bindings": [
+      {
+        "s1": { "type": "uri", "value": "http://www.path.com/s1" },
+        "o1": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "o2": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "o3": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "s1": { "type": "uri", "value": "http://www.path.com/s1" },
+        "o1": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s2": { "type": "uri", "value": "http://www.path.com/s2" },
+        "o2": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" },
+        "s3": { "type": "uri", "value": "http://www.path.com/s3" },
+        "o3": { "type": "literal", "value": "8", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

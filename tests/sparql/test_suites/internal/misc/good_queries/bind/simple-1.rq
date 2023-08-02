@@ -1,0 +1,9 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o ?x
+WHERE{
+    :1 :t15 ?o .
+    BIND(2*?o AS ?x)
+    :1 :t15 ?x .
+}
+
+# :1 :t15 1, 2, 3, 4 .

@@ -17,6 +17,7 @@ public:
     void append_record(Record<N>);
 
     // in case of out-of-bounds returns nullptr
+    // TODO: should not return unique_ptr
     std::unique_ptr<Record<N>> operator[](uint_fast32_t pos);
 
 private:

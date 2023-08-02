@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s ?group_str_s (sum(?o) AS ?select_sum_o)
+WHERE { ?s :t3 ?o }
+GROUP BY ?s (str(?s) AS ?group_str_s)
+ORDER BY ?s

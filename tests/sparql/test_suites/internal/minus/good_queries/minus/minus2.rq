@@ -1,0 +1,9 @@
+# Second case: There are no variables in common.
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE
+{
+  ?x :p ?y . OPTIONAL {
+    { ?x :p ?b } MINUS {?x :p :o}
+  }
+}

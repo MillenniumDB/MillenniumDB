@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "abs_o" ] },
+  "results": {
+    "bindings": [
+      { "abs_o": { "type": "literal", "value": "6", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "5", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "5", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } },
+      { "abs_o": { "type": "literal", "value": "6", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } }
+    ]
+  }
+}

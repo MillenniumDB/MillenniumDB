@@ -1,0 +1,15 @@
+{
+  "head": { "vars": [ "exists", "count" ] },
+  "results": {
+    "bindings": [
+      {
+        "exists": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "count": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "exists": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "count": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

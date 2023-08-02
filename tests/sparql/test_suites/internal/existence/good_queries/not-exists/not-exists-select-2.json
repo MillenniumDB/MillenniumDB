@@ -1,0 +1,15 @@
+{
+  "head": { "vars": [ "y", "exists" ] },
+  "results": {
+    "bindings": [
+      {
+        "y": { "type": "uri", "value": "http://www.path.com/o1" },
+        "exists": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "y": { "type": "uri", "value": "http://www.path.com/o2" },
+        "exists": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      }
+    ]
+  }
+}

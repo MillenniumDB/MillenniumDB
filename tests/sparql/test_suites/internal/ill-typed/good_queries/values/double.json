@@ -1,0 +1,31 @@
+{
+  "head": { "vars": [ "o", "str" ] },
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "literal", "value": "", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "" }
+      },
+      {
+        "o": { "type": "literal", "value": "x", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "x" }
+      },
+      {
+        "o": { "type": "literal", "value": "asdfasdfasdf", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "asdfasdfasdf" }
+      },
+      {
+        "o": { "type": "literal", "value": "1.5E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "1.5" }
+      },
+      {
+        "o": { "type": "literal", "value": "1.0E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "1" }
+      },
+      {
+        "o": { "type": "literal", "value": "1.5E0", "datatype": "http://www.w3.org/2001/XMLSchema#double" },
+        "str": { "type": "literal", "value": "1.5" }
+      }
+    ]
+  }
+}

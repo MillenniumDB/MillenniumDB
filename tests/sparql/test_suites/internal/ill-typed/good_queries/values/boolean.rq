@@ -1,0 +1,15 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o (STR(?o) AS ?str)
+WHERE {
+  VALUES (?s ?o) {
+    (:1 ""^^xsd:boolean)
+    (:2 "x"^^xsd:boolean)
+    (:3 false)
+    (:4 "false"^^xsd:boolean)
+    (:5 "0"^^xsd:boolean)
+    (:6 true)
+    (:7 "true"^^xsd:boolean)
+    (:8 "1"^^xsd:boolean)
+  }
+}
+ORDER BY ?s

@@ -1,0 +1,1 @@
+{"head":{"vars":["s","p","o"]},"results":{"bindings":[{"s":{"type":"uri","value":"http://www.relative1.com/relativeSubject"},"p":{"type":"uri","value":"http://www.relative2.com/relativePredicate"},"o":{"type":"uri","value":"http://www.relative3.com/relativeObject"}}]}}

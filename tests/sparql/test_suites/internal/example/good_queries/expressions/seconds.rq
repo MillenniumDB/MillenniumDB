@@ -1,0 +1,12 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        SECONDS("2023-05-01T13:59:58Z"^^xsd:dateTime)        = 58 &&
+        SECONDS("500-05-01T08:02:53Z"^^xsd:dateTime)         = 53  &&
+        # Default value for seconds is 0 when year is greater than 9999
+        SECONDS("-2500000-12-01T12:40:11Z"^^xsd:dateTime)    = 0  &&
+        SECONDS("130000000-09-01T13:59:20Z"^^xsd:dateTime)   = 0
+    )
+}

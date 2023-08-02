@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s ?o (sample(?o) as ?sample_o)
+WHERE {
+  ?s :t3 ?o .
+}
+GROUP BY ?s ?o

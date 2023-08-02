@@ -1,0 +1,8 @@
+PREFIX inl: <http://www.inlined.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s inl:ip1 inl:io1 .
+    inl:is2 ?p inl:io2 .
+    inl:is3 inl:ip3 ?o .
+}

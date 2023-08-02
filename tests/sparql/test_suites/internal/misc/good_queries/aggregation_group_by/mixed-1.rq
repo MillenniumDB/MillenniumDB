@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (sum(?o) AS ?sum_o) (min(?o) AS ?min_o) (max(?o) AS ?max_o)
+WHERE {
+  ?s :t2 ?o .
+}
+GROUP BY ?s

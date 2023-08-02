@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?s (avg(?o) AS ?avg_o)
+WHERE {
+  :t4 :cases ?c .
+  ?s ?c ?o .
+}
+GROUP BY ?s

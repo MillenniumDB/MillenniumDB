@@ -1,0 +1,8 @@
+PREFIX ext: <http://www.external.com/>
+
+SELECT ?s ?p ?o
+WHERE {
+    ?s ext:externalp1 ext:externalo1 .
+    ext:externals2 ?p ext:externalo2 .
+    ext:externals3 ext:externalp3 ?o .
+}

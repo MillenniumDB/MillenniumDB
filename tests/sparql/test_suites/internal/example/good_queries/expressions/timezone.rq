@@ -1,0 +1,16 @@
+SELECT *
+WHERE  {
+    <http://www.firstPrefix.com/subjectFirstPrefix> <http://www.firstPrefix.com/predicateFirstPrefix> ?o .
+    FILTER(TRUE
+        && COALESCE(TIMEZONE("2022-01-01T00:00:00"^^xsd:dateTime), "x") = "x"
+        && TIMEZONE("1986-01-01T00:00:00Z"^^xsd:dateTime)            =  "PT0S"^^xsd:dayTimeDuration
+        && TIMEZONE("1899-01-01T00:00:00+05:00"^^xsd:dateTime)       =  "PT5H"^^xsd:dayTimeDuration
+        && TIMEZONE("2050-01-01T00:00:00-14:00"^^xsd:dateTime)       = "-PT14H"^^xsd:dayTimeDuration
+        && TIMEZONE("2010-01-01T00:00:00+05:30"^^xsd:dateTime)       =  "PT5H30M"^^xsd:dayTimeDuration
+        && TIMEZONE("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime)   = "-PT5H"^^xsd:dayTimeDuration
+        && TIMEZONE("2011-01-10T14:45:13.815-05:20"^^xsd:dateTime)   = "-PT5H20M"^^xsd:dayTimeDuration
+        && TIMEZONE("2011-01-10T14:45:13.815-00:20"^^xsd:dateTime)   = "-PT20M"^^xsd:dayTimeDuration
+        && TIMEZONE("2011-01-10T14:45:13.815-00:00"^^xsd:dateTime)   =  "PT0S"^^xsd:dayTimeDuration
+        && TIMEZONE("2011-01-10T14:45:13.815Z"^^xsd:dateTime)        =  "PT0S"^^xsd:dayTimeDuration
+    )
+}

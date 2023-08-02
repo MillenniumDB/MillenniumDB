@@ -1,0 +1,4 @@
+SELECT ?spo
+WHERE {
+    ?spo ?spo ?spo .
+}

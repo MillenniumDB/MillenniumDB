@@ -1,0 +1,10 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://a.c/> .
+
+
+:s1 :p1 "s1p1" ;
+    :p2 "s1p2" ;
+    :p3 "s1p3" .
+
+:s2 :p1 "s2p1" ;
+    :p2 "s2p2" .

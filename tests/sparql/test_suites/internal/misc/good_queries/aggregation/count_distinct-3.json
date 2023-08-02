@@ -1,0 +1,8 @@
+{
+  "head": { "vars": [ "count_o" ] },
+  "results": {
+    "bindings": [
+      { "count_o": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" } }
+    ]
+  }
+}

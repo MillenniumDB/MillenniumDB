@@ -1,0 +1,4 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o
+WHERE { ?s :t3 ?o }
+ORDER BY ?o

@@ -1,0 +1,5 @@
+PREFIX : <http://www.path.com/>
+SELECT (str(?s) AS ?str_s)
+WHERE { ?s :t13 ?o }
+GROUP BY ?s
+ORDER BY (sample(- ?o))

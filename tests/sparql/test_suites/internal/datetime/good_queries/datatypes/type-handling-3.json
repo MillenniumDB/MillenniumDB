@@ -1,0 +1,180 @@
+{
+  "head": { "vars": [ "o1", "o2", "eq", "ne", "le" ] },
+  "results": {
+    "bindings": [
+      {
+        "o1": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "o2": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "o2": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "o2": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      { "o1": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "o2": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "o2": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "o2": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      },
+      {
+        "o1": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "o2": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" },
+        "o2": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      { "o1": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" },
+        "o2": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" },
+        "o2": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "eq": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "null" }
+      },
+      {
+        "o1": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "o2": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" },
+        "eq": { "type": "literal", "value": "true", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "ne": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" },
+        "le": { "type": "literal", "value": "false", "datatype": "http://www.w3.org/2001/XMLSchema#boolean" }
+      }
+    ]
+  }
+}

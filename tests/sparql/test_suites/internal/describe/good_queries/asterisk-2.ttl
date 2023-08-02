@@ -1,0 +1,27 @@
+<http://www.path.com/p1> <http://www.path.com/name> "John" .
+<http://www.path.com/p1> <http://www.path.com/age> 51 .
+<http://www.path.com/p1> <http://www.path.com/country> "Chile" .
+<http://www.path.com/p1> <http://www.path.com/hobby> "Netflix" .
+<http://www.path.com/p1> <http://www.path.com/hobby> "Running" .
+<http://www.path.com/p1> <http://www.path.com/hobby> "Swimming" .
+<http://www.path.com/p1> <http://www.path.com/friend> <http://www.path.com/p2> .
+
+<http://www.path.com/p2> <http://www.path.com/name> "Anna" .
+<http://www.path.com/p2> <http://www.path.com/age> 56 .
+<http://www.path.com/p2> <http://www.path.com/country> "Argentina" .
+<http://www.path.com/p2> <http://www.path.com/hobby> "Climbing" .
+<http://www.path.com/p2> <http://www.path.com/hobby> "Bird watching\n" .
+<http://www.path.com/p2> <http://www.path.com/friend> <http://www.path.com/p1> .
+
+<http://www.path.com/p3> <http://www.path.com/name> "Juan" .
+<http://www.path.com/p3> <http://www.path.com/age> 18 .
+<http://www.path.com/p3> <http://www.path.com/country> "Chile" .
+<http://www.path.com/p3> <http://www.path.com/hobby> "Video games" .
+<http://www.path.com/p3> <http://www.path.com/friend> <http://www.path.com/p1> .
+
+<http://www.path.com/l1> <http://www.path.com/list> <http://www.path.com/p1> .
+<http://www.path.com/l1> <http://www.path.com/list> <http://www.path.com/p2> .
+<http://www.path.com/l1> <http://www.path.com/list> <http://www.path.com/p3> .
+
+<http://www.path.com/l2> <http://www.path.com/list> <http://www.path.com/p1> .
+<http://www.path.com/l2> <http://www.path.com/list> <http://www.path.com/p3> .

@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+diff --color=auto tests/sparql/test-status.txt tests/sparql/test-status-last.txt

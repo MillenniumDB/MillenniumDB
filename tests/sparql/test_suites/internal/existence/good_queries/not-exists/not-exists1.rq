@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE {
+  ?x :parent ?y
+    FILTER NOT EXISTS {:alice :parent ?z OPTIONAL {:alice :parent ?x }}
+}

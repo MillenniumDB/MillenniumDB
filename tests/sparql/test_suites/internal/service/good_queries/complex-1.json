@@ -1,0 +1,11 @@
+{
+    "head": { "vars": [ "l_name" ] },
+    "results": {
+      "bindings": [
+        { "l_name": { "type": "literal", "value": "united states" } },
+        { "l_name": { "type": "literal", "value": "the united states of america" } },
+        { "l_name": { "type": "literal", "value": "united kingdom of great britain and northern ireland" } }
+      ]
+    }
+  }
+  

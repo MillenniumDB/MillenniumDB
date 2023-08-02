@@ -1,0 +1,5 @@
+PREFIX : <http://p.c/>
+SELECT (COALESCE(MIN(?o), "min-is-null") AS ?min)
+WHERE {
+  :x :x :x
+}

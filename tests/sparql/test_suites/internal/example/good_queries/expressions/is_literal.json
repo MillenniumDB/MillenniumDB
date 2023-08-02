@@ -1,0 +1,395 @@
+{
+  "head": {
+    "vars": [
+      "o"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl1",
+          "datatype": "http://www.datatype.com/dt1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl2",
+          "datatype": "http://www.datatype.com/dt1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl3",
+          "datatype": "http://www.datatype.com/dt2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl4",
+          "datatype": "http://www.datatype.com/dt2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl5",
+          "datatype": "http://www.datatype.com/dt3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl6",
+          "datatype": "http://www.datatype.com/dt3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl1",
+          "xml:lang": "en-US"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl2",
+          "xml:lang": "en-US"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl3",
+          "xml:lang": "es-CL"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl4",
+          "xml:lang": "es-CL"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl5",
+          "xml:lang": "fr-CA"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "inl6",
+          "xml:lang": "fr-CA"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external1",
+          "datatype": "http://www.datatype.com/dt1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external2",
+          "datatype": "http://www.datatype.com/dt1"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external3",
+          "datatype": "http://www.datatype.com/dt2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external4",
+          "datatype": "http://www.datatype.com/dt2"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external5",
+          "datatype": "http://www.datatype.com/dt3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external6",
+          "datatype": "http://www.datatype.com/dt3"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external1",
+          "xml:lang": "en-US"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external2",
+          "xml:lang": "en-US"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external3",
+          "xml:lang": "es-CL"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external4",
+          "xml:lang": "es-CL"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external5",
+          "xml:lang": "fr-CA"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "external6",
+          "xml:lang": "fr-CA"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "Johnson"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "Smith"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "1975-03-12T16:20:00-05:30",
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "2022-09-18T13:30:00Z",
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "123456789-01-01T00:00:00",
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "0.0",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "100.0",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-0.1",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-123456789123456789123456789123456789.123456789123456789123456789123456789",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-0.123456789123456789123456789123456789123456789123456789123456789123456789",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "123456789123456789123456789123456789123456789123456789123456789123456789.0",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "false",
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "true",
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-20",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-10",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-1",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "1",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "2",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "3",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "4",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "10",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "20",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "30",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "40",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "7.5E5",
+          "datatype": "http://www.w3.org/2001/XMLSchema#double"
+        }
+      },
+      {
+        "o": {
+          "type": "literal",
+          "value": "-1.0E0",
+          "datatype": "http://www.w3.org/2001/XMLSchema#float"
+        }
+      }
+    ]
+  }
+}

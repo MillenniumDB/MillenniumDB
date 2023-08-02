@@ -1,0 +1,4 @@
+PREFIX : <http://www.path.com/>
+SELECT (AVG(?o) AS ?avg_o)
+WHERE { ?s  :t3  ?o }
+ORDER BY AVG(?o)

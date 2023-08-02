@@ -1,0 +1,6 @@
+PREFIX eq: <http://www.equals.com/>
+
+SELECT ?po
+WHERE {
+    eq:s1 ?po ?po .
+}

@@ -1,0 +1,4 @@
+SELECT *
+WHERE {
+    <#NoBaseSubject> <http://www.example.com/predicate> <http://www.example.com/object> .
+}

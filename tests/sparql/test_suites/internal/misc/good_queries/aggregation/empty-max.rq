@@ -1,0 +1,5 @@
+PREFIX : <http://p.c/>
+SELECT (COALESCE(MAX(?o), "max-is-null") AS ?max)
+WHERE {
+  :x :x :x
+}

@@ -1,0 +1,32 @@
+{
+  "head": {
+    "vars": [
+      "p",
+      "s"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "p": {
+          "type": "uri",
+          "value": "http://www.path.com/p"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://www.path.com/s"
+        }
+      },
+      {
+        "p": {
+          "type": "uri",
+          "value": "http://www.path.com/p"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://www.path.com/t"
+        }
+      }
+    ]
+  }
+}

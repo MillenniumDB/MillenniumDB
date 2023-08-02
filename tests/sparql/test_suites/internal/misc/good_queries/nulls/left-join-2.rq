@@ -1,0 +1,6 @@
+prefix : <http://www.path.com/>
+SELECT ?s1 ?s2 ?o
+{
+  ?s1  :t19 "s1"
+  {?s2 :t19 "s2" . OPTIONAL { ?s1 :t20 ?o } }
+}

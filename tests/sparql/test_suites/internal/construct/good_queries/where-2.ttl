@@ -1,0 +1,5 @@
+<http://www.path.com/l2> <http://www.path.com/list> <http://www.path.com/p1> .
+<http://www.path.com/l2> <http://www.path.com/list> <http://www.path.com/p3> .
+
+<http://www.path.com/p1> <http://www.path.com/name> "John" .
+<http://www.path.com/p3> <http://www.path.com/name> "Juan" .

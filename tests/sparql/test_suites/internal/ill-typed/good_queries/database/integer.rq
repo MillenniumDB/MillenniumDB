@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?o (STR(?o) AS ?str)
+WHERE {
+  ?s :integer ?o
+}
+ORDER BY ?s

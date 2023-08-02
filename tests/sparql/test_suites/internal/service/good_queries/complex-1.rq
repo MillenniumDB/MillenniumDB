@@ -1,0 +1,14 @@
+SELECT ?l_name WHERE {
+    SERVICE <https://query.wikidata.org/sparql> {
+        {
+            SELECT * WHERE {
+                ?c wdt:P31 wd:Q6256 .
+                ?c wdt:P1448 ?name .
+                FILTER(LANG(?name) = "en")
+            }
+        }
+    }
+    BIND(LCASE(STR(?name)) AS ?l_name)
+    FILTER(CONTAINS(?l_name, "united"))
+}
+

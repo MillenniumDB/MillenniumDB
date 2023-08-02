@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT (count(?o) AS ?count_o)
+WHERE {
+  :t1 :cases ?c .
+  ?s ?c ?o .
+}

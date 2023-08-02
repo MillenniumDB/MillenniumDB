@@ -1,0 +1,46 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE {
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER (true
+        && DATATYPE(                  ""            )                    = <http://www.w3.org/2001/XMLSchema#string>
+        && DATATYPE(                 "a"            )                    = <http://www.w3.org/2001/XMLSchema#string>
+        && DATATYPE("aasdfasdkjhwfdhjsg"            )                    = <http://www.w3.org/2001/XMLSchema#string>
+        && DATATYPE(                  ""^^xsd:string)                    = <http://www.w3.org/2001/XMLSchema#string>
+        && DATATYPE(                 "a"^^xsd:string)                    = <http://www.w3.org/2001/XMLSchema#string>
+        && DATATYPE("aasdfasdkjhwfdhjsg"^^xsd:string)                    = <http://www.w3.org/2001/XMLSchema#string>
+
+        && DATATYPE(                  ""@en-US)                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+        && DATATYPE(                 "a"@en-US)                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+        && DATATYPE("aasdfasdkjhwfdhjsg"@en-US)                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+        && DATATYPE(                  ""@fuxh )                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+        && DATATYPE(                 "a"@fuxh )                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+        && DATATYPE("aasdfasdkjhwfdhjsg"@fuxh )                          = <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+
+        && DATATYPE(                  ""^^<http://www.datatype.com/dt3>) = <http://www.datatype.com/dt3>
+        && DATATYPE(                 "a"^^<http://www.datatype.com/dt3>) = <http://www.datatype.com/dt3>
+        && DATATYPE("aasdfasdkjhwfdhjsg"^^<http://www.datatype.com/dt3>) = <http://www.datatype.com/dt3>
+        && DATATYPE(                  ""^^<http://hf38fgh3kf8f.com/j8c>) = <http://hf38fgh3kf8f.com/j8c>
+        && DATATYPE(                 "a"^^<http://hf38fgh3kf8f.com/j8c>) = <http://hf38fgh3kf8f.com/j8c>
+        && DATATYPE("aasdfasdkjhwfdhjsg"^^<http://hf38fgh3kf8f.com/j8c>) = <http://hf38fgh3kf8f.com/j8c>
+
+        && DATATYPE(1)                                                   = <http://www.w3.org/2001/XMLSchema#integer>
+        && DATATYPE(-1)                                                  = <http://www.w3.org/2001/XMLSchema#integer>
+        && DATATYPE(1.0)                                                 = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE(-1.0)                                                = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE(111111111111111111111111.0)                          = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE(-11111111111111111111111.0)                          = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE("1e0"^^xsd:float)                                    = <http://www.w3.org/2001/XMLSchema#float>
+        && DATATYPE("-1e0"^^xsd:float)                                   = <http://www.w3.org/2001/XMLSchema#float>
+        && DATATYPE(1e0)                                                 = <http://www.w3.org/2001/XMLSchema#double>
+        && DATATYPE(-1e0)                                                = <http://www.w3.org/2001/XMLSchema#double>
+
+        && DATATYPE( "2022-09-18T13:30:00"^^xsd:dateTime)                = <http://www.w3.org/2001/XMLSchema#dateTime>
+        && DATATYPE("10000-09-18T13:30:00"^^xsd:dateTime)                = <http://www.w3.org/2001/XMLSchema#dateTime>
+
+        && DATATYPE( "true"^^xsd:boolean)                                = <http://www.w3.org/2001/XMLSchema#boolean>
+        && DATATYPE("false"^^xsd:boolean)                                = <http://www.w3.org/2001/XMLSchema#boolean>
+        && DATATYPE(true)                                                = <http://www.w3.org/2001/XMLSchema#boolean>
+        && DATATYPE(false)                                               = <http://www.w3.org/2001/XMLSchema#boolean>
+    )
+}

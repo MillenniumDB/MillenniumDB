@@ -1,0 +1,15 @@
+{
+  "head": { "vars": [ "p", "o" ] },
+  "results": {
+    "bindings": [
+      {
+        "p": { "type": "uri", "value": "http://a.c/p1" },
+        "o": { "type": "literal", "value": "s2p1" }
+      },
+      {
+        "p": { "type": "uri", "value": "http://a.c/p2" },
+        "o": { "type": "literal", "value": "s2p2" }
+      }
+    ]
+  }
+}

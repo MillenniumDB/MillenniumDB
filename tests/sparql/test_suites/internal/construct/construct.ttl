@@ -1,0 +1,43 @@
+@prefix : <http://www.path.com/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+:p1 :name "John";
+    :age 51;
+    :country "Chile";
+    :hobby "Swimming", "Running", "Netflix";
+    :friend :p2 .
+
+
+:p2 :name "Anna";
+    :age 56;
+    :country "Argentina";
+    :hobby "Climbing", "Bird watching\n";
+    :friend :p1 .
+
+:p3 :name "Juan";
+    :age 18;
+    :country "Chile";
+    :hobby "Video games";
+    :friend :p1 .
+
+
+:l1 :list :p1, :p2, :p3 .
+
+:l2 :list :p1, :p3 .
+
+
+:datatypes :value "asdf",
+                  "asdf"@en,
+                  "asdf"^^xsd:string,
+                  "asdf"^^:customDataType,
+                  1,
+                  1.0,
+                  "1e0"^^xsd:float,
+                  1e0,
+                  true,
+                  :iri,
+                  "2020-10-10"^^xsd:date,
+                  "10:10:10Z"^^xsd:time,
+                  "2020-10-10T10:10:10Z"^^xsd:dateTime,
+                  "2020-10-10T10:10:10Z"^^xsd:dateTimeStamp .

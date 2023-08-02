@@ -1,0 +1,3 @@
+pinl: http://www.prefixedInlined.com/
+pext: http://www.prefixedExternal.com/
+path: http://www.path.com/

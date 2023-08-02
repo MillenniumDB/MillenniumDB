@@ -1,0 +1,7 @@
+prefix : <http://www.path.com/>
+select ?s ?o {
+  ?s :t21 ?o
+  MINUS {
+    VALUES (?s ?o) { (UNDEF "o1") (:s2 UNDEF) (:s3 "o3") (:s3 "o4") (:s4 "o3") (UNDEF UNDEF) }
+  }
+}

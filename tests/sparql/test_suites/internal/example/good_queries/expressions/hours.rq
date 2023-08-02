@@ -1,0 +1,12 @@
+PREFIX : <http://www.firstPrefix.com/>
+SELECT *
+WHERE  { 
+    :subjectFirstPrefix :predicateFirstPrefix ?o .
+    FILTER(
+        HOURS("2023-05-01T13:15:02Z"^^xsd:dateTime)        = 13 &&
+        HOURS("500-05-01T08:02:04Z"^^xsd:dateTime)         = 8  &&
+        # Default value for hours is 0 when year is greater than 9999
+        HOURS("-2500000-12-01T12:00:00Z"^^xsd:dateTime)    = 0  &&
+        HOURS("130000000-09-01T13:00:00Z"^^xsd:dateTime)   = 0
+    )
+}

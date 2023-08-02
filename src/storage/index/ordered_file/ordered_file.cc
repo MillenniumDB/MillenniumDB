@@ -68,7 +68,7 @@ std::unique_ptr<Record<N>> OrderedFile<N>::next_record() noexcept {
         if (current_pos_in_current_page >= io_buffer->get_size()) {
             ++current_page;
             current_pos_in_current_page = 0;
-            // not necesary to make io_buffer dirty
+            // not necessary to make io_buffer dirty
             if (current_page <= last_page) {
                 io_buffer = make_unique<OrderedFilePage<N>>(buffer_manager.get_page(*file_id, current_page));
             }
@@ -298,16 +298,16 @@ bool OrderedFile<N>::check_order() {
         if (!(*a < *b)) {
             cerr << "Bad ordering at tuples " << i << " and " << i+1 << "\n";
             for (size_t n = 0; n < N; n++) {
-                cerr << "\t" << a->ids[n];
+                cerr << "\t" << (*a)[n];
             }
             cerr << "\n";
             for (size_t n = 0; n < N; n++) {
-                cerr << "\t" << b->ids[n];
+                cerr << "\t" << (*b)[n];
             }
             cerr << "\n";
             cerr << "\tdiff: ";
             for (size_t n = 0; n < N; n++) {
-                cerr << "\t" << a->ids[n] - b->ids[n];
+                cerr << "\t" << (*a)[n] - (*b)[n];
             }
             cerr << "\n";
 
@@ -317,7 +317,7 @@ bool OrderedFile<N>::check_order() {
                 return false;
             }
         }
-        a = move(b);
+        a = std::move(b);
     }
     return errors == 0;
 }

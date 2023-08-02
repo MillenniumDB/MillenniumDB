@@ -1,0 +1,46 @@
+@prefix : <http://www.path.com/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:1 :integer ""^^xsd:integer .
+:2 :integer "x"^^xsd:integer .
+:3 :integer "1.5"^^xsd:integer .
+:4 :integer 1 .
+:5 :integer "1"^^xsd:integer .
+
+:1 :decimal ""^^xsd:decimal .
+:2 :decimal "x"^^xsd:decimal .
+:3 :decimal "asdfasdfasdf"^^xsd:decimal .
+:4 :decimal "1.5"^^xsd:decimal .
+:5 :decimal 1.0 .
+:6 :decimal "1"^^xsd:decimal .
+
+:1 :float ""^^xsd:float .
+:2 :float "x"^^xsd:float .
+:3 :float "asdfasdfasdf"^^xsd:float .
+:4 :float "1.5"^^xsd:float .
+:5 :float "1"^^xsd:float .
+
+:1 :double ""^^xsd:double .
+:2 :double "x"^^xsd:double .
+:3 :double "asdfasdfasdf"^^xsd:double .
+:4 :double "1.5"^^xsd:double .
+:5 :double "1"^^xsd:double .
+:6 :double 1.5E0 .
+
+:1 :dateTime ""^^xsd:dateTime .
+:2 :dateTime "x"^^xsd:dateTime .
+:3 :dateTime "asdf"^^xsd:dateTime .
+:4 :dateTime "1-01-01T00:00:00"^^xsd:dateTime .
+:5 :dateTime "2010-00-00T00:00:00"^^xsd:dateTime .
+:6 :dateTime "2010-00-00T00:00:00+14:01"^^xsd:dateTime .
+:7 :dateTime "2010-00-00T00:00:00X"^^xsd:dateTime .
+:8 :dateTime "2010-01-01T00:00:00"^^xsd:dateTime .
+
+:1 :boolean ""^^xsd:boolean .
+:2 :boolean "x"^^xsd:boolean .
+:3 :boolean false .
+:4 :boolean "false"^^xsd:boolean .
+:5 :boolean "0"^^xsd:boolean .
+:6 :boolean true .
+:7 :boolean "true"^^xsd:boolean .
+:8 :boolean "1"^^xsd:boolean .

@@ -1,0 +1,27 @@
+{
+  "head": { "vars": [ "p", "o" ] },
+  "results": {
+    "bindings": [
+      {
+        "p": { "type": "uri", "value": "http://www.path.com/d" },
+        "o": { "type": "literal", "value": "2010-10-10Z", "datatype": "http://www.w3.org/2001/XMLSchema#date" }
+      },
+      {
+        "p": { "type": "uri", "value": "http://www.path.com/dt" },
+        "o": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" }
+      },
+      {
+        "p": { "type": "uri", "value": "http://www.path.com/dtlp" },
+        "o": { "type": "literal", "value": "9999999999999-01-01T00:00:00", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime" }
+      },
+      {
+        "p": { "type": "uri", "value": "http://www.path.com/dts" },
+        "o": { "type": "literal", "value": "2010-10-10T10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#dateTimeStamp" }
+      },
+      {
+        "p": { "type": "uri", "value": "http://www.path.com/t" },
+        "o": { "type": "literal", "value": "10:10:10Z", "datatype": "http://www.w3.org/2001/XMLSchema#time" }
+      }
+    ]
+  }
+}

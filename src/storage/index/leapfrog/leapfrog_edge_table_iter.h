@@ -35,10 +35,10 @@ public:
 
     void reset_enumeration() override;
 
-    bool next_enumeration(BindingId& binding) override;
+    bool next_enumeration(Binding& binding) override;
 
     // returns true if the terms and parent_binding were found
-    bool open_terms(BindingId& input_binding) override;
+    bool open_terms(Binding& input_binding) override;
 
 private:
     std::array<uint64_t, 4> current_tuple;
