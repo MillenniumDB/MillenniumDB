@@ -44,3 +44,12 @@ Some pieces of code were extracted from other projects and included inside our c
 - Gonzalo Navarro -- Universidad de Chile and IMFD Chile
 - Cristian Riveros -- PUC Chile and IMFD Chile
 - Domagoj Vrgoč -- PUC Chile and IMFD Chile
+
+## Outside Collaborators:
+Here we list our research collaborators. While not participating directly in the development of MillenniumDB, the ideas from this reasearch made their way into MillenniumDB code, and contributed to designing some core features that make the system unique.
+
+- Wim Martens -- University of Bayreuth
+- Matthias Niewerth -- University of Bayreuth
+- Tina Popp - University of Bayreuth
+- Stijn Vansummeren -- University of Hasselt
+  
