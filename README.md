@@ -236,8 +236,9 @@ docker run --rm --volume "$PWD"/data:/data mdb.backend \
 
 You can change `/data/example-rdf-database.ttl` to the path of of your `.ttl` and
 `/data/example-rdf-database` to the directory where you want the database to be
-created. The `.ttl` files and database directories have to be inside `data`.
-
+created. The `.ttl` files and database directories have to be inside `data`. The `.ttl`
+file must not be a symbolic link to a `.ttl` file but a real one. Also the `.ttl` 
+file must exist or else the DB will be created empty. 
 
 Running a Server
 --------------------------------------------------------------------------------
