@@ -80,11 +80,6 @@ void CheckScopedBlankNodes::visit(OpAsk& op_ask) {
 }
 
 
-void CheckScopedBlankNodes::visit(OpWhere& op_where) {
-    op_where.op->accept_visitor(*this);
-}
-
-
 void CheckScopedBlankNodes::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }

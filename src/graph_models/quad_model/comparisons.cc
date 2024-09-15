@@ -1,31 +1,20 @@
 #include "comparisons.h"
 
-#include "storage/string_manager.h"
-#include "storage/tmp_manager.h"
+#include "graph_models/common/datatypes/datetime.h"
+#include "graph_models/inliner.h"
+#include "graph_models/quad_model/conversions.h"
+#include "system/string_manager.h"
+#include "system/tmp_manager.h"
 
 using namespace MQL;
-
-// TODO: same as in SPARQL::Comparisons, should be extracted somewhere else
-// TODO: make n template?
-uint64_t decode_first_n_bytes(uint64_t val, int n) {
-    assert(n > 0 && n <= ObjectId::MAX_INLINED_BYTES);
-    uint64_t res = 0; // Ensure null-termination.
-    uint8_t* c = reinterpret_cast<uint8_t*>(&res);
-    int  shift_size = (n - 1) * 8;
-    for (int i = 0; i < n; i++) {
-        uint8_t byte = (val >> shift_size) & 0xFF;
-        c[i]         = byte;
-        shift_size -= 8;
-    }
-    return res;
-}
 
 int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
     const auto lhs_generic_type = lhs.id & ObjectId::GENERIC_TYPE_MASK;
     const auto rhs_generic_type = rhs.id & ObjectId::GENERIC_TYPE_MASK;
 
     if (lhs_generic_type != rhs_generic_type) {
-        return lhs_generic_type - rhs_generic_type;
+        // The bit shift is to ensure the MSB is not set when casting to int64_t
+        return static_cast<int64_t>(lhs_generic_type >> 56) - static_cast<int64_t>(rhs_generic_type >> 56);
     }
 
     const auto lhs_unmasked_id = lhs.id & ObjectId::VALUE_MASK;
@@ -57,7 +46,7 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
         switch (lhs_mod) {
         case ObjectId::MOD_INLINE: {
             lhs_string_iter = std::make_unique<StringInlineIter>(
-                decode_first_n_bytes(lhs_unmasked_id, ObjectId::NAMED_NODE_INLINE_BYTES)
+                Inliner::decode<ObjectId::NAMED_NODE_INLINE_BYTES>(lhs_unmasked_id)
             );
             break;
         }
@@ -77,7 +66,7 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
         switch (rhs_mod) {
         case ObjectId::MOD_INLINE: {
             rhs_string_iter = std::make_unique<StringInlineIter>(
-                decode_first_n_bytes(rhs_unmasked_id, ObjectId::NAMED_NODE_INLINE_BYTES)
+                Inliner::decode<ObjectId::NAMED_NODE_INLINE_BYTES>(rhs_unmasked_id)
             );
             break;
         }
@@ -114,14 +103,7 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
             break;
         }
         case ObjectId::MASK_FLOAT: {
-            float f;
-            uint8_t* dest = reinterpret_cast<uint8_t*>(&f);
-            dest[0] =  lhs.id        & 0xFF;
-            dest[1] = (lhs.id >> 8)  & 0xFF;
-            dest[2] = (lhs.id >> 16) & 0xFF;
-            dest[3] = (lhs.id >> 24) & 0xFF;
-
-            lhs_value = f;
+            lhs_value = Conversions::unpack_float(lhs);
             break;
         }
         default:
@@ -142,14 +124,7 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
             break;
         }
         case ObjectId::MASK_FLOAT: {
-            float f;
-            uint8_t* dest = reinterpret_cast<uint8_t*>(&f);
-            dest[0] =  rhs.id        & 0xFF;
-            dest[1] = (rhs.id >> 8)  & 0xFF;
-            dest[2] = (rhs.id >> 16) & 0xFF;
-            dest[3] = (rhs.id >> 24) & 0xFF;
-
-            rhs_value = f;
+            rhs_value = Conversions::unpack_float(rhs);
             break;
         }
         default:
@@ -161,7 +136,12 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs) {
         }
         return lhs_value < rhs_value ? -1 : 1;
     }
-    case ObjectId::MASK_ANON_INLINED:
+    case ObjectId::MASK_DT: {
+        DateTime lhs_dt(lhs);
+        DateTime rhs_dt(rhs);
+        return lhs_dt.MQL_compare(rhs_dt);
+    }
+    case ObjectId::MASK_ANON:
     case ObjectId::MASK_BOOL:
     case ObjectId::MASK_PATH:
     case ObjectId::MASK_EDGE:

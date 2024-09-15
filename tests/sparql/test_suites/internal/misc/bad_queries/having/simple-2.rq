@@ -1,5 +1,0 @@
-SELECT ?s
-WHERE{
-    ?s ?p ?o
-}
-HAVING (?o > 1)

@@ -31,8 +31,7 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpUnitTable()\n";
+        os << std::string(indent, ' ') << "OpUnitTable()\n";
         return os;
     }
 };

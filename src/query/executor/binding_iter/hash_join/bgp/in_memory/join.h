@@ -15,23 +15,23 @@ public:
     Join(
         std::unique_ptr<BindingIter> build_rel,
         std::unique_ptr<BindingIter> probe_rel,
-        std::vector<VarId>&&           join_vars,
-        std::vector<VarId>&&           build_vars,
-        std::vector<VarId>&&           probe_vars);
+        std::vector<VarId>&&         join_vars,
+        std::vector<VarId>&&         build_vars,
+        std::vector<VarId>&&         probe_vars);
 
     ~Join();
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
     // Optimizer decide which relation is probe and which is build
     std::unique_ptr<BindingIter> probe_rel;
     std::unique_ptr<BindingIter> build_rel;
 
+private:
     std::vector<VarId> join_vars;
     std::vector<VarId> build_vars;
     std::vector<VarId> probe_vars;
@@ -67,8 +67,5 @@ private:
     uint64_t last_pk_start[N];
     Key<N> probe_key;
     Key<N> last_probe_key;
-
-    // Results counter: to statistics
-    uint64_t found = 0;
 };
 }}}

@@ -1,9 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <ostream>
 
-#include "graph_models/object_id.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -17,22 +16,21 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        switch(expr_oid.get_generic_type()) {
-            case ObjectId::MASK_STRING:
-            case ObjectId::MASK_NUMERIC:
-            case ObjectId::MASK_BOOL:
-            case ObjectId::MASK_DT:
-                return ObjectId(ObjectId::BOOL_TRUE);
-            case ObjectId::MASK_NULL:
+        switch (RDF_OID::get_generic_type(expr_oid)) {
+            case RDF_OID::GenericType::STRING:
+            case RDF_OID::GenericType::NUMERIC:
+            case RDF_OID::GenericType::BOOL:
+            case RDF_OID::GenericType::DATE:
+                return Conversions::pack_bool(true);
+            case RDF_OID::GenericType::NULL_ID:
                 return ObjectId::get_null();
             default:
-                return ObjectId(ObjectId::BOOL_FALSE);
+                return Conversions::pack_bool(false);
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "isLITERAL(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

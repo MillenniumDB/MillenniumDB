@@ -31,13 +31,8 @@ public:
         return ObjectId(ObjectId::BOOL_TRUE);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << *and_list[0];
-        for (size_t i = 1; i < and_list.size(); i++) {
-            auto& expr = and_list[0];
-            os << " AND " << *expr;
-        }
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace MQL

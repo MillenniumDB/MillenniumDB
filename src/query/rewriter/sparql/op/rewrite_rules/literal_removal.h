@@ -5,11 +5,11 @@
 #include <set>
 
 #include "graph_models/object_id.h"
+#include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/parser/op/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 #include "rewrite_rule.h"
 #include "query/rewriter/sparql/expr/expr_rewrite_rule_visitor.h"
-//#include "query/rewriter/sparql/expr/rewrite_rules/simplify_boolean_literals.h"
 
 namespace SPARQL {
 /**
@@ -31,8 +31,8 @@ public:
         for (auto &expr : op_filter->filters) {
             if (is_bool(expr)) {
                 has_rewritten = true;
-                auto expr_object_id = dynamic_cast<ExprObjectId*>(expr.get());
-                bool val = get_bool(expr_object_id->object_id);;
+                auto expr_object_id = dynamic_cast<ExprTerm*>(expr.get());
+                bool val = get_bool(expr_object_id->term);
                 //std::cout << "Removing a bool: " << val << std::endl;
                 if (val == true)
                     continue;
@@ -58,11 +58,11 @@ public:
 
 private:
     bool is_bool(std::unique_ptr<Expr>& literal) {
-        auto expr = dynamic_cast<ExprObjectId*>(literal.get());
+        auto expr = dynamic_cast<ExprTerm*>(literal.get());
         if (expr == nullptr) {
             return false;
         }
-        return expr->object_id.get_generic_type() == ObjectId::MASK_BOOL;
+        return RDF_OID::get_generic_type(expr->term) == RDF_OID::GenericType::BOOL;
     }
 
     bool get_bool(ObjectId oid) {

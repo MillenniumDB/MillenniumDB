@@ -11,8 +11,9 @@
 
 ## System Implementation:
 - [Carlos Rojas](https://github.com/cirojas)
-- [Tristan Heuer](https://github.com/tristan-heuer)
 - [Vicente Calisto](https://github.com/VicenteVicente)
+- [Tristan Heuer](https://github.com/tristan-heuer)
+- [Gustavo Toro](https://github.com/gustavo-toro)
 - [Juan Romero](https://github.com/jaromero6)
 - [Benjamín Farías](https://github.com/BFFV)
 - [Kyle Bossonney](https://github.com/kylevon)
@@ -27,13 +28,12 @@
 Some pieces of code were extracted from other projects and included inside our codebase ([third_party](third_party) and [src/third_party](src/third_party) folders).
 - [Antlr4](https://github.com/antlr/antlr4)
 - [serd](https://github.com/drobilla/serd)
-- [cxxopts](https://github.com/jarro2783/cxxopts)
+- [CLI11](https://github.com/CLIUtils/CLI11)
 - [Murmur3 Hash](https://github.com/aappleby/smhasher)
 - [Robin Hood Hashmap](https://github.com/martinus/robin-hood-hashing)
 - [xxHash](https://github.com/Cyan4973/xxHash)
-- [SHA1/SHA256](https://github.com/stbrumme/hash-library)
-- [SHA382/SHA512](https://github.com/pr0f3ss/SHA)
 - [dragonbox](https://github.com/jk-jeon/dragonbox)
+- [toml](https://github.com/toml-lang/toml)
 
 ## IMFD Research Team:
 - Renzo Angles -- Universidad de Talca and IMFD Chile
@@ -46,7 +46,7 @@ Some pieces of code were extracted from other projects and included inside our c
 - Domagoj Vrgoč -- PUC Chile and IMFD Chile
 
 ## Outside Collaborators:
-Here we list our research collaborators. While not participating directly in the development of MillenniumDB, the ideas from this reasearch made their way into MillenniumDB code, and contributed to designing some core features that make the system unique.
+Here we list our research collaborators. While not participating directly in the development of MillenniumDB, the ideas from this research made their way into MillenniumDB code, and contributed to designing some core features that make the system unique.
 
 - Wim Martens -- University of Bayreuth
 - Matthias Niewerth -- University of Bayreuth
@@ -57,8 +57,7 @@ Here we list our research collaborators. While not participating directly in the
 If you would like to learn more about the system in general, or about some specific features in particular, you can check the following papers. We Annotated them with the main idea they cover.
 
 1. [System architecture] Domagoj Vrgoč, Carlos Rojas, Renzo Angles, Marcelo Arenas, Diego Arroyuelo, Carlos Buil Aranda, Aidan Hogan, Gonzalo Navarro, Cristian Riveros, Juan Romero:
-**MillenniumDB: A Persistent, Open-Source, Graph Database**, Data Intelligence, 
-https://doi.org/10.1162/dint_a_00209
+**MillenniumDB: A Persistent, Open-Source, Graph Database**, Data Intelligence, https://doi.org/10.1162/dint_a_00209
 2. [Path queries] Benjamín Farias, Carlos Rojas, Domagoj Vrgoč:
 **Evaluating Regular Path Queries in GQL and SQL/PGQ: How Far Can The Classical Algorithms Take Us?** https://arxiv.org/abs/2306.02194
 3. [Data structures used for path queries] Wim Martens, Matthias Niewerth, Tina Popp, Carlos Rojas, Stijn Vansummeren, Domagoj Vrgoč:

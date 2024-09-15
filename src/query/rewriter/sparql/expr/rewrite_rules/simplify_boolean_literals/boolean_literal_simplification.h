@@ -6,8 +6,10 @@
 #include <type_traits>
 
 #include "graph_models/object_id.h"
+#include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/query_context.h"
 #include "query/rewriter/sparql/expr/rewrite_rules/expr_rewrite_rule.h"
+
 namespace SPARQL {
 /**
  * Simplifies all numeric operations that have a lhs and a rhs.
@@ -35,11 +37,11 @@ public:
 
 private:
     bool is_bool(std::unique_ptr<Expr>& literal) {
-        auto expr = dynamic_cast<ExprObjectId*>(literal.get());
+        auto expr = dynamic_cast<ExprTerm*>(literal.get());
         if (expr == nullptr) {
             return false;
         }
-        return expr->object_id.get_generic_type() == ObjectId::MASK_BOOL;
+        return RDF_OID::get_generic_type(expr->term) == RDF_OID::GenericType::BOOL;
     }
 
     bool get_bool(ObjectId& oid) {
@@ -51,25 +53,25 @@ private:
         }
     }
 
-    std::unique_ptr<ExprObjectId> create_expr_object_id(bool value) {
+    std::unique_ptr<ExprTerm> create_expr_object_id(bool value) {
         if (value) {
-            return std::make_unique<ExprObjectId>(ObjectId(ObjectId::BOOL_TRUE));
+            return std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
         }
-        return std::make_unique<ExprObjectId>(ObjectId(ObjectId::BOOL_FALSE));
+        return std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
     }
 
     std::unique_ptr<Expr> transform(std::unique_ptr<ExprAnd>& expr) {
         if (is_bool(expr->lhs)) {
-            auto lhs = cast_to<ExprObjectId>(std::move(expr->lhs));
-            auto value = get_bool(lhs->object_id);
+            auto lhs = cast_to<ExprTerm>(std::move(expr->lhs));
+            auto value = get_bool(lhs->term);
             if (value)
                 return std::move(expr->rhs);
             else
                 return create_expr_object_id(false);
         }
         else {
-            auto rhs = cast_to<ExprObjectId>(std::move(expr->rhs));
-            auto value = get_bool(rhs->object_id);
+            auto rhs = cast_to<ExprTerm>(std::move(expr->rhs));
+            auto value = get_bool(rhs->term);
             if (value)
                 return std::move(expr->lhs);
             else
@@ -79,16 +81,16 @@ private:
 
     std::unique_ptr<Expr> transform(std::unique_ptr<ExprOr>& expr) {
         if (is_bool(expr->lhs)) {
-            auto lhs = cast_to<ExprObjectId>(std::move(expr->lhs));
-            auto value = get_bool(lhs->object_id);
+            auto lhs = cast_to<ExprTerm>(std::move(expr->lhs));
+            auto value = get_bool(lhs->term);
             if (!value)
                 return std::move(expr->rhs);
             else
                 return create_expr_object_id(true);
         }
         else {
-            auto rhs = cast_to<ExprObjectId>(std::move(expr->rhs));
-            auto value = get_bool(rhs->object_id);
+            auto rhs = cast_to<ExprTerm>(std::move(expr->rhs));
+            auto value = get_bool(rhs->term);
             if (!value)
                 return std::move(expr->lhs);
             else
@@ -97,8 +99,8 @@ private:
     }
 
     std::unique_ptr<Expr> transform(std::unique_ptr<ExprNot>& expr) {
-        auto term = cast_to<ExprObjectId>(std::move(expr->expr));
-        auto value = get_bool(term->object_id);
+        auto term = cast_to<ExprTerm>(std::move(expr->expr));
+        auto value = get_bool(term->term);
         return create_expr_object_id(!value);
     }
 };

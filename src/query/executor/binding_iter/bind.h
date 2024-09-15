@@ -18,20 +18,20 @@ public:
         expr          (std::move(expr)),
         var           (var) { }
 
-    void begin(Binding& parent_binding) override;
+    void _begin(Binding& parent_binding) override;
 
-    void reset() override;
+    void _reset() override;
 
-    bool next() override;
+    bool _next() override;
 
     void assign_nulls() override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
-private:
     std::unique_ptr<BindingIter> child_iter;
     std::unique_ptr<BindingExpr> expr;
-    VarId                          var;
+    VarId                        var;
 
+private:
     Binding* parent_binding;
 };

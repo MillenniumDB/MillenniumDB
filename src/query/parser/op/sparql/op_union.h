@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "misc/set_operations.h"
 #include "query/parser/op/op.h"
 
 namespace SPARQL {
@@ -53,15 +54,7 @@ public:
         auto res = unions[0]->get_safe_vars();
         for (size_t i = 1; i < unions.size(); i++) {
             auto current_safe_vars = unions[i]->get_safe_vars();
-            std::set<VarId> intersection;
-
-            std::set_intersection(
-                res.begin(), res.end(),
-                current_safe_vars.begin(), current_safe_vars.end(),
-                std::inserter(intersection, intersection.begin())
-            );
-
-            res = std::move(intersection);
+            res = misc::set_intersection(res, current_safe_vars);
         }
         return res;
     }
@@ -71,27 +64,18 @@ public:
         auto res = unions[0]->get_fixable_vars();
         for (size_t i = 1; i < unions.size(); i++) {
             auto current_fixable_vars = unions[i]->get_fixable_vars();
-            std::set<VarId> intersection;
-
-            std::set_intersection(
-                res.begin(), res.end(),
-                current_fixable_vars.begin(), current_fixable_vars.end(),
-                std::inserter(intersection, intersection.begin())
-            );
-
-            res = std::move(intersection);
+            res = misc::set_intersection(res, current_fixable_vars);
         }
         return res;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpUnion(\n";
+        os << std::string(indent, ' ') << "OpUnion()\n";
+
         for (auto& child : unions) {
             child->print_to_ostream(os, indent + 2);
         }
-        os << std::string(indent, ' ');
-        os << ")\n";
+
         return os;
     }
 };

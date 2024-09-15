@@ -1,0 +1,2 @@
+MATCH (?e :datatype)
+RETURN ?e.other

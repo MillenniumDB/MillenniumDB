@@ -1,6 +1,6 @@
 #include "aggregation.h"
 
-void Aggregation::begin(Binding& _parent_binding) {
+void Aggregation::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     group_vars_binding = Binding(parent_binding->size);
@@ -15,12 +15,13 @@ void Aggregation::begin(Binding& _parent_binding) {
     }
 }
 
-void Aggregation::reset() {
+
+void Aggregation::_reset() {
     this->child->reset();
 }
 
 
-bool Aggregation::next() {
+bool Aggregation::_next() {
     if (new_group) {
         // remember group
         for (auto& var_id : group_vars) {
@@ -31,13 +32,13 @@ bool Aggregation::next() {
             agg->process();
         }
     } else {
-        if (!has_returned and group_vars.size() == 0) {
+        if (groups == 0 && group_vars.size() == 0) {
             // We have aggregation without grouping and have never returned a binding.
             // But for aggregation without grouping we have to return at least once.
             for (auto&& [var_id, agg] : aggregations) {
                 parent_binding->add(var_id, agg->get());
             }
-            has_returned = true;
+            groups++;
             return true;
         } else {
             return false;
@@ -65,39 +66,22 @@ bool Aggregation::next() {
     for (auto&& [var_id, agg] : aggregations) {
         parent_binding->add(var_id, agg->get());
     }
-    for (auto & var_id: group_vars) {
+    for (auto& var_id: group_vars) {
         parent_binding->add(var_id, group_vars_binding[var_id]);
     }
-    has_returned = true;
+    groups++;
     return true;
 }
+
 
 void Aggregation::assign_nulls() {
     for (auto&& [var_id, agg] : aggregations) {
         parent_binding->add(var_id, ObjectId::get_null());
     }
-    this->child->assign_nulls();
+    child->assign_nulls();
 }
 
-void Aggregation::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    // TODO: print GROUP
-    os << "Aggregation(";
 
-    bool first = true;
-    for (auto& [var, agg] : aggregations) {
-        if (!first) {
-            os << ", ";
-        } else {
-            first = false;
-        }
-
-        os << '?' << get_query_ctx().get_var_name(var);
-        if (agg) {
-            os << '=' << *agg;
-        }
-    }
-    os << ")\n";
-
-    child->analyze(os, indent+2);
+void Aggregation::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

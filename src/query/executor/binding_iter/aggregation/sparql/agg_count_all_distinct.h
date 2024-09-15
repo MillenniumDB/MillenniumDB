@@ -1,15 +1,28 @@
 #pragma once
 
-#include "query/executor/binding_iter/aggregation/agg.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/aggregation/agg.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace SPARQL {
 class AggCountAllDistinct : public Agg {
 public:
     using Agg::Agg;
+
+    AggCountAllDistinct(
+        VarId                        var_id,
+        std::unique_ptr<BindingExpr> expr,
+        std::vector<VarId>&&         _basic_vars
+    ) :
+        Agg (var_id, std::move(expr)),
+        hash_table (_basic_vars.size()),
+        basic_vars (std::move(_basic_vars))
+    {
+        oid_vec.resize(basic_vars.size());
+    }
+
     void begin() override {
-        hash_table = std::make_unique<DistinctBindingHash<ObjectId>>(basic_vars.size());
+        hash_table.reset();
         count = 0;
     }
 
@@ -18,7 +31,7 @@ public:
             oid_vec[i] = (*binding)[basic_vars[i]];
         }
 
-        if (!hash_table->is_in_or_insert(oid_vec)) {
+        if (!hash_table.is_in_or_insert(oid_vec)) {
             count++;
         }
     }
@@ -26,11 +39,6 @@ public:
     // indicates the end of a group
     ObjectId get() override {
         return Conversions::pack_int(count);
-    }
-
-    void set_basic_vars(std::vector<VarId>&& _basic_vars) {
-        basic_vars = std::move(_basic_vars);
-        oid_vec = std::vector<ObjectId>(basic_vars.size());
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
@@ -41,7 +49,7 @@ public:
 private:
     uint64_t count = 0;
 
-    std::unique_ptr<DistinctBindingHash<ObjectId>> hash_table;
+    DistinctBindingHash hash_table;
 
     // Necessary because of the DistinctBindingHash interface
     // The basic graph pattern variables that are used to evaluated DISTINCT.
@@ -51,4 +59,4 @@ private:
     // Vector to pass variable values to the hash table
     std::vector<ObjectId> oid_vec;
 };
-}
+} // namespace SPARQL

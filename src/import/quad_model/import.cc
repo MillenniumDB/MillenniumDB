@@ -2,21 +2,33 @@
 
 #include <chrono>
 
+#include "import/import_helper.h"
 #include "import/stats_processor.h"
-#include "storage/index/hash/strings_hash/strings_hash_bulk_import.h"
+#include "misc/fatal_error.h"
+#include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "storage/index/random_access_table/edge_table_mem_import.h"
 
-using namespace Import;
+using namespace Import::QuadModel;
+
 
 void OnDiskImport::start_import(const std::string& input_filename) {
     auto start = std::chrono::system_clock::now();
+    auto import_start = start;
+
     lexer.begin(input_filename);
 
-    external_strings_capacity = (1024ULL * 1024ULL * 1024ULL * buffer_size_in_GB)/2;
-    external_strings = new char[external_strings_capacity];
-    ExternalString::strings = external_strings;
-    external_strings_end = StringManager::METADATA_SIZE;
+    {   // Initial memory allocation
+        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size));
 
+        if (external_strings == nullptr) {
+            FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
+        }
+
+        Import::ExternalString::strings = external_strings;
+        external_strings_capacity       = buffer_size;
+        external_strings_end            = StringManager::METADATA_SIZE;
+        assert(external_strings_capacity > StringManager::STRING_BLOCK_SIZE);
+    }
     catalog.anonymous_nodes_count = 0;
 
     int current_state = State::LINE_BEGIN;
@@ -24,7 +36,84 @@ void OnDiskImport::start_import(const std::string& input_filename) {
     while (int token = lexer.next_token()) {
         current_state = get_transition(current_state, token);
     }
+    // After EOF simulate and endline
+    get_transition(current_state, Token::ENDLINE);
 
+    std::cout << "-------------------------------------\n";
+    if (parsing_errors != 0) {
+        std::cout << "\n!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!\n";
+        std::cout << "  " << parsing_errors << " errors found.\n";
+        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
+    }
+    print_duration("Parsing", start);
+
+    // Finish Strings File
+    std::fstream strings_file;
+    strings_file.open(db_folder + "/strings.dat", std::ios::out|std::ios::binary);
+    strings_file.write(external_strings, external_strings_end);
+
+    // std::cout << "external_strings_end: " << external_strings_end << std::endl;
+
+    // Round up to strings file to be a multiple of StringManager::STRING_BLOCK_SIZE
+    uint64_t last_str_pos = strings_file.tellp();
+    uint64_t last_block_offset = last_str_pos % StringManager::STRING_BLOCK_SIZE;
+    uint64_t remaining = StringManager::STRING_BLOCK_SIZE - last_block_offset;
+
+    // can copy anything, content doesn't matter, but setting zeros is better for debug
+    memset(external_strings, '\0', remaining);
+    strings_file.write(external_strings, remaining);
+
+    // Write strings_file metadata
+    strings_file.seekp(0, strings_file.beg);
+    strings_file.write(reinterpret_cast<char*>(&last_block_offset), sizeof(uint64_t));
+
+    print_duration("Processing strings", start);
+
+    {   // Destroy external_strings_set replacing it with an empty map
+        robin_hood::unordered_set<ExternalString> tmp;
+        external_strings_set.swap(tmp);
+    }
+
+    {   // Create StringsHash
+        // Big enough buffer to store any string
+        char* string_buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(
+            VPage::SIZE,
+            StringManager::STRING_BLOCK_SIZE));
+
+        // we reuse the allocated memory for external strings as a buffer
+        StringsHashBulkOnDiskImport strings_hash(db_folder + "/str_hash",
+                                                 external_strings,
+                                                 external_strings_capacity);
+        strings_file.close();
+        strings_file.open(db_folder + "/strings.dat", std::ios::in|std::ios::binary);
+        strings_file.seekg(StringManager::METADATA_SIZE, strings_file.beg);
+        uint64_t current_pos = StringManager::METADATA_SIZE;
+
+        // read all strings one by one and add them to the StringsHash
+        while (current_pos < last_str_pos) {
+            size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
+                                            - (current_pos % StringManager::STRING_BLOCK_SIZE);
+
+            if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
+                current_pos += remaining_in_block;
+                strings_file.read(string_buffer, remaining_in_block);
+            }
+
+            auto str_len = read_str(strings_file, string_buffer);
+            strings_hash.create_id(string_buffer, current_pos, str_len);
+            current_pos = strings_file.tellg();
+        }
+        strings_file.close();
+        MDB_ALIGNED_FREE(string_buffer);
+    }
+
+    print_duration("Write strings and strings hashes", start);
+
+    // we reuse the buffer for external strings in the B+trees creation
+    char* const buffer = external_strings;
+    buffer_size = external_strings_capacity;
+
+    // Save lasts blocks to disk
     declared_nodes.finish_appends();
     labels.finish_appends();
     properties.finish_appends();
@@ -33,60 +122,6 @@ void OnDiskImport::start_import(const std::string& input_filename) {
     equal_from_to_type.finish_appends();
     equal_from_type.finish_appends();
     equal_to_type.finish_appends();
-
-    auto end_lexer = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> parser_duration = end_lexer - start;
-    std::cout << "Parser duration: " << parser_duration.count() << " ms\n";
-
-    {   // Destroy external_strings_set replacing it with an empty map
-        robin_hood::unordered_set<ExternalString> tmp;
-        external_strings_set.swap(tmp);
-    }
-
-    {   // Write Strings
-        // write end
-        *reinterpret_cast<uint64_t*>(external_strings) = external_strings_end;
-
-        std::fstream strings_file;
-        strings_file.open(db_folder + "/strings.dat", std::ios::out|std::ios::binary);
-        strings_file.write(external_strings, external_strings_end);
-
-        // round up to PAGE_SIZE multiple
-        auto remaining = StringManager::STRING_BLOCK_SIZE
-                         - (external_strings_end % StringManager::STRING_BLOCK_SIZE);
-        strings_file.write(external_strings, remaining); // copies anything, content doesn't matter
-
-    }
-
-    {   // Write StringsHash
-        StringsHashBulkImport strings_hash(db_folder + "/str_hash");
-
-        size_t current_offset = StringManager::METADATA_SIZE;
-        while (current_offset < external_strings_end) {
-            auto current_str = external_strings + current_offset;
-
-            size_t bytes_for_len;
-            size_t len = StringManager::get_string_len(current_str, &bytes_for_len);
-            current_str += bytes_for_len;
-
-            strings_hash.create_id(current_str, current_offset, len);
-
-            current_offset += bytes_for_len + len;
-
-            // skip alignment bytes
-            size_t remaining_in_page = StringManager::STRING_BLOCK_SIZE
-                                       - (current_offset % StringManager::STRING_BLOCK_SIZE);
-            if (remaining_in_page < ExternalString::MIN_PAGE_REMAINING_BYTES) {
-                current_offset += remaining_in_page;
-            }
-        }
-
-        delete[] external_strings;
-    }
-
-    auto end_obj_file = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> obj_duration = end_obj_file - end_lexer;
-    std::cout << "Write strings and strings hash duration: " << obj_duration.count() << " ms\n";
 
     {   // Append undeclared nodes (being on an edge)
         robin_hood::unordered_set<uint64_t> nodes_set;
@@ -118,35 +153,33 @@ void OnDiskImport::start_import(const std::string& input_filename) {
 
         catalog.identifiable_nodes_count = nodes_set.size();
     }
+    print_duration("Write table", start);
 
-    size_t buffer_size = 1024ULL * 1024ULL * 1024ULL * buffer_size_in_GB;
-    char* buffer = reinterpret_cast<char*>(std::aligned_alloc(Page::MDB_PAGE_SIZE, buffer_size));
+    declared_nodes.start_indexing(buffer, buffer_size, {0});
+    labels.start_indexing(buffer, buffer_size, {0,1});
+    properties.start_indexing(buffer, buffer_size, {0,1,2});
+    edges.start_indexing(buffer, buffer_size, {0,1,2,3});
+    equal_from_to_type.start_indexing(buffer, buffer_size, {0,1});
+    equal_from_to.start_indexing(buffer, buffer_size, {0,1,2});
+    equal_from_type.start_indexing(buffer, buffer_size, {0,1,2});
+    equal_to_type.start_indexing(buffer, buffer_size, {0,1,2});
+
 
     { // Nodes B+Tree
         size_t COL_NODE = 0;
-        std::array<size_t, 1> original_permutation = { COL_NODE };
-
         NoStat<1> no_stat;
 
-        declared_nodes.start_indexing(buffer, buffer_size, original_permutation);
         declared_nodes.create_bpt(db_folder + "/nodes",
                                   { COL_NODE },
                                    no_stat);
-        declared_nodes.finish_indexing();
     }
-
-    auto end_nodes_index = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> nodes_index_duration = end_nodes_index - end_obj_file;
-    std::cout << "Write edge table and nodes index: " << nodes_index_duration.count() << " ms\n";
 
     { // Labels B+Tree
         size_t COL_NODE = 0, COL_LABEL = 1;
-        std::array<size_t, 2> original_permutation = { COL_NODE, COL_LABEL };
 
         NoStat<2> no_stat;
         LabelStat label_stat;
 
-        labels.start_indexing(buffer, buffer_size, original_permutation);
         labels.create_bpt(db_folder + "/node_label",
                           { COL_NODE, COL_LABEL },
                           no_stat);
@@ -156,23 +189,17 @@ void OnDiskImport::start_import(const std::string& input_filename) {
                           label_stat);
         catalog.label_count = label_stat.all;
         label_stat.end();
-        labels.finish_indexing();
 
         catalog.distinct_labels   = label_stat.map_label_count.size();
         catalog.label2total_count = std::move(label_stat.map_label_count);
     }
-    auto end_label_index = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> label_index_duration = end_label_index - end_nodes_index;
-    std::cout << "Write labels index: " << label_index_duration.count() << " ms\n";
 
     { // Properties B+Tree
         size_t COL_OBJ = 0, COL_KEY = 1, COL_VALUE = 2;
-        std::array<size_t, 3> original_permutation = { COL_OBJ, COL_KEY, COL_VALUE };
 
         NoStat<3> no_stat;
         PropStat prop_stat;
 
-        properties.start_indexing(buffer, buffer_size, original_permutation);
         properties.create_bpt(db_folder + "/object_key_value",
                               { COL_OBJ, COL_KEY, COL_VALUE },
                               no_stat);
@@ -183,22 +210,14 @@ void OnDiskImport::start_import(const std::string& input_filename) {
         catalog.properties_count = prop_stat.all;
         prop_stat.end();
 
-        properties.finish_indexing();
-
         catalog.key2distinct    = std::move(prop_stat.map_distinct_values);
         catalog.key2total_count = std::move(prop_stat.map_key_count);
         catalog.distinct_keys   = catalog.key2total_count.size();
 
     }
-    auto end_prop_index = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> prop_index_duration = end_prop_index - end_label_index;
-    std::cout << "Write properties index: " << prop_index_duration.count() << " ms\n";
 
     { // Quad B+Trees
         size_t COL_FROM = 0, COL_TO = 1, COL_TYPE = 2, COL_EDGE = 3;
-        std::array<size_t, 4> original_permutation = { COL_FROM, COL_TO, COL_TYPE, COL_EDGE };
-
-        edges.start_indexing(buffer, buffer_size, original_permutation);
 
         NoStat<4> no_stat;
         DistinctStat<4> distinct_from_stat;
@@ -225,18 +244,10 @@ void OnDiskImport::start_import(const std::string& input_filename) {
 
         // set distinct_type, may be a redundant stat
         catalog.distinct_type = catalog.type2total_count.size();
-
-        edges.finish_indexing();
     }
-
-    auto end_quad_index = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> quad_index_duration = end_quad_index - end_prop_index;
-    std::cout << "Write quad index: " << quad_index_duration.count() << " ms\n";
 
     {   // FROM=TO=TYPE EDGE
         size_t COL_FROM_TO_TYPE = 0, COL_EDGE = 1;
-        std::array<size_t, 2> original_permutation = { COL_FROM_TO_TYPE, COL_EDGE };
-        equal_from_to_type.start_indexing(buffer, buffer_size, original_permutation);
 
         DictCountStat<2> stat;
         equal_from_to_type.create_bpt(db_folder + "/equal_from_to_type",
@@ -246,13 +257,10 @@ void OnDiskImport::start_import(const std::string& input_filename) {
 
         stat.end();
         catalog.type2equal_from_to_type_count = std::move(stat.dict);
-        equal_from_to_type.finish_indexing();
     }
 
     {   // FROM=TO TYPE EDGE
         size_t COL_FROM_TO = 0, COL_TYPE = 1, COL_EDGE = 2;
-        std::array<size_t, 3> original_permutation = { COL_FROM_TO, COL_TYPE, COL_EDGE };
-        equal_from_to.start_indexing(buffer, buffer_size, original_permutation);
 
         NoStat<3> no_stat;
         equal_from_to.create_bpt(db_folder + "/equal_from_to",
@@ -268,13 +276,10 @@ void OnDiskImport::start_import(const std::string& input_filename) {
 
         catalog.equal_from_to_count = stat.all;
         catalog.type2equal_from_to_count = std::move(stat.dict);
-        equal_from_to.finish_indexing();
     }
 
     {   // FROM=TYPE TO EDGE
         size_t COL_FROM_TYPE = 0, COL_TO = 1, COL_EDGE = 2;
-        std::array<size_t, 3> original_permutation = { COL_FROM_TYPE, COL_TO, COL_EDGE };
-        equal_from_type.start_indexing(buffer, buffer_size, original_permutation);
 
         DictCountStat<3> stat;
         equal_from_type.create_bpt(db_folder + "/equal_from_type",
@@ -288,14 +293,10 @@ void OnDiskImport::start_import(const std::string& input_filename) {
         equal_from_type.create_bpt(db_folder + "/equal_from_type_inverted",
                                  { COL_TO, COL_FROM_TYPE, COL_EDGE },
                                  no_stat);
-
-        equal_from_type.finish_indexing();
     }
 
     {   // TO=TYPE FROM EDGE
         size_t COL_TO_TYPE = 0, COL_FROM = 1, COL_EDGE = 2;
-        std::array<size_t, 3> original_permutation = { COL_TO_TYPE, COL_FROM, COL_EDGE };
-        equal_to_type.start_indexing(buffer, buffer_size, original_permutation);
 
         DictCountStat<3> stat;
         equal_to_type.create_bpt(db_folder + "/equal_to_type",
@@ -309,22 +310,26 @@ void OnDiskImport::start_import(const std::string& input_filename) {
         equal_to_type.create_bpt(db_folder + "/equal_to_type_inverted",
                                  { COL_FROM, COL_TO_TYPE, COL_EDGE },
                                  no_stat);
-
-        equal_to_type.finish_indexing();
     }
+    // calling finish_indexing() closes and removes the file.
+    declared_nodes.finish_indexing();
+    properties.finish_indexing();
+    labels.finish_indexing();
+    edges.finish_indexing();
+    equal_from_to_type.finish_indexing();
+    equal_from_to.finish_indexing();
+    equal_from_type.finish_indexing();
+    equal_to_type.finish_indexing();
+    MDB_ALIGNED_FREE(external_strings);
 
-    auto end_special_index = std::chrono::system_clock::now();
-    std::chrono::duration<float, std::milli> special_index_duration = end_special_index - end_quad_index;
-    std::cout << "Write special cases index: " << special_index_duration.count() << " ms\n";
+    print_duration("Write B+tree indexes", start);
 
-    free(buffer);
+    catalog.print(std::cout);
 
-    std::chrono::duration<float, std::milli> total_duration = end_special_index - start;
-    std::cout << "Total duration: " << total_duration.count() << " ms\n";
-
-    catalog.print();
-    catalog.save_changes();
+    print_duration("Write catalog", start);
+    print_duration("Total Import", import_start);
 }
+
 
 void OnDiskImport::create_automata() {
     // set all transitions as error at first, transitions that are defined later will stay as error.
@@ -348,7 +353,6 @@ void OnDiskImport::create_automata() {
     set_transition(State::LINE_BEGIN, Token::IDENTIFIER, State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_identifier, this));
     set_transition(State::LINE_BEGIN, Token::ANON,       State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_anon, this));
     set_transition(State::LINE_BEGIN, Token::STRING,     State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_string, this));
-    set_transition(State::LINE_BEGIN, Token::IRI,        State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_iri, this));
     set_transition(State::LINE_BEGIN, Token::INTEGER,    State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_int, this));
     set_transition(State::LINE_BEGIN, Token::FLOAT,      State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_float, this));
     set_transition(State::LINE_BEGIN, Token::TRUE,       State::FIRST_ID, std::bind(&OnDiskImport::save_first_id_true, this));
@@ -361,7 +365,6 @@ void OnDiskImport::create_automata() {
     set_transition(State::FIRST_ID,     Token::ENDLINE, State::LINE_BEGIN, std::bind(&OnDiskImport::finish_node_line, this));
     set_transition(State::NODE_DEFINED, Token::ENDLINE, State::LINE_BEGIN, std::bind(&OnDiskImport::finish_node_line, this));
 
-    // TODO: accept IRI as label?
     set_transition(State::EXPECT_NODE_LABEL, Token::IDENTIFIER, State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_label, this));
 
     set_transition(State::FIRST_ID,     Token::IDENTIFIER, State::EXPECT_NODE_PROP_COLON, std::bind(&OnDiskImport::save_prop_key, this));
@@ -369,12 +372,12 @@ void OnDiskImport::create_automata() {
 
     set_transition(State::EXPECT_NODE_PROP_COLON, Token::COLON, State::EXPECT_NODE_PROP_VALUE, std::bind(&OnDiskImport::do_nothing, this));
 
-    // TODO: accept IRI as prop value?
-    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::STRING,  State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_string, this));
-    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::INTEGER, State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_int, this));
-    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::FLOAT,   State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_float, this));
-    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::FALSE,   State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_false, this));
-    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::TRUE,    State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_true, this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::TYPED_STRING, State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_datatype, this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::STRING,       State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_string, this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::INTEGER,      State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_int,    this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::FLOAT,        State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_float,  this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::FALSE,        State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_false,  this));
+    set_transition(State::EXPECT_NODE_PROP_VALUE, Token::TRUE,         State::NODE_DEFINED, std::bind(&OnDiskImport::add_node_prop_true,   this));
 
     set_transition(State::IMPLICIT_EDGE, Token::L_ARROW, State::EXPECT_EDGE_SECOND, std::bind(&OnDiskImport::set_left_direction, this));
     set_transition(State::IMPLICIT_EDGE, Token::R_ARROW, State::EXPECT_EDGE_SECOND, std::bind(&OnDiskImport::set_right_direction, this));
@@ -384,7 +387,6 @@ void OnDiskImport::create_automata() {
     set_transition(State::EXPECT_EDGE_SECOND, Token::IDENTIFIER, State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_identifier, this));
     set_transition(State::EXPECT_EDGE_SECOND, Token::ANON,       State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_anon, this));
     set_transition(State::EXPECT_EDGE_SECOND, Token::STRING,     State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_string, this));
-    set_transition(State::EXPECT_EDGE_SECOND, Token::IRI,        State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_iri, this));
     set_transition(State::EXPECT_EDGE_SECOND, Token::INTEGER,    State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_int, this));
     set_transition(State::EXPECT_EDGE_SECOND, Token::FLOAT,      State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_float, this));
     set_transition(State::EXPECT_EDGE_SECOND, Token::TRUE,       State::EXPECT_EDGE_TYPE_COLON, std::bind(&OnDiskImport::save_second_id_true, this));
@@ -392,7 +394,6 @@ void OnDiskImport::create_automata() {
 
     set_transition(State::EXPECT_EDGE_TYPE_COLON, Token::COLON, State::EXPECT_EDGE_TYPE, std::bind(&OnDiskImport::do_nothing, this));
 
-    // TODO: accept IRI as type?
     set_transition(State::EXPECT_EDGE_TYPE, Token::IDENTIFIER, State::EDGE_DEFINED, std::bind(&OnDiskImport::save_edge_type, this));
 
     set_transition(State::EDGE_DEFINED, Token::ENDLINE,    State::LINE_BEGIN, std::bind(&OnDiskImport::finish_edge_line, this));
@@ -400,10 +401,10 @@ void OnDiskImport::create_automata() {
 
     set_transition(State::EXPECT_EDGE_PROP_COLON, Token::COLON, State::EXPECT_EDGE_PROP_VALUE, std::bind(&OnDiskImport::do_nothing, this));
 
-    // TODO: accept IRI as prop value?
-    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::STRING,  State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_string, this));
-    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::INTEGER, State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_int, this));
-    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::FLOAT,   State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_float, this));
-    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::FALSE,   State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_false, this));
-    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::TRUE,    State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_true, this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::TYPED_STRING, State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_datatype, this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::STRING,       State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_string, this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::INTEGER,      State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_int,    this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::FLOAT,        State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_float,  this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::FALSE,        State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_false,  this));
+    set_transition(State::EXPECT_EDGE_PROP_VALUE, Token::TRUE,         State::EDGE_DEFINED, std::bind(&OnDiskImport::add_edge_prop_true,   this));
 }

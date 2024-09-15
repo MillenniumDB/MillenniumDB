@@ -1,6 +1,5 @@
 #include "greedy_optimizer.h"
 
-#include <iostream>
 #include <limits>
 
 #include "query/optimizer/plan/join/index_nested_loop_plan.h"
@@ -22,8 +21,8 @@ std::unique_ptr<Plan> GreedyOptimizer::get_plan(const std::vector<std::unique_pt
     for (size_t j = 0; j < base_plans_size; j++) {
         // base_plans[j]->set_input_vars(input_vars);
         auto current_element_cost = base_plans[j]->estimate_cost();
-        base_plans[j]->print(std::cout, 0);
-        std::cout << "\n";
+        // base_plans[j]->print(std::cout, 0);
+        // std::cout << "\n";
         if (current_element_cost < best_cost) {
             best_cost = current_element_cost;
             best_index = j;

@@ -1,0 +1,9 @@
+PREFIX : <http://www.example.org/>
+
+
+# select existent literals
+
+SELECT ?s
+{
+  ?s :p1 "史密斯是律师。" .
+}

@@ -5,11 +5,15 @@
 using namespace MQL;
 
 uint64_t DescribeExecutor::execute(std::ostream& os) {
+    labels->begin(binding);
+    properties->begin(binding);
+    outgoing_connections->begin(binding);
+    incoming_connections->begin(binding);
     os << "---------------------------------------\n";
     while (true) {
         switch (status) {
         case 0: {
-            if (labels->next() && count_labels < labels_limit) {
+            if (count_labels < labels_limit && labels->next()) {
                 os << binding[VarId(0)]
                    << '\n';
                 count_labels++;
@@ -20,7 +24,7 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
             break;
         }
         case 1: {
-            if (properties->next() && count_properties < properties_limit) {
+            if (count_properties < properties_limit && properties->next()) {
                 os << binding[VarId(0)]
                    << ','
                    << binding[VarId(1)]
@@ -33,7 +37,7 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
             break;
         }
         case 2: {
-            if (outgoing_connections->next() && count_outgoing < outgoing_limit) {
+            if (count_outgoing < outgoing_limit && outgoing_connections->next()) {
                 os << binding[VarId(0)]
                    << ','
                    << binding[VarId(1)]
@@ -48,7 +52,7 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
             break;
         }
         case 3: {
-            if (incoming_connections->next() && count_incoming < incoming_limit) {
+            if (count_incoming < incoming_limit && incoming_connections->next()) {
                 os << binding[VarId(0)]
                    << ','
                    << binding[VarId(1)]
@@ -68,7 +72,6 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
 }
 
 
-void DescribeExecutor::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "DescribeExecutor()";
+void DescribeExecutor::analyze(std::ostream& os, bool, int indent) const {
+    os << std::string(indent, ' ') << "DescribeExecutor()";
 }

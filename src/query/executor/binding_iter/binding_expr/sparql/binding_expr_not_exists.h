@@ -2,11 +2,9 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-
 
 namespace SPARQL {
 class BindingExprNotExists : public BindingExpr {
@@ -20,9 +18,9 @@ private:
 
 public:
     BindingExprNotExists(std::unique_ptr<BindingIter> op_iter,
-                           std::set<VarId>&& op_vars) :
+                         std::set<VarId>&& op_vars) :
         op_iter (std::move(op_iter)),
-        op_vars (std::move(op_vars)) {}
+        op_vars (std::move(op_vars)) { }
 
     ObjectId eval(const Binding& binding) override {
         auto subset_binding = std::make_unique<Binding>(binding.size);
@@ -31,10 +29,9 @@ public:
         }
 
         if (has_a_match(*subset_binding)) {
-            return ObjectId(ObjectId::BOOL_FALSE);
-        }
-        else {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return Conversions::pack_bool(false);
+        } else {
+            return Conversions::pack_bool(true);
         }
     }
 
@@ -42,8 +39,7 @@ private:
     bool has_a_match(const Binding& lhs_binding) {
         if (previous_lhs == nullptr) {
             previous_lhs = std::make_unique<Binding>(lhs_binding.size);
-        }
-        else if (*previous_lhs == lhs_binding) {
+        } else if (*previous_lhs == lhs_binding) {
             return previous_had_a_match;
         }
         previous_lhs->add_all(lhs_binding);
@@ -71,15 +67,8 @@ private:
         return false;
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "NOT EXISTS(vars:";
-        for (auto& var : op_vars) {
-            os << ' ' << var.id;
-        }
-        os << ')';
-
-        op_iter->analyze(os, 0);
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

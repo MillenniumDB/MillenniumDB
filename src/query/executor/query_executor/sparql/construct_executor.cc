@@ -1,16 +1,17 @@
 #include "construct_executor.h"
 
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/query_executor/sparql/ttl_writer.h"
 
 using namespace SPARQL;
 
 ConstructExecutor::ConstructExecutor(
     std::unique_ptr<BindingIter> child_iter,
-    std::vector<Triple>            triples
+    std::vector<Triple>          triples
 ) :
     child_iter       (std::move(child_iter)),
     triples          (std::move(triples)),
-    extendable_table (DistinctBindingHash<ObjectId>(3)),
+    extendable_table (DistinctBindingHash(3)),
     current_triple   (std::vector<ObjectId>(3)) { }
 
 
@@ -21,10 +22,10 @@ bool ConstructExecutor::process_element(Id id, Idx idx, BlankNodeMap& blank_node
         auto var = id.get_var();
         auto& var_name = get_query_ctx().get_var_name(var);
 
-        if (var_name.size() > 2 and var_name[0] == '_' and var_name[1] == ':') {
+        if (var_name.size() > 2 && var_name[0] == '_' && var_name[1] == ':') {
             auto oid_it = blank_nodes.find(var_name);
             if (oid_it == blank_nodes.end()) {
-                auto oid = ObjectId(ObjectId::MASK_ANON_TMP | get_query_ctx().get_new_blank_node());
+                auto oid = Conversions::pack_blank_tmp(get_query_ctx().get_new_blank_node());
                 blank_nodes.insert({ var_name, oid });
                 current_triple[static_cast<size_t>(idx)] = oid;
             } else {
@@ -78,7 +79,7 @@ bool ConstructExecutor::current_triple_distinct() {
 }
 
 
-void ConstructExecutor::analyze(std::ostream & os, int indent) const {
+void ConstructExecutor::analyze(std::ostream & os, bool print_stats, int indent) const {
     os << std::string(indent, ' ') << "ConstructExecutor(";
 
     os << triple_count << " triples; ";
@@ -104,6 +105,7 @@ void ConstructExecutor::analyze(std::ostream & os, int indent) const {
 
     os << ")\n";
     if (child_iter) {
-        child_iter->analyze(os, indent + 2);
+        BindingIterPrinter printer(os, print_stats, indent + 2);
+        child_iter->accept_visitor(printer);
     }
 }

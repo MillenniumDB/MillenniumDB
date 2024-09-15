@@ -1,0 +1,11 @@
+@prefix path: <http://www.path.com/> .
+# 8.4.1. Path sequence
+path:Jane path:knows path:John .
+path:Jane path:knows path:Mary .
+path:Jane path:knows path:Vicente .
+path:Joe  path:knows path:Jane .
+path:Al  path:knows path:Joe .
+path:Joe  path:knows path:Al .
+
+path:Al path:owns path:O1 .
+path:Joe path:owns path:O2 .

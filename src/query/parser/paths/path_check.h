@@ -33,9 +33,8 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ');
-        // TODO:
         std::string check = "";
-        os << "OpCheck(" << "{" + check + "}" << ")\n";
+        os << "OpCheck(" << "{" + this->to_string() + "}" << ")\n";
         return os;
     }
 

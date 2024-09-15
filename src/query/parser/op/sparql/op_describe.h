@@ -85,36 +85,29 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpDescribe(";
+        os << std::string(indent, ' ') << "OpDescribe(";
 
         auto first = true;
         for (auto& var : vars) {
-            if (!first) {
-                os << ", ";
-            } else {
-                first = false;
-            }
+            if (first) first = false; else os << ", ";
+
             os << "?" << get_query_ctx().get_var_name(var);
         }
 
         for (auto& iri : iris) {
-            if (!first) {
-                os << ", ";
-            } else {
-                first = false;
-            }
+            if (first) first = false; else os << ", ";
             os << iri;
         }
 
         if (limit != Op::DEFAULT_LIMIT) {
-            os << "; LIMIT " << limit;
+            os << ", limit " << limit;
         }
         if (offset != Op::DEFAULT_OFFSET) {
-            os << "; OFFSET " << offset;
+            os << ", offset " << offset;
         }
 
         os << ")\n";
+
         if (op) {
             op->print_to_ostream(os, indent + 2);
         }

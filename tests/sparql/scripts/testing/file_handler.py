@@ -156,6 +156,8 @@ def get_internal_tests() -> TestSuite:
         test_name = test_dir.name
         data = test_dir / f"{test_name}.ttl"
         prefixes = test_dir / f"{test_name}_prefixes.txt"
+        if not prefixes.is_file():
+            prefixes = None
 
         for query in test_dir.glob("good_queries/**/*.rq"):
             if query_has_keywords(query, ["describe", "construct"]):
@@ -170,10 +172,6 @@ def get_internal_tests() -> TestSuite:
                     print(f"File not found: {expected}")
                     sys.exit(1)
                 graph_output = False
-
-            prefixes = query.with_name(f"{query.stem}_prefixes.txt")
-            if not prefixes.is_file():
-                prefixes = None
 
             test = QueryTest(query=query, data=data, prefixes=prefixes, expected=expected, graph_output=graph_output)
             log(Level.DEBUG, str(test))
@@ -266,17 +264,21 @@ def get_select_result_from_rdf(path: Path) -> Result:
             language = ""
             datatype = ""
             attrs = value_ele.attrib
-            if (attr := apply_ns("rdf", "nodeID")) in attrs:
+            if (apply_ns("rdf", "nodeID")) in attrs:
+                attr = apply_ns("rdf", "nodeID")
                 value = attrs[attr]
                 type_ = Value.Type.BNODE
-            elif (attr := apply_ns("rdf", "resource")) in attrs:
+            elif (apply_ns("rdf", "resource")) in attrs:
+                attr = apply_ns("rdf", "resource")
                 value = attrs[attr]
                 type_ = Value.Type.IRI
-            elif (attr := apply_ns("rdf", "datatype")) in attrs:
+            elif (apply_ns("rdf", "datatype")) in attrs:
+                attr = apply_ns("rdf", "datatype")
                 value = value_ele.text
                 type_ = Value.Type.LITERAL
                 datatype = attrs[attr]
-            elif (attr := apply_ns("xml", "lang")) in attrs:
+            elif (apply_ns("xml", "lang")) in attrs:
+                attr = apply_ns("xml", "lang")
                 value = value_ele.text
                 type_ = Value.Type.LITERAL
                 language = attrs[attr]

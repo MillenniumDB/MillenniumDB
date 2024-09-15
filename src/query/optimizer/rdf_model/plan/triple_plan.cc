@@ -13,134 +13,191 @@ TriplePlan::TriplePlan(Id subject, Id predicate, Id object) :
     object             (object),
     subject_assigned   (subject.is_OID()),
     predicate_assigned (predicate.is_OID()),
-    object_assigned    (object.is_OID()) { }
+    object_assigned    (object.is_OID())
+{
+    if (subject == predicate) {
+        if (subject == object) {
+            index = Index::EQUAL_SPO;
+        } else {
+            index = Index::EQUAL_SP;
+        }
+    } else if (subject == object) {
+        index = Index::EQUAL_SO;
+    } else if (predicate == object) {
+        index = Index::EQUAL_PO;
+    } else {
+        index = Index::NORMAL;
+    }
+}
 
 
 void TriplePlan::print(std::ostream& os, int indent) const {
     for (int i = 0; i < indent; ++i) {
         os << ' ';
     }
-    os << "Triple(subject: " << subject;
-    os << ", predicate: " << predicate;
-    os << ", object: " << object;
+    os << "Triple(" << subject;
+    os << ", " << predicate;
+    os << ", " << object;
     os << ")";
-
-    os << ",\n";
-    for (int i = 0; i < indent; ++i) {
-        os << ' ';
-    }
-    os << "  ↳ Estimated factor: " << estimate_output_size();
+    os << ", estimated cost: " << estimate_cost() << '\n';
 }
 
 
 double TriplePlan::estimate_cost() const {
-    return /*100.0 +*/ estimate_output_size();
+    return estimate_output_size();
 }
 
 
 double TriplePlan::estimate_output_size() const {
-    const auto total_triples       = static_cast<double>(rdf_model.catalog().triples_count);
-    const auto distinct_subjects   = static_cast<double>(rdf_model.catalog().distinct_subjects);
-    const auto distinct_predicates = static_cast<double>(rdf_model.catalog().distinct_predicates);
-    const auto distinct_objects    = static_cast<double>(rdf_model.catalog().distinct_objects);
-
-    // Avoid division by zero
-    if (distinct_subjects == 0 || distinct_predicates == 0 || distinct_objects == 0) {
-        return 0.0;
+    if (!cached_output_estimation_is_valid) {
+        cached_output_estimation = _estimate_output_size();
+        cached_output_estimation_is_valid = true;
     }
 
-    // Check for special cases
-    if (subject == object) {
-        if (subject == predicate) {
-            // S == P == O
-            if (subject.is_var()) {
-                return rdf_model.catalog().equal_spo_count;
-            } else {
-                if (subject_assigned) {
-                    return rdf_model.catalog().equal_spo_count /
-                           std::max<double>(distinct_subjects, std::max<double>(distinct_predicates, distinct_objects));
-                } else {
-                    return 1.0;
-                }
-            }
-        } else {
-            // S == O
-            if (predicate.is_var()) {
-                return rdf_model.catalog().equal_so_count;
-            } else {
-                return rdf_model.catalog().equal_so_count / distinct_predicates;
-            }
-        }
-    } else if (subject == predicate) {
-        // S == P
-        if (object.is_var()) {
-            return rdf_model.catalog().equal_sp_count;
-        } else {
-            return rdf_model.catalog().equal_sp_count / distinct_objects;
-        }
+    return cached_output_estimation;
+}
 
-    } else if (predicate == object) {
-        // P == O
-        if (subject.is_var()) {
-            return rdf_model.catalog().equal_po_count;
-        } else {
-            return rdf_model.catalog().equal_po_count / distinct_subjects;
+/* Cases
+3 terms, 0 assigned, 0 non-assigned:
+    search in the BPT, 1 if triple exist, 0 if not
+2 terms, 1 assigned, 0 non-assigned:
+    BPT estimation (forgetting the assigned) divided by H1
+2 terms, 0 assigned, 1 non-assigned:
+    BPT estimation
+1 terms, 2 assigned, 0 non-assigned:
+    - if Term is Predicate: catalog[P] divided by H2
+    - else: BPT estimation (forgetting the assigned) divided by H2
+1 terms, 1 assigned, 1 non-assigned:
+    - if Term is Predicate: catalog[P] divided by H1
+    - else: BPT estimation (forgetting the assigned) divided by H1
+1 terms, 0 assigned, 2 non-assigned:
+    - if Term is Predicate: catalog[P]
+    - else: BPT estimation
+0 terms, 3 assigned, 0 non-assigned:
+    H3
+0 terms, 2 assigned, 1 non-assigned:
+    catalog count divided by H2
+0 terms, 1 assigned, 2 non-assigned:
+    catalog count divided by H1
+0 terms, 0 assigned, 3 non-assigned:
+    catalog count
+
+*/
+double TriplePlan::_estimate_output_size() const {
+    constexpr double H1 = 0.01;      // heuristic probability for 1 assigned var
+    constexpr double H2 = 0.00001;   // heuristic probability for 2 assigned vars
+    constexpr double H3 = 0.0000001; // heuristic probability for 3 assigned vars
+
+    int terms = 0;
+    int assigned_vars = 0;
+
+    terms += static_cast<int>(subject.is_OID());
+    terms += static_cast<int>(predicate.is_OID());
+    terms += static_cast<int>(object.is_OID());
+
+    assigned_vars += static_cast<int>(subject.is_var() && subject_assigned);
+    assigned_vars += static_cast<int>(predicate.is_var() && predicate_assigned);
+    assigned_vars += static_cast<int>(object.is_var() && object_assigned);
+
+    const auto& catalog = rdf_model.catalog();
+
+    switch (terms) {
+    case 3: {
+        Record<3> min = {
+            subject.get_OID().id,
+            predicate.get_OID().id,
+            object.get_OID().id
+        };
+
+        Record<3> max = min;
+
+        bool interruption_requested = false;
+        auto it = rdf_model.spo->get_range(&interruption_requested, min, max);
+        return it.next() == nullptr ? 0 : 1;
+    }
+    case 2: {
+        auto bpt_estimation = estimate_with_bpt();
+        if (assigned_vars == 1) { // not_assigned_vars == 0
+            return bpt_estimation * H1;
+        } else { // assigned_vars == 0, not_assigned_vars == 1
+            return bpt_estimation;
         }
     }
-
-    // All elements assigned
-    if (subject_assigned && predicate_assigned && object_assigned) {
+    case 1: {
+        double predicate_count;
         if (predicate.is_OID()) {
-            double predicate_count = static_cast<double>(rdf_model.catalog().predicate2total_count[predicate.get_OID().id]);
-            return predicate_count / (distinct_subjects * distinct_objects);
+            // auto it = catalog.predicate2total_count.find(predicate.get_OID().id);
+            // if (it != catalog.predicate2total_count.end()) {
+            //     predicate_count = static_cast<double>(it->second);
+            // } else {
+            //     predicate_count = 0;
+            // }
+            predicate_count = catalog.get_predicate_count(predicate.get_OID().id);
         } else {
-            return 0.5;
+            predicate_count = estimate_with_bpt();
         }
-        // Two elements assigned
-    } else if (subject_assigned && predicate_assigned) {
-        if (predicate.is_OID()) {
-            double predicate_count =
-            static_cast<double>(rdf_model.catalog().predicate2total_count[predicate.get_OID().id]);
-            return predicate_count / distinct_subjects;
-        } else {
-            return total_triples - std::max(distinct_subjects, distinct_predicates) + 1;
-        }
-    } else if (subject_assigned && object_assigned) {
-        return total_triples / (distinct_subjects * distinct_objects);
-    } else if (predicate_assigned && object_assigned) {
-        if (predicate.is_OID()) {
-            double predicate_count = static_cast<double>(
-                rdf_model.catalog().predicate2total_count[predicate.get_OID().id]
-            );
-            return predicate_count / distinct_objects;
-        } else {
-            return total_triples - std::max(distinct_subjects, distinct_objects) + 1;
-        }
-        // One element assigned
-    } else if (subject_assigned) {
-        return total_triples / distinct_subjects;
-    } else if (predicate_assigned) {
-        if (predicate.is_OID()) {
-            double predicate_count = static_cast<double>(
-                rdf_model.catalog().predicate2total_count[predicate.get_OID().id]
-            );
+        switch (assigned_vars) {
+        case 2:
+            return predicate_count * H2;
+        case 1:
+            return predicate_count * H1;
+        default: // 0
             return predicate_count;
-        } else {
-            return total_triples - distinct_predicates + 2;;
         }
-    } else if (object_assigned) {
-        return total_triples / distinct_objects;
-        // Any element assigned
-    } else {
-        return total_triples;
     }
+    case 0: {
+        double total_count;
+        switch (index) {
+        case Index::EQUAL_SPO:
+            total_count = catalog.get_equal_spo_count();
+            break;
+        case Index::EQUAL_SP:
+            total_count = catalog.get_equal_sp_count();
+            break;
+        case Index::EQUAL_SO:
+            total_count = catalog.get_equal_so_count();
+            break;
+        case Index::EQUAL_PO:
+            total_count = catalog.get_equal_po_count();
+            break;
+        default: // using default instead of Index::NORMAL to avoid gcc warning of uninitialized total_count
+            total_count = catalog.get_triples_count();
+            break;
+        }
+        switch (assigned_vars) {
+        case 3:
+            return H3;
+        case 2:
+            return total_count * H2;
+        case 1:
+            return total_count * H1;
+        default: // case 0
+            return total_count;
+        }
+    }
+    }
+
+    assert(false);
+    return 0; // should never reach here
 }
 
 
 void TriplePlan::set_input_vars(const std::set<VarId>& input_vars) {
+    auto previous_assigned_count = static_cast<int>(subject_assigned)
+                                 + static_cast<int>(predicate_assigned)
+                                 + static_cast<int>(object_assigned);
+
     set_input_var(input_vars, subject,   &subject_assigned);
     set_input_var(input_vars, predicate, &predicate_assigned);
     set_input_var(input_vars, object,    &object_assigned);
+
+    auto after_assigned_count = static_cast<int>(subject_assigned)
+                              + static_cast<int>(predicate_assigned)
+                              + static_cast<int>(object_assigned);
+
+    if (previous_assigned_count != after_assigned_count) {
+        cached_output_estimation_is_valid = false;
+    }
 }
 
 
@@ -159,6 +216,164 @@ std::set<VarId> TriplePlan::get_vars() const {
     return result;
 }
 
+
+// helper method for estimate_with_bpt()
+inline uint64_t get_oid(Id id, uint64_t default_value) {
+    if (id.is_OID()) {
+        return id.get_OID().id;
+    } else {
+        return default_value;
+    }
+}
+
+
+double TriplePlan::estimate_with_bpt() const {
+    Record<2> min2;
+    Record<2> max2;
+
+    BPlusTree<2>* index2_used = nullptr;
+
+    switch (index) {
+    case Index::EQUAL_SP:
+        if (subject.is_OID()) {
+            min2[0] = get_oid(subject, 0);
+            min2[1] = get_oid(object,  0);
+
+            max2[0] = get_oid(subject, UINT64_MAX);
+            max2[1] = get_oid(object,  UINT64_MAX);
+            index2_used = rdf_model.equal_sp.get();
+        } else {
+            min2[0] = get_oid(object,  0);
+            min2[1] = get_oid(subject, 0);
+
+            max2[0] = get_oid(object,  UINT64_MAX);
+            max2[1] = get_oid(subject, UINT64_MAX);
+            index2_used = rdf_model.equal_sp_inverted.get();
+        }
+        break;
+    case Index::EQUAL_SO:
+        if (subject.is_OID()) {
+            min2[0] = get_oid(subject,   0);
+            min2[1] = get_oid(predicate, 0);
+
+            max2[0] = get_oid(subject,   UINT64_MAX);
+            max2[1] = get_oid(predicate, UINT64_MAX);
+            index2_used = rdf_model.equal_so.get();
+        } else {
+            min2[0] = get_oid(predicate, 0);
+            min2[1] = get_oid(subject,   0);
+
+            max2[0] = get_oid(predicate, UINT64_MAX);
+            max2[1] = get_oid(subject,   UINT64_MAX);
+            index2_used = rdf_model.equal_so_inverted.get();
+        }
+        break;
+    case Index::EQUAL_PO:
+        if (predicate.is_OID()) {
+            min2[0] = get_oid(predicate, 0);
+            min2[1] = get_oid(subject,   0);
+
+            max2[0] = get_oid(predicate, UINT64_MAX);
+            max2[1] = get_oid(subject,   UINT64_MAX);
+            index2_used = rdf_model.equal_po.get();
+        } else {
+            min2[0] = get_oid(subject,   0);
+            min2[1] = get_oid(predicate, 0);
+
+            max2[0] = get_oid(subject,   UINT64_MAX);
+            max2[1] = get_oid(predicate, UINT64_MAX);
+            index2_used = rdf_model.equal_po_inverted.get();
+        }
+        break;
+    case Index::NORMAL:
+        break;
+    case Index::EQUAL_SPO: // throw logic error?
+        break;
+    }
+
+    if (index2_used != nullptr) {
+        return index2_used->estimate_records(min2, max2);
+    }
+
+    Record<3> min;
+    Record<3> max;
+
+    BPlusTree<3>* index_used = nullptr;
+    if (subject.is_OID()) {
+        // 1-4
+        if (predicate.is_OID()) {
+            // 1-2: SPO
+            min[0] = get_oid(subject,   0);
+            min[1] = get_oid(predicate, 0);
+            min[2] = get_oid(object,    0);
+
+            max[0] = get_oid(subject,   UINT64_MAX);
+            max[1] = get_oid(predicate, UINT64_MAX);
+            max[2] = get_oid(object,    UINT64_MAX);
+            index_used = rdf_model.spo.get();
+        } else {
+            // 3-4
+            if (object.is_OID()) {
+                // 3: OSP
+                min[0] = get_oid(object,    0);
+                min[1] = get_oid(subject,   0);
+                min[2] = get_oid(predicate, 0);
+
+                max[0] = get_oid(object,    UINT64_MAX);
+                max[1] = get_oid(subject,   UINT64_MAX);
+                max[2] = get_oid(predicate, UINT64_MAX);
+                index_used = rdf_model.osp.get();
+            } else {
+                // 4: SPO
+                min[0] = get_oid(subject,   0);
+                min[1] = get_oid(predicate, 0);
+                min[2] = get_oid(object,    0);
+
+                max[0] = get_oid(subject,   UINT64_MAX);
+                max[1] = get_oid(predicate, UINT64_MAX);
+                max[2] = get_oid(object,    UINT64_MAX);
+                index_used = rdf_model.spo.get();
+            }
+        }
+    } else {
+        // 5-8
+        if (predicate.is_OID()) {
+            // 5-6: POS
+            min[0] = get_oid(predicate, 0);
+            min[1] = get_oid(object,    0);
+            min[2] = get_oid(subject,   0);
+
+            max[0] = get_oid(predicate, UINT64_MAX);
+            max[1] = get_oid(object,    UINT64_MAX);
+            max[2] = get_oid(subject,   UINT64_MAX);
+            index_used = rdf_model.pos.get();
+        } else {
+            // 7-8:
+            if (object.is_OID()) {
+                // 7: OSP
+                min[0] = get_oid(object,    0);
+                min[1] = get_oid(subject,   0);
+                min[2] = get_oid(predicate, 0);
+
+                max[0] = get_oid(object,    UINT64_MAX);
+                max[1] = get_oid(subject,   UINT64_MAX);
+                max[2] = get_oid(predicate, UINT64_MAX);
+                index_used = rdf_model.osp.get();
+            } else {
+                // 8: SPO
+                min[0] = get_oid(subject,   0);
+                min[1] = get_oid(predicate, 0);
+                min[2] = get_oid(object,    0);
+
+                max[0] = get_oid(subject,   UINT64_MAX);
+                max[1] = get_oid(predicate, UINT64_MAX);
+                max[2] = get_oid(object,    UINT64_MAX);
+                index_used = rdf_model.spo.get();
+            }
+        }
+    }
+    return index_used->estimate_records(min, max);
+}
 
 /**
  * ╔═╦══════════════════╦═══════════════════╦══════════════════╦═════════╗
@@ -277,18 +492,11 @@ std::unique_ptr<BindingIter> TriplePlan::get_binding_iter() const {
 }
 
 
-bool TriplePlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
-                                   std::vector<VarId>&                         var_order,
-                                   uint_fast32_t&                              enumeration_level) const
+bool TriplePlan::get_leapfrog_iter(
+    std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
+    std::vector<VarId>& var_order,
+    uint_fast32_t& enumeration_level) const
 {
-    // TODO: support special cases
-    if (   (subject.is_var()   && subject   == predicate)
-        || (subject.is_var()   && subject   == object)
-        || (predicate.is_var() && predicate == object))
-    {
-        return false;
-    }
-
     std::vector<std::unique_ptr<ScanRange>> initial_ranges;
     std::vector<VarId> intersection_vars;
     std::vector<VarId> enumeration_vars;
@@ -346,29 +554,85 @@ bool TriplePlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& l
         );
     };
 
+    auto get_iter2_from_triple = [&initial_ranges, &enumeration_vars, &intersection_vars]
+                              (BPlusTree<2>& bpt) -> std::unique_ptr<LeapfrogIter>
+    {
+        return std::make_unique<LeapfrogBptIter<2>>(
+            &get_query_ctx().thread_info.interruption_requested,
+            bpt,
+            std::move(initial_ranges),
+            std::move(intersection_vars),
+            std::move(enumeration_vars)
+        );
+    };
 
-    // pos
-    if (predicate_index <= object_index && object_index <= subject_index) {
-        assign(predicate_index, predicate);
-        assign(object_index,    object);
-        assign(subject_index,   subject);
-        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.pos));
+    switch (index) {
+    case Index::NORMAL:
+        break;
+    case Index::EQUAL_SPO:
+        assign(subject_index, subject);
+        leapfrog_iters.push_back(
+            std::make_unique<LeapfrogBptIter<1>>(
+                &get_query_ctx().thread_info.interruption_requested,
+                *rdf_model.equal_spo,
+                std::move(initial_ranges),
+                std::move(intersection_vars),
+                std::move(enumeration_vars)
+            )
+        );
+        return true;
+    case Index::EQUAL_SP: {
+        if (subject_index <= object_index) {
+            assign(subject_index, subject);
+            assign(object_index,  object);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_sp));
+        } else {
+            assign(object_index,  object);
+            assign(subject_index, subject);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_sp_inverted));
+        }
         return true;
     }
-    // pso
-    else if (predicate_index <= subject_index && subject_index <= object_index) {
-        assign(predicate_index, predicate);
-        assign(subject_index,   subject);
-        assign(object_index,    object);
-        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.pso));
+    case Index::EQUAL_SO: {
+        if (subject_index <= predicate_index) {
+            assign(subject_index,   subject);
+            assign(predicate_index, predicate);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_so));
+        } else {
+            assign(predicate_index, predicate);
+            assign(subject_index,   subject);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_so_inverted));
+        }
         return true;
     }
+    case Index::EQUAL_PO: {
+        if (predicate_index <= subject_index) {
+            assign(predicate_index, predicate);
+            assign(subject_index,   subject);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_po));
+        } else {
+            assign(subject_index,   subject);
+            assign(predicate_index, predicate);
+            leapfrog_iters.push_back(get_iter2_from_triple(*rdf_model.equal_po_inverted));
+        }
+        return true;
+    }
+    }
+
     // spo
-    else if (subject_index <= predicate_index && predicate_index <= object_index) {
+    if (subject_index <= predicate_index && predicate_index <= object_index) {
         assign(subject_index,   subject);
         assign(predicate_index, predicate);
         assign(object_index,    object);
         leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.spo));
+        return true;
+    }
+    // pos
+    else if (predicate_index <= object_index && object_index <= subject_index) {
+        assign(predicate_index, predicate);
+        assign(object_index,    object);
+        assign(subject_index,   subject);
+        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.pos));
         return true;
     }
     // osp
@@ -377,6 +641,30 @@ bool TriplePlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& l
         assign(subject_index,   subject);
         assign(predicate_index, predicate);
         leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.osp));
+        return true;
+    }
+    // pso
+    else if (rdf_model.pso != nullptr && predicate_index <= subject_index && subject_index <= object_index) {
+        assign(predicate_index, predicate);
+        assign(subject_index,   subject);
+        assign(object_index,    object);
+        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.pso));
+        return true;
+    }
+    // sop
+    else if (rdf_model.sop != nullptr && subject_index <= object_index && object_index <= predicate_index) {
+        assign(subject_index,   subject);
+        assign(object_index,    object);
+        assign(predicate_index, predicate);
+        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.sop));
+        return true;
+    }
+    // ops
+    else if (rdf_model.ops != nullptr && object_index <= predicate_index && predicate_index <= subject_index) {
+        assign(object_index,    object);
+        assign(predicate_index, predicate);
+        assign(subject_index,   subject);
+        leapfrog_iters.push_back(get_iter_from_triple(*rdf_model.ops));
         return true;
     }
     else {

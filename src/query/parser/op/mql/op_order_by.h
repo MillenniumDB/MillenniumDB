@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <string>
 #include <vector>
 
 #include "query/parser/op/op.h"
+#include "query/parser/expr/expr.h"
 
 namespace MQL {
 
@@ -11,23 +13,26 @@ class OpOrderBy : public Op {
 public:
     std::unique_ptr<Op> op;
 
-    std::vector<VarId> items;
+    std::vector<std::pair<VarId, std::unique_ptr<Expr>>> items;
 
     std::vector<bool> ascending_order;
 
     OpOrderBy(
         std::unique_ptr<Op>  op,
-        std::vector<VarId>&& items,
-        std::vector<bool>&&  ascending_order
+        std::vector<std::pair<VarId, std::unique_ptr<Expr>>>&& _items,
+        std::vector<bool>&& _ascending_order
     ) :
         op              (std::move(op)),
-        items           (std::move(items)),
-        ascending_order (std::move(ascending_order)) { }
+        items           (std::move(_items)),
+        ascending_order (std::move(_ascending_order))
+    {
+        assert(items.size() == ascending_order.size());
+    }
 
     virtual std::unique_ptr<Op> clone() const override {
-        std::vector<VarId> items_clone;
+        std::vector<std::pair<VarId, std::unique_ptr<Expr>>> items_clone;
         for (const auto& item : items) {
-            items_clone.push_back(item);
+            items_clone.push_back({item.first, item.second->clone()});
         }
         auto ascending_order_copy = ascending_order;
         return std::make_unique<OpOrderBy>(
@@ -43,8 +48,12 @@ public:
 
     std::set<VarId> get_all_vars() const override {
         std::set<VarId> res = op->get_all_vars();
-        for (auto& var : items) {
-            res.insert(var);
+        for (auto& item : items) {
+            res.insert(item.first);
+            if (item.second != nullptr) {
+                auto expr_vars = item.second->get_all_vars();
+                res.insert(expr_vars.begin(), expr_vars.end());
+            }
         }
         return res;
     }
@@ -76,7 +85,7 @@ public:
             if (i != 0) {
                 os << ", ";
             }
-            os << items[i] << (ascending_order[i] ? " ASC" : " DESC");
+            os << items[i].first << (ascending_order[i] ? " ASC" : " DESC");
         }
         os << ")\n";
         return op->print_to_ostream(os, indent);

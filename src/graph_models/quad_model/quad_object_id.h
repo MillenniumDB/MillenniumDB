@@ -3,8 +3,6 @@
 #include <string>
 
 #include "graph_models/object_id.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
 
 struct QuadObjectId {
     // fixed node inside from the grammar

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Counter, List
@@ -64,11 +65,24 @@ class Result:
         self.bindings.sort()
 
 
-class Test:
-    query: Path
-    data: Path
-    expected: Path
+class Test(ABC):
+    def __init__(self, query: Path, data: Path):
+        self.query = query
+        self.data = data
 
+    def __str__(self):
+        return f"Test: {self.query} {self.data}"
+
+
+class BadTest(Test):
+    def __str__(self):
+        query = self.query.relative_to(CWD)
+        database = self.data.name
+
+        return f"BadTest: {query} {database}"
+
+
+class QueryTest(Test):
     def __init__(
         self,
         *,
@@ -76,8 +90,7 @@ class Test:
         expected: Path,
         data: Path,
     ):
-        self.query = query
-        self.data = data
+        super().__init__(query, data)
         self.expected = expected
 
     def __str__(self):

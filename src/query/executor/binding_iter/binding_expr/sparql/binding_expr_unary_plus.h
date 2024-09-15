@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -16,17 +16,16 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        switch(expr_oid.get_generic_type()) {
-            case ObjectId::MASK_NUMERIC:
+        switch (RDF_OID::get_generic_type(expr_oid)) {
+            case RDF_OID::GenericType::NUMERIC:
                 return expr_oid;
             default:
                 return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '+' << *expr;
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

@@ -31,14 +31,5 @@ public:
         if (expr) { return expr->has_aggregation(); }
         else { return false; }
     }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ') << "BNODE(";
-        if (expr != nullptr) {
-            os << *expr;
-        }
-        os << ')';
-        return os;
-    }
 };
 } // namespace SPARQL

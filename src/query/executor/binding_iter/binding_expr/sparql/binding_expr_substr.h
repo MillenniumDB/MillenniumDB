@@ -2,9 +2,7 @@
 
 #include <codecvt>
 #include <memory>
-#include <string>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -48,8 +46,8 @@ public:
         expr_length (std::move(expr_length)) { }
 
     ObjectId eval(const Binding& binding) override {
-        size_t start  = 0;
-        size_t length = std::wstring::npos;
+        int start  = 0;
+        auto length = std::wstring::npos;
 
         // This function could support any numeric type for start and length
         // but this implementation only supports positive integers by now
@@ -59,54 +57,54 @@ public:
 
         // Start must be a positive integer
         auto start_oid = expr_start->eval(binding);
-        if (start_oid.get_type() != ObjectId::MASK_POSITIVE_INT)
+        if (RDF_OID::get_generic_sub_type(start_oid) != RDF_OID::GenericSubType::INTEGER) {
             return ObjectId::get_null();
-        else
-            start = Conversions::unpack_positive_int(start_oid);
+        }
+        start = Conversions::unpack_int(start_oid);
+        if (start < 0) {
+            return ObjectId::get_null();
+        }
 
         // Length must be a positive integer or undefined
-        auto length_oid = ObjectId::get_null();
+        ObjectId length_oid = ObjectId::get_null();
         if (expr_length != nullptr) {
             length_oid = expr_length->eval(binding);
-            if (length_oid.get_type() != ObjectId::MASK_POSITIVE_INT)
+            if (RDF_OID::get_generic_sub_type(length_oid) != RDF_OID::GenericSubType::INTEGER) {
                 return ObjectId::get_null();
-            else
-                length = Conversions::unpack_positive_int(length_oid);
+            }
+            // dont't use directly length because is unsigned
+            auto length_ = Conversions::unpack_int(length_oid);
+            if (length_ < 0) {
+                return ObjectId::get_null();
+            } else {
+                length = length_;
+            }
         }
 
         auto str_oid = expr_str->eval(binding);
-        switch (str_oid.get_sub_type()) {
-        case ObjectId::MASK_STRING_SIMPLE: {
-            std::string str = Conversions::unpack_string_simple(str_oid);
+        switch (RDF_OID::get_generic_sub_type(str_oid)) {
+        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+            std::string str = Conversions::unpack_string(str_oid);
             auto s = substr(str, start, length);
-            return Conversions::pack_string_simple(std::move(s));
+            return Conversions::pack_string_simple(s);
         }
-        case ObjectId::MASK_STRING_XSD: {
-            std::string str = Conversions::unpack_string_xsd(str_oid);
+        case RDF_OID::GenericSubType::STRING_XSD: {
+            std::string str = Conversions::unpack_string(str_oid);
             auto s = substr(str, start, length);
-            return Conversions::pack_string_xsd(std::move(s));
+            return Conversions::pack_string_xsd(s);
         }
-        case ObjectId::MASK_STRING_LANG: {
+        case RDF_OID::GenericSubType::STRING_LANG: {
             auto [lang, str] = Conversions::unpack_string_lang(str_oid);
             auto s = substr(str, start, length);
-            return Conversions::pack_string_lang(lang, std::move(s));
+            return Conversions::pack_string_lang(lang, s);
         }
         default:
-            auto typ = str_oid.get_type();
-            std::stringstream ss;
-            ss << std::hex << typ;
-            auto s = ss.str();
             return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "strAFTER(" << *expr_str << ", " << *expr_start;
-        if (expr_length) {
-            os << ", " << *expr_length;
-        }
-        os << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

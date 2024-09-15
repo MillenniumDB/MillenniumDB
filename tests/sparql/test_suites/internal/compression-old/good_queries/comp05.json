@@ -1,0 +1,25 @@
+{
+    "head": {
+        "vars": [
+            "after"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "未親ぽでドフ",
+                    "xml:lang": "en-NZ"
+                }
+            },
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "ケ作介さぞリ",
+                    "xml:lang": "en-US"
+                }
+            }
+        ]
+    }
+}

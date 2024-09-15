@@ -1,14 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <sstream>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "storage/unified_storage.h"
-
 
 namespace SPARQL {
 class BindingExprDatatype : public BindingExpr {
@@ -21,45 +18,49 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        switch (expr_oid.get_sub_type()) {
-        case ObjectId::MASK_STRING_DATATYPE: {
-            auto datatype_id = (expr_oid.id & ObjectId::MASK_LITERAL_TAG) >> ObjectId::STR_DT_INLINE_BYTES * 8;
-            std::stringstream ss;
-            UnifiedStorage::print_datatype(ss, datatype_id);
-            return Conversions::pack_iri(ss.str());
+        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::STRING_DATATYPE: {
+            auto&& [datatype, str] = Conversions::unpack_string_datatype(expr_oid);
+            return Conversions::pack_iri(datatype);
         }
-        case ObjectId::MASK_STRING_SIMPLE:
-        case ObjectId::MASK_STRING_XSD:
+        case RDF_OID::GenericSubType::STRING_SIMPLE:
+        case RDF_OID::GenericSubType::STRING_XSD:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#string");
-        case ObjectId::MASK_STRING_LANG:
+        case RDF_OID::GenericSubType::STRING_LANG:
             return Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
-        case ObjectId::MASK_INT:
+        case RDF_OID::GenericSubType::INTEGER:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#integer");
-        case ObjectId::MASK_DECIMAL:
+        case RDF_OID::GenericSubType::DECIMAL:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#decimal");
-        case ObjectId::MASK_FLOAT:
+        case RDF_OID::GenericSubType::FLOAT:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#float");
-        case ObjectId::MASK_DOUBLE:
+        case RDF_OID::GenericSubType::DOUBLE:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#double");
-        case ObjectId::MASK_DT_DATE:
-            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#date");
-        case ObjectId::MASK_DT_DATETIME:
-            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTime");
-        case ObjectId::MASK_DT_TIME:
-            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#time");
-        case ObjectId::MASK_DT_DATETIMESTAMP:
-            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTimeStamp");
-        case ObjectId::MASK_BOOL:
-            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#boolean");
-        default: {
-            return ObjectId::get_null();
+        case RDF_OID::GenericSubType::DATE: {
+            switch (RDF_OID::get_type(expr_oid)) {
+            case RDF_OID::Type::DATE:
+                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#date");
+            case RDF_OID::Type::DATETIME:
+                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTime");
+            case RDF_OID::Type::TIME:
+                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#time");
+            case RDF_OID::Type::DATETIMESTAMP:
+                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTimeStamp");
+            default: {
+                assert(false);
+                return ObjectId::get_null();
+            }
+            }
         }
+        case RDF_OID::GenericSubType::BOOL:
+            return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#boolean");
+        default:
+            return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "DATATYPE(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

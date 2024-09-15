@@ -1,13 +1,13 @@
 #include "bfs_check.h"
 
 #include "query/var_id.h"
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllShortestTrails;
 
 
-void BFSCheck::begin(Binding& _parent_binding) {
+void BFSCheck::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     // setted at object initialization:
@@ -25,7 +25,7 @@ void BFSCheck::begin(Binding& _parent_binding) {
 }
 
 
-void BFSCheck::reset() {
+void BFSCheck::_reset() {
     // clear bfs structures
     queue<SearchState> empty;
     open.swap(empty);
@@ -45,7 +45,7 @@ void BFSCheck::reset() {
 }
 
 
-bool BFSCheck::next() {
+bool BFSCheck::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -61,7 +61,6 @@ bool BFSCheck::next() {
         if (automaton.is_final_state[automaton.start_state] && current_state.path_state->node_id == end_object_id) {
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
-            results_found++;
             queue<SearchState> empty;  // Empty queue because the only state with 0 distance is the first state
             open.swap(empty);
             return true;
@@ -76,7 +75,6 @@ bool BFSCheck::next() {
         if (reached_final_state != nullptr) {
             auto path_id = path_manager.set_path(reached_final_state, path_var);
             parent_binding->add(path_var, path_id);
-            results_found++;
             return true;
         } else {
             open.pop(); // Pop and visit next state
@@ -154,7 +152,6 @@ const PathState* BFSCheck::expand_neighbors(const SearchState& current_state) {
 }
 
 
-void BFSCheck::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Paths::AllShortestTrails::BFSCheck(idx_searches: " << idx_searches << ", found: " << results_found << ")";
+void BFSCheck::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

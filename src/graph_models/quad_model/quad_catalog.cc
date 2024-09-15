@@ -1,7 +1,6 @@
 #include "quad_catalog.h"
 
 #include <cassert>
-#include <iostream>
 
 using namespace std;
 
@@ -26,9 +25,17 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
         equal_from_type_count    = 0;
         equal_to_type_count      = 0;
         equal_from_to_type_count = 0;
+
+        has_changes = true;
     }
     else {
         start_io();
+        if (read_uint64() != MODEL_ID) {
+            throw runtime_error("QuadCatalog: wrong MODEL_ID");
+        }
+        if (read_uint64() != VERSION) {
+            throw runtime_error("QuadCatalog: wrong VERSION");
+        }
         identifiable_nodes_count = read_uint64();
         anonymous_nodes_count    = read_uint64();
         connections_count        = read_uint64();
@@ -102,8 +109,18 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
 }
 
 
-void QuadCatalog::save_changes() {
+QuadCatalog::~QuadCatalog() {
+    if (has_changes) {
+        save();
+    }
+}
+
+
+void QuadCatalog::save() {
     start_io();
+
+    write_uint64(MODEL_ID);
+    write_uint64(VERSION);
 
     write_uint64(identifiable_nodes_count);
     write_uint64(anonymous_nodes_count);
@@ -174,27 +191,27 @@ void QuadCatalog::save_changes() {
 }
 
 
-void QuadCatalog::print() {
-    cout << "-------------------------------------\n";
-    cout << "Catalog:\n";
-    cout << "  identifiable nodes count: " << identifiable_nodes_count << "\n";
-    cout << "  anonymous nodes count:    " << anonymous_nodes_count    << "\n";
-    cout << "  connections count:        " << connections_count        << "\n";
+void QuadCatalog::print(std::ostream& os) {
+    os << "-------------------------------------\n";
+    os << "Catalog:\n";
+    os << "  identifiable nodes count: " << identifiable_nodes_count << "\n";
+    os << "  anonymous nodes count:    " << anonymous_nodes_count    << "\n";
+    os << "  connections count:        " << connections_count        << "\n";
 
-    cout << "  label count:              " << label_count              << "\n";
-    cout << "  properties count:         " << properties_count         << "\n";
+    os << "  label count:              " << label_count              << "\n";
+    os << "  properties count:         " << properties_count         << "\n";
 
-    cout << "  distinct labels:          " << distinct_labels          << "\n";
-    cout << "  distinct from's:          " << distinct_from            << "\n";
-    cout << "  distinct to's:            " << distinct_to              << "\n";
-    cout << "  distinct type's:          " << distinct_type            << "\n";
-    cout << "  distinct keys:            " << distinct_keys            << "\n";
+    os << "  distinct labels:          " << distinct_labels          << "\n";
+    os << "  distinct from's:          " << distinct_from            << "\n";
+    os << "  distinct to's:            " << distinct_to              << "\n";
+    os << "  distinct type's:          " << distinct_type            << "\n";
+    os << "  distinct keys:            " << distinct_keys            << "\n";
 
-    cout << "  equal_from_to_count:      " << equal_from_to_count      << "\n";
-    cout << "  equal_from_type_count:    " << equal_from_type_count    << "\n";
-    cout << "  equal_to_type_count:      " << equal_to_type_count      << "\n";
-    cout << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
-    cout << "-------------------------------------\n";
+    os << "  equal_from_to_count:      " << equal_from_to_count      << "\n";
+    os << "  equal_from_type_count:    " << equal_from_type_count    << "\n";
+    os << "  equal_to_type_count:      " << equal_to_type_count      << "\n";
+    os << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
+    os << "-------------------------------------\n";
 }
 
 

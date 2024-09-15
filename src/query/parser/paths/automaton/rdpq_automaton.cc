@@ -1,7 +1,6 @@
 #include "rdpq_automaton.h"
 #include "graph_models/object_id.h"
 
-#include <iostream>
 #include <queue>
 #include <stack>
 #include <utility>
@@ -9,7 +8,7 @@
 using namespace std;
 
 // Print the automaton
-void RDPQAutomaton::print() {
+void RDPQAutomaton::print(std::ostream& os) {
     for (size_t i = 0; i < from_to_connections.size(); i++) {
         for (auto& t : from_to_connections[i]) {
             string data_check = "";
@@ -27,33 +26,27 @@ void RDPQAutomaton::print() {
             //     data_check += get<2>(t.property_checks[i]).to_string() + ", ";
             // }
             if (t.is_check) {
-                cout << t.from << "={" << data_check << "}=>" << t.to << "\n";
+                os << t.from << "={" << data_check << "}=>" << t.to << "\n";
             } else {
                 if (t.property_checks.size() > 0) {
-                    cout << t.from << "=[" << (t.inverse ? "^" : "") << t.type << " {" << data_check << "}]=>" << t.to << "\n";
+                    os << t.from << "=[" << (t.inverse ? "^" : "") << t.type << " {" << data_check << "}]=>" << t.to << "\n";
                 } else {
-                    cout << t.from << "=[" << (t.inverse ? "^" : "") << t.type << "]=>" << t.to << "\n";
+                    os << t.from << "=[" << (t.inverse ? "^" : "") << t.type << "]=>" << t.to << "\n";
                 }
             }
         }
     }
-    cout << "distance to end: \n";
+    os << "distance to end: \n";
     for (size_t i = 0; i < distance_to_final.size(); i++) {
-        cout << i << ":" << distance_to_final[i] << "\n";
+        os << i << ":" << distance_to_final[i] << "\n";
     }
-    cout << "end states: { ";
+    os << "end states: { ";
     for (auto& state : end_states) {
-        cout << state << "  ";
+        os << state << "  ";
     }
-    cout << "}\n";
-    cout << "start state: " << start << "\n";
-    cout << "final state: " << final_state << "\n" << endl;
-}
-
-
-// For debugging values
-void RDPQAutomaton::log(size_t s) {
-    cout << "Log: " << s << endl;
+    os << "}\n";
+    os << "start state: " << start << "\n";
+    os << "final state: " << final_state << "\n" << endl;
 }
 
 
@@ -70,7 +63,7 @@ void RDPQAutomaton::rename_and_merge(RDPQAutomaton& other) {
                 auto transition = RDPQTransition::make_data_transition(
                     t.from + initial_states,
                     t.to + initial_states,
-                    move(t.property_checks));
+                    std::move(t.property_checks));
 
                 // Add transition to this automaton
                 add_transition(transition);
@@ -80,7 +73,7 @@ void RDPQAutomaton::rename_and_merge(RDPQAutomaton& other) {
                     t.to + initial_states,
                     t.inverse,
                     t.type,
-                    move(t.property_checks));
+                    std::move(t.property_checks));
 
                 // Add transition to this automaton
                 add_transition(transition);
@@ -93,7 +86,7 @@ void RDPQAutomaton::rename_and_merge(RDPQAutomaton& other) {
     for (auto& end_state : other.end_states) {
         new_end.insert(initial_states + end_state);
     }
-    other.end_states = move(new_end);
+    other.end_states = std::move(new_end);
 
     // Rename start state for 'other'
     other.start = initial_states;
@@ -134,7 +127,7 @@ void RDPQAutomaton::add_transition(RDPQTransition transition) {
 
 
 // Transform automaton into a final automaton
-void RDPQAutomaton::transform_automaton(std::function<ObjectId(const std::string&)> f) {
+void RDPQAutomaton::transform_automaton(ObjectId(*f)(const std::string&)) {
     // Set the final state
     set_final_state();
 

@@ -1,6 +1,6 @@
 #include "left_join.h"
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -10,9 +10,9 @@ using namespace HashJoin::Generic::InMemory;
 LeftJoin::LeftJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     lhs               (std::move(_lhs)),
     rhs               (std::move(_rhs)),
@@ -23,11 +23,11 @@ LeftJoin::LeftJoin(
     pk_start          (new uint64_t[N]),
     probe_key         (Key(pk_start, N))
 {
-    data_chunk = new uint64_t[(rhs_vars.size() + 1) * Page::MDB_PAGE_SIZE];
+    data_chunk = new uint64_t[(rhs_vars.size() + 1) * PPage::SIZE];
     data_chunks_dir.push_back(data_chunk);
     data_chunk_index = 0;
 
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
     key_chunk_index = 0;
 }
@@ -45,7 +45,7 @@ LeftJoin::~LeftJoin() {
 }
 
 
-void LeftJoin::begin(Binding& _parent_binding) {
+void LeftJoin::_begin(Binding& _parent_binding) {
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -60,7 +60,7 @@ void LeftJoin::begin(Binding& _parent_binding) {
 }
 
 
-bool LeftJoin::next() {
+bool LeftJoin::_next() {
     while (true) {
         // If enumerating_rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -103,7 +103,7 @@ bool LeftJoin::next() {
 }
 
 
-void LeftJoin::reset() {
+void LeftJoin::_reset() {
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -158,11 +158,8 @@ void LeftJoin::assign_nulls() {
 }
 
 
-void LeftJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "LeftJoinMemory(Not nulls: " << found_not_nulls << ", Nulls: " << found_nulls << ")\n";
-    lhs->analyze(os, indent + 2);
-    rhs->analyze(os, indent + 2);
+void LeftJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -205,8 +202,8 @@ void LeftJoin::build_hash_table() {
 
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -222,8 +219,8 @@ void LeftJoin::build_hash_table() {
             // If not are the same, update chunk index
             // and check if key chunk is full
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }

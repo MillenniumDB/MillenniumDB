@@ -4,25 +4,13 @@
 #include <cassert>
 #include <cmath>
 
-#include "graph_models/object_id.h"
+#include "graph_models/inliner.h"
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "storage/unified_storage.h"
+#include "graph_models/rdf_model/rdf_model.h"
+#include "system/string_manager.h"
+#include "system/tmp_manager.h"
 
 using namespace SPARQL;
-
-static inline uint64_t decode_first_n_bytes(uint64_t val, int n) {
-    assert(n > 0 && n <= ObjectId::MAX_INLINED_BYTES);
-    uint64_t res = 0; // Ensure null-termination.
-    uint8_t* c = reinterpret_cast<uint8_t*>(&res);
-    int  shift_size = (n - 1) * 8;
-    for (int i = 0; i < n; i++) {
-        uint8_t byte = (val >> shift_size) & 0xFF;
-        c[i]         = byte;
-        shift_size -= 8;
-    }
-    return res;
-}
 
 // returns negative number if lhs < rhs,
 // returns 0 if lhs == rhs
@@ -40,29 +28,28 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         return 0;
     }
 
-    auto lhs_gen_t = lhs_oid.get_generic_type();
-    auto rhs_gen_t = rhs_oid.get_generic_type();
+    auto lhs_gen_t = RDF_OID::get_generic_type(lhs_oid);
+    auto rhs_gen_t = RDF_OID::get_generic_type(rhs_oid);
 
     if (lhs_gen_t != rhs_gen_t) {
         if constexpr (mode == Comparisons::Mode::Strict) {
             *error = true;
             return 0;
         } else {
-            // The bit shift is to ensure the MSB is not set when casting to int64_t
-            return static_cast<int64_t>(lhs_gen_t >> 1) - static_cast<int64_t>(rhs_gen_t >> 1);
+            return static_cast<int64_t>(lhs_gen_t) - static_cast<int64_t>(rhs_gen_t);
         }
     }
 
     switch (lhs_gen_t) {
-    case ObjectId::MASK_IRI: {
+    case RDF_OID::GenericType::IRI: {
         auto lhs_mod = lhs_oid.get_mod();
         auto rhs_mod = rhs_oid.get_mod();
 
         auto lhs_prefix_id = (lhs_oid.id & ObjectId::MASK_IRI_PREFIX) >> ObjectId::IRI_INLINE_BYTES * 8;
         auto rhs_prefix_id = (rhs_oid.id & ObjectId::MASK_IRI_PREFIX) >> ObjectId::IRI_INLINE_BYTES * 8;
 
-        auto& lhs_prefix = rdf_model.catalog().prefixes[lhs_prefix_id];
-        auto& rhs_prefix = rdf_model.catalog().prefixes[rhs_prefix_id];
+        auto& lhs_prefix = rdf_model.catalog().prefixes.get_prefix(lhs_prefix_id);
+        auto& rhs_prefix = rdf_model.catalog().prefixes.get_prefix(rhs_prefix_id);
 
         auto lhs_content = lhs_oid.id & ObjectId::MASK_IRI_CONTENT;
         auto rhs_content = rhs_oid.id & ObjectId::MASK_IRI_CONTENT;
@@ -72,7 +59,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
 
         switch (lhs_mod) {
         case ObjectId::MOD_INLINE: {
-            lhs_iter = std::make_unique<IriInlineIter>(lhs_prefix, decode_first_n_bytes(lhs_content, ObjectId::IRI_INLINE_BYTES));
+            lhs_iter = std::make_unique<IriInlineIter>(lhs_prefix, Inliner::decode<ObjectId::IRI_INLINE_BYTES>(lhs_content));
             break;
         }
         case ObjectId::MOD_EXTERNAL: {
@@ -87,7 +74,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
 
         switch (rhs_mod) {
         case ObjectId::MOD_INLINE: {
-            rhs_iter = std::make_unique<IriInlineIter>(rhs_prefix, decode_first_n_bytes(rhs_content, ObjectId::IRI_INLINE_BYTES));
+            rhs_iter = std::make_unique<IriInlineIter>(rhs_prefix, Inliner::decode<ObjectId::IRI_INLINE_BYTES>(rhs_content));
             break;
         }
         case ObjectId::MOD_EXTERNAL: {
@@ -102,7 +89,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
 
         return string_manager.compare(*lhs_iter, *rhs_iter);
     }
-    case ObjectId::MASK_STRING: {
+    case RDF_OID::GenericType::STRING: {
         auto lhs_sub_t = lhs_oid.get_sub_type();
         auto rhs_sub_t = rhs_oid.get_sub_type();
 
@@ -123,23 +110,35 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         case ObjectId::MASK_STRING_XSD: {
             switch (lhs_mod) {
             case ObjectId::MOD_INLINE: {
-                lhs_string_iter = std::make_unique<StringInlineIter>(decode_first_n_bytes(lhs_value, ObjectId::STR_INLINE_BYTES));
+                lhs_string_iter = std::make_unique<StringInlineIter>(Inliner::decode<ObjectId::STR_INLINE_BYTES>(lhs_value));
                 break;
             }
-            case ObjectId::MOD_EXTERNAL:
+            case ObjectId::MOD_EXTERNAL: {
+                uint64_t external_id = lhs_oid.id & ObjectId::VALUE_MASK;
+                lhs_string_iter = string_manager.get_char_iter(external_id);
+                break;
+            }
             case ObjectId::MOD_TMP: {
-                lhs_string_iter = UnifiedStorage::get_str_char_iter(lhs_oid);
+                uint64_t external_id = lhs_oid.id & ObjectId::VALUE_MASK;
+                lhs_string_iter = tmp_manager.get_str_char_iter(external_id);
+                break;
             }
             }
 
             switch (rhs_mod) {
             case ObjectId::MOD_INLINE: {
-                rhs_string_iter = std::make_unique<StringInlineIter>(decode_first_n_bytes(rhs_value, ObjectId::STR_INLINE_BYTES));
+                rhs_string_iter = std::make_unique<StringInlineIter>(Inliner::decode<ObjectId::STR_INLINE_BYTES>(rhs_value));
                 break;
             }
-            case ObjectId::MOD_EXTERNAL:
+            case ObjectId::MOD_EXTERNAL: {
+                uint64_t external_id = rhs_oid.id & ObjectId::VALUE_MASK;
+                rhs_string_iter = string_manager.get_char_iter(external_id);
+                break;
+            }
             case ObjectId::MOD_TMP: {
-                rhs_string_iter = UnifiedStorage::get_str_char_iter(rhs_oid);
+                uint64_t external_id = rhs_oid.id & ObjectId::VALUE_MASK;
+                rhs_string_iter = tmp_manager.get_str_char_iter(external_id);
+                break;
             }
             }
             break;
@@ -155,23 +154,35 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
 
             switch (lhs_mod) {
             case ObjectId::MOD_INLINE: {
-                lhs_string_iter = std::make_unique<StringInlineIter>(decode_first_n_bytes(lhs_value, ObjectId::STR_DT_INLINE_BYTES));
+                lhs_string_iter = std::make_unique<StringInlineIter>(Inliner::decode<ObjectId::STR_DT_INLINE_BYTES>(lhs_value));
                 break;
             }
-            case ObjectId::MOD_EXTERNAL:
+            case ObjectId::MOD_EXTERNAL: {
+                uint64_t external_id = lhs_oid.id & ObjectId::MASK_EXTERNAL_ID;
+                lhs_string_iter = string_manager.get_char_iter(external_id);
+                break;
+            }
             case ObjectId::MOD_TMP: {
-                lhs_string_iter = UnifiedStorage::get_str_char_iter(lhs_oid);
+                uint64_t external_id = lhs_oid.id & ObjectId::MASK_EXTERNAL_ID;
+                lhs_string_iter = tmp_manager.get_str_char_iter(external_id);
+                break;
             }
             }
 
             switch (rhs_mod) {
             case ObjectId::MOD_INLINE: {
-                rhs_string_iter = std::make_unique<StringInlineIter>(decode_first_n_bytes(rhs_value, ObjectId::STR_DT_INLINE_BYTES));
+                rhs_string_iter = std::make_unique<StringInlineIter>(Inliner::decode<ObjectId::STR_DT_INLINE_BYTES>(rhs_value));
                 break;
             }
-            case ObjectId::MOD_EXTERNAL:
+            case ObjectId::MOD_EXTERNAL: {
+                uint64_t external_id = rhs_oid.id & ObjectId::MASK_EXTERNAL_ID;
+                rhs_string_iter = string_manager.get_char_iter(external_id);
+                break;
+            }
             case ObjectId::MOD_TMP: {
-                rhs_string_iter = UnifiedStorage::get_str_char_iter(rhs_oid);
+                uint64_t external_id = rhs_oid.id & ObjectId::MASK_EXTERNAL_ID;
+                rhs_string_iter = tmp_manager.get_str_char_iter(external_id);
+                break;
             }
             }
         }
@@ -179,7 +190,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
 
         return string_manager.compare(*lhs_string_iter, *rhs_string_iter);
     }
-    case ObjectId::MASK_NUMERIC: {
+    case RDF_OID::GenericType::NUMERIC: {
         auto lhs_sub_t = lhs_oid.get_sub_type();
         auto rhs_sub_t = rhs_oid.get_sub_type();
         // Integer optimization
@@ -271,7 +282,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             throw LogicException("This should never happen");
         }
     }
-    case ObjectId::MASK_DT: {
+    case RDF_OID::GenericType::DATE: {
         DateTime lhs_dt(lhs_oid);
         DateTime rhs_dt(rhs_oid);
 
@@ -281,7 +292,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             return lhs_dt.compare<DateTimeComparisonMode::Normal>(rhs_dt, error);
         }
     }
-    case ObjectId::MASK_BOOL: {
+    case RDF_OID::GenericType::BOOL: {
         return static_cast<int64_t>(lhs_oid.id & 1) - static_cast<int64_t>(rhs_oid.id & 1);
     }
     default: {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "query/parser/op/op.h"
 #include "query/parser/expr/expr.h"
+#include "query/parser/op/op.h"
 
 namespace SPARQL {
 
@@ -54,10 +54,17 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpBind(?"
-           << get_query_ctx().get_var_name(var)
-           << "=" << *expr << ")\n";
+        os << std::string(indent, ' ') << "OpBind(?";
+        os << get_query_ctx().get_var_name(var) << "=";
+        ExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")\n";
+
+        for (size_t i = 0; i < printer.ops.size(); i++) {
+            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
+            printer.ops[i]->print_to_ostream(os, indent + 4);
+        }
+
         return op->print_to_ostream(os, indent + 2);
     }
 };

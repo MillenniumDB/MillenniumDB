@@ -11,9 +11,9 @@ public:
                           std::vector<VarId>                      enumeration_vars,
                           std::array<uint_fast32_t, 3>            permutation) :
         LeapfrogIter (interruption_requested,
-                      move(initial_ranges),
-                      move(intersection_vars),
-                      move(enumeration_vars)),
+                      std::move(initial_ranges),
+                      std::move(intersection_vars),
+                      std::move(enumeration_vars)),
         edge_table   (edge_table),
         permutation  (permutation) { }
 
@@ -39,6 +39,12 @@ public:
 
     // returns true if the terms and parent_binding were found
     bool open_terms(Binding& input_binding) override;
+
+    std::string get_iter_name() const override { return "LeapfrogEdgeTableIter"; }
+
+    bool try_estimate(std::vector<double>& /*initial_estimations*/, std::vector<double>& /*after_estimations*/) const override {
+        return false;
+    }
 
 private:
     std::array<uint64_t, 4> current_tuple;

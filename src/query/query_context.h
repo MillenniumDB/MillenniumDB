@@ -2,28 +2,35 @@
 
 #include <cassert>
 #include <chrono>
-#include <cstdint>
 #include <ostream>
+#include <random>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "graph_models/object_id.h"
-#include "query/var_id.h"
 #include "query/id.h"
+#include "query/var_id.h"
+#include "system/buffer_manager.h"
+#include "system/tmp_manager.h"
+
+class BindingExprPrinter;
 
 struct ThreadInfo {
-    bool interruption_requested;
-    bool finished;
+    bool interruption_requested = false;
 
-    uint_fast32_t worker_index;
+    uint_fast32_t worker_index = 0;
 
     std::chrono::system_clock::time_point timeout;
     std::chrono::system_clock::time_point time_start;
 };
 
 
+class QueryContext {
 struct VarContext {
     uint64_t internal_var_counter = 0;
 
@@ -33,33 +40,71 @@ struct VarContext {
     std::unordered_map<std::string, uint64_t> var_map;
 };
 
-class QueryContext {
 public:
     ThreadInfo thread_info;
 
-    // used by BindingExprBNode
-    // used only for RDF Model
+    uint64_t start_version = 0;
+    uint64_t result_version = 0;
+
+    std::string cancellation_token;
+
+    // Used only by BindingExprBNode of the RDF model.
     std::unordered_map<std::string, uint64_t> blank_node_ids;
 
-    // for debug printing
-    static std::ostream& (*_debug_print)(std::ostream&, ObjectId);
+    // Debug prints ObjectIds
+    static inline std::ostream& (*_debug_print)(std::ostream&, ObjectId);
+
+    // Creates a BindingExprPrinter used to debug print BindingExprs of the physical plan
+    static inline std::unique_ptr<BindingExprPrinter> (*create_binding_expr_printer)(std::ostream&);
 
 private:
     VarContext var_ctx;
 
-    // only for RDF model
+    // Used only by BindingExprBNode of the RDF model.
     uint64_t blank_node_count = 0;
+
+    std::default_random_engine rand_generator = std::default_random_engine(
+        std::chrono::system_clock::now().time_since_epoch().count()
+    );
+
+    // Random number generator
+    std::uniform_real_distribution<double> distribution = std::uniform_real_distribution<double>(0.0, 1.0);
+
+    static inline boost::uuids::random_generator uuid_generator;
 
 public:
     // Cleans up everything. Must be called before parsing the query
-    void reset() {
+    void prepare(BufferManager::VersionScope& version_scope, std::chrono::seconds timeout) {
         blank_node_ids.clear();
         blank_node_count = 0;
 
         var_ctx.internal_var_counter = 0;
         var_ctx.var_names = {};
         var_ctx.var_map.clear();
+
+        const auto start = std::chrono::system_clock::now();
+        thread_info.interruption_requested = false;
+        thread_info.time_start = start;
+        thread_info.timeout = start + timeout;
+
+        start_version  = version_scope.start_version;
+        result_version = version_scope.start_version + (version_scope.is_editable ? 1 : 0);
+
+        cancellation_token = get_uuid();
+
+        tmp_manager.reset(thread_info.worker_index);
     }
+
+    std::string get_uuid() {
+        boost::uuids::uuid uuid = uuid_generator();
+        return boost::uuids::to_string(uuid);
+    }
+
+    // returns a random double between 0 (inclusive) and 1 (exclusive) with uniform distribution
+    double get_rand() {
+        return distribution(rand_generator);
+    }
+
 
     VarId get_or_create_var(const std::string& var_name) {
         auto found = var_ctx.var_map.find(var_name);
@@ -139,7 +184,7 @@ public:
         return var_ctx.var_names[var.id][0] == '.';
     }
 
-    static thread_local QueryContext* _query_ctx;
+    static inline thread_local QueryContext* _query_ctx;
 
     static inline void set_query_ctx(QueryContext* ctx) {
         _query_ctx = ctx;

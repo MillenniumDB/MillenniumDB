@@ -5,7 +5,6 @@
 
 #include "query/exceptions.h"
 #include "query/query_context.h"
-#include "query/rewriter/sparql/expr/check_expr_var_names_visitor.h"
 #include "query/rewriter/sparql/op/change_join_to_sequence.h"
 #include "query/rewriter/sparql/op/check_scoped_blank_nodes.h"
 #include "query/rewriter/sparql/op/check_var_names.h"
@@ -53,9 +52,6 @@ void RewriteFilterSubqueries::visit(OpFilter& op_filter) {
     }
 }
 
-void RewriteFilterSubqueries::visit(OpWhere& op_where) {
-    op_where.op->accept_visitor(*this);
-}
 
 void RewriteFilterSubqueries::visit(OpOptional& op_optional) {
     op_optional.lhs->accept_visitor(*this);
@@ -122,31 +118,8 @@ void RewriteFilterSubqueries::visit(OpValues&) { }
 // +---------------------------------------------------------------------------+
 // |                            ExprVisitor                                    |
 // +---------------------------------------------------------------------------+
-static std::unique_ptr<Op> DoRewrite(std::unique_ptr<Op> op) {
-    std::unique_ptr<Op> res = std::make_unique<OpWhere>(std::move(op));
-
-    CheckVarNames check_var_names;
-    res->accept_visitor(check_var_names);
-
-    CheckScopedBlankNodes check_scoped_blank_nodes;
-    res->accept_visitor(check_scoped_blank_nodes);
-
-    ReplaceUnscopedVariables replace_unscoped_variables;
-    res->accept_visitor(replace_unscoped_variables);
-
-    QueryParser::use_all_rewrite_rules(res);
-
-    ChangeJoinToSequence join_to_sequence_visitor;
-    res->accept_visitor(join_to_sequence_visitor);
-
-    RewriteFilterSubqueries rewrite_filter_subqueries;
-    res->accept_visitor(rewrite_filter_subqueries);
-    return res;
-}
 
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprVar&) { }
-
-void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprObjectId&) { }
 
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprTerm&) { }
 
@@ -237,11 +210,11 @@ void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprNotIn& expr) {
 }
 
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprExists& expr) {
-    expr.op = DoRewrite(std::move(expr.op));
+    expr.op = QueryParser::rewrite(std::move(expr.op));
 }
 
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprNotExists& expr) {
-    expr.op = DoRewrite(std::move(expr.op));
+    expr.op = QueryParser::rewrite(std::move(expr.op));
 }
 
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprAggAvg& expr) {

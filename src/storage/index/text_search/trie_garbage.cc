@@ -1,17 +1,16 @@
 #include "trie_garbage.h"
 
-#include "storage/buffer_manager.h"
-#include "storage/file_manager.h"
-#include "storage/page.h"
-
 #include <cmath>
-#include <iostream>
 #include <cassert>
 
+#include "system/buffer_manager.h"
+#include "system/file_manager.h"
 
-TrieGarbage::TrieGarbage() :
-    garbage_file_id (file_manager.get_file_id("text_search.garbage")),
-    dir_page (buffer_manager.get_page(garbage_file_id, 0))
+namespace TextSearch {
+
+TrieGarbage::TrieGarbage(const std::filesystem::path& path) :
+    garbage_file_id (file_manager.get_file_id(path.parent_path() / "trie.garbage")),
+    dir_page (buffer_manager.get_unversioned_page(garbage_file_id, 0))
 {
     // Get bytes from page
     unsigned char* dir_page_begin = reinterpret_cast<unsigned char *> (dir_page.get_bytes());
@@ -21,6 +20,7 @@ TrieGarbage::TrieGarbage() :
     last_page = dir_page_begin + DP_SN;
     first_and_last_pages = last_page + DP_SLP;
 }
+
 
 TrieGarbage::~TrieGarbage() {
     buffer_manager.unpin(dir_page);
@@ -72,7 +72,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value) {
         dir_page.make_dirty();
     }
 
-    Page& page = buffer_manager.get_page(garbage_file_id, target_page);
+    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, target_page);
 
     // Write new value:
     unsigned char* page_pos = reinterpret_cast<unsigned char*> (page.get_bytes());
@@ -90,7 +90,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value) {
         }
 
         // Edit next page information and add value
-        Page& next_page = buffer_manager.get_page(garbage_file_id, next_page_num);
+        UPage& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
         unsigned char* next_page_pos = reinterpret_cast<unsigned char *> (next_page.get_bytes());
         write_xbytes(1, next_page_pos, OP_SN); // Value count = 1
         write_xbytes(target_page, next_page_pos + OP_SN, OP_SPP); // Previous page
@@ -120,7 +120,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value) {
 }
 
 
-int TrieGarbage::search_and_pop_capacity(uint64_t& capacity, uint64_t& value) {
+bool TrieGarbage::search_and_pop_capacity(uint64_t& capacity, uint64_t& value) {
     // Gather directory data
     int N = *capacities_count;
     // uint64_t LP = read_xbytes(last_page, DP_SLP);
@@ -135,7 +135,7 @@ int TrieGarbage::search_and_pop_capacity(uint64_t& capacity, uint64_t& value) {
         // (For every category of garbage: 4 bytes first page and 4 bytes last page)
         uint64_t last_page_of_capacity = read_xbytes(first_and_last_pages + i*(DP_FLPs1+DP_FLPs2) + DP_FLPs1, DP_FLPs2);
         if (last_page_of_capacity == 0) { continue; } // If no values, next capacity
-        Page& page = buffer_manager.get_page(garbage_file_id, last_page_of_capacity);
+        UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_capacity);
         unsigned char* page_pos = reinterpret_cast<unsigned char *> (page.get_bytes());
 
         // Get number of values in page
@@ -170,11 +170,11 @@ int TrieGarbage::search_and_pop_capacity(uint64_t& capacity, uint64_t& value) {
         page.make_dirty();
         buffer_manager.unpin(page);
 
-        return 1;
+        return true;
     }
 
     // Nothing is found
-    return 0;
+    return false;
 }
 
 
@@ -218,7 +218,7 @@ void TrieGarbage::add_node(uint64_t value) {
         dir_page.make_dirty();
     }
 
-    Page& page = buffer_manager.get_page(garbage_file_id, target_page);
+    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, target_page);
 
     // Write new value:
     unsigned char* page_pos = reinterpret_cast<unsigned char*> (page.get_bytes());
@@ -236,7 +236,7 @@ void TrieGarbage::add_node(uint64_t value) {
         }
 
         // Edit next page information and add value
-        Page& next_page = buffer_manager.get_page(garbage_file_id, next_page_num);
+        UPage& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
         unsigned char* next_page_pos = reinterpret_cast<unsigned char *> (next_page.get_bytes());
         write_xbytes(1, next_page_pos, OP_SN); // Value count = 1
         write_xbytes(target_page, next_page_pos + OP_SN, OP_SPP); // Previous page
@@ -264,7 +264,7 @@ void TrieGarbage::add_node(uint64_t value) {
 }
 
 
-int TrieGarbage::search_and_pop_node(uint64_t& value) {
+bool TrieGarbage::search_and_pop_node(uint64_t& value) {
     // Search free space for node
 
     // Get the last written page of of the garbage associated with nodes
@@ -275,7 +275,7 @@ int TrieGarbage::search_and_pop_node(uint64_t& value) {
     if (last_page_of_node == 0) { return 0; }
 
     // Else get page
-    Page& page = buffer_manager.get_page(garbage_file_id, last_page_of_node);
+    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_node);
     unsigned char* page_pos = reinterpret_cast<unsigned char *> (page.get_bytes());
 
     // Get number of values in page
@@ -311,8 +311,8 @@ int TrieGarbage::search_and_pop_node(uint64_t& value) {
 }
 
 
-void TrieGarbage::status() {
-    std::cout << "STATUS GARBAGE\n";
+void TrieGarbage::status(std::ostream& os) {
+    os << "STATUS GARBAGE\n";
 
     // Gather directory data
     int N = *capacities_count;
@@ -325,7 +325,7 @@ void TrieGarbage::status() {
         uint64_t counter = 0;
         while (curr_page != 0) {
             // Get page
-            Page& page = buffer_manager.get_page(garbage_file_id, curr_page);
+            UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, curr_page);
             unsigned char* page_pos = reinterpret_cast<unsigned char*> (page.get_bytes());
 
             // Update count
@@ -338,7 +338,10 @@ void TrieGarbage::status() {
         }
 
         // Prints
-        if (i == 0) { std::cout << "Nodes: \t\t" << counter << std::endl; }
-        else { std::cout << "Capacity " << (int) pow(2, i+OFFSET_SLOT_CAPACITY) << ": \t" << counter << std::endl; }
+        if (i == 0) { os << "Nodes: \t\t" << counter << std::endl; }
+        else { os << "Capacity " << (int) pow(2, i+OFFSET_SLOT_CAPACITY) << ": \t" << counter << std::endl; }
     }
 }
+
+
+} // namespace TextSearch

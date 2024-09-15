@@ -1,40 +1,34 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
-#include <string>
-#include <memory>
 #include <vector>
 
 #include "graph_models/object_id.h"
 #include "query/var_id.h"
 #include "storage/file_id.h"
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
-template <class U> class DistinctBindingHash;
-
-template <class T>
 class DistinctBindingHashBucket {
 
-friend class DistinctBindingHash<T>;
+friend class DistinctBindingHash;
 
 public:
-    DistinctBindingHashBucket(const TmpFileId file_id, const uint_fast32_t bucket_number, std::size_t tuple_size);
+    DistinctBindingHashBucket(TmpFileId file_id, uint_fast32_t bucket_number, uint_fast32_t tuple_size);
     ~DistinctBindingHashBucket();
 
-    bool is_in(const std::vector<T>& tuple, uint64_t hash);
-    bool is_in_or_insert(const std::vector<T>& tuple, uint64_t hash, bool* const need_split);
+    bool is_in(const std::vector<ObjectId>& tuple, uint64_t hash);
+    bool is_in_or_insert(const std::vector<ObjectId>& tuple, uint64_t hash, bool* const need_split);
 
 private:
-    Page& page;
+    PPage& page;
 
-    const std::size_t tuple_size;
-    const std::size_t max_tuples;
+    const uint_fast32_t tuple_size;
+    const uint_fast32_t max_tuples;
 
-    T*        const tuples;
+    ObjectId* const tuples;
     uint64_t* const hashes; // each tuple is (hash1, hash2)
     uint8_t*  const tuple_count;
     uint8_t*  const local_depth;
 
-    void redistribute(DistinctBindingHashBucket<T>& other, uint64_t mask, uint64_t other_suffix);
+    void redistribute(DistinctBindingHashBucket& other, uint64_t mask, uint64_t other_suffix);
 };

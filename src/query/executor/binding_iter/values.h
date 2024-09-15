@@ -17,25 +17,22 @@ public:
 
     ~Values() = default;
 
-    void begin(Binding& parent_binding) override;
+    void _begin(Binding& parent_binding) override;
 
-    void reset() override;
+    void _reset() override;
 
-    bool next() override;
+    bool _next() override;
 
     void assign_nulls() override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
-private:
     // true means value is fixed by parent
     std::vector<std::pair<VarId, bool>> vars;
     std::vector<ObjectId> values;
 
+private:
     uint64_t current = 0;
 
     Binding* parent_binding;
-
-    uint64_t result_count = 0;
-    uint64_t executions = 0;
 };

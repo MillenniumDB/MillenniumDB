@@ -111,12 +111,18 @@ private:
     // Current result
     const Record<N>* current;
 
+    size_t starting_node_idx;
+
+    size_t reached_node_idx;
+
     // Whether the iterator is finished or not
     bool finished = false;
 
 public:
-    BTreeIndexIterator(BptIter<N>&& iter) :
-        iter (std::move(iter)) { }
+    BTreeIndexIterator(BptIter<N>&& iter, size_t starting_node_idx, size_t reached_node_idx) :
+        iter              (std::move(iter)),
+        starting_node_idx (starting_node_idx),
+        reached_node_idx  (reached_node_idx) { }
 
     // Interface
     uint64_t get_starting_node() override;

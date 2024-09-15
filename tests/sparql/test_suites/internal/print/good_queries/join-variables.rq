@@ -1,0 +1,39 @@
+PREFIX : <http://p.c/>
+SELECT *
+WHERE {
+    ?y1 ?y2 ?y3 .
+    ?x1 ?x2 ?x3 .
+    {
+        ?x2 ?x5 ?x6 .
+        OPTIONAL { ?x3 ?x4 ?x5 }
+        OPTIONAL { ?x1 ?x2 ?x3 }
+    }
+}
+
+
+# JsonSelectExecutor(?y1, ?y2, ?y3, ?x1, ?x2, ?x3, ?x5, ?x6, ?x4)
+#   NestedLoopJoin(executions:1 found:0; parent_safe_vars:; lhs:?y1,?y2,?y3; safe_join_vars:?x2; unsafe_join_vars:?x1,?x3 rhs:?x5,?x6,?x4)
+#     LeapfrogJoin(found: 0, seeks: 0)
+#     NestedLoopLeftJoin(executions:1 found:0; parent_safe_vars:?x2; lhs:?x5,?x6,?x4; safe_join_vars:; unsafe_join_vars:?x3; rhs:?x1)
+#       IndexLeftOuterJoin(found: 0)
+#         IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x2] ?x5 ?x6)
+#         IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x5] ?x3 ?x4)
+#       IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x2] ?x3 ?x1)
+
+
+# JsonSelectExecutor(?y1, ?y2, ?y3, ?x1, ?x2, ?x3, ?x5, ?x6, ?x4)
+#   NestedLoopJoin(executions:1 found:0
+#       parent_safe_vars:
+#       lhs:              ?y1, ?y2, ?y3
+#       safe_join_vars:   ?x2
+#       unsafe_join_vars: ?x1, ?x3
+#       rhs:              ?x5, ?x6, ?x4
+#   )
+#     LeapfrogJoin(found: 0, seeks: 0)
+#     NestedLoopLeftJoin(executions: 1, found: 0, parent_safe_vars: [?x2], lhs: [?x5, ?x6, ?x4], safe_join_vars: [], unsafe_join_vars: [?x3], rhs: [?x1])
+#       IndexLeftOuterJoin(found: 0)
+#         IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x2] ?x5 ?x6)
+#         IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x5] ?x3 ?x4)
+#       IndexScan(bpt_searches: 1, found: 0, factor: 0, ranges: [?x2] ?x3 ?x1)
+
+

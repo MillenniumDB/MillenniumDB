@@ -5,16 +5,15 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "macros/likely.h"
 #include "query/exceptions.h"
 #include "query/query_context.h"
-#include "storage/buffer_manager.h"
-#include "storage/file_id.h"
-#include "storage/file_manager.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
 
 TupleIdCollection::TupleIdCollection(
-    Page&                            page,
+    PPage&                         page,
     const map<VarId, uint_fast32_t>& saved_vars,
     const vector<VarId>&             order_vars,
     const vector<bool>&              ascending,
@@ -25,9 +24,8 @@ TupleIdCollection::TupleIdCollection(
     order_vars  (order_vars),
     ascending   (ascending),
     tuples      (reinterpret_cast<ObjectId*>(page.get_bytes())),
-    tuple_count (reinterpret_cast<uint64_t*>(page.get_bytes() + Page::MDB_PAGE_SIZE - sizeof(uint64_t))),
-    compare     (_compare)
-    { }
+    tuple_count (reinterpret_cast<uint64_t*>(page.get_bytes() + PPage::SIZE - sizeof(uint64_t))),
+    compare     (_compare) { }
 
 
 TupleIdCollection::~TupleIdCollection() {
@@ -173,9 +171,9 @@ void MergeOrderedTupleIdCollection::merge(uint64_t left_start,
 {
     // Merge [left_start-left_end] with [right_start-right_end] from source_file_id in output_file_id,
     // in output_file_id is sorted
-    auto left_run  = get_run(buffer_manager.get_tmp_page(source_file_id, left_start));
-    auto right_run = get_run(buffer_manager.get_tmp_page(source_file_id, right_start));
-    auto out_run   = get_run(buffer_manager.get_tmp_page(output_file_id, left_start));
+    auto left_run  = get_run(buffer_manager.get_ppage(source_file_id, left_start));
+    auto right_run = get_run(buffer_manager.get_ppage(source_file_id, right_start));
+    auto out_run   = get_run(buffer_manager.get_ppage(output_file_id, left_start));
     out_run->reset();
 
     auto left_tuple  = left_run->get(0);
@@ -189,11 +187,11 @@ void MergeOrderedTupleIdCollection::merge(uint64_t left_start,
 
     while (open_left || open_right) {
         if (out_run->is_full()) {
-            if (__builtin_expect(!!(get_query_ctx().thread_info.interruption_requested), 0)) {
+            if (MDB_unlikely(get_query_ctx().thread_info.interruption_requested)) {
                 throw InterruptedException();
             }
             out_page_counter++;
-            out_run = get_run(buffer_manager.get_tmp_page(output_file_id, out_page_counter));
+            out_run = get_run(buffer_manager.get_ppage(output_file_id, out_page_counter));
             out_run->reset();
         }
         left_first = left_run->has_priority(left_tuple, right_tuple);
@@ -203,7 +201,7 @@ void MergeOrderedTupleIdCollection::merge(uint64_t left_start,
             if (left_counter == left_run->get_tuple_count()) {
                 left_start++;
                 if (left_start <= left_end) {
-                    left_run = get_run(buffer_manager.get_tmp_page(source_file_id, left_start));
+                    left_run = get_run(buffer_manager.get_ppage(source_file_id, left_start));
                     left_counter = 0;
                 } else {
                     open_left = false;
@@ -218,7 +216,7 @@ void MergeOrderedTupleIdCollection::merge(uint64_t left_start,
             if (right_counter == right_run->get_tuple_count()) {
                 right_start++;
                 if (right_start <= right_end) {
-                    right_run = get_run(buffer_manager.get_tmp_page(source_file_id, right_start));
+                    right_run = get_run(buffer_manager.get_ppage(source_file_id, right_start));
                     right_counter = 0;
                 } else {
                     open_right = false;
@@ -236,8 +234,8 @@ void MergeOrderedTupleIdCollection::copy_page(
     TmpFileId source_file_id,
     TmpFileId output_file_id)
 {
-    auto source_tuples = get_run(buffer_manager.get_tmp_page(source_file_id, source_page));
-    auto output_tuples = get_run(buffer_manager.get_tmp_page(output_file_id, source_page));
+    auto source_tuples = get_run(buffer_manager.get_ppage(source_file_id, source_page));
+    auto output_tuples = get_run(buffer_manager.get_ppage(output_file_id, source_page));
     output_tuples->reset();
     for (size_t i = 0; i < source_tuples->get_tuple_count(); i++) {
         auto t = source_tuples->get(i);
@@ -247,6 +245,6 @@ void MergeOrderedTupleIdCollection::copy_page(
 }
 
 
-std::unique_ptr<TupleIdCollection> MergeOrderedTupleIdCollection::get_run(Page& run_page) {
+std::unique_ptr<TupleIdCollection> MergeOrderedTupleIdCollection::get_run(PPage& run_page) {
     return make_unique<TupleIdCollection>(run_page, saved_vars, order_vars, ascending, compare);
 }

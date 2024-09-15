@@ -1,0 +1,5 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?obj WHERE {
+    ?subj :replacement ?obj .
+}

@@ -31,7 +31,6 @@ public:
     void visit(OpSequence&)             override;
     void visit(OpAsk&)                  override;
     void visit(OpService&)              override;
-    void visit(OpWhere&)                override;
     void visit(OpBind&)                 override;
     void visit(OpUnitTable&)            override;
     void visit(OpValues&)               override;
@@ -41,7 +40,6 @@ class RewriteFilterSubqueriesExpr : public ExprVisitor {
 private:
 public:
     void visit(SPARQL::ExprVar&)            override;
-    void visit(SPARQL::ExprObjectId&)       override;
     void visit(SPARQL::ExprTerm&)           override;
     void visit(SPARQL::ExprEqual&)          override;
     void visit(SPARQL::ExprNotEqual&)       override;

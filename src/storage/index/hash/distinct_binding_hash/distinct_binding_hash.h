@@ -3,28 +3,28 @@
 #include <cstdint>
 #include <vector>
 
+#include "graph_models/object_id.h"
 #include "query/var_id.h"
 #include "storage/file_id.h"
 
-template <class T>
 class DistinctBindingHash {
 public:
-    static constexpr auto DEFAULT_GLOBAL_DEPTH = 10;
+    static constexpr auto DEFAULT_GLOBAL_DEPTH = 8;
 
-    DistinctBindingHash(std::size_t vars_size);
+    DistinctBindingHash(uint_fast32_t vars_size);
     ~DistinctBindingHash();
 
     // Clears all stored tuples
     void reset();
 
-    bool is_in(const std::vector<T>& tuple);
+    bool is_in(const std::vector<ObjectId>& tuple);
 
     // returns true if tuple is present, insert it otherwise
-    bool is_in_or_insert(const std::vector<T>& tuple);
+    bool is_in_or_insert(const std::vector<ObjectId>& tuple);
 
 private:
     uint_fast8_t global_depth = DEFAULT_GLOBAL_DEPTH;
-    std::size_t tuple_size;
+    uint_fast32_t tuple_size;
 
     const TmpFileId buckets_file_id;
 

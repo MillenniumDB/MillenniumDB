@@ -1,5 +1,11 @@
 #pragma once
 
+#include "query/parser/expr/mql/agg/expr_agg_avg.h"
+#include "query/parser/expr/mql/agg/expr_agg_count.h"
+#include "query/parser/expr/mql/agg/expr_agg_count_all.h"
+#include "query/parser/expr/mql/agg/expr_agg_max.h"
+#include "query/parser/expr/mql/agg/expr_agg_min.h"
+#include "query/parser/expr/mql/agg/expr_agg_sum.h"
 #include "query/parser/expr/mql/arithmetic_expr/expr_addition.h"
 #include "query/parser/expr/mql/arithmetic_expr/expr_division.h"
 #include "query/parser/expr/mql/arithmetic_expr/expr_modulo.h"
@@ -9,6 +15,7 @@
 #include "query/parser/expr/mql/arithmetic_expr/expr_unary_plus.h"
 #include "query/parser/expr/mql/atom_expr/expr_constant.h"
 #include "query/parser/expr/mql/atom_expr/expr_var.h"
+#include "query/parser/expr/mql/atom_expr/expr_var_property.h"
 #include "query/parser/expr/mql/bool_expr/expr_and.h"
 #include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_equals.h"
 #include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_greater.h"

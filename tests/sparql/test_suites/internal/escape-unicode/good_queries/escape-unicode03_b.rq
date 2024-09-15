@@ -1,0 +1,6 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?pred ?obj WHERE {
+    ?subj ?pred ?obj .
+    FILTER(?obj = "✌🏼 ✌🏿")
+}

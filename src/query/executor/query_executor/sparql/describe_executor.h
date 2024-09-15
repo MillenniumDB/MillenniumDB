@@ -17,21 +17,23 @@ class DescribeExecutor : public QueryExecutor {
 public:
     DescribeExecutor(
         std::unique_ptr<BindingIter> child_iter,
-        std::vector<VarId>             vars,
-        std::vector<ObjectId>          iris);
+        std::vector<VarId>           vars,
+        std::vector<ObjectId>        iris);
 
     uint64_t execute(std::ostream&) override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 
 private:
     std::unique_ptr<BindingIter> child_iter;
 
-    std::vector<VarId>    vars;
+    std::vector<VarId> vars;
+
     std::vector<ObjectId> iris;
 
-    DistinctBindingHash<ObjectId> extendable_table;
-    std::vector<ObjectId>         current_triple;
+    DistinctBindingHash extendable_table;
+
+    std::vector<ObjectId> current_triple;
 
     uint64_t triple_count;
 

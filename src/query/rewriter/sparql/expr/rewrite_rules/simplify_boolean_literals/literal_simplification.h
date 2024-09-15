@@ -23,18 +23,12 @@ private:
 public:
     bool is_possible_to_regroup(std::unique_ptr<Expr>& unknown_expr) override {
         if (unknown_expr->get_all_vars().size() == 0) {
-            if (is_castable_to<ExprObjectId>(unknown_expr))
+            if (is_castable_to<ExprTerm>(unknown_expr))
                 return false; // Already simplified.
 
-            std::set<VarId> safe_assigned_vars;
-            std::set<VarId> possible_assigned_vars;
-
-            ExprToBindingExpr expr_to_binding_expr(
-                safe_assigned_vars,
-                possible_assigned_vars
-            );
+            ExprToBindingExpr expr_to_binding_expr;
             unknown_expr->accept_visitor(expr_to_binding_expr);
-            auto binding_expr = std::move(expr_to_binding_expr.current_binding_expr);
+            auto binding_expr = std::move(expr_to_binding_expr.tmp);
             resulting_object_id = binding_expr->eval(binding);
             return true;
         }
@@ -42,7 +36,7 @@ public:
     }
 
     std::unique_ptr<Expr> regroup(std::unique_ptr<Expr>) override {
-        return std::make_unique<ExprObjectId>(resulting_object_id);
+        return std::make_unique<ExprTerm>(resulting_object_id);
     }
 };
 

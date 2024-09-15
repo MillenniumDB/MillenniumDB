@@ -1,0 +1,27 @@
+@prefix : <http://www.example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+:s0 :esc_U "\U0001F34E";
+    :symbol "🍎".
+
+:s1 :esc_u "\u231A";
+    :symbol "⌚".
+
+:s2 :esc_backslash "\\U0001F34E".
+
+:s3 :modifier "\U0000270C\U0001F3FC \U0000270C\U0001F3FF".
+
+:s4 :misc
+    # UTF-8 1 byte
+    "\u0061\u0062\u0020\u0062\u0063",
+    "\U00000061\U00000062",
+    # UTF-8 2 bytes
+    "\u00a51000",
+    # UTF-8 3 bytes
+    "\u0Ca0_\u0Ca0",
+    # UTF-8 4 bytes
+    "\U0001F0A0\U0001F0A1\U0001F0B1\U0001F0C1\U0001F0D1".
+
+# Since the range is invalid, the value stored is the replacement character �
+:s5 :replacement "\U00110001".

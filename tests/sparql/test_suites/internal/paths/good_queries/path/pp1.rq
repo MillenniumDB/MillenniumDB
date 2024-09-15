@@ -1,0 +1,6 @@
+PREFIX path: <http://www.path.com/>
+
+SELECT *
+WHERE {
+    path:John ^path:knows+ ?x
+}

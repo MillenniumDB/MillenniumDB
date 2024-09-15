@@ -9,7 +9,6 @@ void CheckWellDesigned::visit(OpOptional& op_optional) {
 
     for (const auto& var : local_vars) {
         if (global_vars.find(var) != global_vars.end() && parent_vars.find(var) == parent_vars.end()) {
-            // TODO: mdb
             throw QuerySemanticException("Query is not well defined. Var " + std::to_string(var.id) + " is breaking the rule");
         }
         global_vars.insert(var);
@@ -57,11 +56,15 @@ void CheckWellDesigned::visit(OpWhere& op_where) {
 }
 
 
-// void CheckWellDesigned::visit(OpGroupBy& op_group_by) {
-//     op_group_by.op->accept_visitor(*this);
-// }
+void CheckWellDesigned::visit(OpGroupBy& op_group_by) {
+    op_group_by.op->accept_visitor(*this);
+}
 
 
 void CheckWellDesigned::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
+}
+
+void CheckWellDesigned::visit(OpProjectSimilarity& op_project_similarity) {
+    op_project_similarity.op->accept_visitor(*this);
 }

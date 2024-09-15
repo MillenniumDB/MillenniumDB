@@ -1,0 +1,18 @@
+{
+    "head": {
+        "vars": [
+            "typed"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "typed": {
+                    "type": "literal",
+                    "value": "9018447357",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+                }
+            }
+        ]
+    }
+}

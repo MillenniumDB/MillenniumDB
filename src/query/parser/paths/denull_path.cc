@@ -5,6 +5,7 @@
 #include "query/parser/paths/path_alternatives.h"
 #include "query/parser/paths/path_atom.h"
 #include "query/parser/paths/path_check.h"
+#include "query/parser/paths/path_kleene_plus.h"
 #include "query/parser/paths/path_kleene_star.h"
 #include "query/parser/paths/path_negated_set.h"
 #include "query/parser/paths/path_optional.h"
@@ -37,6 +38,12 @@ std::unique_ptr<RegularPathExpr> PathDenull::accept_denull(std::unique_ptr<Regul
     case PathType::PATH_KLEENE_STAR: {
         std::unique_ptr<PathKleeneStar> casted;
         casted.reset(dynamic_cast<PathKleeneStar*>(path.release()));
+        return denull(std::move(casted));
+    }
+
+    case PathType::PATH_KLEENE_PLUS: {
+        std::unique_ptr<PathKleenePlus> casted;
+        casted.reset(dynamic_cast<PathKleenePlus*>(path.release()));
         return denull(std::move(casted));
     }
 

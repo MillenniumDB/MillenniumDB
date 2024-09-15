@@ -2,8 +2,7 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
-#include "query/var_id.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -17,15 +16,13 @@ public:
     ObjectId eval(const Binding& binding) override {
         ObjectId oid = binding[var_id];
         if (oid.is_null())
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return Conversions::pack_bool(false);
         else
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return Conversions::pack_bool(true);
     }
 
-
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "BOUND(VarId(" << var_id.id << "))";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

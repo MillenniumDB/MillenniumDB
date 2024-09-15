@@ -20,12 +20,8 @@ TESTING_DBS_DIR = ROOT_TEST_DIR / "tmp/dbs"
 SERVER_LOGS_DIR = ROOT_TEST_DIR / "tmp/server-logs"
 
 # Executables
-CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/create_db_mql"
-SERVER_EXECUTABLE = CWD / "build/Debug/bin/server_mql"
-QUERY_EXECUTABLE = CWD / "build/Debug/bin/query_mql"
-
-# Empty database used for some tests
-EMPTY_DB_DATA = TEST_SUITE_DIR / "empty_db.qm"
+CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/mdb-import"
+SERVER_EXECUTABLE = CWD / "build/Debug/bin/mdb-server"
 
 # Width of each column of test outputs
 OUTPUT_COLUMN_WIDTH = 50
@@ -45,12 +41,14 @@ LOGGING_LEVELS = {
 
 # Test suites to run
 TEST_SUITES: list[str] = [
+    "aggs",
+    "dates",
+    "is",
     "simple",
     "paths",
+    "bad_queries",
+    "escape-unicode",
 ]
 
 # Tests with the following query files fill be ignored
-IGNORED_TESTS: set[str] = {
-    # Path order has to be fixed
-    "simple/queries/path-1.mql",
-}
+IGNORED_TESTS: set[str] = set()

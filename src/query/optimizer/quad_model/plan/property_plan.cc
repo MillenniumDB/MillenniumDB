@@ -54,11 +54,18 @@ double PropertyPlan::estimate_output_size() const {
     }
 
     if (key_assigned) {
-        double distinct_values;
-        double key_count;
+        double distinct_values = 0;
+        double key_count = 0;
         if (key.is_OID()) {
-            distinct_values = static_cast<double>(quad_model.catalog().key2distinct[key.get_OID().id]);
-            key_count       = static_cast<double>(quad_model.catalog().key2total_count[key.get_OID().id]);
+            auto it = quad_model.catalog().key2distinct.find(key.get_OID().id);
+            if (it != quad_model.catalog().key2distinct.end()) {
+                distinct_values = it->second;
+            }
+
+            it = quad_model.catalog().key2total_count.find(key.get_OID().id);
+            if (it != quad_model.catalog().key2total_count.end()) {
+                key_count = it->second;
+            }
         } else {
             // TODO: this case (key is an assigned variable) is not possible yet, but we may need to cover it in the future
             return 0;

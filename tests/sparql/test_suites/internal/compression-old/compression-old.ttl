@@ -1,0 +1,33 @@
+@prefix : <http://www.example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+
+# select literals - Conversions::print_string
+:s  :p1 "王明：这是什么" , "史密斯是律师。" ;
+# select lang
+    :p2 "危ノユソケ作介さぞリ"@en-US , "問カリロユ未親ぽでドフ"@en-NZ ;
+# select xsd
+    :p3 "Лорем ипсум долор сит амет"^^xsd:string , "еи еам ферри путант 1"^^xsd:string ;
+# pack literals
+    :p4 "王明： + 这是什么" , "史密斯 + 是律师。" ;
+# pack string lang
+    :p5 "危ノユソ + ケ作介さぞリ"@en-US , "問カリロユ + 未親ぽでドフ"@en-NZ ;
+# pack string xsd
+    :p6 "Лорем ипсум + долор сит амет"^^xsd:string , "еи еам + ферри путант 1"^^xsd:string ;
+    .
+
+# Conversions::pack_string_simple, pack_string_lang, unpack_string_lang
+:s2 :values
+    # Inline strings
+    "hello",
+    "ク",
+    "字"@ja-JP,
+    "ی"^^xsd:string,
+
+    # Extern strings
+    "Pride and Prejudice",
+    "🧑‍🦱✌🏾🍎👨🏽‍⚕️",
+    "甲樹着說那讀土"@zh-CN,
+    "∝∠∧ΘøçÞ±"^^xsd:string
+    .

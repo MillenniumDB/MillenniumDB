@@ -4,18 +4,289 @@
 #include <cmath>
 #include <cstdint>
 #include <sstream>
-#include <string>
 
 #include "graph_models/inliner.h"
-#include "graph_models/object_id.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
-#include "graph_models/rdf_model/datatypes/decimal_inlined.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "storage/unified_storage.h"
+#include "graph_models/rdf_model/rdf_object_id.h"
+#include "system/path_manager.h"
+#include "system/string_manager.h"
+#include "system/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace SPARQL;
+
+uint64_t Conversions::unpack_blank(ObjectId oid) {
+    return oid.get_value();
+}
+
+ObjectId Conversions::string_simple_to_xsd(ObjectId oid) {
+    auto mod = oid.get_mod();
+    return ObjectId(oid.get_value() | mod | ObjectId::MASK_STRING_SIMPLE);
+}
+
+
+ObjectId Conversions::pack_string_simple_inline(const char* str) {
+    return ObjectId(
+        Inliner::inline_string(str) | ObjectId::MASK_STRING_SIMPLE_INLINED
+    );
+}
+
+
+ObjectId Conversions::pack_string_xsd_inline(const char* str) {
+    return ObjectId(
+        Inliner::inline_string(str) | ObjectId::MASK_STRING_XSD_INLINED
+    );
+}
+
+
+ObjectId Conversions::pack_iri_inline(const char* str, uint_fast8_t prefix_id) {
+    uint64_t prefix_id_shifted = static_cast<uint64_t>(prefix_id) << 48;
+    return ObjectId(
+        Inliner::inline_iri(str) | ObjectId::MASK_IRI_INLINED | prefix_id_shifted
+    );
+}
+
+
+ObjectId Conversions::pack_string_datatype_inline(uint64_t datatype_id, const char* str) {
+    return ObjectId(
+        Inliner::inline_string5(str) | ObjectId::MASK_STRING_DATATYPE_INLINED | (datatype_id << TMP_SHIFT)
+    );
+}
+
+
+ObjectId Conversions::pack_string_lang_inline(uint64_t lang_id, const char* str) {
+    return ObjectId(
+        Inliner::inline_string5(str) | ObjectId::MASK_STRING_LANG_INLINED | (lang_id << TMP_SHIFT)
+    );
+}
+
+
+/**
+ * First looks up the language in the datatype catalog and if found returns
+ * the index (shifted).
+ * If not found, the tmp_manager is checked, which creates the language if it does
+ * not already exist. The id received from the tmp_manager has it's most significant
+ * bit (bit 15) set and is returned (shifted).
+ */
+uint64_t Conversions::get_language_id(const std::string& lang) {
+    const auto& languages = rdf_model.catalog().languages;
+    auto it = std::find(languages.cbegin(), languages.cend(), lang);
+
+    if (it != languages.end()) {
+        return static_cast<uint64_t>(it - languages.cbegin()) << TMP_SHIFT;
+    } else {
+        return LAST_TMP_ID;
+    }
+}
+
+
+/**
+ * @brief First looks up the datatype in the datatype catalog and if found returns
+ * the id (index). If not found, the tmp_manager is checked,
+ * which creates the datatype if it does not already exist. The id received from the
+ * tmp_manager has it's most significant bit (bit 15) set and is returned.
+ *
+ * @param datatype the datatype to look up in string_manager and tmp_manager.
+ * @return an uint64_t containing the shifted id.
+ */
+uint64_t Conversions::get_datatype_id(const std::string& datatype) {
+    const auto& datatypes = rdf_model.catalog().datatypes;
+    auto it = std::find(datatypes.cbegin(), datatypes.cend(), datatype);
+
+    if (it != datatypes.end()) {
+        return static_cast<uint64_t>(it - datatypes.cbegin()) << TMP_SHIFT;
+    } else {
+        return LAST_TMP_ID;
+    }
+}
+
+
+ObjectId Conversions::pack_string_lang(const std::string& lang, const std::string& str) {
+    uint64_t id;
+    uint64_t lang_id = get_language_id(lang);
+
+    std::string new_str;
+    const std::string* str_ptr;
+
+    if (lang_id == LAST_TMP_ID) {
+        new_str = str + "@" + lang;
+        str_ptr = &new_str;
+    } else {
+        str_ptr = &str;
+    }
+
+    if (str_ptr->size() <= ObjectId::STR_LANG_INLINE_BYTES) {
+            id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STRING_LANG_INLINED;
+        } else {
+            auto str_id = string_manager.get_str_id(*str_ptr);
+            if (str_id != ObjectId::MASK_NOT_FOUND) {
+                id = ObjectId::MASK_STRING_LANG_EXTERN | str_id;
+            } else {
+                id = ObjectId::MASK_STRING_LANG_TMP | tmp_manager.get_str_id(*str_ptr);
+            }
+        }
+        return ObjectId(id | lang_id);
+}
+
+
+ObjectId Conversions::try_pack_string_datatype(const std::string& dt, const std::string& str) {
+    const char* xml_schema = "http://www.w3.org/2001/XMLSchema#";
+    auto const xml_schema_len = std::strlen(xml_schema);
+
+    bool is_xml_schema = false;
+    if (dt.size() > xml_schema_len) {
+        is_xml_schema = std::memcmp(dt.c_str(), xml_schema, xml_schema_len) == 0;
+    }
+
+    if (!is_xml_schema) {
+        return pack_string_datatype(dt, str);
+    }
+
+    auto xsd_suffix = dt.substr(xml_schema_len);
+
+    if (xsd_suffix == "date") {
+        uint64_t object_id = DateTime::from_date(str);
+        if (object_id == ObjectId::NULL_ID) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_date(DateTime(object_id));
+
+    } else if (xsd_suffix == "time") {
+        uint64_t object_id = DateTime::from_time(str);
+        if (object_id == ObjectId::NULL_ID) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_date(DateTime(object_id));
+
+    } else if (xsd_suffix == "dateTime") {
+        uint64_t object_id = DateTime::from_dateTime(str);
+        if (object_id == ObjectId::NULL_ID) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_date(DateTime(object_id));
+
+    } else if (xsd_suffix == "dateTimeStamp") {
+        uint64_t object_id = DateTime::from_dateTimeStamp(str);
+        if (object_id == ObjectId::NULL_ID) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_date(object_id);
+
+    } else if (xsd_suffix == "string") {
+        return pack_string_xsd(str);
+
+    } else if (xsd_suffix == "decimal") {
+        bool    error;
+        Decimal dec(str, &error);
+        if (error) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_decimal(dec);
+
+    } else if (xsd_suffix == "float") {
+        try {
+            return pack_float(std::stof(str));
+        }
+        catch (const std::out_of_range& e) {
+            return pack_string_datatype(dt, str);
+        }
+        catch (const std::invalid_argument& e) {
+            return pack_string_datatype(dt, str);
+        }
+
+    } else if (xsd_suffix == "double") {
+        try {
+            return pack_double(std::stod(str));
+        }
+        catch (const std::out_of_range& e) {
+            return pack_string_datatype(dt, str);
+        }
+        catch (const std::invalid_argument& e) {
+            return pack_string_datatype(dt, str);
+        }
+    }
+    // Signed integer
+    else if (xsd_suffix == "integer" || xsd_suffix == "long" || xsd_suffix == "int" || xsd_suffix == "short"
+             || xsd_suffix == "byte")
+    {
+        return try_pack_integer(dt, str);
+
+    }
+    // Negative integer
+    else if (xsd_suffix == "nonPositiveInteger" || xsd_suffix == "negativeInteger") {
+        return try_pack_integer(dt, str);
+    }
+    // Positive integer
+    else if (xsd_suffix == "positiveInteger" || xsd_suffix == "nonNegativeInteger" || xsd_suffix == "unsignedLong"
+               || xsd_suffix == "unsignedInt" || xsd_suffix == "unsignedShort" || xsd_suffix == "unsignedByte")
+    {
+        return try_pack_integer(dt, str);
+
+    } else if (xsd_suffix == "boolean") {
+        if (str == "true" || str == "1") {
+            return pack_bool(true);
+        } else if (str == "false" || str == "0") {
+            return pack_bool(false);
+        } else {
+            return pack_string_datatype(dt, str);
+        }
+    }
+
+    return pack_string_datatype(dt, str);
+}
+
+
+ObjectId Conversions::pack_string_datatype(const std::string& dt, const std::string& str) {
+    uint64_t id;
+    uint64_t datatype_id = get_datatype_id(dt);
+
+    std::string new_str;
+    const std::string* str_ptr;
+
+    if (datatype_id == LAST_TMP_ID) {
+        new_str = str + "^" + dt;
+        str_ptr = &new_str;
+    } else {
+        str_ptr = &str;
+    }
+
+    if (str_ptr->size() <= ObjectId::STR_DT_INLINE_BYTES) {
+        id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STRING_DATATYPE_INLINED;
+    } else {
+        auto str_id = string_manager.get_str_id(*str_ptr);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            id = ObjectId::MASK_STRING_DATATYPE_EXTERN | str_id;
+        } else {
+            id = ObjectId::MASK_STRING_DATATYPE_TMP | tmp_manager.get_str_id(*str_ptr);
+        }
+    }
+    return ObjectId(id | datatype_id);
+}
+
+
+ObjectId Conversions::try_pack_integer(const std::string& dt, const std::string& str) {
+    try {
+        size_t  pos;
+        int64_t n = std::stoll(str, &pos);
+        // Check if the whole string was parsed
+        if (pos != str.size())
+            return pack_string_datatype(dt, str);
+        return pack_int(n);
+    }
+    catch (std::out_of_range& e) {
+        // The integer is too big, we use a Decimal
+        bool    error;
+        Decimal dec(str, &error);
+        if (error) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_decimal(dec);
+    }
+    catch (std::invalid_argument& e) {
+        // The string is not a valid integer
+        return pack_string_datatype(dt, str);
+    }
+}
 
 /*
 Implemented according to the Effective Boolean Value rules:
@@ -34,27 +305,27 @@ ObjectId Conversions::to_boolean(ObjectId oid) {
     // String
     // Note: Extern strings will never be empty
     case ObjectId::MASK_STRING_SIMPLE_INLINED:
-        return ObjectId(ObjectId::MASK_BOOL | (value != 0));
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     case ObjectId::MASK_STRING_SIMPLE_EXTERN:
         return ObjectId(ObjectId::BOOL_TRUE);
     // Integer
     case ObjectId::MASK_NEGATIVE_INT:
     case ObjectId::MASK_POSITIVE_INT:
-        return ObjectId(ObjectId::MASK_BOOL | (value != 0));
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Float
     case ObjectId::MASK_FLOAT: {
         auto f = unpack_float(oid);
-        return ObjectId(ObjectId::MASK_BOOL | (f != 0 && !std::isnan(f)));
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(f != 0 && !std::isnan(f)));
     }
     // Double
     case ObjectId::MASK_DOUBLE: {
         auto d = unpack_double(oid);
-        return ObjectId(ObjectId::MASK_BOOL | (d != 0 && !std::isnan(d)));
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(d != 0 && !std::isnan(d)));
     }
     // Decimal
     // Note: This assumes 0 is never represented as 0.0, 0.00, etc
     case ObjectId::MASK_DECIMAL_INLINED:
-        return ObjectId(ObjectId::MASK_BOOL | (value != 0));
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Note: Extern decimals will never be zero
     case ObjectId::MASK_DECIMAL_EXTERN:
         return ObjectId(ObjectId::BOOL_TRUE);
@@ -81,56 +352,13 @@ Conversion:
     Decimal -> float (Decimal member function)
 */
 
-/**
- *  @brief Unpacks the positive_int inside an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value inside the ObjectId.
- */
-int64_t Conversions::unpack_positive_int(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_POSITIVE_INT);
 
-    return static_cast<int64_t>(oid.get_value());
-}
-
-
-/**
- *  @brief Unpacks the negative_int inside an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value inside the ObjectId.
- */
-int64_t Conversions::unpack_negative_int(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_NEGATIVE_INT);
-
-    return static_cast<int64_t>((~oid.id) & ObjectId::VALUE_MASK) * -1;
-}
-
-/**
- *  @brief Unpacks an int (positive or negative) inside an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value inside the ObjectId.
- */
-int64_t Conversions::unpack_int(ObjectId oid) {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_NEGATIVE_INT:
-        return unpack_negative_int(oid);
-    case ObjectId::MASK_POSITIVE_INT:
-        return unpack_positive_int(oid);
-    default:
-        throw LogicException("Called unpack_int with incorrect ObjectId type, this should never happen");
-    }
-}
-
-/**
- *  @brief Unpacks the internal Decimal of an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value inside the ObjectId.
- */
-Decimal Conversions::unpack_decimal_inlined(ObjectId oid) {
+Decimal unpack_decimal_inlined(ObjectId oid) {
     assert(oid.get_type() == ObjectId::MASK_DECIMAL_INLINED);
 
-    auto sign     = (oid.id & DECIMAL_SIGN_MASK) != 0;
-    auto number   = (oid.id & DECIMAL_NUMBER_MASK) >> 4;
-    auto decimals = oid.id & DECIMAL_SEPARATOR_MASK;
+    auto sign     = (oid.id & Conversions::DECIMAL_SIGN_MASK) != 0;
+    auto number   = (oid.id & Conversions::DECIMAL_NUMBER_MASK) >> 4;
+    auto decimals =  oid.id & Conversions::DECIMAL_SEPARATOR_MASK;
 
     std::string dec_str;
 
@@ -158,150 +386,67 @@ Decimal Conversions::unpack_decimal_inlined(ObjectId oid) {
         dec_str += (".0");
     }
 
-    // TODO: inefficient, str is already normalized, but the constructor of Decimal normalizes again.
+    // inefficient, str is already normalized, but the constructor of Decimal normalizes again.
     bool error;
     Decimal dec(dec_str, &error);
     assert(!error);
     return dec;
 }
 
-/**
- *  @brief Unpacks the external Decimal of an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value referenced by the ObjectId.
- */
-Decimal Conversions::unpack_decimal_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_DECIMAL_EXTERN || oid.get_type() == ObjectId::MASK_DECIMAL_TMP);
 
-    auto ss = std::stringstream();
-    UnifiedStorage::print_str(ss, oid);
-
-    return Decimal::from_external(ss.str());
-}
-
-
-/**
- *  @brief Unpacks a Decimal(inlined, extern, or tmp).
- *  @param oid The ObjectId containing the Decimal.
- *  @return The Decimal inside ObjectId.
- */
 Decimal Conversions::unpack_decimal(ObjectId oid) {
     switch (oid.get_type()) {
     case ObjectId::MASK_DECIMAL_INLINED:
         return unpack_decimal_inlined(oid);
-    case ObjectId::MASK_DECIMAL_EXTERN:
-    case ObjectId::MASK_DECIMAL_TMP:
-        return unpack_decimal_extern_tmp(oid);
+    case ObjectId::MASK_DECIMAL_EXTERN: {
+        auto ss = std::stringstream();
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+        return Decimal::from_external(ss.str());
+    }
+
+    case ObjectId::MASK_DECIMAL_TMP: {
+        auto ss = std::stringstream();
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+        return Decimal::from_external(ss.str());
+    }
     default:
         throw LogicException("Called unpack_decimal with incorrect ObjectId type, this should never happen");
     }
 }
 
-/**
- *  @brief Unpacks the float inside an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value contained in the ObjectId.
- */
-float Conversions::unpack_float(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_FLOAT);
 
-    auto  value = oid.id;
-    float flt;
-    auto  dst = reinterpret_cast<char*>(&flt);
-
-    dst[0] = value & 0xFF;
-    dst[1] = (value >> 8) & 0xFF;
-    dst[2] = (value >> 16) & 0xFF;
-    dst[3] = (value >> 24) & 0xFF;
-
-    return flt;
-}
-
-/**
- *  @brief Unpacks the double inside an ObjectId.
- *  @param oid The ObjectId to unpack.
- *  @return The value contained in the ObjectId.
- */
-double Conversions::unpack_double(ObjectId oid) {
-    assert(oid.get_sub_type() == ObjectId::MASK_DOUBLE);
-
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-    double dbl;
-    auto dst = reinterpret_cast<char*>(&dbl);
-    ss.read(dst, 8);
-
-    return dbl;
-}
-
-/**
- *  @brief Packs an int64_t into an ObjectId.
- *  @param dec The int64_t value that should be packed.
- *  @return An ObjectId (positive_integer or negative_integer) containing the value or null if it does not fit.
- */
-ObjectId Conversions::pack_int(int64_t i) {
-    uint64_t oid = ObjectId::MASK_POSITIVE_INT;
-
-    if (i < 0) {
-        oid = ObjectId::MASK_NEGATIVE_INT;
-        i *= -1;
-        if (i > INTEGER_MAX) {
-            return ObjectId::get_null();
-        }
-        i = (~i) & ObjectId::VALUE_MASK;
-    } else {
-        if (i > INTEGER_MAX) {
-            return ObjectId::get_null();
-        }
-    }
-
-    return ObjectId(oid | i);
-}
-
-/**
- *  @brief Packs a normalized Decimal into an ObjectId.
- *  @param dec A normalized Decimal that should be packed.
- *  @return An ObjectId (inlined or extern) containing the value.
- */
 ObjectId Conversions::pack_decimal(Decimal dec) {
     auto oid = dec.to_internal();
+
+    // dec.to_internal fails if it can't be inlined
     if (oid == ObjectId::NULL_ID) {
-        auto bytes = dec.to_bytes();
-        oid = UnifiedStorage::get_bytes_id(reinterpret_cast<const char*>(bytes.data()),
-                                           bytes.size(),
-                                           ObjectId::MASK_DECIMAL);
+        auto bytes_vec = dec.to_bytes();
+        auto bytes = reinterpret_cast<const char*>(bytes_vec.data());
+        auto bytes_id = string_manager.get_bytes_id(bytes, bytes_vec.size());
+        if (bytes_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_DECIMAL_EXTERN | bytes_id;
+        } else {
+            oid = ObjectId::MASK_DECIMAL_TMP | tmp_manager.get_bytes_id(bytes, bytes_vec.size());
+        }
     }
     return ObjectId(oid);
 }
 
-/**
- *  @brief Packs a float into an ObjectId.
- *  @param flt The float value that should be packed.
- *  @return An ObjectId containing the value.
- */
-ObjectId Conversions::pack_float(float flt) {
-    auto src = reinterpret_cast<unsigned char*>(&flt);
 
-    auto oid = ObjectId::MASK_FLOAT;
-    oid |= static_cast<uint64_t>(src[0]);
-    oid |= static_cast<uint64_t>(src[1]) << 8;
-    oid |= static_cast<uint64_t>(src[2]) << 16;
-    oid |= static_cast<uint64_t>(src[3]) << 24;
-
-    return ObjectId(oid);
-}
-
-/**
- *  @brief Packs a double into an ObjectId.
- *  @param dbl The double value that should be packed.
- *  @return An ObjectId containing the value.
- */
 ObjectId Conversions::pack_double(double dbl) {
-    auto oid = UnifiedStorage::get_bytes_id(reinterpret_cast<const char*>(&dbl),
-                                            8,
-                                            ObjectId::MASK_DOUBLE);
+    uint64_t oid;
+    auto bytes = reinterpret_cast<const char*>(reinterpret_cast<const char*>(&dbl));
+    auto bytes_id = string_manager.get_bytes_id(bytes, sizeof(double));
+    if (bytes_id != ObjectId::MASK_NOT_FOUND) {
+        oid = ObjectId::MASK_DOUBLE_EXTERN | bytes_id;
+    } else {
+        oid = ObjectId::MASK_DOUBLE_TMP | tmp_manager.get_bytes_id(bytes, sizeof(double));
+    }
     return ObjectId(oid);
 }
+
 
 /**
  *  @brief Calculates the datatype that should be used for expression evaluation.
@@ -404,439 +549,538 @@ double Conversions::to_double(ObjectId oid) {
     }
 }
 
+
+void print_path_node(std::ostream& os, ObjectId node_id) {
+    Conversions::debug_print(os, node_id);
+}
+
+
+void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
+    os << ' ';
+    if (inverse) {
+        os << '^';
+    }
+    Conversions::debug_print(os, edge_id); // No need to escape os, as only IRIs are possible edges
+    os << ' ';
+}
+
+
 // Converts an ObjectId into it's lexical representation.
 std::string Conversions::to_lexical_str(ObjectId oid) {
-    switch (oid.get_sub_type()) {
-    // case ObjectId::MASK_NULL:
-    //     return "null";
-    // case ObjectId::MASK_ANON: {
-    //     char c = oid.get_mod() == ObjectId::MOD_INLINE ? 'b' : 'c';
-    //     return "_:" + std::to_string(c) + std::to_string(oid.get_value());
-    // }
-    case ObjectId::MASK_IRI:
+    switch (RDF_OID::get_type(oid)) {
+    case RDF_OID::Type::BLANK_INLINED: {
+        return "_:b" + std::to_string(unpack_blank(oid));
+    }
+    case RDF_OID::Type::BLANK_TMP: {
+        return "_:c" + std::to_string(unpack_blank(oid));
+    }
+    case RDF_OID::Type::STRING_SIMPLE_INLINE:
+    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
+    case RDF_OID::Type::STRING_SIMPLE_TMP:
+    case RDF_OID::Type::STRING_XSD_INLINE:
+    case RDF_OID::Type::STRING_XSD_EXTERN:
+    case RDF_OID::Type::STRING_XSD_TMP:{
+        return unpack_string(oid);
+    }
+    case RDF_OID::Type::INT56_INLINE:
+    case RDF_OID::Type::INT64_EXTERN:
+    case RDF_OID::Type::INT64_TMP: {
+        int64_t i = unpack_int(oid);
+        return std::to_string(i);
+    }
+    case RDF_OID::Type::FLOAT32: {
+        float f = unpack_float(oid);
+
+        char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
+        jkj::dragonbox::to_chars(f, float_buffer);
+
+        return std::string(float_buffer);
+    }
+    case RDF_OID::Type::DOUBLE64_EXTERN:
+    case RDF_OID::Type::DOUBLE64_TMP: {
+        double d = unpack_double(oid);
+
+        char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
+        jkj::dragonbox::to_chars(d, double_buffer);
+
+        return std::string(double_buffer);
+    }
+    case RDF_OID::Type::BOOL: {
+        return (unpack_bool(oid) ? "true" : "false");
+    }
+    case RDF_OID::Type::PATH: {
+        std::stringstream ss;
+        ss << '[';
+        path_manager.print(
+            ss,
+            Conversions::get_path_id(oid),
+            &print_path_node,
+            &print_path_edge
+        );
+        ss << ']';
+        return ss.str();
+    }
+    case RDF_OID::Type::IRI_INLINE:
+    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
+    case RDF_OID::Type::IRI_EXTERN:
+    case RDF_OID::Type::IRI_TMP: {
         return unpack_iri(oid);
-    case ObjectId::MASK_STRING_SIMPLE:
-        return unpack_string_simple(oid);
-    case ObjectId::MASK_STRING_XSD:
-        return unpack_string_xsd(oid);
-    case ObjectId::MASK_STRING_LANG: {
-        auto [lang, str] = unpack_string_lang(oid);
+    }
+    case RDF_OID::Type::STRING_DATATYPE_INLINE:
+    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
+    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+        auto&& [datatype, str] = unpack_string_datatype(oid);
         return str;
     }
-    case ObjectId::MASK_STRING_DATATYPE:{
-        auto [datatype, str] = unpack_string_datatype(oid);
+    case RDF_OID::Type::STRING_LANG_INLINE:
+    case RDF_OID::Type::STRING_LANG_EXTERN:
+    case RDF_OID::Type::STRING_LANG_TMP: {
+        auto&& [lang, str] = unpack_string_lang(oid);
         return str;
     }
-    case ObjectId::MASK_INT:
-        return std::to_string(unpack_int(oid));
-    case ObjectId::MASK_DECIMAL:
-        return unpack_decimal(oid).to_string();
-    case ObjectId::MASK_FLOAT:
-        return std::to_string(unpack_float(oid));
-    case ObjectId::MASK_DOUBLE:
-        return std::to_string(unpack_double(oid));
-    case ObjectId::MASK_DT_DATE:
-    case ObjectId::MASK_DT_DATETIME:
-    case ObjectId::MASK_DT_TIME:
-    case ObjectId::MASK_DT_DATETIMESTAMP: {
-        return DateTime(oid).get_value_string();
+    case RDF_OID::Type::DATE:
+    case RDF_OID::Type::DATETIME:
+    case RDF_OID::Type::TIME:
+    case RDF_OID::Type::DATETIMESTAMP: {
+        DateTime datetime = unpack_date(oid);
+        return datetime.get_value_string();
     }
-    case ObjectId::MASK_BOOL: {
-        if (oid.get_value() == 1) {
-            return "true";
-        } else {
-            return "false";
-        }
+    case RDF_OID::Type::DECIMAL_INLINE:
+    case RDF_OID::Type::DECIMAL_EXTERN:
+    case RDF_OID::Type::DECIMAL_TMP: {
+        Decimal decimal = unpack_decimal(oid);
+        return decimal.to_string();
     }
-    default:
-        throw NotSupportedException("No lexical form defined for ObjectId of sub-type " + std::to_string(oid.get_sub_type()));
+    case RDF_OID::Type::NULL_ID: {
+        return "";
     }
-}
-
-
-/**
- * @brief Unpacks the inlined string inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return std::string string inside the ObjectId.
- */
-std::string Conversions::unpack_string_simple_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_SIMPLE_INLINED);
-
-    char str[8];
-    int  shift_size = 6 * 8;
-    for (int i = 0; i < ObjectId::MAX_INLINED_BYTES; i++) {
-        uint8_t byte = (oid.id >> shift_size) & 0xFF;
-        str[i]       = byte;
-        shift_size -= 8;
     }
-    str[7] = '\0';
-
-    return std::string(str);
+    return "";
 }
 
-/**
- * @brief Unpacks the external string inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return std::string string inside the ObjectId.
- */
-std::string Conversions::unpack_string_simple_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_SIMPLE_EXTERN || oid.get_type() == ObjectId::MASK_STRING_SIMPLE_TMP);
 
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    return ss.str();
-}
-
-/**
- * @brief Unpacks the inlined xsd:string inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return std::string string inside the ObjectId.
- */
-std::string Conversions::unpack_string_xsd_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_XSD_INLINED);
-
-    char str[8];
-    int  shift_size = 6 * 8;
-    for (int i = 0; i < ObjectId::MAX_INLINED_BYTES; i++) {
-        uint8_t byte = (oid.id >> shift_size) & 0xFF;
-        str[i]       = byte;
-        shift_size -= 8;
+std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid) {
+    switch (RDF_OID::get_type(oid)) {
+    case RDF_OID::Type::BLANK_INLINED: {
+        os << "_:b";
+        os << unpack_blank(oid);
+        break;
     }
-    str[7] = '\0';
-
-    return std::string(str);
-}
-
-/**
- * @brief Unpacks the external xsd:string inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return std::string string inside the ObjectId.
- */
-std::string Conversions::unpack_string_xsd_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_XSD_EXTERN || oid.get_type() == ObjectId::MASK_STRING_XSD_TMP);
-
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    return ss.str();
-}
-
-/**
- * @brief Unpacks the inlined string with language inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return a std::pair of the language id and the string contained in the ObjectId.
- */
-std::pair<uint16_t, std::string> Conversions::unpack_string_lang_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_LANG_INLINED);
-    const uint8_t* data = reinterpret_cast<uint8_t*>(&oid.id);
-
-    char str[6] = {}; // 5 + 1 for null byte, zero initialized
-
-    uint16_t lang_id = data[5];
-    lang_id |= static_cast<uint16_t>(data[6]) << 8;
-
-    for (size_t i = 0; i < 5; i++) {
-        str[i] = data[4 - i];
+    case RDF_OID::Type::BLANK_TMP: {
+        os << "_:c";
+        os << unpack_blank(oid);
+        break;
     }
-
-    return { lang_id, std::string(str) };
-}
-
-/**
- * @brief Unpacks the external string with language from an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return a std::pair of the language id and the string contained in the ObjectId.
- */
-std::pair<uint16_t, std::string> Conversions::unpack_string_lang_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_LANG_EXTERN || oid.get_type() == ObjectId::MASK_STRING_LANG_TMP);
-
-    auto language_id = oid.get_value() >> (ObjectId::STR_LANG_INLINE_BYTES * 8);
-
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    return { language_id, ss.str() };
-}
-
-/**
- * @brief Unpacks the inlined string with datatype inside an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return a std::pair of the datatype id and the string contained in the ObjectId.
- */
-std::pair<uint16_t, std::string> Conversions::unpack_string_datatype_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_DATATYPE_INLINED);
-    const uint8_t* data = reinterpret_cast<uint8_t*>(&oid.id);
-
-    char str[6] = {}; // 5 + 1 for null byte, zero initialized
-
-    uint16_t datatype_id = data[5];
-    datatype_id |= static_cast<uint16_t>(data[6]) << 8;
-
-    for (size_t i = 0; i < 5; i++) {
-        str[i] = data[4 - i];
+    case RDF_OID::Type::STRING_SIMPLE_INLINE:
+    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
+    case RDF_OID::Type::STRING_SIMPLE_TMP: {
+        os << '"';
+        print_string(oid, os);
+        os << '"';
+        break;
     }
+    case RDF_OID::Type::STRING_XSD_INLINE:
+    case RDF_OID::Type::STRING_XSD_EXTERN:
+    case RDF_OID::Type::STRING_XSD_TMP:{
+        os << '"';
+        print_string(oid, os);
+        os << "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+        break;
+    }
+    case RDF_OID::Type::INT56_INLINE:
+    case RDF_OID::Type::INT64_EXTERN:
+    case RDF_OID::Type::INT64_TMP: {
+        os << Conversions::unpack_int(oid);
+        break;
+    }
+    case RDF_OID::Type::FLOAT32: {
+        float f = Conversions::unpack_float(oid);
 
-    return { datatype_id, std::string(str) };
+        char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
+        jkj::dragonbox::to_chars(f, float_buffer);
+
+        os << float_buffer;
+        break;
+    }
+    case RDF_OID::Type::DOUBLE64_EXTERN:
+    case RDF_OID::Type::DOUBLE64_TMP: {
+        double d = Conversions::unpack_double(oid);
+
+        char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
+        jkj::dragonbox::to_chars(d, double_buffer);
+
+        os << double_buffer;
+        break;
+    }
+    case RDF_OID::Type::BOOL: {
+        os << (Conversions::unpack_bool(oid) ? "true" : "false")
+           << "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+        break;
+    }
+    case RDF_OID::Type::PATH: {
+        using namespace std::placeholders;
+        os << '[';
+        path_manager.print(
+            os,
+            Conversions::get_path_id(oid),
+            std::bind(&print_path_node, _1, _2),
+            std::bind(&print_path_edge, _1, _2, _3)
+        );
+        os << ']';
+        break;
+    }
+    case RDF_OID::Type::IRI_INLINE:
+    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
+    case RDF_OID::Type::IRI_EXTERN:
+    case RDF_OID::Type::IRI_TMP: {
+        os << '<';
+        Conversions::print_iri(oid, os);
+        os << '>';
+        break;
+    }
+    case RDF_OID::Type::STRING_DATATYPE_INLINE:
+    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
+    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+        auto&& [datatype, str] = Conversions::unpack_string_datatype(oid);
+        os << '"';
+        os << str;
+        os << "\"^^<";
+        os << datatype;
+        os << ">";
+        break;
+    }
+    case RDF_OID::Type::STRING_LANG_INLINE:
+    case RDF_OID::Type::STRING_LANG_EXTERN:
+    case RDF_OID::Type::STRING_LANG_TMP: {
+        auto&& [lang, str] = Conversions::unpack_string_lang(oid);
+        os << '"';
+        os << str;
+        os << "\"@";
+        os << lang;
+        break;
+    }
+    case RDF_OID::Type::DATE:
+    case RDF_OID::Type::DATETIME:
+    case RDF_OID::Type::TIME:
+    case RDF_OID::Type::DATETIMESTAMP: {
+        DateTime datetime = Conversions::unpack_date(oid);
+
+        os << '"' << datetime.get_value_string();
+        os << "\"^^<" << datetime.get_datatype_string() << ">";
+        break;
+    }
+    case RDF_OID::Type::DECIMAL_INLINE:
+    case RDF_OID::Type::DECIMAL_EXTERN:
+    case RDF_OID::Type::DECIMAL_TMP: {
+        auto decimal = Conversions::unpack_decimal(oid);
+        os << decimal;
+        break;
+    }
+    case RDF_OID::Type::NULL_ID: {
+        os << "NULL";
+        break;
+    }
+    }
+    return os;
 }
 
-/**
- * @brief Unpacks the external string with datatype from an ObjectId.
- *
- * @param oid ObjectId to unpack.
- * @return a std::pair of the datatype id and the string contained in the ObjectId.
- */
-std::pair<uint16_t, std::string> Conversions::unpack_string_datatype_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_STRING_DATATYPE_EXTERN || oid.get_type() == ObjectId::MASK_STRING_DATATYPE_TMP);
 
-    auto datatype_id = oid.get_value() >> (ObjectId::STR_DT_INLINE_BYTES * 8);
-
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    return { datatype_id, ss.str() };
-}
-
-/**
- * @brief Packs a string into an ObjectId.
- *
- * @param str string to pack.
- * @return ObjectId containing the string.
- */
 ObjectId Conversions::pack_string_simple(const std::string& str) {
     uint64_t oid;
     if (str.size() == 0) {
-        return ObjectId(ObjectId::STRING_SIMPLE_EMPTY);
+        return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
     } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
         oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
     } else {
-        oid = UnifiedStorage::get_str_id(str, ObjectId::MASK_STRING_SIMPLE);
+        auto str_id = string_manager.get_str_id(str);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_STRING_SIMPLE_EXTERN | str_id;
+        } else {
+            oid = ObjectId::MASK_STRING_SIMPLE_TMP | tmp_manager.get_str_id(str);
+        }
     }
     return ObjectId(oid);
 }
 
-/**
- * @brief Packs a xsd:string into an ObjectId.
- *
- * @param str string to pack.
- * @return ObjectId containing the string.
- */
+
 ObjectId Conversions::pack_string_xsd(const std::string& str) {
     uint64_t oid;
     if (str.size() == 0) {
-        return ObjectId(ObjectId::STRING_XSD_EMPTY);
+        return ObjectId(ObjectId::MASK_STRING_XSD_INLINED);
     } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
         oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_XSD_INLINED;
     } else {
-        oid = UnifiedStorage::get_str_id(str, ObjectId::MASK_STRING_XSD);
+        auto str_id = string_manager.get_str_id(str);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_STRING_XSD_EXTERN | str_id;
+        } else {
+            oid = ObjectId::MASK_STRING_XSD_TMP | tmp_manager.get_str_id(str);
+        }
     }
     return ObjectId(oid);
 }
 
-/**
- * @brief Packs a string with language into an ObjectId.
- *
- * @param lang language of the string to pack.
- * @param str string to pack.
- * @return ObjectId containing the string with language.
- */
-ObjectId Conversions::pack_string_lang(uint16_t lang, const std::string& str) {
-    uint64_t id;
-    uint64_t lang64 = static_cast<uint64_t>(lang) << (ObjectId::STR_LANG_INLINE_BYTES * 8);
-    if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_LANG_INLINED | lang64);
-    } else if (str.size() <= ObjectId::STR_LANG_INLINE_BYTES) {
-        id = Inliner::inline_string5(str.c_str()) | ObjectId::MASK_STRING_LANG_INLINED | lang64;
-    } else {
-        id = UnifiedStorage::get_str_id(str, ObjectId::MASK_STRING_LANG) | lang64;
-    }
-    return ObjectId(id);
-}
 
-/**
- * @brief Packs a string with datatype into an ObjectId.
- *
- * @param dt datatype of the string to pack.
- * @param str string to pack.
- * @return ObjectId containing the string with datatype.
- */
-ObjectId Conversions::pack_string_datatype(uint16_t dt, const std::string& str) {
-    uint64_t id;
-    uint64_t dt64 = static_cast<uint64_t>(dt) << (ObjectId::STR_DT_INLINE_BYTES * 8);
-    if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_DATATYPE_INLINED | dt64);
-    } else if (str.size() <= ObjectId::STR_DT_INLINE_BYTES) {
-        id = Inliner::inline_string5(str.c_str()) | ObjectId::MASK_STRING_DATATYPE_INLINED | dt64;
-    } else {
-        id = UnifiedStorage::get_str_id(str, ObjectId::MASK_STRING_DATATYPE) | dt64;
-    }
-    return ObjectId(id);
-}
-
-/**
- * @brief Pack an IRI string into an ObjectId.
- *
- * @param str IRI string to pack.
- * @return ObjectId containing the IRI.
- */
 ObjectId Conversions::pack_iri(const std::string& str) {
     // If a prefix matches the IRI, store just the suffix and a pointer to the prefix
-    uint64_t prefix_id = 0;
-    std::string suffix = str;
-    for (uint64_t i = 1; i < rdf_model.catalog().prefixes.size(); ++i) {
-        std::string& prefix = rdf_model.catalog().prefixes[i];
-        if (strncmp(str.c_str(), prefix.c_str(), prefix.size()) == 0) {
-            suffix.erase(0, prefix.size());
-            prefix_id = i << ObjectId::IRI_INLINE_BYTES*8;
-            break;
-        }
-    }
+    auto [prefix_id, prefix_size] = rdf_model.catalog().prefixes.get_prefix_id(str);
+
+    auto suffix = str.substr(prefix_size);
+
+    auto prefix_id_shifted = static_cast<uint64_t>(prefix_id) << ObjectId::IRI_INLINE_BYTES*8;
 
     uint64_t suffix_id;
-    if (str.size() <= ObjectId::IRI_INLINE_BYTES) {
+    if (suffix.size() <= ObjectId::IRI_INLINE_BYTES) {
         suffix_id = Inliner::inline_iri(suffix.c_str()) | ObjectId::MASK_IRI_INLINED;
     } else {
-        suffix_id = UnifiedStorage::get_str_id(suffix, ObjectId::MASK_IRI);
-    }
-    return ObjectId(suffix_id | prefix_id);
-}
-
-/**
- * @brief Unpack an IRI string from an ObjectId.
- *
- * @param oid ObjectId containing the IRI to unpack.
- * @return std::string with the IRI.
- */
-std::string Conversions::unpack_iri_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_IRI_INLINED);
-
-    auto prefix_id = (oid.id >> 48) & 0xFF;
-    auto prefix = rdf_model.catalog().prefixes[prefix_id];
-
-    for (int i = 5; i >= 0; i--) {
-        uint8_t c = (oid.id >> (i*8)) & 0xFF;
-        if (c == 0) {
-            break;
+        auto str_id = string_manager.get_str_id(suffix);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            suffix_id = ObjectId::MASK_IRI_EXTERN | str_id;
+        } else {
+            suffix_id = ObjectId::MASK_IRI_TMP | tmp_manager.get_str_id(suffix);
         }
-        prefix += static_cast<char>(c);
     }
-
-    return prefix;
+    return ObjectId(suffix_id | prefix_id_shifted);
 }
 
-std::string Conversions::unpack_iri_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_IRI_EXTERN || oid.get_type() == ObjectId::MASK_IRI_TMP);
 
-    auto prefix_id = oid.get_value() >>(ObjectId::IRI_INLINE_BYTES * 8);
-    auto prefix = rdf_model.catalog().prefixes[prefix_id];
+void Conversions::print_iri(ObjectId oid, std::ostream& os) {
+    auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
+    auto& prefix = rdf_model.catalog().prefixes.get_prefix(prefix_id);
+    os << prefix;
 
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    prefix.append(ss.str());
-    return prefix;
-}
-
-std::string Conversions::unpack_iri(ObjectId oid) {
     switch (oid.get_type()) {
-    case ObjectId::MASK_IRI_INLINED:
-        return unpack_iri_inlined(oid);
-    case ObjectId::MASK_IRI_EXTERN:
-    case ObjectId::MASK_IRI_TMP:
-        return unpack_iri_extern_tmp(oid);
+    case ObjectId::MASK_IRI_INLINED: {
+        Inliner::print_string_inlined<6>(os, oid.id);
+        break;
+    }
+    case ObjectId::MASK_IRI_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(os, external_id);
+        break;
+    }
+    case ObjectId::MASK_IRI_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(os, external_id);
+        break;
+    }
     default:
         throw LogicException("Called unpack_iri with incorrect ObjectId type, this should never happen");
     }
 }
 
-std::string Conversions::unpack_string_simple(ObjectId oid) {
+std::string Conversions::unpack_iri(ObjectId oid) {
+    auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
+    auto prefix = rdf_model.catalog().prefixes.get_prefix(prefix_id);
+
+    switch (oid.get_type()) {
+    case ObjectId::MASK_IRI_INLINED: {
+        return prefix + Inliner::get_string_inlined<6>(oid.id);
+    }
+    case ObjectId::MASK_IRI_EXTERN: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_TMP: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+
+        prefix.append(ss.str());
+        return prefix;
+    }
+    default:
+        throw LogicException("Called unpack_iri with incorrect ObjectId type, this should never happen");
+    }
+}
+
+
+void Conversions::print_string(ObjectId oid, std::ostream& os) {
     switch (oid.get_type()) {
     case ObjectId::MASK_STRING_SIMPLE_INLINED:
-        return unpack_string_simple_inlined(oid);
+    case ObjectId::MASK_STRING_XSD_INLINED: {
+        Inliner::print_string_inlined<7>(os, oid.id);
+        break;
+    }
     case ObjectId::MASK_STRING_SIMPLE_EXTERN:
+    case ObjectId::MASK_STRING_XSD_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(os, external_id);
+        break;
+    }
     case ObjectId::MASK_STRING_SIMPLE_TMP:
-        return unpack_string_simple_extern_tmp(oid);
+    case ObjectId::MASK_STRING_XSD_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(os, external_id);
+        break;
+    }
     default:
         throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
     }
 }
 
-std::string Conversions::unpack_string_xsd(ObjectId oid) {
+
+std::string Conversions::unpack_string(ObjectId oid) {
     switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_XSD_INLINED:
-        return unpack_string_xsd_inlined(oid);
-    case ObjectId::MASK_STRING_XSD_EXTERN:
-    case ObjectId::MASK_STRING_XSD_TMP:
-        return unpack_string_xsd_extern_tmp(oid);
+    case ObjectId::MASK_STRING_SIMPLE_INLINED:
+    case ObjectId::MASK_STRING_XSD_INLINED: {
+        return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.id);
+    }
+    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
+    case ObjectId::MASK_STRING_XSD_EXTERN: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+        return ss.str();
+    }
+    case ObjectId::MASK_STRING_SIMPLE_TMP:
+    case ObjectId::MASK_STRING_XSD_TMP: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+        return ss.str();
+    }
     default:
         throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
     }
 }
 
-std::pair<uint16_t, std::string> Conversions::unpack_string_lang(ObjectId oid) {
+
+// returns <lang, str>
+std::pair<std::string, std::string> Conversions::unpack_string_lang(ObjectId oid) {
+    std::string str;
+    std::string lang;
+
     switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_LANG_INLINED:
-        return unpack_string_lang_inlined(oid);
-    case ObjectId::MASK_STRING_LANG_EXTERN:
-    case ObjectId::MASK_STRING_LANG_TMP:
-        return unpack_string_lang_extern_tmp(oid);
+    case ObjectId::MASK_STRING_LANG_INLINED: {
+        str = Inliner::get_string_inlined<5>(oid.id);
+        break;
+    }
+    case ObjectId::MASK_STRING_LANG_EXTERN: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+
+        str =  ss.str();
+        break;
+    }
+    case ObjectId::MASK_STRING_LANG_TMP: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+
+        str =  ss.str();
+        break;
+    }
+    default:
+        throw LogicException("Called unpack_string_lang with incorrect ObjectId type, this should never happen");
+    }
+
+    auto lang_id = oid.get_value() >> TMP_SHIFT;
+    if (lang_id == (LAST_TMP_ID >> TMP_SHIFT)) {
+        auto found = str.find_last_of('@');
+        if (found == std::string::npos) {
+            throw LogicException("string with lang:LAST_TMP_ID `" + str + "` must have @ as separator");
+        }
+        lang = str.substr(found+1);
+        str = str.substr(0,found);
+    } else {
+        lang = rdf_model.catalog().languages[lang_id];
+    }
+    return std::make_pair(std::move(lang), std::move(str));
+}
+
+
+// Doesn't print the language
+void Conversions::print_string_lang(ObjectId oid, std::ostream& os) {
+    switch (oid.get_type()) {
+    case ObjectId::MASK_STRING_LANG_INLINED: {
+        Inliner::print_string_inlined<5>(os, oid.id);
+        break;
+    }
+    case ObjectId::MASK_STRING_LANG_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(os, external_id);
+        break;
+    }
+    case ObjectId::MASK_STRING_LANG_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(os, external_id);
+        break;
+    }
     default:
         throw LogicException("Called unpack_string_lang with incorrect ObjectId type, this should never happen");
     }
 }
 
-std::pair<uint16_t, std::string> Conversions::unpack_string_datatype(ObjectId oid) {
+
+// returns <datatype, str>
+std::pair<std::string, std::string> Conversions::unpack_string_datatype(ObjectId oid) {
+    std::string str;
+    std::string datatype;
+
     switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_DATATYPE_INLINED:
-        return unpack_string_datatype_inlined(oid);
-    case ObjectId::MASK_STRING_DATATYPE_EXTERN:
-    case ObjectId::MASK_STRING_DATATYPE_TMP:
-        return unpack_string_datatype_extern_tmp(oid);
+    case ObjectId::MASK_STRING_DATATYPE_INLINED: {
+        str = Inliner::get_string_inlined<5>(oid.id);
+        break;
+    }
+    case ObjectId::MASK_STRING_DATATYPE_EXTERN: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+
+        str =  ss.str();
+        break;
+    }
+    case ObjectId::MASK_STRING_DATATYPE_TMP: {
+        std::stringstream ss;
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+
+        str =  ss.str();
+        break;
+    }
     default:
         throw LogicException("Called unpack_string_data with incorrect ObjectId type, this should never happen");
     }
+
+    auto datatype_id = oid.get_value() >> TMP_SHIFT;
+    if (datatype_id == (LAST_TMP_ID >> TMP_SHIFT)) {
+        auto found = str.find_last_of('^');
+        if (found == std::string::npos) {
+            throw LogicException("string with datatype:LAST_TMP_ID `" + str + "` must have ^ as separator");
+        }
+        datatype = str.substr(found+1);
+        str = str.substr(0,found);
+    } else {
+        datatype = rdf_model.catalog().datatypes[datatype_id];
+    }
+    return std::make_pair(std::move(datatype), std::move(str));
 }
 
-std::string Conversions::unpack_named_node(ObjectId oid) {
+
+// Doesn't print the datatype
+void Conversions::print_string_datatype(ObjectId oid, std::ostream& os) {
     switch (oid.get_type()) {
-    case ObjectId::MASK_NAMED_NODE_INLINED:
-        return unpack_named_node_inlined(oid);
-    case ObjectId::MASK_NAMED_NODE_EXTERN:
-    case ObjectId::MASK_NAMED_NODE_TMP:
-        return unpack_named_node_extern_tmp(oid);
+    case ObjectId::MASK_STRING_DATATYPE_INLINED: {
+        Inliner::print_string_inlined<5>(os, oid.id);
+        break;
+    }
+    case ObjectId::MASK_STRING_DATATYPE_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(os, external_id);
+        break;
+    }
+    case ObjectId::MASK_STRING_DATATYPE_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(os, external_id);
+        break;
+    }
     default:
-        throw LogicException("Called unpack_named_node with incorrect ObjectId type, this should never happen");
+        throw LogicException("Called unpack_string_data with incorrect ObjectId type, this should never happen");
     }
-}
-
-std::string Conversions::unpack_named_node_inlined(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_NAMED_NODE_INLINED);
-
-    char str[8];
-    int  shift_size = 6 * 8;
-    for (int i = 0; i < ObjectId::MAX_INLINED_BYTES; i++) {
-        uint8_t byte = (oid.id >> shift_size) & 0xFF;
-        str[i]       = byte;
-        shift_size -= 8;
-    }
-    str[7] = '\0';
-
-    return std::string(str);
-}
-
-std::string Conversions::unpack_named_node_extern_tmp(ObjectId oid) {
-    assert(oid.get_type() == ObjectId::MASK_NAMED_NODE_EXTERN
-        || oid.get_type() == ObjectId::MASK_NAMED_NODE_TMP);
-
-    std::stringstream ss;
-    UnifiedStorage::print_str(ss, oid);
-
-    return ss.str();
 }

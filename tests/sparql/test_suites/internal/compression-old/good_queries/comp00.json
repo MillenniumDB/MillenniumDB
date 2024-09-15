@@ -1,0 +1,96 @@
+{
+    "head": {
+        "vars": [
+            "s"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "hello"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "ク"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "字",
+                    "xml:lang": "ja-JP"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "ی",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "Pride and Prejudice"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "🧑‍🦱✌🏾🍎👨🏽‍⚕️"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "甲樹着說那讀土",
+                    "xml:lang": "zh-CN"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "∝∠∧ΘøçÞ±",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "bye"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "カ"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "護多ウイヲ下本リヌス",
+                    "xml:lang": "ja-JP"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "生んろみや善都ウテ",
+                    "xml:lang": "qw"
+                }
+            },
+            {
+                "s": {
+                    "type": "literal",
+                    "value": "세계를 향한 대화",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            }
+        ]
+    }
+}

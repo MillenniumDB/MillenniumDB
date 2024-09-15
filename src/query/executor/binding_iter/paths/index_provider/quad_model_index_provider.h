@@ -1,4 +1,5 @@
 #include "query/executor//binding_iter/paths/index_provider/path_index.h"
+#include <unordered_map>
 
 namespace Paths {
 

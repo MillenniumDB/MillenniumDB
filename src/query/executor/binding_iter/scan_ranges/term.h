@@ -23,4 +23,6 @@ public:
     }
 
     void try_assign(Binding&, ObjectId) override { }
+
+    ObjectId get_oid() { return object_id; }
 };

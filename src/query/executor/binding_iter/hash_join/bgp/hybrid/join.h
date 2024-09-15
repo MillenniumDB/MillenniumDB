@@ -16,26 +16,26 @@ public:
     Join(
         std::unique_ptr<BindingIter> lhs,
         std::unique_ptr<BindingIter> rhs,
-        std::vector<VarId>&&           join_vars,
-        std::vector<VarId>&&           lhs_vars,
-        std::vector<VarId>&&           rhs_vars
+        std::vector<VarId>&&         join_vars,
+        std::vector<VarId>&&         lhs_vars,
+        std::vector<VarId>&&         rhs_vars
     );
 
     ~Join();
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
+
+    std::unique_ptr<BindingIter> lhs;
+    std::unique_ptr<BindingIter> rhs;
 
 private:
     static constexpr size_t MAX_HASH_TABLE_SIZE = 100000;
 
     uint64_t depth = 3;
-
-    std::unique_ptr<BindingIter> lhs;
-    std::unique_ptr<BindingIter> rhs;
 
     Binding* parent_binding;
 
@@ -98,9 +98,6 @@ private:
     uint64_t last_pk_start[N];
 
     HashJoin::BGP::Key<N> probe_key;
-
-    // Results counter: to statistics
-    uint64_t found = 0;
 
     bool build_0_partition(); // True if all build is in memory hash table
     void build_hash_table();

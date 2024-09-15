@@ -7,14 +7,20 @@
 #include <vector>
 
 #include "graph_models/object_id.h"
-#include "query/var_id.h"
-#include "query/query_context.h"
+#include "query/executor/query_executor/mql/return_executor.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/query_context.h"
+#include "query/var_id.h"
 
 namespace MQL {
 class ExecutorConstructor : public OpVisitor {
+private:
+    ReturnType ret;
+
 public:
+    ExecutorConstructor(ReturnType ret): ret(ret) {}
+
     std::unique_ptr<QueryExecutor> executor;
 
     // Contains mandatory equalities of variables with constants

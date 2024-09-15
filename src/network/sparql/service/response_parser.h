@@ -34,11 +34,13 @@ public:
     std::string query;
     std::string prefixes;
     std::variant<VarId, std::string> var_or_iri;
+
     // Vars that are in scope after evaluating service, these have to be copied into the parent binding.
     const std::set<VarId>& scope_vars;
+
     // Vars that are fixed from the outside, these have to be passed to the service using VALUES.
     const std::set<VarId>& fixed_vars;
-    // std::map<std::string, VarId> varname2varid; // Vars within SERVICE query and not in assigned vars
+
     std::chrono::duration<float, std::milli> request_duration;
     std::chrono::duration<float, std::milli> parse_duration;
 
@@ -56,9 +58,7 @@ private:
 
     // Methods to build object id
     ObjectId get_object_id(const std::string& attr_type, const std::string& attr_value, const std::string& extra_data);
-    uint8_t  get_prefix_id(std::string& value);
-    uint64_t get_datatype_id(const std::string& value);
-    uint64_t get_language_id(const std::string& value);
+
     uint64_t get_bnode_id(const std::string& value);
 
     // Variables used in all formats

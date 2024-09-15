@@ -1,0 +1,8 @@
+InlayHints:
+  Enabled: No
+  Designators: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+CompileFlags:
+  CompilationDatabase: build/Release/

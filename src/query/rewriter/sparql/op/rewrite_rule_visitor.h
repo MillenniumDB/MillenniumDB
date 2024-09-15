@@ -40,11 +40,10 @@ public:
     void begin_visit(std::unique_ptr<Op>& op) {
     /*       _\|/_
              (o o)
-     +----oOO-{_}-OOo-------------------------------------------------------+
-     |To prevent errors always begin here, if the op has a where and the    |
-     |rewrite rule only affects elements inside the where clause then no    |
-     |errors would arise if the visitation began by op->accept_visitor.     |
-     +---------------------------------------------------------------------*/
+     +----oOO-{_}-OOo---------------------------------------------------+
+     | To prevent errors always use begin_visit to start the rewriting, |
+     | do not use op->accept_visitor directly                           |
+     +-----------------------------------------------------------------*/
         do {
             has_rewritten = false;
             for (auto& rule : rules) {
@@ -79,7 +78,6 @@ public:
     void visit(OpSelect&)               override;
     void visit(OpAsk&)                  override;
     void visit(OpService&)              override;
-    void visit(OpWhere&)                override;
     void visit(OpBind&)                 override;
     void visit(OpValues&)               override;
     void visit(OpUnitTable&)            override;

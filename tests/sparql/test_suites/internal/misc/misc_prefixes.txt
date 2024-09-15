@@ -1,0 +1,7 @@
+http://www.path.com/
+http
+https
+http://
+https://
+http://www.
+https://www.

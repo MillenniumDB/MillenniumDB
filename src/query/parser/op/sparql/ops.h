@@ -24,4 +24,7 @@
 #include "query/parser/op/sparql/op_union.h"
 #include "query/parser/op/sparql/op_unit_table.h"
 #include "query/parser/op/sparql/op_values.h"
-#include "query/parser/op/sparql/op_where.h"
+
+#include "query/parser/op/sparql/update/op_delete_data.h"
+#include "query/parser/op/sparql/update/op_insert_data.h"
+#include "query/parser/op/sparql/update/op_update.h"

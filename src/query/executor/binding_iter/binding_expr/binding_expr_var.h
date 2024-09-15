@@ -1,6 +1,5 @@
 #pragma once
 
-#include "query/query_context.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 class BindingExprVar : public BindingExpr {
@@ -14,8 +13,7 @@ public:
         return binding[var];
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '?' << get_query_ctx().get_var_name(var);
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };

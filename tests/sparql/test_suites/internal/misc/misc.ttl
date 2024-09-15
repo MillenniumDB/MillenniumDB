@@ -109,6 +109,12 @@
 :1 :t23 :2 .
 :4 :t23 :5 .
 
+:n1 :t24 -4 .
+:n2 :t24 -2 .
+:n3 :t24 0 .
+:n4 :t24 -10 .
+:n5 :t24 8 .
+
 # bind/data.ttl SPARQL 1.1 Test Suite
 @prefix : <http://example.org/> .
 :s1 :p 1 .

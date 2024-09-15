@@ -12,8 +12,7 @@
 #include "graph_models/object_id.h"
 #include "query/var_id.h"
 #include "storage/file_id.h"
-#include "storage/page.h"
-#include "storage/page_id.h"
+#include "storage/page/private_page.h"
 
 class MergeOrderedTupleIdCollection;
 
@@ -21,7 +20,7 @@ class TupleIdCollection {
 friend class MergeOrderedTupleIdCollection;
 public:
     TupleIdCollection(
-        Page& page,
+        PPage& page,
         const std::map<VarId, uint_fast32_t>& saved_vars,
         const std::vector<VarId>& order_vars,
         const std::vector<bool>& ascending,
@@ -31,7 +30,7 @@ public:
     ~TupleIdCollection();
 
     bool is_full() const {
-        return sizeof(tuple_count) + (sizeof(ObjectId)*saved_vars.size()*(1 + *tuple_count)) > Page::MDB_PAGE_SIZE;
+        return sizeof(tuple_count) + (sizeof(ObjectId)*saved_vars.size()*(1 + *tuple_count)) > PPage::SIZE;
     }
 
     inline uint64_t get_tuple_count() const noexcept { return *tuple_count; }
@@ -46,7 +45,7 @@ public:
     void reset();
 
 private:
-    Page& page;
+    PPage& page;
     const std::map<VarId, uint_fast32_t>& saved_vars;
     const std::vector<VarId>& order_vars;
     const std::vector<bool>& ascending;
@@ -89,5 +88,5 @@ private:
 
     int64_t(*compare)(ObjectId, ObjectId);
 
-    std::unique_ptr<TupleIdCollection> get_run(Page& run_page);
+    std::unique_ptr<TupleIdCollection> get_run(PPage& run_page);
 };

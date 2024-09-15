@@ -50,12 +50,9 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpJoin(\n";
+        os << std::string(indent, ' ') << "OpJoin()\n";
         lhs->print_to_ostream(os, indent + 2);
         rhs->print_to_ostream(os, indent + 2);
-        os << std::string(indent, ' ');
-        os << ")\n";
         return os;
     }
 };

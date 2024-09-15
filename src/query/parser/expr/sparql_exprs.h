@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/parser/expr/sparql/atom/expr_term.h"
-#include "query/parser/expr/sparql/atom/expr_object_id.h"
 #include "query/parser/expr/sparql/atom/expr_var.h"
 
 #include "query/parser/expr/sparql/unary/expr_not.h"

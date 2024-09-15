@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "query/executor/binding_iter.h"
-#include "query/id.h"
 #include "storage/index/random_access_table/random_access_table.h"
 
 class EdgeTableLookup : public BindingIter {
@@ -15,19 +14,27 @@ public:
         Id                    edge,
         Id                    from,
         Id                    to,
-        Id                    type
+        Id                    type,
+        bool                  from_assigned,
+        bool                  to_assigned,
+        bool                  type_assigned
     ) :
         table         (table),
         edge          (edge),
         from          (from),
         to            (to),
-        type          (type) { }
+        type          (type),
+        from_assigned (from_assigned),
+        to_assigned   (to_assigned),
+        type_assigned (type_assigned) { }
 
-    void analyze(std::ostream&, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
+
+    uint64_t lookups = 0;
 
 private:
     RandomAccessTable<3>& table;
@@ -35,8 +42,9 @@ private:
     Id from;
     Id to;
     Id type;
-    uint64_t lookups = 0;
-    uint64_t results = 0;
+    bool from_assigned;
+    bool to_assigned;
+    bool type_assigned;
 
     // because the interface will call next() until returns false, this variable prevent giving
     // the same result multiple times

@@ -3,10 +3,8 @@
 #include <memory>
 #include <sstream>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "storage/unified_storage.h"
 
 namespace SPARQL {
 class BindingExprLang : public BindingExpr {
@@ -19,31 +17,35 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        switch (expr_oid.get_generic_type()) {
-        case ObjectId::MASK_STRING: {
-            if (expr_oid.get_sub_type() == ObjectId::MASK_STRING_LANG) {
-                auto lang_id = (expr_oid.id & ObjectId::MASK_LITERAL_TAG) >> ObjectId::STR_LANG_INLINE_BYTES * 8;
-                std::stringstream ss;
-                UnifiedStorage::print_language(ss, lang_id);
-                return Conversions::pack_string_simple(ss.str());
-            } else {
-                return ObjectId(ObjectId::STRING_SIMPLE_EMPTY);
-            }
+        switch(RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::STRING_LANG: {
+            auto&& [lang, str] = Conversions::unpack_string_lang(expr_oid);
+            return Conversions::pack_string_simple(lang);
         }
-        case ObjectId::MASK_NUMERIC:
-        case ObjectId::MASK_DT:
-        case ObjectId::MASK_BOOL: {
-             return ObjectId(ObjectId::STRING_SIMPLE_EMPTY);
+        case RDF_OID::GenericSubType::INTEGER:
+        case RDF_OID::GenericSubType::FLOAT:
+        case RDF_OID::GenericSubType::DOUBLE:
+        case RDF_OID::GenericSubType::DECIMAL:
+        case RDF_OID::GenericSubType::DATE:
+        case RDF_OID::GenericSubType::BOOL:
+        case RDF_OID::GenericSubType::STRING_SIMPLE:
+        case RDF_OID::GenericSubType::STRING_XSD:
+        case RDF_OID::GenericSubType::STRING_DATATYPE: {
+            return Conversions::pack_empty_string();
         }
-        default: {
+        case RDF_OID::GenericSubType::NULL_ID:
+        case RDF_OID::GenericSubType::BLANK:
+        case RDF_OID::GenericSubType::IRI:
+        case RDF_OID::GenericSubType::PATH:
             return ObjectId::get_null();
-        }
+        default:
+            assert(false);
+            return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "LANG(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

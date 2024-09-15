@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void IndexLeftOuterJoin::begin(Binding& parent_binding) {
+void IndexLeftOuterJoin::_begin(Binding& parent_binding) {
     this->parent_binding = &parent_binding;
 
     lhs->begin(parent_binding);
@@ -23,11 +23,10 @@ void IndexLeftOuterJoin::begin(Binding& parent_binding) {
 }
 
 
-bool IndexLeftOuterJoin::next() {
+bool IndexLeftOuterJoin::_next() {
     while (true) {
         if (rhs->next()) {
             must_return_null = false;
-            ++results_found;
             return true;
         } else {
             if (must_return_null) {
@@ -35,7 +34,6 @@ bool IndexLeftOuterJoin::next() {
                     parent_binding->add(var, ObjectId::get_null());
                 }
                 must_return_null = false;
-                ++results_found;
                 return true;
             } else {
                 if (lhs->next()) {
@@ -51,7 +49,7 @@ bool IndexLeftOuterJoin::next() {
 }
 
 
-void IndexLeftOuterJoin::reset() {
+void IndexLeftOuterJoin::_reset() {
     lhs->reset();
     if (lhs->next()) {
         must_return_null = true;
@@ -70,9 +68,6 @@ void IndexLeftOuterJoin::assign_nulls() {
 }
 
 
-void IndexLeftOuterJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "IndexLeftOuterJoin(found: " << results_found << ")\n";
-    lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void IndexLeftOuterJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

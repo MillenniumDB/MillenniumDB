@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -10,7 +9,8 @@ namespace SPARQL {
 class BindingExprIRI : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> expr;
-    std::string                  base_iri;
+
+    std::string base_iri;
 
     BindingExprIRI(std::unique_ptr<BindingExpr> expr, std::string base_iri) :
         expr(std::move(expr)), base_iri(base_iri) { }
@@ -18,13 +18,14 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        // IRIs remain unchanged
-        if (expr_oid.is_iri()) {
+        switch(RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::IRI: {
+            // IRIs remain unchanged
             return expr_oid;
         }
-        // Strings are converted to IRIs
-        else if (expr_oid.get_sub_type() == ObjectId::MASK_STRING_SIMPLE) {
-            std::string str = Conversions::unpack_string_simple(expr_oid);
+        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+            // Strings are converted to IRIs
+            std::string str = Conversions::unpack_string(expr_oid);
             if (str.find(':') == std::string::npos) {
                 // IRI is not absolute
                 if (base_iri.empty())
@@ -36,16 +37,13 @@ public:
                 return Conversions::pack_iri(str);
             }
         }
-        // Other types return null
-        else
-        {
+        default:
             return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "IRI(" << *expr << ", " << base_iri << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

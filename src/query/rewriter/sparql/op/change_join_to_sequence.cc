@@ -1,4 +1,5 @@
 #include "change_join_to_sequence.h"
+
 #include <cassert>
 
 #include "query/parser/op/op_visitor.h"
@@ -7,22 +8,27 @@
 
 using namespace SPARQL;
 
+void ChangeJoinToSequence::visit(OpBasicGraphPattern&) { }
+void ChangeJoinToSequence::visit(OpEmpty&) { }
+void ChangeJoinToSequence::visit(OpService&) { }
+void ChangeJoinToSequence::visit(OpUnitTable&) { }
+void ChangeJoinToSequence::visit(OpValues&) { }
+
+
 void ChangeJoinToSequence::visit(OpOptional& op_optional) {
     transform_child_if_necessary(op_optional.lhs);
     transform_child_if_necessary(op_optional.rhs);
+
     assert(!is_castable_to<OpJoin>(op_optional.lhs));
     assert(!is_castable_to<OpJoin>(op_optional.rhs));
 }
 
 
-void ChangeJoinToSequence::visit(OpEmpty&) { }
-
-void ChangeJoinToSequence::visit(OpBasicGraphPattern&) { }
-
 void ChangeJoinToSequence::visit(OpFilter& op_filter) {
     transform_child_if_necessary(op_filter.op);
     assert(!is_castable_to<OpJoin>(op_filter.op));
 }
+
 
 void ChangeJoinToSequence::visit(OpSelect& op_select) {
     transform_child_if_necessary(op_select.op);
@@ -51,11 +57,6 @@ void ChangeJoinToSequence::visit(OpAsk& op_ask) {
     assert(!is_castable_to<OpJoin>(op_ask.op));
 }
 
-void ChangeJoinToSequence::visit(OpWhere& op_where) {
-    transform_child_if_necessary(op_where.op);
-    assert(!is_castable_to<OpJoin>(op_where.op));
-}
-
 
 void ChangeJoinToSequence::visit(OpOrderBy& op_order_by) {
     transform_child_if_necessary(op_order_by.op);
@@ -72,9 +73,6 @@ void ChangeJoinToSequence::visit(OpGroupBy& op_group_by) {
 void ChangeJoinToSequence::visit(OpHaving& op_having) {
     op_having.op->accept_visitor(*this);
 }
-
-
-void ChangeJoinToSequence::visit(OpService& /*op_service*/) { }
 
 
 void ChangeJoinToSequence::visit(OpJoin& op_join) {
@@ -116,9 +114,6 @@ void ChangeJoinToSequence::visit(OpUnion& op_union) {
 }
 
 
-void ChangeJoinToSequence::visit(OpUnitTable&) { }
-
-
 void ChangeJoinToSequence::transform_child_if_necessary(std::unique_ptr<Op>& op) {
     potential_sequences.push_back({});
     op->accept_visitor(*this);
@@ -133,8 +128,7 @@ void ChangeJoinToSequence::add_op_to_sequence_information(std::unique_ptr<Op> op
     auto& sequence_info = potential_sequences.back();
     if (is_castable_to<OpBasicGraphPattern>(op)) {
         add_basic_graph_pattern(cast_to<OpBasicGraphPattern>(std::move(op)));
-    }
-    else if (is_castable_to<OpService>(op)) {
+    } else if (is_castable_to<OpService>(op)) {
         sequence_info.services.push_back(cast_to<OpService>(std::move(op)));
     } else if (!is_castable_to<OpJoin>(op)) {
         sequence_info.ops.push_back(std::move(op));
@@ -180,9 +174,6 @@ void ChangeJoinToSequence::visit(OpBind& op_bind) {
 }
 
 
-void ChangeJoinToSequence::visit(OpValues&) { }
-
-
 std::optional<std::unique_ptr<Op>> ChangeJoinToSequence::get_pertinent_sequence() {
     SequenceInformation potential_sequence = std::move(potential_sequences.back());
     potential_sequences.pop_back();
@@ -195,8 +186,8 @@ std::optional<std::unique_ptr<Op>> ChangeJoinToSequence::get_pertinent_sequence(
 
         if (potential_sequence.visited_bind) {
             ops.insert(ops.end(),
-                    make_move_iterator(potential_sequence.ops.begin()),
-                    make_move_iterator(potential_sequence.ops.end()));
+                       make_move_iterator(potential_sequence.ops.begin()),
+                       make_move_iterator(potential_sequence.ops.end()));
             if (potential_sequence.last_bgp.has_value()) {
                 ops.push_back(std::move(potential_sequence.last_bgp.value()));
             }
@@ -205,8 +196,8 @@ std::optional<std::unique_ptr<Op>> ChangeJoinToSequence::get_pertinent_sequence(
                 ops.push_back(std::move(potential_sequence.last_bgp.value()));
             }
             ops.insert(ops.end(),
-                    make_move_iterator(potential_sequence.ops.begin()),
-                    make_move_iterator(potential_sequence.ops.end()));
+                       make_move_iterator(potential_sequence.ops.begin()),
+                       make_move_iterator(potential_sequence.ops.end()));
         }
 
         ops.insert(ops.end(),

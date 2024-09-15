@@ -1,5 +1,18 @@
 #include "expr_to_binding_expr.h"
 
+#include "query/query_context.h"
+#include "query/optimizer/quad_model/binding_iter_constructor.h"
+
+#include "query/executor/binding_iter/aggregation/mql/agg_avg.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_max.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_min.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_sum.h"
+
+#include "query/executor/binding_iter/aggregation/mql/agg_count.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_count_all.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_count_all_distinct.h"
+#include "query/executor/binding_iter/aggregation/mql/agg_count_distinct.h"
+
 #include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_and.h"
@@ -23,13 +36,29 @@
 
 using namespace MQL;
 
-void ExprToBindingExpr::visit(ExprConstant& expr_constant) {
-    tmp = std::make_unique<BindingExprTerm>(expr_constant.value);
+void ExprToBindingExpr::visit(ExprVar& expr_var) {
+    tmp = std::make_unique<BindingExprVar>(expr_var.var);
+
+    if (bic == nullptr) {
+        return;
+    }
+
+    bic->group_saved_vars.insert(expr_var.var);
+    bic->order_by_saved_vars.insert(expr_var.var);
 }
 
 
-void ExprToBindingExpr::visit(ExprVar& expr_var) {
-    tmp = std::make_unique<BindingExprVar>(expr_var.var);
+void ExprToBindingExpr::visit(ExprVarProperty& expr_var) {
+    if (bic != nullptr) {
+        bic->group_saved_vars.insert(expr_var.var_with_property);
+        bic->order_by_saved_vars.insert(expr_var.var_with_property);
+    }
+    tmp = std::make_unique<BindingExprVar>(expr_var.var_with_property);
+}
+
+
+void ExprToBindingExpr::visit(ExprConstant& expr_constant) {
+    tmp = std::make_unique<BindingExprTerm>(expr_constant.value);
 }
 
 
@@ -65,7 +94,6 @@ void ExprToBindingExpr::visit(ExprModulo& expr) {
     expr.rhs->accept_visitor(*this);
     auto rhs_binding_expr = std::move(tmp);
 
-    // TODO:
     tmp = std::make_unique<BindingExprModulo>(
         std::move(lhs_binding_expr),
         std::move(rhs_binding_expr)
@@ -116,7 +144,6 @@ void ExprToBindingExpr::visit(ExprUnaryPlus& expr) {
 
 
 void ExprToBindingExpr::visit(ExprEquals& expr) {
-    // TODO: optimize equality pushing outside?
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -157,7 +184,11 @@ void ExprToBindingExpr::visit(ExprGreater& expr) {
 
 void ExprToBindingExpr::visit(ExprIs& expr) {
     expr.expr->accept_visitor(*this);
-    tmp = std::make_unique<BindingExprIs>(std::move(tmp), expr.negation, expr.type);
+    tmp = std::make_unique<BindingExprIs>(
+        std::move(tmp),
+        expr.negation,
+        expr.type
+    );
 }
 
 
@@ -216,22 +247,116 @@ void ExprToBindingExpr::visit(ExprAnd& expr) {
 
 
 void ExprToBindingExpr::visit(ExprNot& expr) {
-    // auto original_can_push_outside = can_push_outside;
-    // can_push_outside = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprNot>(std::move(tmp));
-    // can_push_outside = original_can_push_outside;
 }
 
 
 void ExprToBindingExpr::visit(ExprOr& expr) {
-//     auto original_can_push_outside = can_push_outside;
-//     can_push_outside = false;
     std::vector<std::unique_ptr<BindingExpr>> or_list;
     for (auto& e : expr.or_list) {
         e->accept_visitor(*this);
         or_list.push_back(std::move(tmp));
     }
     tmp = std::make_unique<BindingExprOr>(std::move(or_list));
-    // can_push_outside = original_can_push_outside;
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggAvg& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    expr.expr->accept_visitor(*this);
+    std::unique_ptr<Agg> agg = std::make_unique<AggAvg>(var.value(), std::move(tmp));
+    bic->aggregations.insert({var.value(), std::move(agg)});
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggCountAll& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    std::unique_ptr<Agg> agg;
+    if (expr.distinct) {
+        std::vector<VarId> vars;
+
+        for (auto var : get_query_ctx().get_non_internal_vars()) {
+            vars.push_back(var);
+        }
+        agg = std::make_unique<AggCountAllDistinct>(
+            var.value(),
+            std::move(vars)
+        );
+    } else {
+        agg = std::make_unique<AggCountAll>(var.value());
+    }
+    bic->aggregations.insert({var.value(), std::move(agg)});
+
+    auto all_vars = get_query_ctx().get_all_vars();
+
+    if (bic != nullptr) {
+        for (auto var : all_vars) {
+            bic->group_saved_vars.insert(var);
+        }
+        for (auto var : all_vars) {
+            bic->order_by_saved_vars.insert(var);
+        }
+    }
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggCount& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    std::unique_ptr<Agg> agg;
+    expr.expr->accept_visitor(*this);
+    if (expr.distinct) {
+        agg = std::make_unique<AggCountDistinct>(var.value(), std::move(tmp));
+    } else {
+        agg = std::make_unique<AggCount>(var.value(), std::move(tmp));
+    }
+    bic->aggregations.insert({var.value(), std::move(agg)});
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggMax& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    expr.expr->accept_visitor(*this);
+    std::unique_ptr<Agg> agg = std::make_unique<AggMax>(var.value(), std::move(tmp));
+    bic->aggregations.insert({var.value(), std::move(agg)});
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggMin& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    expr.expr->accept_visitor(*this);
+    std::unique_ptr<Agg> agg = std::make_unique<AggMin>(var.value(), std::move(tmp));
+    bic->aggregations.insert({var.value(), std::move(agg)});
+}
+
+
+void ExprToBindingExpr::visit(MQL::ExprAggSum& expr) {
+    assert(var.has_value() && bic != nullptr);
+    if (!bic->grouping) {
+        throw QuerySemanticException("Aggregation where it is not allowed");
+    }
+    inside_aggregation = true;
+    expr.expr->accept_visitor(*this);
+    std::unique_ptr<Agg> agg = std::make_unique<AggSum>(var.value(), std::move(tmp));
+    bic->aggregations.insert({var.value(), std::move(agg)});
 }

@@ -1,14 +1,13 @@
 #include "leapfrog_join.h"
 
 #include <cassert>
-#include <iostream>
 
+#include "macros/likely.h"
 #include "query/exceptions.h"
 
 using std::vector;
-using std::cout;
 
-void LeapfrogJoin::begin(Binding& _parent_binding) {
+void LeapfrogJoin::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     // initialize iters_for_var
@@ -39,22 +38,14 @@ void LeapfrogJoin::begin(Binding& _parent_binding) {
         }
     }
 
-    cout << "enumeration_level: " << enumeration_level << "\n";
-
     if (open_terms) {
-        cout << "open_terms successfully\n";
         down();
-    } else {
-        cout << "open_terms failed\n";
     }
-    cout << "level: " << level << "\n";
 }
 
 
-bool LeapfrogJoin::next() {
-    // cout << "next called\n";
-    // cout << "level: " << level << "\n";
-    if (__builtin_expect(!!(*leapfrog_iters[0]->interruption_requested), 0)) {
+bool LeapfrogJoin::_next() {
+    if (MDB_unlikely(*leapfrog_iters[0]->interruption_requested)) {
         throw InterruptedException();
     }
 
@@ -88,7 +79,6 @@ bool LeapfrogJoin::next() {
                     leapfrog_iters[i]->reset_enumeration();
                     leapfrog_iters[i]->next_enumeration(*parent_binding);
                 }
-                results_found++;
                 return true;
             }
         }
@@ -111,7 +101,7 @@ bool LeapfrogJoin::next() {
 }
 
 
-void LeapfrogJoin::reset() {
+void LeapfrogJoin::_reset() {
     bool open_terms = true;
     for (auto& lf_iter : leapfrog_iters) {
         if (!lf_iter->open_terms(*parent_binding)) {
@@ -165,48 +155,39 @@ void LeapfrogJoin::down() {
 
 
 bool LeapfrogJoin::find_intersection_for_current_level() {
-    // cout << "trying to find intersection at level " << level << "\n";
     uint_fast32_t p = 0;
 
     auto min = iters_for_var[level][p]->get_key();
     auto max = iters_for_var[level][iters_for_var[level].size() - 1]->get_key();
 
-    // cout << "min: " << min << "\n";
-    // cout << "max: " << max << "\n";
-    // cout << "min: " << ((min & GraphModel::TYPE_MASK) >> 56) << ", " << (min & GraphModel::VALUE_MASK) << "\n";
-    // cout << "max: " << ((max & GraphModel::TYPE_MASK) >> 56) << ", " << (max & GraphModel::VALUE_MASK) << "\n";
-
     while (min != max) { // min = max means all are equal
-        if (__builtin_expect(!!(*leapfrog_iters[0]->interruption_requested), 0)) {
+        assert(max > min);
+        if (MDB_unlikely(*leapfrog_iters[0]->interruption_requested)) {
             throw InterruptedException();
         }
         seeks++;
         if (iters_for_var[level][p]->seek(max)) {
             // after the seek, the previous min is the max
-            max = iters_for_var[level][p]->get_key();
+            auto new_max = iters_for_var[level][p]->get_key();
+            assert(new_max >= max);
+            max = new_max;
 
             // update the min
             p = (p + 1) % iters_for_var[level].size();
-            min = iters_for_var[level][p]->get_key();
-            // cout << "new min: " << ((min & GraphModel::TYPE_MASK) >> 56) << ", " << (min & GraphModel::VALUE_MASK) << "\n";
-            // cout << "new max: " << ((max & GraphModel::TYPE_MASK) >> 56) << ", " << (max & GraphModel::VALUE_MASK) << "\n";
-
+            auto new_min = iters_for_var[level][p]->get_key();
+            assert(new_min >= min);
+            min = new_min;
         } else {
-            // cout << "new min: " << ((min & GraphModel::TYPE_MASK) >> 56) << ", " << (min & GraphModel::VALUE_MASK) << "\n";
-            // cout << "new max: " << ((max & GraphModel::TYPE_MASK) >> 56) << ", " << (max & GraphModel::VALUE_MASK) << "\n";
-            // cout << "failed to find intersection at level " << level << "\n";
             return false;
         }
     }
     parent_binding->add(var_order[level], ObjectId(min));
-    // cout << "found intersection at level " << level << "\n";
     return true;
 }
 
 
-void LeapfrogJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "LeapfrogJoin(found: " << results_found << ", seeks: " << seeks << ")\n";
+void LeapfrogJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 

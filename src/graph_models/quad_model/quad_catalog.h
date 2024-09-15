@@ -1,22 +1,29 @@
 #pragma once
 
-#include <fstream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
-#include "graph_models/object_id.h"
 #include "storage/catalog/catalog.h"
+#include "storage/index/tensor_store/tensor_store.h"
 #include "third_party/robin_hood/robin_hood.h"
 
 class QuadCatalog : public Catalog {
 friend class QuadModel;
 friend class BulkImport;
 public:
+    static constexpr uint64_t MODEL_ID = 0;
+    static constexpr uint64_t VERSION = 1;
+
     QuadCatalog(const std::string& filename);
 
-    void print();
-    void save_changes();
+    ~QuadCatalog();
+
+    bool has_changes = false;
+
+    void print(std::ostream&);
+    void save();
 
     uint64_t connections_with_type        (uint64_t type_id);
     uint64_t equal_from_to_type_with_type (uint64_t type_id);
@@ -54,4 +61,9 @@ public:
     robin_hood::unordered_map<uint64_t, uint64_t> type2equal_from_to_count;
     robin_hood::unordered_map<uint64_t, uint64_t> type2equal_from_type_count;
     robin_hood::unordered_map<uint64_t, uint64_t> type2equal_to_type_count;
+
+    // TODO: This should be moved as it is not persistent. It is only used for a single query.
+    //       It also should be cleared after the query or after reaching a certain amount of
+    //       loaded stores / memory usage.
+    robin_hood::unordered_map<std::string, std::unique_ptr<TensorStore>> name2tensor_store;
 };

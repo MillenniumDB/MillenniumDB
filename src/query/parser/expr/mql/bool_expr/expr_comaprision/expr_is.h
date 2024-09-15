@@ -5,28 +5,24 @@
 #include "query/parser/expr/expr.h"
 
 namespace MQL {
-enum class ExprTypeName {
-    INTEGER,
-    FLOAT,
-    STRING,
-    BOOL,
-    NULL_
-};
 
 class ExprIs : public Expr {
 public:
+    enum class TypeName {
+        INTEGER,
+        FLOAT,
+        STRING,
+        BOOL,
+        NULL_
+    };
+
     bool negation;
 
     std::unique_ptr<Expr> expr;
 
-    ExprTypeName type;
+    TypeName type;
 
-    ExprIs(bool negation, std::unique_ptr<Expr> expr, const std::string& type) :
-        negation (negation),
-        expr     (std::move(expr)),
-        type     (parse_type(type)) { }
-
-    ExprIs(bool negation, std::unique_ptr<Expr> expr, ExprTypeName type_name) :
+    ExprIs(bool negation, std::unique_ptr<Expr> expr, TypeName type_name) :
         negation (negation),
         expr     (std::move(expr)),
         type     (type_name) { }
@@ -47,36 +43,31 @@ public:
         return expr->get_all_vars();
     }
 
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << '(' << *expr << " IS " << (negation ? "NOT " : "") << get_type_name() <<  ')';
-    }
-
-private:
-    static ExprTypeName parse_type(const std::string& str) {
+    static TypeName parse_type(const std::string& str) {
         if (str == "null") {
-            return ExprTypeName::NULL_;
+            return TypeName::NULL_;
         } else if (str == "integer") {
-            return ExprTypeName::INTEGER;
+            return TypeName::INTEGER;
         } else if (str == "float") {
-            return ExprTypeName::FLOAT;
+            return TypeName::FLOAT;
         } else if (str == "string") {
-            return ExprTypeName::STRING;
+            return TypeName::STRING;
         } else {
-            return ExprTypeName::BOOL;
+            return TypeName::BOOL;
         }
     }
 
     std::string get_type_name() const {
         switch (type) {
-            case ExprTypeName::NULL_:
+            case TypeName::NULL_:
                 return "NULL";
-            case ExprTypeName::INTEGER:
+            case TypeName::INTEGER:
                 return "INTEGER";
-            case ExprTypeName::FLOAT:
+            case TypeName::FLOAT:
                 return "FLOAT";
-            case ExprTypeName::BOOL:
+            case TypeName::BOOL:
                 return "BOOL";
-            case ExprTypeName::STRING:
+            case TypeName::STRING:
                 return "STRING";
         }
         return "";

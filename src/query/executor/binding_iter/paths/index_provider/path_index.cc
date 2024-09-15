@@ -1,25 +1,28 @@
 #include "path_index.h"
 
+#include "macros/likely.h"
+#include "query/exceptions.h"
+
 using namespace Paths;
 
 // B+Tree
 template<size_t N>
 uint64_t BTreeIndexIterator<N>::get_starting_node() {
-    return (*current)[1];
+    return (*current)[starting_node_idx];
 }
-
 
 template<size_t N>
 uint64_t BTreeIndexIterator<N>::get_reached_node() {
-    return (*current)[2];
+    return (*current)[reached_node_idx];
 }
 
+template<>
+uint64_t BTreeIndexIterator<3>::get_edge() {
+    return 0;
+}
 
-template<size_t N>
-uint64_t BTreeIndexIterator<N>::get_edge() {
-    if (N != 4) {
-        return 0; // TODO: throw exception?
-    }
+template<>
+uint64_t BTreeIndexIterator<4>::get_edge() {
     return (*current)[3];
 }
 
@@ -51,7 +54,6 @@ bool BTreeIndexIterator<N>::at_end() {
 
 // Trie
 uint64_t TrieIndexIterator::get_starting_node() {
-    // TODO: unsupported
     return 0;
 }
 
@@ -62,7 +64,7 @@ uint64_t TrieIndexIterator::get_reached_node() {
 
 bool TrieIndexIterator::next() {
     // Timeout
-    if (__builtin_expect(!!(*interruption_requested), 0)) {
+    if (MDB_unlikely(*interruption_requested)) {
         throw InterruptedException();
     }
 
@@ -85,7 +87,6 @@ std::unique_ptr<EdgeIter> TrieIndex::get_iter(uint64_t node_id, bool* interrupti
 
 // Edge Trie
 uint64_t EdgeTrieIndexIterator::get_starting_node() {
-    // TODO: unsupported
     return 0;
 }
 
@@ -101,7 +102,7 @@ uint64_t EdgeTrieIndexIterator::get_edge() {
 
 bool EdgeTrieIndexIterator::next() {
     // Timeout
-    if (__builtin_expect(!!(*interruption_requested), 0)) {
+    if (MDB_unlikely(*interruption_requested)) {
         throw InterruptedException();
     }
 
@@ -124,7 +125,6 @@ std::unique_ptr<EdgeIter> EdgeTrieIndex::get_iter(uint64_t node_id, bool* interr
 
 // Hash Trie
 uint64_t HashTrieIndexIterator::get_starting_node() {
-    // TODO: unsupported
     return 0;
 }
 
@@ -135,7 +135,7 @@ uint64_t HashTrieIndexIterator::get_reached_node() {
 
 bool HashTrieIndexIterator::next() {
     // Timeout
-    if (__builtin_expect(!!(*interruption_requested), 0)) {
+    if (MDB_unlikely(*interruption_requested)) {
         throw InterruptedException();
     }
 

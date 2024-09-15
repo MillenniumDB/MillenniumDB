@@ -2,6 +2,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 
 namespace SPARQL {
 class AggAvg : public Agg {
@@ -68,7 +69,7 @@ public:
     // indicates the end of a group
     ObjectId get() override {
         if (count == 0) {
-            return ObjectId(ObjectId::MASK_POSITIVE_INT);
+            return Conversions::pack_int(0);
         }
 
          if (type == Conversions::OPTYPE_INTEGER) {
@@ -95,7 +96,10 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "AVG(" << *expr << ")";
+        os << "AVG(";
+        BindingExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")";
         return os;
     }
 

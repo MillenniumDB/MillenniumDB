@@ -18,11 +18,16 @@ std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_btree_iter(uint64_t type_i
     // Get iter from correct B+Tree
     if (inverse) {
         return std::make_unique<BTreeIndexIterator<4>>(
-            quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids)
+            quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids),
+            1,
+            2
         );
     } else {
         return std::make_unique<BTreeIndexIterator<4>>(
-            quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids));
+            quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids),
+            1,
+            2
+        );
     }
 }
 
@@ -35,11 +40,16 @@ std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_btree_iter(uint64_t type_i
     // Get iter from correct B+Tree
     if (inverse) {
         return std::make_unique<BTreeIndexIterator<4>>(
-            quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids)
+            quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids),
+            1,
+            2
         );
     } else {
         return std::make_unique<BTreeIndexIterator<4>>(
-            quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids));
+            quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids),
+            1,
+            2
+        );
     }
 }
 

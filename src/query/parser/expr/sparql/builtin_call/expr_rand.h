@@ -25,9 +25,5 @@ public:
     bool has_aggregation() const override {
         return false;
     }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << "RAND()";
-    }
 };
 } // namespace SPARQL

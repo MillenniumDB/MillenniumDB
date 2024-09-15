@@ -1,3 +1,8 @@
-pinl: http://www.prefixedInlined.com/
-pext: http://www.prefixedExternal.com/
-path: http://www.path.com/
+http://www.prefixedInlined.com/
+http://www.prefixedExternal.com/
+http://www.path.com/
+http://
+https://
+http://www.
+https://www.
+xxx

@@ -5,7 +5,6 @@
 
 #include "query/exceptions.h"
 #include "query/parser/op/sparql/ops.h"
-#include "query/rewriter/sparql/expr/check_expr_var_names_visitor.h"
 
 using namespace SPARQL;
 
@@ -115,11 +114,6 @@ void CheckVarNames::visit(OpFilter& op_filter) {
 }
 
 
-void CheckVarNames::visit(OpWhere& op_where) {
-    op_where.op->accept_visitor(*this);
-}
-
-
 void CheckVarNames::visit(OpOptional& op_optional) {
     op_optional.lhs->accept_visitor(*this);
     op_optional.rhs->accept_visitor(*this);
@@ -127,8 +121,8 @@ void CheckVarNames::visit(OpOptional& op_optional) {
 
 
 void CheckVarNames::visit(OpOrderBy& op_order_by) {
+    // SPARQL allows ORDER BY using non defined variables
     op_order_by.op->accept_visitor(*this);
-    // TODO: implement when OpOrderBy has its final form
 }
 
 
@@ -222,8 +216,8 @@ void CheckVarNames::visit(OpBind& op_bind) {
 void CheckVarNames::visit(OpUnitTable&) { }
 
 
-void CheckVarNames::visit(OpValues& op_vales) {
-    for (auto& var : op_vales.vars) {
+void CheckVarNames::visit(OpValues& op_values) {
+    for (auto& var : op_values.vars) {
         declared_vars.insert(var);
     }
 }

@@ -4,7 +4,8 @@
 #include <variant>
 
 #include "graph_models/object_id.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
+#include "graph_models/common/datatypes/datetime.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/exceptions.h"
@@ -14,6 +15,7 @@
 #include "query/parser/op/sparql/ops.h"
 #include "query/parser/paths/path_alternatives.h"
 #include "query/parser/paths/path_atom.h"
+#include "query/parser/paths/path_kleene_plus.h"
 #include "query/parser/paths/path_kleene_star.h"
 #include "query/parser/paths/path_negated_set.h"
 #include "query/parser/paths/path_optional.h"
@@ -28,24 +30,24 @@ using antlrcpp::Any;
 
 #ifdef DEBUG_QUERY_VISITORS
 
-struct Logger {
+struct VisitorLogger {
     std::string context;
     static uint64_t indentation_level;
 
-    Logger(std::string context) : context(context) {
+    VisitorLogger(std::string context) : context(context) {
         std::cout << std::string(indentation_level * 2, ' ') << "> " << context << std::endl;
         indentation_level++;
     }
 
-    ~Logger() {
+    ~VisitorLogger() {
         indentation_level--;
         std::cout << std::string(indentation_level * 2, ' ') << "< " << context << std::endl;
     }
 };
-uint64_t Logger::indentation_level = 0;
+uint64_t VisitorLogger::indentation_level = 0;
 
-#define LOG_VISITOR Logger logger_instance(__func__);
-#define LOG_INFO(arg) std::cout << std::string(Logger::indentation_level * 2, ' ') << arg << std::endl
+#define LOG_VISITOR VisitorLogger logger_instance(__func__);
+#define LOG_INFO(arg) std::cout << std::string(VisitorLogger::indentation_level * 2, ' ') << arg << std::endl
 
 #else
 #define LOG_VISITOR
@@ -128,17 +130,12 @@ Any QueryVisitor::visitAskQuery(SparqlParser::AskQueryContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitUpdateCommand(SparqlParser::UpdateCommandContext*) {
-    LOG_VISITOR
-    throw NotSupportedException("Update command");
-}
-
 // Root parser rule
 Any QueryVisitor::visitQuery(SparqlParser::QueryContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
     if (current_op == nullptr) {
-        throw QueryParsingException("Empty query");
+        throw QueryParsingException("Empty query", 0, 0);
     }
     return 0;
 }
@@ -146,7 +143,7 @@ Any QueryVisitor::visitQuery(SparqlParser::QueryContext* ctx) {
 Any QueryVisitor::visitPrologue(SparqlParser::PrologueContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
-    for (auto&& [alias, iri_prefix] : rdf_model.default_prefixes) {
+    for (auto&& [alias, iri_prefix] : rdf_model.default_query_prefixes) {
         if (global_info.iri_prefix_map.find(alias) == global_info.iri_prefix_map.end()) {
             global_info.iri_prefix_map.insert({alias, iri_prefix});
         }
@@ -171,11 +168,7 @@ Any QueryVisitor::visitPrefixDecl(SparqlParser::PrefixDeclContext* ctx) {
     std::string iri_prefix = ctx->IRIREF()->getText();
     iri_prefix = iri_prefix.substr(1, iri_prefix.size() - 2); // remove '<' ... '>'
 
-    if (global_info.iri_prefix_map.find(alias) != global_info.iri_prefix_map.end()) {
-        throw QuerySemanticException("Multiple prefix declarations for prefix: '" + alias + "'");
-    }
-
-    global_info.iri_prefix_map.insert({alias, iri_prefix});
+    global_info.iri_prefix_map[alias] = iri_prefix;
     return 0;
 }
 
@@ -197,20 +190,11 @@ Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* c
     // GROUP BY
     auto group_clause = ctx->groupClause();
     if (group_clause) {
+        group_by_present = true;
         visit(group_clause);
         current_op = std::make_unique<OpGroupBy>(
             std::move(current_op),
             std::move(group_by_items)
-        );
-    }
-    // ORDER BY
-    auto order_clause = ctx->orderClause();
-    if (order_clause) {
-        visit(order_clause);
-        current_op = std::make_unique<OpOrderBy>(
-            std::move(current_op),
-            std::move(order_by_items),
-            std::move(order_by_ascending)
         );
     }
 
@@ -221,6 +205,17 @@ Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* c
         current_op = std::make_unique<OpHaving>(
             std::move(current_op),
             std::move(having_expressions)
+        );
+    }
+
+    // ORDER BY
+    auto order_clause = ctx->orderClause();
+    if (order_clause) {
+        visit(order_clause);
+        current_op = std::make_unique<OpOrderBy>(
+            std::move(current_op),
+            std::move(order_by_items),
+            std::move(order_by_ascending)
         );
     }
     return 0;
@@ -241,6 +236,7 @@ Any QueryVisitor::visitOrderClause(SparqlParser::OrderClauseContext* ctx) {
             visit(oc->constraint());
             order_by_items.emplace_back(std::move(current_expr));
         } else {
+            // it should not enter here unless grammar is modified
             throw QuerySemanticException("Unsupported ORDER BY condition: '" + oc->getText() + "'");
         }
 
@@ -304,6 +300,10 @@ Any QueryVisitor::visitSelectClause(SparqlParser::SelectClauseContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
     if (ctx->ASTERISK() != nullptr) {
+        if (group_by_present) {
+            throw QuerySemanticException("SELECT * not legal with GROUP BY");
+        }
+
         for (auto& var : current_op->get_scope_vars()) {
             // Prevent storing blank nodes and internal vars
             if (get_query_ctx().get_var_name(var).find("_:") != 0
@@ -339,7 +339,6 @@ Any QueryVisitor::visitWhereClause(SparqlParser::WhereClauseContext* ctx) {
     LOG_VISITOR
     visit(ctx->groupGraphPattern());
     assert(current_op != nullptr);
-    current_op = std::make_unique<OpWhere>(std::move(current_op));
     return 0;
 }
 
@@ -622,6 +621,7 @@ Any QueryVisitor::visitMultiplicativeExpression(SparqlParser::MultiplicativeExpr
                 current_expr = std::make_unique<ExprDivision>(std::move(lhs), std::move(current_expr));
                 break;
             default:
+                // it should not enter here unless grammar is modified
                 throw QuerySemanticException("Unhandled multiplicative expression");
         }
     }
@@ -640,11 +640,6 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
         auto argList = ctx->iriOrFunction()->argList();
 
         if (argList) {
-            auto expressions = argList->expressionList()->expression();
-            if (expressions.size() != 1) {
-                throw QuerySemanticException("Cast function must have one argument");
-            }
-            visit(expressions[0]);
 
             const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
             bool is_xml_schema = false;
@@ -654,8 +649,14 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
             if (!is_xml_schema) {
                 throw NotSupportedException("Unsupported IRI function");
             }
-            auto xsd_suffix = iri.substr(xml_schema.size());
 
+            auto expressions = argList->expressionList()->expression();
+            if (expressions.size() != 1) {
+                throw QuerySemanticException("Cast function must have one argument");
+            }
+            visit(expressions[0]);
+
+            auto xsd_suffix = iri.substr(xml_schema.size());
             if (xsd_suffix == "boolean") {
                 current_expr = std::make_unique<ExprCast>(CastType::xsd_boolean, std::move(current_expr));
             } else if (xsd_suffix == "double") {
@@ -674,7 +675,7 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
                 throw NotSupportedException("Unsupported IRI function");
             }
         } else {
-            current_expr = std::make_unique<ExprTerm>(RDFObjectId::get_Iri(iri));
+            current_expr = std::make_unique<ExprTerm>(Conversions::pack_iri(iri));
         }
     } else if (ctx->rdfLiteral()) {
         visit(ctx->rdfLiteral());
@@ -684,7 +685,7 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
         current_expr = std::make_unique<ExprTerm>(current_sparql_element.get_OID());
     } else if (ctx->booleanLiteral()) {
         current_expr = std::make_unique<ExprTerm>(
-            RDFObjectId::get(ctx->booleanLiteral()->TRUE() != nullptr)
+            Conversions::pack_bool(ctx->booleanLiteral()->TRUE() != nullptr)
         );
     } else if (ctx->var()) {
         auto var_name = ctx->var()->getText().substr(1);
@@ -692,6 +693,7 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
         current_expr = std::make_unique<ExprVar>(var);
     }
     else {
+        // it should not enter here unless grammar is modified
         throw QuerySemanticException("Unhandled primary expression");
     }
     return 0;
@@ -714,7 +716,8 @@ Any QueryVisitor::visitUnaryExpression(SparqlParser::UnaryExpressionContext* ctx
                 current_expr = std::make_unique<ExprNot>(std::move(current_expr));
                 break;
             default:
-                throw QuerySemanticException("Unhandled additive expression");
+                // it should not enter here unless grammar is modified
+                throw QuerySemanticException("Unhandled unary expression");
         }
     }
     return 0;
@@ -821,6 +824,7 @@ Any QueryVisitor::visitRelationalExpression(SparqlParser::RelationalExpressionCo
                 current_expr = std::make_unique<ExprGreaterOrEqual>(std::move(lhs), std::move(current_expr));
                 break;
             default:
+                // it should not enter here unless grammar is modified
                 throw QuerySemanticException("Unhandled relational expression");
         }
     }
@@ -1125,6 +1129,7 @@ Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx) {
         visit(ctx->notExistsFunction());
     }
     else {
+        // it should not enter here unless grammar is modified
         throw QuerySemanticException("Unhandled built-in call: \"" + ctx->getText() + '"');
     }
     return 0;
@@ -1162,6 +1167,7 @@ Any QueryVisitor::visitAggregate(SparqlParser::AggregateContext* ctx) {
         }
         current_expr = std::make_unique<ExprAggGroupConcat>(std::move(current_expr), separator, distinct);
     } else {
+        // it should not enter here unless grammar is modified
         throw QuerySemanticException("Unhandled aggregate: \"" + ctx->getText() + '"');
     }
     return 0;
@@ -1260,12 +1266,6 @@ Any QueryVisitor::visitNotExistsFunction(SparqlParser::NotExistsFunctionContext*
 Any QueryVisitor::visitFunctionCall(SparqlParser::FunctionCallContext* ctx) {
     LOG_VISITOR
     auto iri = iriCtxToString(ctx->iri());
-    auto expressions = ctx->argList()->expressionList()->expression();
-
-    if (expressions.size() != 1) {
-        throw QuerySemanticException("Cast function must have one argument");
-    }
-    visit(expressions[0]);
 
     const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
     bool is_xml_schema = false;
@@ -1275,8 +1275,14 @@ Any QueryVisitor::visitFunctionCall(SparqlParser::FunctionCallContext* ctx) {
     if (!is_xml_schema) {
         throw NotSupportedException("Unsupported IRI function");
     }
-    auto xsd_suffix = iri.substr(xml_schema.size());
 
+    auto expressions = ctx->argList()->expressionList()->expression();
+    if (expressions.size() != 1) {
+        throw QuerySemanticException("Cast function must have one argument");
+    }
+    visit(expressions[0]);
+
+    auto xsd_suffix = iri.substr(xml_schema.size());
     if (xsd_suffix == "boolean") {
         current_expr = std::make_unique<ExprCast>(CastType::xsd_boolean, std::move(current_expr));
     } else if (xsd_suffix == "double") {
@@ -1436,8 +1442,13 @@ Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
         visit(gnp->varOrTerm());
 
         if (predicate_stack.top().is_path()) {
+            auto path_var = current_path_var_is_fresh
+                          ? current_path_var
+                          : get_query_ctx().get_internal_var();
+            current_path_var_is_fresh = false;
+
             current_paths.emplace_back(
-                current_path_variable,
+                path_var,
                 subject_stack.top(),
                 current_sparql_element.get_ID(),
                 current_path_semantic,
@@ -1461,8 +1472,13 @@ Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
         subject_stack.pop();
 
         if (predicate_stack.top().is_path()) {
+            auto path_var = current_path_var_is_fresh
+                          ? current_path_var
+                          : get_query_ctx().get_internal_var();
+            current_path_var_is_fresh = false;
+
             current_paths.emplace_back(
-                current_path_variable,
+                path_var,
                 subject_stack.top(),
                 new_blank_node,
                 current_path_semantic,
@@ -1488,8 +1504,13 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
         visit(gn->varOrTerm());
 
         if (predicate_stack.top().is_path()) {
+            auto path_var = current_path_var_is_fresh
+                          ? current_path_var
+                          : get_query_ctx().get_internal_var();
+            current_path_var_is_fresh = false;
+
             current_paths.emplace_back(
-                current_path_variable,
+                path_var,
                 subject_stack.top(),
                 current_sparql_element.get_ID(),
                 current_path_semantic,
@@ -1505,7 +1526,7 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
         }
     }
     else {
-        LOG_INFO("Creating blank node in:" << "ObjectContext");
+        LOG_INFO("Creating blank node in: ObjectContext");
         auto new_blank_node = get_new_blank_node_var();
 
         subject_stack.push(new_blank_node);
@@ -1513,8 +1534,13 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
         subject_stack.pop();
 
         if (predicate_stack.top().is_path()) {
+            auto path_var = current_path_var_is_fresh
+                          ? current_path_var
+                          : get_query_ctx().get_internal_var();
+            current_path_var_is_fresh = false;
+
             current_paths.emplace_back(
-                current_path_variable,
+                path_var,
                 subject_stack.top(),
                 new_blank_node,
                 current_path_semantic,
@@ -1540,7 +1566,7 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
     // prev_bnode will be the subject of the first triple that will be created.
     Id prev_bnode = subject_stack.top();
     for (size_t i = 0; i < ctx->graphNodePath().size(); ++i) {
-        LOG_INFO("Creating blank node in:" << "CollectionPathContext");
+        LOG_INFO("Creating blank node in: CollectionPathContext");
         subject_stack.push(get_new_blank_node_var());
         LOG_INFO("Entering CollectionPathContext node: " << i);
         auto previous_amount_of_triples = current_triples.size();
@@ -1553,7 +1579,7 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
         // Case 2. A sparql element was created, default case:
         IdOrPath rdf_node = current_sparql_element.clone();
 
-        Id predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
+        Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
         LOG_INFO("triples emplace back in: CollectionPathContext");
         current_triples.emplace_back(
             prev_bnode,
@@ -1564,7 +1590,7 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
         if (i < ctx->graphNodePath().size() - 1) {
             Id next_bnode = subject_stack.top();
 
-            predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
+            predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
             LOG_INFO("triples emplace back in: CollectionPathContext");
             current_triples.emplace_back(
@@ -1574,12 +1600,12 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
             );
             prev_bnode = std::move(next_bnode);
         } else {
-            predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
+            predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
             LOG_INFO("triples emplace back in: CollectionPathContext");
             current_triples.emplace_back(
                 prev_bnode,
                 predicate,
-                RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")
+                Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")
             );
         }
         subject_stack.pop();
@@ -1599,7 +1625,7 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
     Id prev_bnode = subject_stack.top();
     subject_stack.push(prev_bnode);
     for (size_t i = 0; i < ctx->graphNode().size(); ++i) {
-        LOG_INFO("Creating blank node in:" << "CollectionContext");
+        LOG_INFO("Creating blank node in: CollectionContext");
         subject_stack.push(get_new_blank_node_var());
         LOG_INFO("Entering CollectionContext node: " << i);
         auto previous_amount_of_triples = current_triples.size();
@@ -1612,7 +1638,7 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
         // Case 2. A sparql element was created, default case:
         Id rdf_node = current_sparql_element.get_ID();
 
-        Id predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
+        Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
         LOG_INFO("triples emplace back in: CollectionContext");
         current_triples.emplace_back(
             prev_bnode,
@@ -1623,7 +1649,7 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
         if (i < ctx->graphNode().size() - 1) {
             Id next_bnode = subject_stack.top();
 
-            predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
+            predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
             LOG_INFO("triples emplace back in: CollectionContext");
             current_triples.emplace_back(
@@ -1633,12 +1659,12 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
             );
             prev_bnode = std::move(next_bnode);
         } else {
-            predicate = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
+            predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
             LOG_INFO("triples emplace back in: CollectionContext");
             current_triples.emplace_back(
                 prev_bnode,
                 predicate,
-                RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")
+                Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")
             );
         }
         subject_stack.pop();
@@ -1653,9 +1679,6 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
 Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
-    if (!ctx->var() && !ctx->expression()) {
-        throw NotSupportedException("GROUP BY only supports variables and expressions");
-    }
 
     std::optional<VarId> var;
     std::unique_ptr<Expr> expr;
@@ -1665,6 +1688,12 @@ Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx) 
         var = get_query_ctx().get_or_create_var(var_name);
     }
     if (ctx->expression()) {
+        expr = std::move(current_expr);
+    }
+    if (ctx->builtInCall()) {
+        expr = std::move(current_expr);
+    }
+    if (ctx->functionCall()) {
         expr = std::move(current_expr);
     }
 
@@ -1698,7 +1727,7 @@ Any QueryVisitor::visitVar(SparqlParser::VarContext* ctx) {
 
 Any QueryVisitor::visitIri(SparqlParser::IriContext* ctx) {
     LOG_VISITOR
-    current_sparql_element = RDFObjectId::get_Iri(iriCtxToString(ctx));
+    current_sparql_element = Conversions::pack_iri(iriCtxToString(ctx));
     return 0;
 }
 
@@ -1708,133 +1737,12 @@ Any QueryVisitor::visitRdfLiteral(SparqlParser::RdfLiteralContext* ctx) {
     std::string str = stringCtxToString(ctx->string());
     if (ctx->iri()) {
         std::string iri = iriCtxToString(ctx->iri());
-
-        const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
-
-        bool is_xml_schema = false;
-        if (iri.size() > xml_schema.size()) {
-            is_xml_schema = iri.substr(0, xml_schema.size()) == xml_schema;
-        }
-
-        if (!is_xml_schema) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            return 0;
-        }
-
-        auto xsd_suffix = iri.substr(xml_schema.size());
-
-        // DateTime: xsd:date
-        if (xsd_suffix == "date") {
-            uint64_t datetime_id = DateTime::from_date(str);
-            if (datetime_id == ObjectId::NULL_ID) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } else {
-                current_sparql_element = RDFObjectId::get(DateTime(datetime_id));
-            }
-        }
-        // Date: xsd:time
-        else if (xsd_suffix == "time") {
-            uint64_t datetime_id = DateTime::from_time(str);
-            if (datetime_id == ObjectId::NULL_ID) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } else {
-                current_sparql_element = RDFObjectId::get(DateTime(datetime_id));
-            }
-        }
-        // Date: xsd:dateTime
-        else if (xsd_suffix == "dateTime") {
-            uint64_t datetime_id = DateTime::from_dateTime(str);
-            if (datetime_id == ObjectId::NULL_ID) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } else {
-                current_sparql_element = RDFObjectId::get(DateTime(datetime_id));
-            }
-        }
-        // Date: xsd:dateTimeStamp
-        else if (xsd_suffix == "dateTimeStamp") {
-            uint64_t datetime_id = DateTime::from_dateTimeStamp(str);
-            if (datetime_id == ObjectId::NULL_ID) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } else {
-                current_sparql_element = RDFObjectId::get(DateTime(datetime_id));
-            }
-        }
-        // String: xsd:string
-        else if (xsd_suffix == "string") {
-            current_sparql_element = RDFObjectId::get_LiteralXSDString(str);
-        }
-        // Decimal: xsd:decimal
-        else if (xsd_suffix == "decimal") {
-            bool error;
-            Decimal dec(str, &error);
-            if (error) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } else {
-                current_sparql_element = RDFObjectId::get(dec);
-            }
-        }
-        // Float: xsd:float
-        else if (xsd_suffix == "float") {
-            try {
-                current_sparql_element = RDFObjectId::get(std::stof(str));
-            } catch (const std::out_of_range& e) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } catch (const std::invalid_argument& e) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            }
-        }
-        // Double: xsd:double
-        else if (xsd_suffix == "double") {
-            try {
-                current_sparql_element = RDFObjectId::get(std::stod(str));
-            } catch (const std::out_of_range& e) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            } catch (const std::invalid_argument& e) {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            }
-        }
-        // Signed Integer: xsd:integer, xsd:long, xsd:int, xsd:short and xsd:byte
-        else if (xsd_suffix == "integer"
-              || xsd_suffix == "long"
-              || xsd_suffix == "int"
-              || xsd_suffix == "short"
-              || xsd_suffix == "byte") {
-            current_sparql_element = handleIntegerString(str, iri);
-        }
-        // Negative Integer: xsd:nonPositiveInteger, xsd:negativeInteger
-        else if (xsd_suffix == "nonPositiveInteger"
-              || xsd_suffix == "negativeInteger") {
-            current_sparql_element = handleIntegerString(str, iri);
-        }
-        // Positive Integer:
-        else if (xsd_suffix == "positiveInteger"
-              || xsd_suffix == "nonNegativeInteger"
-              || xsd_suffix == "unsignedLong"
-              || xsd_suffix == "unsignedInt"
-              || xsd_suffix == "unsignedShort"
-              || xsd_suffix == "unsignedByte") {
-            current_sparql_element = handleIntegerString(str, iri);
-        }
-        // xsd:boolean
-        else if (xsd_suffix == "boolean") {
-            if (str == "true" || str == "1") {
-                current_sparql_element = RDFObjectId::get(true);
-            } else if (str == "false" || str == "0") {
-                current_sparql_element = RDFObjectId::get(false);
-            } else {
-                current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-            }
-        }
-        // TODO: support more datatypes?
-        // Unsupported datatypes are interpreted as literals with datatype
-        else {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(str, iri);
-        }
+        current_sparql_element = Conversions::try_pack_string_datatype(iri, str);
     }
     else if (ctx->LANGTAG()) {
-        current_sparql_element = RDFObjectId::get_LiteralLang(str, ctx->LANGTAG()->getText().substr(1));
+        current_sparql_element = Conversions::pack_string_lang(ctx->LANGTAG()->getText().substr(1), str);
     } else {
-        current_sparql_element = RDFObjectId::get_Literal(str);
+        current_sparql_element = Conversions::pack_string_simple(str);
     }
     return 0;
 }
@@ -1850,15 +1758,19 @@ Any QueryVisitor::visitNumericLiteralUnsigned(SparqlParser::NumericLiteralUnsign
         if (error) {
             throw QueryException("Invalid decimal value: " + ctx->getText());
         }
-        current_sparql_element = RDFObjectId::get(dec);
+        current_sparql_element = Conversions::pack_decimal(dec);
     } else {
         // Double
          try {
-            current_sparql_element = RDFObjectId::get(std::stod(ctx->getText()));
+            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
         } catch (const std::out_of_range& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         } catch (const std::invalid_argument& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         }
     }
     return 0;
@@ -1875,15 +1787,19 @@ Any QueryVisitor::visitNumericLiteralPositive(SparqlParser::NumericLiteralPositi
         if (error) {
             throw QueryException("Invalid decimal value: " + ctx->getText());
         }
-        current_sparql_element = RDFObjectId::get(dec);
+        current_sparql_element = Conversions::pack_decimal(dec);
     } else {
         // Double
         try {
-            current_sparql_element = RDFObjectId::get(std::stod(ctx->getText()));
+            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
         } catch (const std::out_of_range& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         } catch (const std::invalid_argument& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         }
     }
     return 0;
@@ -1900,15 +1816,19 @@ Any QueryVisitor::visitNumericLiteralNegative(SparqlParser::NumericLiteralNegati
         if (error) {
             throw QueryException("Invalid decimal value: " + ctx->getText());
         }
-        current_sparql_element = RDFObjectId::get(dec);
+        current_sparql_element = Conversions::pack_decimal(dec);
     } else {
         // Double
         try {
-            current_sparql_element = RDFObjectId::get(std::stod(ctx->getText()));
+            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
         } catch (const std::out_of_range& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         } catch (const std::invalid_argument& e) {
-            current_sparql_element = RDFObjectId::get_LiteralDatatype(ctx->getText(), "http://www.w3.org/2001/XMLSchema#double");
+            current_sparql_element = Conversions::pack_string_datatype(
+                "http://www.w3.org/2001/XMLSchema#double",
+                ctx->getText());
         }
     }
     return 0;
@@ -1917,7 +1837,7 @@ Any QueryVisitor::visitNumericLiteralNegative(SparqlParser::NumericLiteralNegati
 
 Any QueryVisitor::visitBooleanLiteral(SparqlParser::BooleanLiteralContext* ctx) {
     LOG_VISITOR
-    current_sparql_element = RDFObjectId::get(ctx->TRUE() != nullptr);
+    current_sparql_element = Conversions::pack_bool(ctx->TRUE() != nullptr);
     return 0;
 }
 
@@ -1930,7 +1850,7 @@ Any QueryVisitor::visitBlankNode(SparqlParser::BlankNodeContext* ctx) {
         current_sparql_element = var;
     }
     else {
-        LOG_INFO("Creating blank node in:" << "BlankNodeContext");
+        LOG_INFO("Creating blank node in: BlankNodeContext");
         current_sparql_element = get_new_blank_node_var();
     }
     return 0;
@@ -1939,7 +1859,7 @@ Any QueryVisitor::visitBlankNode(SparqlParser::BlankNodeContext* ctx) {
 
 Any QueryVisitor::visitNil(SparqlParser::NilContext*) {
     LOG_VISITOR
-    current_sparql_element = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil");
+    current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil");
     return 0;
 }
 
@@ -1950,12 +1870,11 @@ Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx) {
     current_path_inverse = false;
     visit(ctx->path());
     // default semantic, may be overridden
-    current_path_semantic = PathSemantic::ANY_SHORTEST_WALKS;
-
+    current_path_semantic = PathSemantic::DEFAULT;
 
     // MillenniumDB's path extension
     if (ctx->AS()) {
-         // Path semantic
+        // Path semantic
         if (ctx->ALL()) {
             if (ctx->SHORTEST()) {
                 if (ctx->SIMPLE()) {
@@ -1994,24 +1913,20 @@ Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx) {
                 }
             }
         }
-        current_path_variable = get_query_ctx().get_or_create_var(ctx->var()->getText().substr(1));
+        current_path_var = get_query_ctx().get_or_create_var(ctx->var()->getText().substr(1));
     }
     // Default SPARQL path
     else {
-        // Try to simplify the path
-        if (current_path->type() == PathType::PATH_ATOM) {
-            // If the path is an Atom
-            PathAtom* tmp = dynamic_cast<PathAtom*>(current_path.get());
-            if (!tmp->inverse) {
-                // And it is not inverted, it can be simplified as an Iri
-                current_sparql_element = RDFObjectId::get_Iri(tmp->atom);
-                LOG_INFO("Leaving: !tmp->inverse current_sparql_element: " << current_sparql_element);
-                return 0;
-            }
+        auto casted_atom = dynamic_cast<PathAtom*>(current_path.get());
+        // if current path is an atom we have a triple instead of a path
+        if (casted_atom && !casted_atom->inverse) {
+            current_sparql_element = Conversions::pack_iri(casted_atom->atom);
+            return 0;
+        } else {
+            current_path_var = get_query_ctx().get_internal_var();
         }
-        current_path_variable = get_query_ctx().get_internal_var();
     }
-    // TODO: use path_semantic
+    current_path_var_is_fresh = true;
     current_sparql_element = std::move(current_path);
     return 0;
 }
@@ -2084,12 +1999,47 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
             negated_set.push_back(PathAtom(std::move(iri), path_one->INVERSE() != nullptr));
         }
         current_path = std::make_unique<PathNegatedSet>(std::move(negated_set));
+        throw NotSupportedException("PathNegatedSet");
     }
 
     current_path_inverse = previous_current_path_inverse;
 
     if (mod) {
-        switch(mod->getText()[0]) {
+        if (mod->pathQuantity()) {
+            std::vector<std::unique_ptr<RegularPathExpr>> seq;
+            if (mod->pathQuantity()->pathQuantityExact()) {
+                unsigned exact = std::stoul(mod->pathQuantity()->pathQuantityExact()->INTEGER()->getText());
+                for (unsigned i = 0; i < exact; i++) {
+                    seq.push_back(current_path->clone());
+                }
+            }
+            else if (mod->pathQuantity()->pathQuantityRange()) {
+                unsigned min = std::stoul(mod->pathQuantity()->pathQuantityRange()->min->getText());
+                unsigned max = std::stoul(mod->pathQuantity()->pathQuantityRange()->max->getText());
+                unsigned i = 0;
+                for (; i < min; i++) {
+                    seq.push_back(current_path->clone());
+                }
+                for (; i < max; i++) {
+                    seq.push_back(std::make_unique<PathOptional>(current_path->clone()));
+                }
+            }
+            else if (mod->pathQuantity()->pathQuantityMax()) {
+                unsigned max = std::stoul(mod->pathQuantity()->pathQuantityMax()->max->getText());
+                for (unsigned i = 0; i < max; i++) {
+                    seq.push_back(std::make_unique<PathOptional>(current_path->clone()));
+                }
+            }
+            else if (mod->pathQuantity()->pathQuantityMin()) {
+                unsigned min = std::stoul(mod->pathQuantity()->pathQuantityMin()->min->getText());
+                for (unsigned i = 0; i < min; i++) {
+                    seq.push_back(current_path->clone());
+                }
+                seq.push_back(std::make_unique<PathKleeneStar>(current_path->clone()));
+            }
+            current_path = std::make_unique<PathSequence>(std::move(seq));
+        } else {
+            switch(mod->getText()[0]) {
             case '*':
                 current_path = std::make_unique<PathKleeneStar>(std::move(current_path));
                 break;
@@ -2100,13 +2050,9 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
                 // else we avoid a redundant PathOptional, current_path stays the same
                 break;
             case '+':
-                // A+ => A / A*
-                auto kleene_star = std::make_unique<PathKleeneStar>(current_path->clone());
-                std::vector<std::unique_ptr<RegularPathExpr>> sequence;
-                sequence.push_back(std::move(current_path));
-                sequence.push_back(std::move(kleene_star));
-                current_path = std::make_unique<PathSequence>(std::move(sequence));
+                current_path = std::make_unique<PathKleenePlus>(std::move(current_path));
                 break;
+            }
         }
     }
     return 0;
@@ -2116,7 +2062,7 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
 Any QueryVisitor::visitVerb(SparqlParser::VerbContext* ctx) {
     LOG_VISITOR
     if (ctx->A()) {
-        current_sparql_element = RDFObjectId::get_Iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
     } else {
         visit(ctx->varOrIRI());
     }
@@ -2143,7 +2089,7 @@ std::string QueryVisitor::iriCtxToString(SparqlParser::IriContext* ctx) {
     }
     // Check if the IRI is absolute or not
     // If it is not absolute, it needs to be expanded with the base IRI
-    auto pos = iri.find("://");
+    auto pos = iri.find(':');
     if (pos == std::string::npos) {
         if (global_info.base_iri.empty()) {
             throw QuerySemanticException("The IRI '" + iri + "' is not absolute and the base IRI is not defined");
@@ -2211,19 +2157,18 @@ ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::st
         int64_t n = std::stoll(str, &pos);
         // Check if the whole string was parsed
         if (pos != str.size())
-            return RDFObjectId::get_LiteralDatatype(str, iri);
-        return RDFObjectId::get(n);
+            return Conversions::pack_string_datatype(iri, str);
+        return Conversions::pack_int(n);
     } catch (std::out_of_range& e) {
         // The integer is too big, we use a Decimal
         bool error;
         Decimal dec(str, &error);
         if (error) {
-            return RDFObjectId::get_LiteralDatatype(str, iri);
+            return Conversions::pack_string_datatype(iri, str);
         }
-        return RDFObjectId::get(dec);
+        return Conversions::pack_decimal(dec);
     } catch (std::invalid_argument& e) {
         // The string is not a valid integer
-        return RDFObjectId::get_LiteralDatatype(str, iri);
-
+        return Conversions::pack_string_datatype(iri, str);
     }
 }

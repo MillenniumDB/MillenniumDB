@@ -1,12 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <utility>
 
-#include "storage/buffer_manager.h"
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page.h"
+#include "storage/page/versioned_page.h"
 
 // forward declarations
 template <std::size_t N> class BPlusTreeDir;
@@ -36,17 +36,12 @@ public:
         page         (nullptr),
         leaf_file_id (FileId::UNASSIGNED) { }
 
-    BPlusTreeLeaf(Page* page) noexcept :
+    BPlusTreeLeaf(VPage* page) noexcept :
         records      ( reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) ) ),
         value_count  ( reinterpret_cast<uint32_t*>(page->get_bytes()) ),
         next_leaf    ( reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t)) ),
         page         (page),
         leaf_file_id (page->page_id.file_id) { }
-
-    ~BPlusTreeLeaf() {
-        if (page != nullptr)
-            buffer_manager.unpin(*page);
-    }
 
     BPlusTreeLeaf(BPlusTreeLeaf&& other) noexcept :
         records      (other.records),
@@ -54,6 +49,8 @@ public:
         next_leaf    (other.next_leaf),
         page         (std::exchange(other.page, nullptr)),
         leaf_file_id (other.leaf_file_id) { }
+
+    ~BPlusTreeLeaf();
 
     void operator=(BPlusTreeLeaf&& other) noexcept {
         records      = other.records;
@@ -64,31 +61,24 @@ public:
         this->page = std::exchange(other.page, this->page);
     }
 
-    inline Page& get_page()           const { return *page; }
+    BPlusTreeLeaf<N> clone() const;
+
+    void update_to_next_leaf();
+
+    inline VPage& get_page()          const { return *page; }
     inline uint32_t get_value_count() const { return *value_count; }
     inline bool has_next()            const { return *next_leaf != 0; }
 
     // returns false if an error in this leaf is found
-    bool check() const;
+    bool check(std::ostream& os) const;
 
     // only for debugging
-    void print() const;
+    void print(std::ostream& os) const;
 
-    std::unique_ptr<BPlusTreeSplit<N>> insert(const Record<N>& record);
+    std::unique_ptr<BPlusTreeSplit<N>> insert(const Record<N>& record, bool& error);
 
-    BPlusTreeLeaf<N> clone() const {
-        buffer_manager.pin(*page);
-        return BPlusTreeLeaf<N>(page);
-    }
-
-    void update_to_next_leaf() {
-        buffer_manager.unpin(*page);
-
-        this->page        = &buffer_manager.get_page(leaf_file_id, *next_leaf);
-        this->records     = reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) );
-        this->value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
-        this->next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
-    }
+    // returns true if record was deleted, false if record did not exists
+    bool delete_record(const Record<N>& record);
 
     // Writes a record in a given space
     // assumes pos is valid
@@ -109,8 +99,10 @@ private:
     uint32_t* value_count;
     uint32_t* next_leaf;
 
-    Page* page;
+    VPage* page;
     FileId leaf_file_id;
+
+    void upgrade_to_editable();
 
     bool equal_record(const Record<N>& record, uint_fast32_t index);
     void shift_right_records(int_fast32_t from, int_fast32_t to);

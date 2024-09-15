@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cassert>
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -13,9 +13,9 @@ using namespace HashJoin::BGP::Hybrid;
 Join1Var::Join1Var(
     unique_ptr<BindingIter> lhs,
     unique_ptr<BindingIter> rhs,
-    vector<VarId>&&           join_vars,
-    vector<VarId>&&           lhs_vars,
-    vector<VarId>&&           rhs_vars
+    vector<VarId>&&         join_vars,
+    vector<VarId>&&         lhs_vars,
+    vector<VarId>&&         rhs_vars
 ) :
     lhs           (std::move(lhs)),
     rhs           (std::move(rhs)),
@@ -45,7 +45,7 @@ Join1Var::~Join1Var() {
 }
 
 
-void Join1Var::begin(Binding& _parent_binding) {
+void Join1Var::_begin(Binding& _parent_binding) {
     this->parent_binding = &_parent_binding;
     lhs->begin(*parent_binding);
     rhs->begin(*parent_binding);
@@ -78,14 +78,13 @@ void Join1Var::begin(Binding& _parent_binding) {
 }
 
 
-bool Join1Var::next() {
+bool Join1Var::_next() {
     while (true) {
         if (enumerating_rows != nullptr) {
             for (uint_fast32_t i = 0; i < build_vars->size(); i++) {
                 parent_binding->add((*build_vars)[i], ObjectId(enumerating_rows[i]));
             }
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[build_vars->size()];
-            found++;
             return true;
         }
         if (probe->next()) {
@@ -106,9 +105,8 @@ bool Join1Var::next() {
 }
 
 
-void Join1Var::reset() {
+void Join1Var::_reset() {
     hash_table.clear();
-    found = 0;
 
     // Spread reset to children
     lhs->reset();
@@ -148,18 +146,6 @@ void Join1Var::assign_nulls() {
 }
 
 
-void Join1Var::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Join1Var(found: " << found << "\n";
-    lhs->analyze(os, indent + 2);
-    os << ",\n";
-    rhs->analyze(os, indent + 2);
-    os << "\n";
-    os << std::string(indent, ' ');
-    os << ")";
-}
-
-
 bool Join1Var::build_0_partition() {
     auto data_tuple_size = lhs_vars.size() + 1;
 
@@ -183,8 +169,8 @@ bool Join1Var::build_0_partition() {
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
 
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -228,8 +214,8 @@ void Join1Var::build_hash_table() {
 
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -261,7 +247,7 @@ void Join1Var::prepare_chunks_for_new_partition() {
     data_chunk_index = 0;
 
     // Size of data row:  build attr + 1 (one space to reserve next pointer)
-    data_chunk = new uint64_t[(build_vars->size() + 1) * Page::MDB_PAGE_SIZE];
+    data_chunk = new uint64_t[(build_vars->size() + 1) * PPage::SIZE];
     data_chunks_dir.push_back(data_chunk);
 }
 
@@ -299,4 +285,9 @@ bool Join1Var::get_next_partition() {
         return true;
     }
     return false;
+}
+
+
+void Join1Var::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

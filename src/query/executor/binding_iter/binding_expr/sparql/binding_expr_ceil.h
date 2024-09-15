@@ -3,8 +3,6 @@
 #include <cmath>
 #include <memory>
 
-#include "query/exceptions.h"
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -18,36 +16,30 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        if (!expr_oid.is_numeric()) {
-            return ObjectId::get_null();
-        }
-
-        switch (expr_oid.get_sub_type()) {
-        case ObjectId::MASK_INT: {
+        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::INTEGER: {
             auto n = Conversions::unpack_int(expr_oid);
             return ObjectId(Conversions::pack_int(std::ceil(n)));
         }
-        case ObjectId::MASK_DECIMAL: {
+        case RDF_OID::GenericSubType::DECIMAL: {
             auto n = Conversions::unpack_decimal(expr_oid);
             return ObjectId(Conversions::pack_decimal(n.ceil()));
         }
-        case ObjectId::MASK_FLOAT: {
+        case RDF_OID::GenericSubType::FLOAT: {
             auto n = Conversions::unpack_float(expr_oid);
             return ObjectId(Conversions::pack_float(std::ceil(n)));
         }
-        case ObjectId::MASK_DOUBLE: {
+        case RDF_OID::GenericSubType::DOUBLE: {
             auto n = Conversions::unpack_double(expr_oid);
             return ObjectId(Conversions::pack_double(std::ceil(n)));
         }
         default:
-            // This should never happen.
-            throw LogicException("Incorrect type for Ceil");
+            return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "CEIL(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

@@ -55,7 +55,7 @@ public:
     }
 
     std::set<VarId> get_scope_vars() const override {
-        auto res = op->get_scope_vars();
+        std::set<VarId> res;
         for (const auto& [var, expr] : items) {
             if (var) {
                 res.insert(*var);
@@ -73,27 +73,31 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpGroupBy(";
+        os << std::string(indent, ' ') << "OpGroupBy(";
 
-        for (size_t i = 0; i < items.size(); i++) {
-            auto& [var , expr] = items[i];
-            if (i != 0) {
-                os << ", ";
-            }
+        ExprPrinter printer(os);
+
+        auto first = true;
+        for (auto& [var, expr] : items) {
+            if (first) first = false; else os << ", ";
 
             if (var) {
                 os << '?' << get_query_ctx().get_var_name(*var);
             }
             if (expr) {
                 if (var) {
-                    os << "=" << *expr;
-                } else {
-                    os << *expr;
+                    os << "=";
                 }
+                expr->accept_visitor(printer);
             }
         }
         os << ")\n";
+
+        for (size_t i = 0; i < printer.ops.size(); i++) {
+            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
+            printer.ops[i]->print_to_ostream(os, indent + 4);
+        }
+
         return op->print_to_ostream(os, indent + 2);
     }
 };

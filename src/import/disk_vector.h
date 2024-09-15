@@ -8,14 +8,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <queue>
 #include <stdexcept>
 #include <vector>
 #include <thread>
 
 #include "import/stats_processor.h"
-#include "storage/page.h"
+#include "macros/aligned_alloc.h"
+#include "storage/page/versioned_page.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
 
 namespace Import {
@@ -33,10 +33,9 @@ class DiskVector {
 public:
     DiskVector(const std::string& filename) :
         filename (filename),
-        buffer_size  (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t)),
-        buffer (reinterpret_cast<char*>(std::aligned_alloc(Page::MDB_PAGE_SIZE, buffer_size)))
+        buffer_size (VPage::SIZE*N*sizeof(uint64_t)),
+        buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size)))
     {
-        // TODO: throw exception if we can't order with 1 merge
         file.open(filename, std::ios::out|std::ios::app);
         if (file.fail()) {
             throw std::runtime_error("Could not open file " + filename);
@@ -50,7 +49,7 @@ public:
                     std::array<uint64_t, N>&& new_permutation,
                     StatsProcessor<N>& stat_processor)
     {
-        reorder_cols(move(new_permutation));
+        reorder_cols(std::move(new_permutation));
         merge_sort(base_name, stat_processor);
     }
 
@@ -65,11 +64,11 @@ public:
                         std::array<uint64_t, N> original_permutation)
     {
         // free append buffer
-        free(buffer);
+        MDB_ALIGNED_FREE(buffer);
         current_permutation = original_permutation;
-        // buffer_size must be divisible by (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t)
-        auto max_blocks_per_run = max_buffer_size / (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
-        auto new_buffer_size = max_blocks_per_run * (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
+        // buffer_size must be divisible by (VPage::SIZE*N*sizeof(uint64_t)
+        auto max_blocks_per_run = max_buffer_size / (VPage::SIZE*N*sizeof(uint64_t));
+        auto new_buffer_size = max_blocks_per_run * (VPage::SIZE*N*sizeof(uint64_t));
         this->buffer_size = new_buffer_size;
         buffer = new_buffer;
     }
@@ -91,7 +90,7 @@ public:
                     &record[0],
                     N * sizeof(uint64_t));
         buffer_append_current_pos++;
-        if (buffer_append_current_pos == Page::MDB_PAGE_SIZE) {
+        if (buffer_append_current_pos == VPage::SIZE) {
             file.write(buffer, buffer_size);
             buffer_append_current_pos = 0;
         }
@@ -105,7 +104,7 @@ public:
         file.seekg(0, file.beg);
         iter_current_tuple = 0;
         // set iter_buffer_offset so its 0 when next_tuple() is called the first time
-        iter_buffer_offset = Page::MDB_PAGE_SIZE - 1;
+        iter_buffer_offset = VPage::SIZE - 1;
     }
 
     bool has_next_tuple() {
@@ -113,13 +112,13 @@ public:
     }
 
     std::array<uint64_t, N>& next_tuple() {
-        // max tuples in buffer is Page::MDB_PAGE_SIZE
-        iter_buffer_offset = (iter_buffer_offset+1) % Page::MDB_PAGE_SIZE;
+        // max tuples in buffer is VPage::SIZE
+        iter_buffer_offset = (iter_buffer_offset+1) % VPage::SIZE;
         iter_current_tuple++;
 
         if (iter_buffer_offset == 0) {
             // leer del disco a buffer
-            file.read(buffer, Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
+            file.read(buffer, VPage::SIZE*N*sizeof(uint64_t));
             file.clear();
         }
         auto ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer) + iter_buffer_offset;
@@ -184,12 +183,12 @@ private:
         // A run is a set of ordered tuples (ordered when method reorder_cols was called)
         // A run is divided in blocks. Tuples from disk are read 1 block at a time
         // buffer_size was chosen to be a multiple of block_size
-        const uint64_t block_size = Page::MDB_PAGE_SIZE*N*sizeof(uint64_t);
+        constexpr uint64_t block_size = VPage::SIZE*N*sizeof(uint64_t);
 
         const uint64_t total_runs = division_round_up(file_length, buffer_size);
         const uint64_t total_blocks = division_round_up(file_length, block_size);
 
-        const uint64_t max_tuples_per_block = Page::MDB_PAGE_SIZE;
+        const uint64_t max_tuples_per_block = VPage::SIZE;
         const uint64_t max_blocks_per_run = buffer_size / block_size;
 
         const uint64_t tuples_in_last_block = (total_tuples % max_tuples_per_block == 0)
@@ -200,18 +199,13 @@ private:
                                             ? max_blocks_per_run
                                             : (total_blocks % max_blocks_per_run);
 
-        assert(total_runs*block_size + (BPTLeafWriter<N>::max_records*N*sizeof(uint64_t)) <= buffer_size);
+
+        // throw exception if we can't order with 1 merge
+        if (total_runs*block_size + (BPTLeafWriter<N>::max_records*N*sizeof(uint64_t)) > buffer_size) {
+            throw std::logic_error("Can't order tuples with one merge, need a bigger buffer size.");
+        }
 
         // When we have only one run we skip the merge
-        // std::cout << base_name << ":\n";
-        // std::cout << "  total_tuples: " << total_tuples << "\n";
-        // std::cout << "  block_size: " << block_size << "\n";
-        // std::cout << "  total_runs: " << total_runs << "\n";
-        // std::cout << "  total_blocks: " << total_blocks << "\n";
-        // std::cout << "  max_tuples_per_block: " << max_tuples_per_block << "\n";
-        // std::cout << "  tuples_in_last_block: " << tuples_in_last_block << "\n";
-        // std::cout << "  blocks_in_last_run: " << blocks_in_last_run << "\n";
-
         std::priority_queue<std::pair<std::array<uint64_t, N>, uint64_t>,               // tuple: (record, run_number)
                             std::vector< std::pair<std::array<uint64_t, N>, uint64_t>>, // container
                             RunRecordComparator<N>                                      // comparator
@@ -356,17 +350,6 @@ private:
             uint64_t read_size = file.gcount();
             auto write_size = read_size;
 
-            // if (!file.good()) {
-            //     std::cout << "WARNING: file not good after read\n";
-            //     if (file.eof()) {
-            //         std::cout << "  file EOF\n";
-            //     }
-            //     if (file.fail()) {
-            //         std::cout << "  file FAIL\n";
-            //     }
-            //     std::cout << "read_size: " << read_size << "\n";
-            // }
-
             reorder_chunk(read_size, new_permutation);
             auto beg_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
             auto end_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer + read_size);
@@ -389,32 +372,14 @@ private:
                     }
                     write_ptr++;
                 }
-                // if (write_size > read_size) {
-                //     std::cout << "ERROR write_size overflow \n";
-                // }
             }
 
             file.seekg(write_pos, file.beg);
             file.write(buffer, write_size);
 
-            // if (!file.good()) {
-            //     std::cout << "WARNING: file not good after write\n";
-            //     if (file.eof()) {
-            //         std::cout << "  file EOF\n";
-            //     }
-            //     if (file.fail()) {
-            //         std::cout << "  file FAIL\n";
-            //     }
-            //     std::cout << "write_size: " << write_size << "\n";
-            // }
-
             remaining -= read_size;
             read_pos += read_size;
             write_pos += write_size;
-            // if (write_pos > read_pos) {
-            //     std::cout << "ERROR: write_pos > read_pos\n";
-            // }
-
         }
         current_permutation = std::move(new_permutation);
     }

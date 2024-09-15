@@ -7,33 +7,31 @@
 class Slice : public BindingIter {
 public:
     Slice(
-        std::unique_ptr<BindingIter> child_id_iter,
-        uint64_t                       offset,
-        uint64_t                       limit
+        std::unique_ptr<BindingIter> child_iter,
+        uint64_t                     offset,
+        uint64_t                     limit
     ) :
-        child_id_iter (std::move(child_id_iter)),
-        offset        (offset),
-        limit         (limit) { }
+        child_iter (std::move(child_iter)),
+        offset     (offset),
+        limit      (limit) { }
 
-    void begin(Binding& parent_binding) override;
+    void _begin(Binding& parent_binding) override;
 
-    void reset() override;
+    void _reset() override;
 
-    bool next() override;
+    bool _next() override;
 
     void assign_nulls() override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
-private:
-    std::unique_ptr<BindingIter> child_id_iter;
-
-    Binding* parent_binding;
-
+    std::unique_ptr<BindingIter> child_iter;
     uint64_t offset;
     uint64_t limit;
+
+private:
+    Binding* parent_binding;
+
     uint64_t count = 0;
     uint64_t position = 0;
-
-    uint64_t total_count = 0;
 };

@@ -2,12 +2,12 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/query_context.h"
 
 namespace SPARQL {
+
 class BindingExprBNode : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> expr;
@@ -17,17 +17,17 @@ public:
 
     ObjectId eval(const Binding& binding) override {
         auto oid = expr->eval(binding);
-        switch(oid.get_sub_type()) {
-        case ObjectId::MASK_STRING_SIMPLE: {
-            auto str = Conversions::unpack_string_simple(oid);
+        switch(RDF_OID::get_generic_sub_type(oid)) {
+        case RDF_OID::GenericSubType::STRING_XSD:
+        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+            auto str = Conversions::unpack_string(oid);
             auto it = get_query_ctx().blank_node_ids.find(str);
             if (it == get_query_ctx().blank_node_ids.end()) {
                 auto new_bnode = get_query_ctx().get_new_blank_node();
                 get_query_ctx().blank_node_ids.insert({str, new_bnode});
-                auto ret = ObjectId(ObjectId::MASK_ANON_TMP | new_bnode);
-                return ret;
+                return Conversions::pack_blank_tmp(new_bnode);
             } else {
-                return ObjectId(ObjectId::MASK_ANON_TMP | it->second);
+                return Conversions::pack_blank_tmp(it->second);
             }
         }
         default:
@@ -35,9 +35,8 @@ public:
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "BNODE(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

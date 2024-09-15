@@ -6,7 +6,7 @@
 #include "query/executor/binding_iter/empty_binding_iter.h"
 
 
-void IndexNestedLoopJoin::begin(Binding& parent_binding) {
+void IndexNestedLoopJoin::_begin(Binding& parent_binding) {
     this->parent_binding = &parent_binding;
 
     lhs->begin(parent_binding);
@@ -16,13 +16,11 @@ void IndexNestedLoopJoin::begin(Binding& parent_binding) {
         rhs = &empty_iter;
     }
     original_rhs->begin(parent_binding);
-    executions++;
 }
 
-bool IndexNestedLoopJoin::next() {
+bool IndexNestedLoopJoin::_next() {
     while (true) {
         if (rhs->next()) {
-            result_count++;
             return true;
         } else {
             if (lhs->next())
@@ -33,7 +31,7 @@ bool IndexNestedLoopJoin::next() {
     }
 }
 
-void IndexNestedLoopJoin::reset() {
+void IndexNestedLoopJoin::_reset() {
     lhs->reset();
     if (lhs->next()) {
         rhs = original_rhs.get();
@@ -41,7 +39,6 @@ void IndexNestedLoopJoin::reset() {
     } else {
         rhs = &empty_iter;
     }
-    executions++;
 }
 
 
@@ -51,15 +48,9 @@ void IndexNestedLoopJoin::assign_nulls() {
 }
 
 
-void IndexNestedLoopJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ') << "IndexNestedLoopJoin(";
-
-    os << "executions:" << executions;
-    os << " found:" << result_count;
-    os << ")\n";
-
-    lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void IndexNestedLoopJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
+
 
 template class std::unique_ptr<IndexNestedLoopJoin>;

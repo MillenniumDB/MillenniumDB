@@ -1,0 +1,22 @@
+{
+    "head": {
+        "vars": [
+            "pred",
+            "obj"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/modifier"
+                },
+                "obj": {
+                    "type": "literal",
+                    "value": "✌🏼 ✌🏿"
+                }
+            }
+        ]
+    }
+}

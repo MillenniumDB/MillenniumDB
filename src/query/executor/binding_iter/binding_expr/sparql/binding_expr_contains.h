@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -20,30 +19,35 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_sub = lhs_oid.get_sub_type();
-        auto rhs_sub = rhs_oid.get_sub_type();
+        auto lhs_sub = RDF_OID::get_generic_sub_type(lhs_oid);
+        auto rhs_sub = RDF_OID::get_generic_sub_type(rhs_oid);
 
-        if (lhs_sub != ObjectId::MASK_STRING_SIMPLE
-         && lhs_sub != ObjectId::MASK_STRING_XSD
-         && lhs_sub != ObjectId::MASK_STRING_LANG) {
+        if (lhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE &&
+            lhs_sub != RDF_OID::GenericSubType::STRING_XSD &&
+            lhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        {
             return ObjectId::get_null();
         }
 
-        if (rhs_sub != ObjectId::MASK_STRING_SIMPLE
-         && rhs_sub != ObjectId::MASK_STRING_XSD
-         && rhs_sub != ObjectId::MASK_STRING_LANG) {
+        if (rhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE &&
+            rhs_sub != RDF_OID::GenericSubType::STRING_XSD &&
+            rhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        {
             return ObjectId::get_null();
         }
 
-        if (lhs_sub != ObjectId::MASK_STRING_LANG
-         && rhs_sub == ObjectId::MASK_STRING_LANG) {
+        if (lhs_sub != RDF_OID::GenericSubType::STRING_LANG &&
+            rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
+        {
             return ObjectId::get_null();
         }
 
         std::string lhs_str;
         std::string rhs_str;
 
-        if (lhs_sub == ObjectId::MASK_STRING_LANG && rhs_sub == ObjectId::MASK_STRING_LANG) {
+        if (lhs_sub == RDF_OID::GenericSubType::STRING_LANG &&
+            rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
+        {
             auto [lhs_l, lhs_s] = Conversions::unpack_string_lang(lhs_oid);
             auto [rhs_l, rhs_s] = Conversions::unpack_string_lang(rhs_oid);
             if (lhs_l != rhs_l) {
@@ -57,19 +61,18 @@ public:
         }
 
         if (rhs_str.size() == 0) {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return SPARQL::Conversions::pack_bool(true);
         }
         if (lhs_str.size() == 0) {
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return SPARQL::Conversions::pack_bool(false);
         }
 
         auto it = lhs_str.find(rhs_str);
-        return ObjectId(ObjectId::MASK_BOOL | (it != std::string::npos));
+        return SPARQL::Conversions::pack_bool(it != std::string::npos);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "CONTAINS(" << *lhs << ", " << *rhs << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

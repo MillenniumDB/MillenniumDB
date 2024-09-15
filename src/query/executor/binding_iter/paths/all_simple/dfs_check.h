@@ -1,10 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <stack>
 
 #include "query/executor/binding_iter.h"
-#include "query/id.h"
 #include "query/executor/binding_iter/paths/all_simple/search_state.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 
@@ -25,20 +25,19 @@ private:
 
     // Attributes determined in begin
     Binding* parent_binding;
+    ObjectId current_start;
     ObjectId end_object_id;
     bool first_next = true;
 
     // Stack for search states + paths
     std::stack<SearchStateDFS> open;
 
-    // Statistics
-    uint_fast32_t results_found = 0;
-    uint_fast32_t idx_searches = 0;
-
-    // Get next state of interest
-    SearchStateDFS* expand_neighbors(SearchStateDFS& current_state);
+    std::set<uint64_t> current_state_nodes;
 
 public:
+    // Statistics
+    uint_fast32_t idx_searches = 0;
+
     DFSCheck(
         VarId                          path_var,
         Id                             start,
@@ -52,10 +51,13 @@ public:
         automaton     (automaton),
         provider      (std::move(provider)) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    void reset() override;
-    bool next() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    void _reset() override;
+    bool _next() override;
+
+    // Get next state of interest
+    SearchStateDFS* expand_neighbors(SearchStateDFS& current_state);
 
     void assign_nulls() override {
         parent_binding->add(path_var, ObjectId::get_null());

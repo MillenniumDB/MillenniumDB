@@ -153,12 +153,14 @@ public:
 
 class PredicateStat : public StatsProcessor<3> {
 public:
-    uint64_t                                      current_predicate = 0;
-    uint64_t                                      predicate_count   = 0;
-    uint64_t                                      distinct_values   = 0;
+    uint64_t all_count = 0;
+    uint64_t current_predicate = 0;
+    uint64_t predicate_count   = 0;
+    // uint64_t distinct_values   = 0;
     robin_hood::unordered_map<uint64_t, uint64_t> map_predicate_count;
 
     void process_tuple(const std::array<uint64_t, 3>& tuple) override {
+        all_count++;
         if (tuple[0] == current_predicate) {
             ++predicate_count;
         } else {
@@ -168,7 +170,7 @@ public:
             }
             current_predicate = tuple[0];
             predicate_count   = 1;
-            ++distinct_values;
+            // ++distinct_values;
         }
     }
 

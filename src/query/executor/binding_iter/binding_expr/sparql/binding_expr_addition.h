@@ -1,9 +1,8 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 
-#include "query/exceptions.h"
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -46,14 +45,15 @@ public:
         case Conversions::OPTYPE_INVALID: {
             return ObjectId::get_null();
         }
-        default:
-            throw LogicException("This should never happen");
+        default: {
+            assert(false);
+            return ObjectId::get_null();
+        }
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '(' << *lhs << '+' << *rhs << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

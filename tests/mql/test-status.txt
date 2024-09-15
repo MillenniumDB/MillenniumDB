@@ -1,3 +1,31 @@
+[SUMMARY] ------------------- aggs --------------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :  20          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :  20          
+[SUMMARY] 
+[SUMMARY] ---------------- bad_queries ----------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :  14          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :  14          
+[SUMMARY] 
+[SUMMARY] ------------------- dates -------------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :   1          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :   1          
+[SUMMARY] 
+[SUMMARY] -------------------- is ---------------------
+[SUMMARY] 
+[SUMMARY]           CORRECT             :  10          
+[SUMMARY]           ERROR               :   0          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :  10          
+[SUMMARY] 
 [SUMMARY] ------------------- paths -------------------
 [SUMMARY] 
 [SUMMARY]           CORRECT             :   1          
@@ -7,17 +35,15 @@
 [SUMMARY] 
 [SUMMARY] ------------------ simple -------------------
 [SUMMARY] 
-[SUMMARY]           CORRECT             :  30          
+[SUMMARY]           CORRECT             :  31          
 [SUMMARY]           ERROR               :   0          
-[SUMMARY]           SKIPPED             :   1          
-[SUMMARY]             ignored           :   1          
+[SUMMARY]           SKIPPED             :   0          
 [SUMMARY]           TOTAL               :  31          
 [SUMMARY] 
 [SUMMARY] ----------------- All Tests -----------------
 [SUMMARY] 
-[SUMMARY]           CORRECT             :  31          
+[SUMMARY]           CORRECT             :  77          
 [SUMMARY]           ERROR               :   0          
-[SUMMARY]           SKIPPED             :   1          
-[SUMMARY]             ignored           :   1          
-[SUMMARY]           TOTAL               :  32          
+[SUMMARY]           SKIPPED             :   0          
+[SUMMARY]           TOTAL               :  77          
 [SUMMARY] 

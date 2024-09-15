@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "query/parser/op/op.h"
 #include "query/parser/expr/expr.h"
+#include "query/parser/op/op.h"
 
 namespace SPARQL {
 
@@ -95,12 +95,12 @@ public:
     }
 
     std::set<VarId> get_fixable_vars() const override {
-        if (limit != Op::DEFAULT_LIMIT or offset != Op::DEFAULT_OFFSET or distinct) {
+        if (limit != Op::DEFAULT_LIMIT || offset != Op::DEFAULT_OFFSET || distinct) {
             return {};
         }
 
         for (auto& expr : vars_exprs) {
-            if (expr != nullptr and expr->has_aggregation()) {
+            if (expr != nullptr && expr->has_aggregation()) {
                 return {};
             }
         }
@@ -120,27 +120,52 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ');
 
+        ExprPrinter printer(os);
+
         if (is_sub_select) { os << "OpSubSelect("; }
         else { os << "OpSelect("; }
 
+        auto printed = false;
         if (distinct) {
-            os << "DISTINCT ";
+            printed = true;
+            os << "DISTINCT";
         }
-        bool first = true;
-        for (auto& var : vars) {
-            if (!first) {
-                os << ", ";
-            }
-            first = false;
-            os << '?' << get_query_ctx().get_var_name(var);
-        }
+
         if (limit != DEFAULT_LIMIT) {
-            os << "; LIMIT " << limit;
+            if (printed) os << ", ";
+            printed = true;
+            os << "LIMIT" << limit;
         }
+
         if (offset != DEFAULT_OFFSET) {
-            os << "; OFFSET " << offset;
+            if (printed) os << ", ";
+            printed = true;
+            os << "OFFSET" << offset;
         }
+
+        if (printed) os << ", ";
+
+        for (size_t i = 0; i < vars.size(); i++) {
+            if (i != 0) os << ", ";
+
+            auto var = vars[i];
+            auto& expr = vars_exprs[i];
+
+            os << '?' << get_query_ctx().get_var_name(var);
+
+            if (expr != nullptr) {
+                os << "=";
+                expr->accept_visitor(printer);
+            }
+        }
+
         os << ")\n";
+
+        for (size_t i = 0; i < printer.ops.size(); i++) {
+            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
+            printer.ops[i]->print_to_ostream(os, indent + 4);
+        }
+
         return op->print_to_ostream(os, indent + 2);
     }
 };

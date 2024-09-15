@@ -1,0 +1,6 @@
+prefix : <http://www.path.com/>
+
+select ?l ?o
+where {
+  :Al :knows|:owns ?l, ?o
+}

@@ -1,0 +1,32 @@
+PREFIX : <https://example.com/>
+
+SELECT *
+WHERE {
+:s :p
+<admin:millenniumdb>,
+<app:millenniumdb>,
+<freeplane:millenniumdb>,
+<javascript:millenniumdb>,
+<jdbc:millenniumdb>,
+<msteams:millenniumdb>,
+<ms-access:millenniumdb>,
+<ms-excel:millenniumdb>,
+<ms-infopath:millenniumdb>,
+<ms-powerpoint:millenniumdb>,
+<ms-project:millenniumdb>,
+<ms-publisher:millenniumdb>,
+<ms-spd:millenniumdb>,
+<ms-visio:millenniumdb>,
+<ms-word:millenniumdb>,
+<odbc:millenniumdb>,
+<psns:millenniumdb>,
+<rdar:millenniumdb>,
+<s3:millenniumdb>,
+<trueconf:millenniumdb>,
+<slack:millenniumdb>,
+<stratum:millenniumdb>,
+<viber:millenniumdb>,
+<zoommtg:millenniumdb>,
+<zoomus:millenniumdb>,
+<web+soup:millenniumdb> .
+}

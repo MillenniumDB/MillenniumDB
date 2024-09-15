@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <set>
 #include <string>
 #include <vector>
@@ -44,7 +45,7 @@ public:
     // if is data transition type will be ""
     std::string type;
 
-    ObjectId type_id;
+    ObjectId type_id = ObjectId::get_null();
 
     // List of property checks for the transition
     std::vector<std::tuple<Operators, ObjectId, ObjectId>> property_checks;
@@ -188,10 +189,7 @@ public:
     inline uint32_t get_final_state() const noexcept  { return final_state; }
 
     // Print the automaton
-    void print();
-
-    // For debugging
-    void log(size_t s);
+    void print(std::ostream& os);
 
     // Add states from 'other' automaton to this automaton, rename 'other' states, update 'other'
     // end states to be consistent with rename. Don't update 'other' connections.
@@ -201,7 +199,7 @@ public:
     void add_transition(RDPQTransition transition);
 
     // Apply transformations to get the final automaton
-    void transform_automaton(std::function<ObjectId(const std::string&)> f);
+    void transform_automaton(ObjectId(*str_to_oid)(const std::string&));
 
     // TODO: Refactor to modify the automaton instead of returning a new one
     // Returns the inverse automaton (invalidating this one)

@@ -29,19 +29,14 @@ public:
         lhs_only_vars    (std::move(lhs_only_vars)),
         rhs_only_vars    (std::move(rhs_only_vars)) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
     std::unique_ptr<BindingIter> lhs;
     std::unique_ptr<BindingIter> rhs;
-
-    Binding* parent_binding;
-    std::unique_ptr<Binding> lhs_binding;
-    std::unique_ptr<Binding> rhs_binding;
 
     std::vector<VarId> safe_join_vars;
     std::vector<VarId> unsafe_join_vars;
@@ -49,6 +44,9 @@ private:
     std::vector<VarId> lhs_only_vars;
     std::vector<VarId> rhs_only_vars;
 
-    uint64_t result_count = 0;
-    uint64_t executions = 0;
+private:
+    Binding* parent_binding;
+    std::unique_ptr<Binding> lhs_binding;
+    std::unique_ptr<Binding> rhs_binding;
+
 };

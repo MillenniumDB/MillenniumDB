@@ -13,6 +13,9 @@ public:
 
     std::vector<OpProperty> optional_properties;
 
+    // var, key, value, value_var
+    std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>> fixed_properties;
+
     OpMatch(
         std::unique_ptr<Op> op,
         std::vector<OpProperty>&& optional_properties
@@ -20,9 +23,23 @@ public:
         op (std::move(op)),
         optional_properties (optional_properties) { }
 
+    OpMatch(
+        std::unique_ptr<Op> op,
+        std::vector<OpProperty>&& optional_properties,
+        std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>>&& fixed_properties
+    ) :
+        op (std::move(op)),
+        optional_properties (optional_properties),
+        fixed_properties (fixed_properties) { }
+
     virtual std::unique_ptr<Op> clone() const override {
         std::vector<OpProperty> optional_properties_clone = optional_properties;
-        return std::make_unique<OpMatch>(op->clone(), std::move(optional_properties_clone));
+        std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>> fixed_properties_clone = fixed_properties;
+        return std::make_unique<OpMatch>(
+            op->clone(),
+            std::move(optional_properties_clone),
+            std::move(fixed_properties_clone)
+        );
     }
 
     void accept_visitor(OpVisitor& visitor) override {

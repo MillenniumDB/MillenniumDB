@@ -198,12 +198,6 @@ class BadTest(Test):
 
 
 class QueryTest(Test):
-    data: Optional[Path]
-    named_graphs: List[Path]
-    prefixes: Optional[Path]
-    expected: Path
-    graph_output: bool
-
     def __init__(
         self,
         *,

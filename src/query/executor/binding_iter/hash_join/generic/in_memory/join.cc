@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -12,9 +12,9 @@ using namespace HashJoin::Generic::InMemory;
 Join::Join(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     rhs             (std::move(_rhs)),
     lhs             (std::move(_lhs)),
@@ -28,14 +28,14 @@ Join::Join(
     last_rhs_key    (Key(last_pk_start, N))
 {
     // Size of data row:  lhs attr  + 1 (one space to reserve next pointer)
-    data_chunk = new uint64_t[(lhs_vars.size() + 1) * Page::MDB_PAGE_SIZE];
+    data_chunk = new uint64_t[(lhs_vars.size() + 1) * PPage::SIZE];
     // Add to directory
     data_chunks_dir.push_back(data_chunk);
     // Set chunk index in 0
     data_chunk_index = 0;
 
     // Size of key row: join var
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     // Add to directory
     key_chunks_dir.push_back(key_chunk);
     // Set chunk index in 0
@@ -57,7 +57,7 @@ Join::~Join() {
 }
 
 
-void Join::begin(Binding& _parent_binding) {
+void Join::_begin(Binding& _parent_binding) {
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -77,7 +77,7 @@ void Join::begin(Binding& _parent_binding) {
 }
 
 
-bool Join::next() {
+bool Join::_next() {
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -87,7 +87,6 @@ bool Join::next() {
             }
             // Update enumerating row to next value
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[lhs_vars.size()];
-            found++;
             return true;
         }
         else {
@@ -138,7 +137,7 @@ bool Join::next() {
 }
 
 
-void Join::reset() {
+void Join::_reset() {
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -195,11 +194,8 @@ void Join::assign_nulls() {
 }
 
 
-void Join::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "JoinMemory(found: " << found << ")\n";
-    lhs->analyze(os, indent + 2);
-    rhs->analyze(os, indent + 2);
+void Join::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -245,8 +241,8 @@ void Join::build_hash_table() {
 
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -262,8 +258,8 @@ void Join::build_hash_table() {
             // If not are the same, update chunk index
             // and check if key chunk is full
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }

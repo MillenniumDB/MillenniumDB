@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "graph_models/object_id.h"
-#include "graph_models/inliner.h"
+#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
@@ -17,13 +17,6 @@ public:
         rhs (std::move(rhs)) { }
 
     ObjectId eval(const Binding& binding) override {
-        // if (lhs.type == GraphObjectType::INT && rhs.type == GraphObjectType::INT
-        //     && GraphObjectInterpreter::get<int64_t>(rhs) != 0)
-        // {
-        //     return GraphObjectFactory::make_int(GraphObjectInterpreter::get<int64_t>(lhs)
-        //                                         % GraphObjectInterpreter::get<int64_t>(rhs));
-        // }
-        // return GraphObjectFactory::make_null();
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
         int64_t lhs_value;
@@ -66,12 +59,11 @@ public:
             return ObjectId::get_null();
         }
 
-        return ObjectId(Inliner::inline_int(lhs_value%rhs_value));
+        return ObjectId(Conversions::pack_int(lhs_value%rhs_value));
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '(' << *lhs << '%' << *rhs << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace MQL

@@ -19,6 +19,8 @@ public:
         return std::make_unique<PropertyPlan>(*this);
     }
 
+    int relation_size() const override { return 3; }
+
     double estimate_cost() const override;
     double estimate_output_size() const override;
 

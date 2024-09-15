@@ -1,17 +1,21 @@
 #pragma once
 
+#include <ostream>
+#include <filesystem>
+
 #include "storage/file_id.h"
-#include "storage/page.h"
+#include "storage/page/unversioned_page.h"
+
+namespace TextSearch {
 
 class TrieGarbage {
 public:
-
     // File id for FileManager
     const FileId garbage_file_id;
 
     // The garbage is distributed as follows:
     // - Directory page, which functions as a directory for all capacities available (including nodes).
-    // - And all the other pages, which store free offsets corresponding to their capacity, 
+    // - And all the other pages, which store free offsets corresponding to their capacity,
     //   number of offsets stored in page and values for next and previous pages.
     //   All of these pages work as linked lists.
 
@@ -37,13 +41,13 @@ public:
     static constexpr int OP_SNP = 4; // Size of next page number (Offsets page)
     static constexpr int OP_SO = 5;  // Size of each offset stored in page (Offsets page)
     // Max number of offset in Offsets pages: (2B offsets count + 4B prev page + 4B next page and 5B each value)
-    static constexpr uint64_t MAX_VALUES_IN_PAGE = (Page::MDB_PAGE_SIZE - (OP_SN + OP_SPP + OP_SNP)) / OP_SO;
+    static constexpr uint64_t MAX_VALUES_IN_PAGE = (UPage::SIZE - (OP_SN + OP_SPP + OP_SNP)) / OP_SO;
 
     // Directory of garbage
-    Page& dir_page;
+    UPage& dir_page;
 
     // Constructor
-    TrieGarbage();
+    TrieGarbage(const std::filesystem::path& path);
 
     // Destructor
     ~TrieGarbage();
@@ -53,19 +57,19 @@ public:
 
     // Search for a free space of >= capacity bytes and pops it.
     // Overwrites capacity (if bigger) and value to the result.
-    // Returns 0 if nothing is found and 1 otherwise.
-    int search_and_pop_capacity(uint64_t& capacity, uint64_t& value);
+    // Returns false if nothing is found and true otherwise.
+    bool search_and_pop_capacity(uint64_t& capacity, uint64_t& value);
 
     // Adds value to the garbage of nodes
     void add_node(uint64_t value);
 
     // Search for a free space of node and pops it.
     // Overwrites value to the result.
-    // Returns 0 if nothing is found and 1 otherwise.
-    int search_and_pop_node(uint64_t& value);
+    // Returns false if nothing is found and true otherwise.
+    bool search_and_pop_node(uint64_t& value);
 
     // Prints status of garbage
-    void status();
+    void status(std::ostream& os);
 
 private:
 
@@ -87,3 +91,5 @@ private:
         return value;
     }
 };
+
+} // namespace TextSearch

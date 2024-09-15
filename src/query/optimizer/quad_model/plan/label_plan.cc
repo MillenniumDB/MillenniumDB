@@ -49,9 +49,12 @@ double LabelPlan::estimate_output_size() const {
 
     if (label_assigned) {
         // nodes with label `label_id`
-        double label_count;
+        double label_count = 0;
         if (label.is_OID()) {
-            label_count = static_cast<double>(quad_model.catalog().label2total_count[label.get_OID().id]);
+            auto it = quad_model.catalog().label2total_count.find(label.get_OID().id);
+            if (it != quad_model.catalog().label2total_count.end()) {
+                label_count = static_cast<double>(it->second);
+            }
         } else {
             // TODO: this case (label is an assigned variable) is not possible yet, but we may need to cover it in the future
             return 0;

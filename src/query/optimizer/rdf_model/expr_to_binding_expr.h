@@ -1,19 +1,9 @@
 #pragma once
 
-#include <chrono>
-#include <cstdint>
-#include <map>
-#include <memory>
 #include <optional>
-#include <random>
-#include <unordered_map>
 
-#include <boost/uuid/uuid_generators.hpp>
-
-#include "graph_models/rdf_model/rdf_model.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/executor/binding_iter/projection_order_exprs.h"
 #include "query/parser/expr/expr.h"
 #include "query/parser/expr/expr_visitor.h"
 #include "query/query_context.h"
@@ -21,77 +11,41 @@
 
 namespace SPARQL {
 
-enum class GroupingMode {
-    Grouping,        // Expression must have aggregation or group variable
-    NoGrouping,      // Expression must not have aggregation or group variable
-    OptionalGrouping // Expression may have aggregation or group variable
-};
+class BindingIterConstructor;
 
 // This visitor returns nullptr if condition is pushed outside
 class ExprToBindingExpr : public ExprVisitor {
 public:
-    // Current time, used for NOW() and as seed for RAND()
-    const std::chrono::system_clock::time_point current_time = std::chrono::system_clock::now();
+    BindingIterConstructor* bic = nullptr;
 
-    // Random number generator for RAND()
-    std::default_random_engine rand_generator = std::default_random_engine(current_time.time_since_epoch().count());
-    std::uniform_real_distribution<double> distribution = std::uniform_real_distribution<double>(0.0, 1.0);
-
-    // UUID generator for UUID() and STRUUID()
-    boost::uuids::random_generator uuid_generator;
-
-    const std::set<VarId>                     safe_assigned_vars;
-    const std::set<VarId>                     possible_assigned_vars;
-
-    const std::set<VarId>                     group_vars;
-    std::map<VarId, std::unique_ptr<Agg>>*  aggregations;
-    const std::vector<ProjectionOrderExpr>*   projection_order_exprs;
-
-    std::unique_ptr<BindingExpr> current_binding_expr;
-
-    // This expressions is part of (<expressions> AS <var>), as_var is <var>
+    // In expressions like "<expressions> AS <var>", as_var is <var>
     const std::optional<VarId> as_var;
 
-    const GroupingMode grouping_mode;
+    // Where the result will be stored
+    std::unique_ptr<BindingExpr> tmp;
 
-    bool visited_aggregation = false; // An aggregation has been visited previously
-    bool at_root             = true;  // The visitor is currently at the root node
+    // Has to be true while visiting something inside of an aggregation
+    // and be false otherwise
+    bool inside_aggregation = false;
+
+    bool at_root = true; // The visitor is currently at the root node
 
     // This constructor is used to visit expressions that must not have aggregations or group variables.
-    ExprToBindingExpr(
-        const std::set<VarId>& safe_assigned_vars,
-        const std::set<VarId>& possible_assigned_vars
-    ) :
-        safe_assigned_vars       (safe_assigned_vars),
-        possible_assigned_vars   (possible_assigned_vars),
-        group_vars               ({}),
-        aggregations             (nullptr),
-        projection_order_exprs   (nullptr),
-        as_var                   ({}),
-        grouping_mode            (GroupingMode::NoGrouping) { }
+    ExprToBindingExpr() :
+        bic (nullptr) { }
 
     // This constructor is used to visit expressions that can have aggregations or group variables.
     ExprToBindingExpr(
-        const std::set<VarId>&                   safe_assigned_vars,
-        const std::set<VarId>&                   possible_assigned_vars,
-        const std::set<VarId>&                   group_vars,
-        std::map<VarId, std::unique_ptr<Agg>>& aggregations,
-        const std::vector<ProjectionOrderExpr>&  projection_order_exprs,
-        std::optional<VarId>                     as_var,
-        GroupingMode                             grouping_mode
+        BindingIterConstructor* bic,
+        std::optional<VarId> as_var
     ) :
-        safe_assigned_vars      (safe_assigned_vars),
-        possible_assigned_vars  (possible_assigned_vars),
-        group_vars              (group_vars),
-        aggregations            (&aggregations),
-        projection_order_exprs  (&projection_order_exprs),
-        as_var                  (as_var),
-        grouping_mode           (grouping_mode) { }
+        bic (bic),
+        as_var (as_var) { }
 
-    template<typename AggType> AggType* check_and_make_aggregate(Expr*);
+    template<typename AggType, class ... Args>
+    void check_and_make_aggregate(Expr*, Args&&... args);
 
     void visit(SPARQL::ExprVar&)            override;
-    void visit(SPARQL::ExprObjectId&)       override;
     void visit(SPARQL::ExprTerm&)           override;
     void visit(SPARQL::ExprEqual&)          override;
     void visit(SPARQL::ExprNotEqual&)       override;

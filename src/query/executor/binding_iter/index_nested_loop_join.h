@@ -14,22 +14,19 @@ public:
         lhs           (std::move(lhs)),
         original_rhs  (std::move(rhs)) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
     std::unique_ptr<BindingIter> lhs;
     std::unique_ptr<BindingIter> original_rhs;
 
+private:
     BindingIter* rhs; // will point to original_rhs or a EmptyBindingIter
 
     Binding* parent_binding;
-
-    uint64_t result_count = 0;
-    uint64_t executions = 0;
 
     EmptyBindingIter empty_iter;
 };

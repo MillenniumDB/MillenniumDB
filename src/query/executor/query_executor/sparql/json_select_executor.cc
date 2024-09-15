@@ -1,14 +1,9 @@
 #include "json_select_executor.h"
 
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
-#include "graph_models/rdf_model/datatypes/decimal_inlined.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 #include "query/executor/query_executor/json_ostream_escape.h"
-#include "storage/string_manager.h"
-#include "storage/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace SPARQL;
@@ -75,28 +70,6 @@ uint64_t JsonSelectExecutor::execute(std::ostream& os) {
 }
 
 
-void print_datatype_rdf_json(std::ostream& os, uint64_t datatype_id) {
-    os << "\",\"datatype\":\"";
-    if ((datatype_id & ObjectId::MASK_TAG_MANAGER) == 0) {
-        os << rdf_model.catalog().datatypes[datatype_id];
-    } else {
-        tmp_manager.print_dtt(os, (datatype_id & (~ObjectId::MASK_TAG_MANAGER)));
-    }
-    os << "\"}";
-}
-
-
-void print_language_rdf_json(std::ostream& os, uint64_t language_id) {
-    os << "\",\"xml:lang\":\"";
-    if ((language_id & ObjectId::MASK_TAG_MANAGER) == 0) {
-        os << rdf_model.catalog().languages[language_id];
-    } else {
-        tmp_manager.print_lan(os, (language_id & (~ObjectId::MASK_TAG_MANAGER)));
-    }
-    os << "\"}";
-}
-
-
 void JsonSelectExecutor::print_path_node(std::ostream& os, ObjectId node_id) {
     JsonOstreamEscape ostream_escape(os);
     std::ostream escaped_os(&ostream_escape);
@@ -114,241 +87,144 @@ void JsonSelectExecutor::print_path_edge(std::ostream& os, ObjectId edge_id, boo
 }
 
 
-void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId object_id) {
-    const auto mask        = object_id.id & ObjectId::TYPE_MASK;
-    const auto unmasked_id = object_id.id & ObjectId::VALUE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_ANON_INLINED: {
+void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid) {
+    switch (RDF_OID::get_type(oid)) {
+    case RDF_OID::Type::BLANK_INLINED: {
         os << "{\"type\":\"bnode\",\"value\":\"_:b";
-        os << unmasked_id;
+        os << Conversions::unpack_blank(oid);
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_ANON_TMP: {
+    case RDF_OID::Type::BLANK_TMP: {
         os << "{\"type\":\"bnode\",\"value\":\"_:c";
-        os << unmasked_id;
+        os << Conversions::unpack_blank(oid);
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case RDF_OID::Type::STRING_SIMPLE_INLINE:
+    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
+    case RDF_OID::Type::STRING_SIMPLE_TMP: {
         os << "{\"type\":\"literal\",\"value\":\"";
-        string_manager.print(escaped_os, unmasked_id);
+        Conversions::print_string(oid, escaped_os);
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    case RDF_OID::Type::STRING_XSD_INLINE:
+    case RDF_OID::Type::STRING_XSD_EXTERN:
+    case RDF_OID::Type::STRING_XSD_TMP: {
         os << "{\"type\":\"literal\",\"value\":\"";
-        Inliner::print_string_inlined<7>(escaped_os, unmasked_id);
-        os << "\"}";
-        break;
-    }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        tmp_manager.print_str(escaped_os, unmasked_id);
-        os << "\"}";
-        break;
-    }
-    case ObjectId::MASK_STRING_XSD_EXTERN: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        string_manager.print(escaped_os, unmasked_id);
+        Conversions::print_string(oid, escaped_os);
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#string\"}";
         break;
     }
-    case ObjectId::MASK_STRING_XSD_INLINED: {
+    case RDF_OID::Type::INT56_INLINE:
+    case RDF_OID::Type::INT64_EXTERN:
+    case RDF_OID::Type::INT64_TMP: {
         os << "{\"type\":\"literal\",\"value\":\"";
-        Inliner::print_string_inlined<7>(escaped_os, unmasked_id);
-        os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#string\"}";
-        break;
-    }
-    case ObjectId::MASK_STRING_XSD_TMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        tmp_manager.print_str(escaped_os, unmasked_id);
-        os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#string\"}";
-        break;
-    }
-    case ObjectId::MASK_POSITIVE_INT: {
-        int64_t i = unmasked_id;
-        os << "{\"type\":\"literal\",\"value\":\"";
-        os << i;
+        os << Conversions::unpack_int(oid);
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#integer\"}";
         break;
     }
-    case ObjectId::MASK_NEGATIVE_INT: {
-        int64_t i = (~object_id.id) & 0x00FF'FFFF'FFFF'FFFFUL;
-        os << "{\"type\":\"literal\",\"value\":\"";
-        os << (i*-1);
-        os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#integer\"}";
-        break;
-    }
-    case ObjectId::MASK_FLOAT: {
-        static_assert(sizeof(float) == 4, "float must be 4 bytes");
-        os << "{\"type\":\"literal\",\"value\":\"";
-        float f;
-        uint8_t* dest = reinterpret_cast<uint8_t*>(&f);
-        dest[0] =  object_id.id        & 0xFF;
-        dest[1] = (object_id.id >> 8)  & 0xFF;
-        dest[2] = (object_id.id >> 16) & 0xFF;
-        dest[3] = (object_id.id >> 24) & 0xFF;
+    case RDF_OID::Type::FLOAT32: {
+        float f = Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
         jkj::dragonbox::to_chars(f, float_buffer);
+
+        os << "{\"type\":\"literal\",\"value\":\"";
         os << float_buffer;
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#float\"}";
         break;
     }
-    case ObjectId::MASK_DOUBLE_EXTERN:
-    case ObjectId::MASK_DOUBLE_TMP: {
-        static_assert(sizeof(double) == 8, "double must be 8 bytes");
-        os << "{\"type\":\"literal\",\"value\":\"";
-        double d = Conversions::unpack_double(object_id);
+    case RDF_OID::Type::DOUBLE64_EXTERN:
+    case RDF_OID::Type::DOUBLE64_TMP: {
+        double d = Conversions::unpack_double(oid);
+
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
         jkj::dragonbox::to_chars(d, double_buffer);
+
+        os << "{\"type\":\"literal\",\"value\":\"";
         os << double_buffer;
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#double\"}";
         break;
     }
-    case ObjectId::MASK_BOOL: {
+    case RDF_OID::Type::BOOL: {
         os << "{\"type\":\"literal\",\"value\":\""
-           << (object_id.get_value() == 0 ? "false" : "true")
+           << (Conversions::unpack_bool(oid) ? "true" : "false")
            << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#boolean\"}";
         break;
     }
-    case ObjectId::MASK_PATH: {
+    case RDF_OID::Type::PATH: {
+        using namespace std::placeholders;
         os << "{\"type\":\"path\",\"value\":[";
-        path_manager.print(os, unmasked_id, &print_path_node, &print_path_edge);
+        path_manager.print(os,
+                           Conversions::get_path_id(oid),
+                           std::bind(print_path_node, _1, _2),
+                           std::bind(print_path_edge, _1, _2, _3));
         os << "]}";
         break;
     }
-    case ObjectId::MASK_IRI_EXTERN: {
+    case RDF_OID::Type::IRI_INLINE:
+    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
+    case RDF_OID::Type::IRI_EXTERN:
+    case RDF_OID::Type::IRI_TMP: {
         os << "{\"type\":\"uri\",\"value\":\"";
-        uint64_t iri_id = unmasked_id & ObjectId::MASK_IRI_CONTENT;
-        uint8_t prefix_id = (unmasked_id & ObjectId::MASK_IRI_PREFIX) >> 48;
-
-        os << rdf_model.catalog().prefixes[prefix_id];
-        string_manager.print(os, iri_id);
+        Conversions::print_iri(oid, os);
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_IRI_INLINED: {
-        os << "{\"type\":\"uri\",\"value\":\"";
-        uint8_t prefix_id = (object_id.id & ObjectId::MASK_IRI_PREFIX) >> (8*ObjectId::IRI_INLINE_BYTES);
-        os << rdf_model.catalog().prefixes[prefix_id];
-        Inliner::print_string_inlined<6>(os, unmasked_id);
+    case RDF_OID::Type::STRING_DATATYPE_INLINE:
+    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
+    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+        auto&& [datatype, str] = Conversions::unpack_string_datatype(oid);
+        os << "{\"type\":\"literal\",\"value\":\"";
+        escaped_os << str;
+        os << "\",\"datatype\":\"";
+        os << datatype;
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_IRI_TMP: {
-        os << "{\"type\":\"uri\",\"value\":\"";
-        uint8_t prefix_id = (unmasked_id & ObjectId::MASK_IRI_PREFIX) >> 48;
-        os << rdf_model.catalog().prefixes[prefix_id];
-
-        uint64_t iri_id = unmasked_id & ObjectId::MASK_IRI_CONTENT;
-        tmp_manager.print_str(os, iri_id); // gets string from id
+    case RDF_OID::Type::STRING_LANG_INLINE:
+    case RDF_OID::Type::STRING_LANG_EXTERN:
+    case RDF_OID::Type::STRING_LANG_TMP: {
+        auto&& [lang, str] = Conversions::unpack_string_lang(oid);
+        os << "{\"type\":\"literal\",\"value\":\"";
+        escaped_os << str;
+        os << "\",\"xml:lang\":\"";
+        os << lang;
         os << "\"}";
         break;
     }
-    case ObjectId::MASK_STRING_DATATYPE_INLINED: {
+    case RDF_OID::Type::DATE:
+    case RDF_OID::Type::DATETIME:
+    case RDF_OID::Type::TIME:
+    case RDF_OID::Type::DATETIMESTAMP: {
+        DateTime datetime = Conversions::unpack_date(oid);
+
         os << "{\"type\":\"literal\",\"value\":\"";
-
-        Inliner::print_string_inlined<5>(escaped_os, unmasked_id);
-
-        int prefix_shift_size = 8 * ObjectId::STR_DT_INLINE_BYTES;
-        uint16_t datatype_id = (object_id.id & ObjectId::MASK_LITERAL_TAG) >> prefix_shift_size;
-        print_datatype_rdf_json(os, datatype_id);
-        break;
-    }
-    case ObjectId::MASK_STRING_DATATYPE_EXTERN: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        string_manager.print(escaped_os, str_id);
-
-        uint16_t datatype_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-        print_datatype_rdf_json(os, datatype_id);
-        break;
-    }
-    case ObjectId::MASK_STRING_DATATYPE_TMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        tmp_manager.print_str(escaped_os, str_id);
-
-        uint64_t datatype_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-        print_datatype_rdf_json(os, datatype_id);
-        break;
-    }
-    case ObjectId::MASK_STRING_LANG_INLINED: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-
-        Inliner::print_string_inlined<5>(escaped_os, unmasked_id);
-
-        int prefix_shift_size = 8 * ObjectId::STR_LANG_INLINE_BYTES;
-        uint16_t language_id = (object_id.id & ObjectId::MASK_LITERAL_TAG) >> prefix_shift_size;
-        print_language_rdf_json(os, language_id);
-        break;
-    }
-    case ObjectId::MASK_STRING_LANG_EXTERN: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        string_manager.print(escaped_os, str_id);
-
-        uint16_t language_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-        print_language_rdf_json(os, language_id);
-        break;
-    }
-    case ObjectId::MASK_STRING_LANG_TMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        tmp_manager.print_str(escaped_os, str_id);
-
-        uint64_t language_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-        print_language_rdf_json(os, language_id);
-        break;
-    }
-    case ObjectId::MASK_DT_DATE:
-    case ObjectId::MASK_DT_DATETIME:
-    case ObjectId::MASK_DT_TIME:
-    case ObjectId::MASK_DT_DATETIMESTAMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        DateTime datetime(object_id);
         os << datetime.get_value_string();
         os << "\",\"datatype\":\"" << datetime.get_datatype_string() << "\"}";
         break;
     }
-    case ObjectId::MASK_DECIMAL_EXTERN: {
+    case RDF_OID::Type::DECIMAL_INLINE:
+    case RDF_OID::Type::DECIMAL_EXTERN:
+    case RDF_OID::Type::DECIMAL_TMP: {
+        auto decimal = Conversions::unpack_decimal(oid);
+
         os << "{\"type\":\"literal\",\"value\":\"";
-        std::stringstream ss;
-        string_manager.print(ss, unmasked_id);
-        os << Decimal::from_external(ss.str());
+        os << decimal;
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#decimal\"}";
         break;
     }
-    case ObjectId::MASK_DECIMAL_INLINED: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        DecimalInlined decimal_inlined(unmasked_id);
-        os << decimal_inlined.get_value_string();
-        os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#decimal\"}";
-        break;
-    }
-    case ObjectId::MASK_DECIMAL_TMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        std::ostringstream ss;
-        tmp_manager.print_str(ss, unmasked_id);
-        os << Decimal::from_external(ss.str());
-        os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#decimal\"}";
-        break;
-    }
-    case ObjectId::MASK_NULL: {
+    case RDF_OID::Type::NULL_ID: {
         // executor should not call print with NULL
         break;
     }
-
-    default:
-        throw std::logic_error("Unmanaged mask in JsonSelectExecutor::print: "
-            + std::to_string(mask));
     }
 }
 
 
-void JsonSelectExecutor::analyze(std::ostream& os, int indent) const {
+void JsonSelectExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
     os << std::string(indent, ' ');
     os << "JsonSelectExecutor(";
     for (size_t i = 0; i < projection_vars.size(); i++) {
@@ -358,5 +234,7 @@ void JsonSelectExecutor::analyze(std::ostream& os, int indent) const {
         os << '?' << get_query_ctx().get_var_name(projection_vars[i]);
     }
     os << ")\n";
-    root->analyze(os, indent + 2);
+
+    BindingIterPrinter printer(os, print_stats, indent + 2);
+    root->accept_visitor(printer);
 }

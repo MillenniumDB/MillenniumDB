@@ -44,12 +44,9 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpSemiJoin(\n";
+        os << std::string(indent, ' ') << "OpSemiJoin()\n";
         lhs->print_to_ostream(os, indent + 2);
         rhs->print_to_ostream(os, indent + 2);
-        os << std::string(indent, ' ');
-        os << ")\n";
         return os;
     }
 };

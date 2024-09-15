@@ -1,0 +1,18 @@
+{
+    "head": {
+        "vars": [
+            "typed"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "typed": {
+                    "type": "literal",
+                    "value": "this is not a string",
+                    "datatype": "http://www.example.org/text"
+                }
+            }
+        ]
+    }
+}

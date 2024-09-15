@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <iomanip>
-#include <iostream>
 #include <limits>
 
 #include "query/optimizer/plan/join/index_nested_loop_plan.h"
@@ -57,14 +56,14 @@ SelingerOptimizer::SelingerOptimizer(const std::vector<std::unique_ptr<Plan>>& b
     assert(plans_size > 0);
     optimal_plans = new std::unique_ptr<Plan>*[plans_size];
 
-    std::cout << "\nBase Plans:" << plans_size << "\n";
+    // std::cout << "\nBase Plans:" << plans_size << "\n";
     for (size_t i = 0; i < plans_size; ++i) {
         auto arr_size = nCr(plans_size, i+1);
 
         optimal_plans[i] = new std::unique_ptr<Plan>[arr_size];
         optimal_plans[0][i] = base_plans[i]->clone();
-        optimal_plans[0][i]->print(std::cout, 0);
-        std::cout << "\n";
+        // optimal_plans[0][i]->print(std::cout, 0);
+        // std::cout << "\n";
     }
 }
 

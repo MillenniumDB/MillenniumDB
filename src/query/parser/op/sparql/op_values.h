@@ -86,19 +86,26 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpValues(";
+        os << std::string(indent, ' ') << "OpValues(";
 
         auto first = true;
         for (auto& var : vars) {
-            if (first) {
-                first = false;
-            } else {
-                os << ", ";
-            }
+            if (first) first = false; else os << ", ";
             os << "?" << get_query_ctx().get_var_name(var);
         }
-        os << ")\n";
+
+        os << "\n";
+
+        for (size_t i = 0; i < values.size(); i += vars.size()) {
+            os << std::string(indent + 2, ' ') << '(';
+            for (size_t j = 0; j < vars.size(); j++) {
+                if (j != 0) os << ", ";
+                os << values[i + j];
+            }
+            os << ")\n";
+        }
+
+        os << std::string(indent, ' ') << ")\n";
         return os;
     }
 };

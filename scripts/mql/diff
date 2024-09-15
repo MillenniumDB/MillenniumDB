@@ -1,3 +1,0 @@
-#!/usr/bin/bash
-
-diff --color=auto tests/mql/test-status.txt tests/mql/test-status-last.txt

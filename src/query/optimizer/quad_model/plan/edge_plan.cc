@@ -233,7 +233,15 @@ std::set<VarId> EdgePlan::get_vars() const {
  */
 unique_ptr<BindingIter> EdgePlan::get_binding_iter() const {
     if (edge_assigned) {
-        return make_unique<EdgeTableLookup>(*quad_model.edge_table, edge, from, to, type);
+        return make_unique<EdgeTableLookup>(
+            *quad_model.edge_table,
+            edge,
+            from,
+            to,
+            type,
+            from_assigned,
+            to_assigned,
+            type_assigned);
     }
     // check for special cases
     if (from == to) {
@@ -611,7 +619,6 @@ bool EdgePlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& lea
     //     var_order.push_back(std::get<VarId>(edge));
     //     return true;
     } else {
-        // TODO: This print should be disabled by default, but being able to print when we want to explain a query.
         // cout << "no order for leapfrog\n"
         //      << "from: " << from_index
         //      << ", to: " << to_index

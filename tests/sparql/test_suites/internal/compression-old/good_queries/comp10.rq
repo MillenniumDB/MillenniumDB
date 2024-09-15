@@ -1,0 +1,5 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?typed WHERE {
+    BIND(STRDT("inl", :text) AS ?typed)
+}

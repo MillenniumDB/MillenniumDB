@@ -1,0 +1,6 @@
+PREFIX path: <http://www.path.com/>
+
+SELECT (1 as ?v)
+WHERE {
+    path:Joe path:knows?/path:owns path:O1
+}

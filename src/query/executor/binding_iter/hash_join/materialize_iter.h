@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "query/executor/binding_iter.h"
-#include "storage/page.h"
 #include "storage/index/hash/key_value_hash/key_value_pair_hasher.h"
+#include "storage/page/private_page.h"
 
 namespace HashJoin {
 /*
@@ -41,10 +41,10 @@ public:
         std::vector<std::pair<std::unique_ptr<MaterializeIter>, std::unique_ptr<MaterializeIter>>>& partitions
     );
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
     // begin must be called before add
@@ -67,7 +67,7 @@ private:
     TmpFileId tmp_file;
 
     // Pointer to page that will be read or written
-    Page* current_page;
+    PPage* current_page;
 
     ObjectId* start_page_pointer;
 

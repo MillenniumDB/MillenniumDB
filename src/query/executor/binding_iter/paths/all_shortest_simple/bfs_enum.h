@@ -3,9 +3,10 @@
 #include <memory>
 #include <queue>
 
+#include "misc/arena.h"
 #include "query/executor/binding_iter.h"
-#include "query/id.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/search_state.h"
+#include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 #include "third_party/robin_hood/robin_hood.h"
 
@@ -28,8 +29,8 @@ private:
     // Attributes determined in begin
     Binding* parent_binding;
 
-    // Array of all simple paths (based on prefix tree + linked list idea)
-    Visited visited;
+    // struct with all simple paths
+    Arena<PathState> visited;
 
     // Queue for BFS
     std::queue<SearchState> open;
@@ -46,11 +47,10 @@ private:
     // Map of nodes reached with a final state + their optimal distance: NodeId -> OptimalDistance
     robin_hood::unordered_map<uint64_t, uint32_t> optimal_distances;
 
+public:
     // Statistics
-    uint_fast32_t results_found = 0;
     uint_fast32_t idx_searches = 0;
 
-public:
     BFSEnum(
         VarId                          path_var,
         Id                             start,
@@ -69,13 +69,13 @@ public:
     // or nullptr when there are no more results
     const PathState* expand_neighbors(const SearchState& current_state);
 
-    void analyze(std::ostream& os, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
-    void begin(Binding& parent_binding) override;
+    void _begin(Binding& parent_binding) override;
 
-    void reset() override;
+    void _reset() override;
 
-    bool next() override;
+    bool _next() override;
 
     void assign_nulls() override {
         parent_binding->add(end, ObjectId::get_null());

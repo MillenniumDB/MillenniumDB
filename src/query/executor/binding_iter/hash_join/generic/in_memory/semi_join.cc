@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin::Generic;
@@ -11,9 +11,9 @@ using namespace HashJoin::Generic::InMemory;
 SemiJoin::SemiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     lhs               (std::move(_lhs)),
     rhs               (std::move(_rhs)),
@@ -24,7 +24,7 @@ SemiJoin::SemiJoin(
     lhs_key_start     (new uint64_t[N]),
     lhs_key           (Key(lhs_key_start, N))
 {
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
     key_chunk_index = 0;
 }
@@ -39,7 +39,7 @@ SemiJoin::~SemiJoin() {
 }
 
 
-void SemiJoin::begin(Binding& _parent_binding) {
+void SemiJoin::_begin(Binding& _parent_binding) {
     this->parent_binding = &_parent_binding;
     rhs_binding = make_unique<Binding>(parent_binding->size);
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -51,7 +51,7 @@ void SemiJoin::begin(Binding& _parent_binding) {
 }
 
 
-bool SemiJoin::next() {
+bool SemiJoin::_next() {
     while (lhs->next()) {
         for (size_t i = 0; i < N; i++) {
             lhs_key.start[i] = (*lhs_binding)[join_vars[i]].id;
@@ -64,7 +64,6 @@ bool SemiJoin::next() {
             for (auto& var : lhs_vars) {
                 parent_binding->add(var, (*lhs_binding)[var]);
             }
-            found++;
             return true;
         }
     }
@@ -72,7 +71,7 @@ bool SemiJoin::next() {
 }
 
 
-void SemiJoin::reset() {
+void SemiJoin::_reset() {
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -117,11 +116,8 @@ void SemiJoin::assign_nulls() {
 }
 
 
-void SemiJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "SemiJoinMemory(Found: " << found << ")\n";
-    lhs->analyze(os, indent + 2);
-    rhs->analyze(os, indent + 2);
+void SemiJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -146,8 +142,8 @@ void SemiJoin::build_hash_table() {
         // Update chunks index only if value has inserted
         if (iterator.second) {
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }

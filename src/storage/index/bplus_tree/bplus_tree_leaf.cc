@@ -1,12 +1,55 @@
 #include "bplus_tree_leaf.h"
 
-#include <iostream>
 #include <cstring>
 
-#include "query/exceptions.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
+
+template <std::size_t N>
+BPlusTreeLeaf<N>::~BPlusTreeLeaf() {
+    if (page != nullptr)
+        buffer_manager.unpin(*page);
+}
+
+
+template <std::size_t N>
+BPlusTreeLeaf<N> BPlusTreeLeaf<N>::clone() const {
+    buffer_manager.pin(*page);
+    return BPlusTreeLeaf<N>(page);
+}
+
+
+template <std::size_t N>
+void BPlusTreeLeaf<N>::update_to_next_leaf() {
+    auto next_page_number = *next_leaf;
+
+    assert(page->page_id.page_number != next_page_number);
+
+    buffer_manager.unpin(*page);
+
+    page        = &buffer_manager.get_page_readonly(leaf_file_id, next_page_number);
+    records     = reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) );
+    value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
+    next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
+}
+
+
+template <std::size_t N>
+void BPlusTreeLeaf<N>::upgrade_to_editable() {
+    if (buffer_manager.need_edit_version(*page)) {
+
+        auto new_page = &buffer_manager.get_page_editable(leaf_file_id, page->get_page_number());
+        buffer_manager.unpin(*page);
+        page = new_page;
+
+        records     = reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) );
+        value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
+        next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
+    }
+}
+
 
 template <std::size_t N>
 void BPlusTreeLeaf<N>::get_record(uint_fast32_t pos, Record<N>* out) const {
@@ -17,28 +60,49 @@ void BPlusTreeLeaf<N>::get_record(uint_fast32_t pos, Record<N>* out) const {
 
 
 template <std::size_t N>
-unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) {
+bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record) {
     if (*value_count == 0) {
+        return false;
+    }
+
+    uint_fast32_t index = search_index(record);
+    if (equal_record(record, index)) {
+        upgrade_to_editable();
+        --(*value_count);
+        for (auto i = index; i < (*value_count); i++) {
+            for (uint_fast32_t j = 0; j < N; j++) {
+                records[i*N + j] = records[(i+1)*N + j];
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+template <std::size_t N>
+unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, bool& error) {
+    if (*value_count == 0) {
+        upgrade_to_editable();
+
         for (uint_fast32_t i = 0; i < N; i++) {
             records[i] = record[i];
         }
         ++(*value_count);
-        this->page->make_dirty();
+        error = false;
         return nullptr;
     }
     uint_fast32_t index = search_index(record);
-    if (equal_record(record, index)) {
-        for (uint_fast32_t i = 0; i < N; i++) {
-            cout << record[i] << " ";
-        }
-        cout << "\n";
-        for (uint_fast32_t i = 0; i < N; i++) {
-            cout << records[N*index + i] << " ";
-        }
-        cout << "\n";
 
-        throw LogicException("Inserting duplicated record into BPlusTree.");
+    // avoid inserting duplicated record
+    if (equal_record(record, index)) {
+        error = true;
+        return nullptr;
     }
+
+    error = false;
+    upgrade_to_editable();
 
     if ((*value_count) < BPlusTree<N>::leaf_max_records) {
         shift_right_records(index, (*value_count)-1);
@@ -47,10 +111,8 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
             records[index*N + i] = record[i];
         }
         ++(*value_count);
-        this->page->make_dirty();
         return nullptr;
-    }
-    else {
+    } else {
         // put new record and save the last (that does not fit)
         auto last_key = std::array<uint64_t, N>();
         if (index == (*value_count)) { // the last_key will be inserted
@@ -71,7 +133,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
         }
 
         // create new leaf
-        auto& new_page = buffer_manager.append_page(leaf_file_id);
+        auto& new_page = buffer_manager.append_vpage(leaf_file_id);
         auto new_leaf = BPlusTreeLeaf<N>(&new_page);
 
         *new_leaf.next_leaf = *next_leaf;
@@ -102,8 +164,6 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record) 
             split_key[i] = new_leaf.records[i];
         }
         auto split_record = Record<N>(std::move(split_key));
-        this->page->make_dirty();
-        new_page.make_dirty();
 
         return make_unique<BPlusTreeSplit<N>>(split_record, new_page.get_page_number());
     }
@@ -185,27 +245,27 @@ bool BPlusTreeLeaf<N>::check_range(const Record<N>& r) const {
 
 
 template <std::size_t N>
-void BPlusTreeLeaf<N>::print() const {
-    cout << "Printing Leaf:\n";
+void BPlusTreeLeaf<N>::print(std::ostream& os) const {
+    os << "Printing Leaf:\n";
     for (uint_fast32_t i = 0; i < (*value_count); i++) {
-        cout << "  (";
+        os << "  (";
         for (uint_fast32_t j = 0; j < N; j++) {
             if (j != 0)
-                cout << ", ";
-            cout << records[i*N + j];
+                os << ", ";
+            os << records[i*N + j];
         }
-        cout << ")\n";
+        os << ")\n";
     }
 }
 
 
 template <std::size_t N>
-bool BPlusTreeLeaf<N>::check() const {
+bool BPlusTreeLeaf<N>::check(std::ostream& os) const {
     if ((*value_count) == 0) {
         if (page->get_page_number() == 0) {
-            cout << "  WARNING: empty leaf. Ok only if the b+tree is empty.\n";
+            os << "  WARNING: empty leaf. Ok only if the b+tree is empty.\n";
         } else {
-            cerr << "  ERROR: BPlusTreeLeaf empty (page: " << page->get_page_number() << ")\n";
+            os << "  ERROR: BPlusTreeLeaf empty (page: " << page->get_page_number() << ")\n";
             return false;
         }
     } else {
@@ -216,7 +276,7 @@ bool BPlusTreeLeaf<N>::check() const {
         uint_fast32_t current_pos = 0;
         while (current_pos < N) {
             if (records[current_pos] == 0xFFFF'FFFF'FFFF'FFFF) {
-                cerr << "  ERROR: record not_found(0xFFFF'FFFF'FFFF'FFFF) at BPlusTreeLeaf\n";
+                os << "  ERROR: record not_found(0xFFFF'FFFF'FFFF'FFFF) at BPlusTreeLeaf\n";
                 return false;
             }
             x[current_pos] = records[current_pos];
@@ -228,18 +288,18 @@ bool BPlusTreeLeaf<N>::check() const {
                 y[i] = records[current_pos++];
             }
             if (y <= x) {
-                cerr << "  ERROR: bad record order at BPlusTreeLeaf(page: " << page->get_page_number() << ")\n";
+                os << "  ERROR: bad record order at BPlusTreeLeaf(page: " << page->get_page_number() << ")\n";
                 for (size_t n = 0; n < N; n++) {
-                    cerr << "\t" << x[n];
+                    os << "\t" << x[n];
                 }
-                cerr << "\n";
+                os << "\n";
 
                 for (size_t n = 0; n < N; n++) {
-                    cerr << "\t" << y[n];
+                    os << "\t" << y[n];
                 }
-                cerr << "\n";
+                os << "\n";
 
-                // print();
+                // print(os);
                 return false;
             }
             x = y;

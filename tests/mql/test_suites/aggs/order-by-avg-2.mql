@@ -1,0 +1,4 @@
+MATCH (?x)-[:t1]->(X)
+GROUP BY ?x
+ORDER BY AVG(?x.int)
+RETURN ?x, AVG(?x.int)

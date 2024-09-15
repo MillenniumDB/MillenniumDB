@@ -1,1 +1,1 @@
-path: http://www.path.com/
+http://www.path.com/

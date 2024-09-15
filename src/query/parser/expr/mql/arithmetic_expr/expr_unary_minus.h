@@ -25,9 +25,5 @@ public:
     std::set<VarId> get_all_vars() const override {
         return expr->get_all_vars();
     }
-
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << "-(" <<*expr << ')' ;
-    }
 };
 } // namespace MQL

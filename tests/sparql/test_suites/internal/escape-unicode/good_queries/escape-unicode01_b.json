@@ -1,0 +1,32 @@
+{
+    "head": {
+        "vars": [
+            "pred",
+            "obj"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/esc_u"
+                },
+                "obj": {
+                    "type": "literal",
+                    "value": "⌚"
+                }
+            },
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/symbol"
+                },
+                "obj": {
+                    "type": "literal",
+                    "value": "⌚"
+                }
+            }
+        ]
+    }
+}

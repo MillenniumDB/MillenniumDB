@@ -1,13 +1,17 @@
 #include "import.h"
 
 #include <chrono>
-#include <cstdint>
 #include <cstdio>
 #include <ctime>
 #include <locale>
 #include <map>
+#include <regex>
 
+#include "graph_models/rdf_model/rdf_model.h"
 #include "import/disk_vector.h"
+#include "import/import_helper.h"
+#include "macros/aligned_alloc.h"
+#include "misc/fatal_error.h"
 #include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 
 
@@ -52,62 +56,6 @@ SerdStatus on_statement(void*              handle,
 }
 
 
-// returns the encoded string length, and writes the string in the buffer
-// assumes the string fits in the buffer and file read position is correct
-size_t read_pending_str(std::fstream& file, char* buffer) {
-    size_t decoded_len = 0;
-    // size_t bytes_for_len = 0;
-    size_t shift_size = 0;
-
-    while (true) {
-        char c;
-        file.read(&c, 1);
-        auto decode_ptr = reinterpret_cast<unsigned char*>(&c);
-        uint64_t b = *decode_ptr;
-        // bytes_for_len++;
-
-        if (b <= 127) {
-            decoded_len |= b << shift_size;
-            break;
-        } else {
-            decoded_len |= (b & 0x7FUL) << shift_size;
-        }
-        shift_size += 7;
-    }
-    file.read(buffer, decoded_len);
-    return decoded_len;
-}
-
-
-inline std::unique_ptr<std::fstream> get_fstream(const std::string& filename) {
-    auto res = std::make_unique<std::fstream>();
-    res->open(filename, std::ios::out|std::ios::app); // only to create new file
-    res->close();
-    res->open(filename, std::ios::in|std::ios::out|std::ios::binary);
-    return res;
-}
-
-
-// prints the duration and updates the start time point
- void print_duration(const std::string& msg,
-                     std::chrono::system_clock::time_point& start)
-{
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<float> duration = end - start;
-    auto seconds_duration = duration.count();
-    if (seconds_duration < 1) {
-         std::cout << msg << " duration: " << seconds_duration*1000 << " milliseconds" << std::endl;
-    } else if (seconds_duration <= 60) {
-        std::cout << msg << " duration: " << seconds_duration << " seconds" << std::endl;
-    } else if (seconds_duration <= 60*60) {
-        std::cout << msg << " duration: " << (seconds_duration / 60) << " minutes" << std::endl;
-    } else {
-        std::cout << msg << " duration: " << (seconds_duration / (60*60)) << " hours" << std::endl;
-    }
-    start = end;
-}
-
-
 void OnDiskImport::start_import(const std::string& input_filename, const std::string& prefixes_filename) {
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
@@ -117,80 +65,136 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     pending_strings = get_fstream(pending_strings_filename);
 
     {   // Initial memory allocation
-        size_t external_strings_initial_size = 1024ULL * 1024ULL * 1024ULL * buffer_size_in_GB;
-        external_strings                     = reinterpret_cast<char*>(std::aligned_alloc(Page::MDB_PAGE_SIZE, external_strings_initial_size));
+        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size));
+
+        if (external_strings == nullptr) {
+            FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
+        }
+
         Import::ExternalString::strings      = external_strings;
-        external_strings_capacity            = external_strings_initial_size;
+        external_strings_capacity            = buffer_size;
         external_strings_end                 = StringManager::METADATA_SIZE;
         assert(external_strings_capacity > StringManager::STRING_BLOCK_SIZE);
     }
 
     {   // Process IRI prefixes
-        // The first prefix/alias needs to be the empty string
-        prefixes = { "" };
-        aliases  = { "" };
+
+        // We look for prefixes in the following order:
+        //   1. prefix file
+        //   2. default prefixes
+        //   3. base and prefix definitions in first MAX_LINES_TLL_PREFIX of the .ttl file
+        // Until exhausting or reaching 256 prefixes.
+
+        std::set<std::string> prefix_set = {""}; // empty prefix
+
         if (!prefixes_filename.empty()) {
             std::ifstream prefixes_file(prefixes_filename);
             if (prefixes_file.fail()) {
                 throw std::runtime_error("Could not open file " + prefixes_filename);
             }
-            std::map<std::string, std::string> prefix_map;
+
             std::string line;
-            while (std::getline(prefixes_file, line)) {
-                const char* whitespaces = " \t\f\v\n\r";
-                auto start_alias = line.find_first_not_of(whitespaces);
-                if (start_alias == std::string::npos) {
+
+            while (prefix_set.size() < 256 && std::getline(prefixes_file, line)) {
+
+                auto start_prefix = line.find_first_not_of(" \t");
+                if (start_prefix == std::string::npos) {
+                    // Whitespace only
                     continue;
                 }
-                auto colon_pos = line.find_first_of(':');
-                if (colon_pos == std::string::npos) {
-                    std::cout << "Bad prefix line: " << line << "\n";
+
+                auto end_prefix = line.find_last_not_of(" \t") + 1;
+
+                auto invalid_prefix = false;
+                for (size_t i = start_prefix; i < end_prefix; i++) {
+                    unsigned char c = line[i];
+                    if (c < IRI_PREFIX_CHAR_MIN || c > IRI_PREFIX_CHAR_MAX) {
+                        invalid_prefix = true;
+                        break;
+                    }
+                }
+
+                if (invalid_prefix) {
+                    std::cout << "Invalid prefix: " << line << "\n";
+                    std::cout << "Only chars in range [" << IRI_PREFIX_CHAR_MIN << ", " << IRI_PREFIX_CHAR_MAX << "] are allowed\n";
                     continue;
                 }
-                auto end_alias = line.find_first_of(whitespaces, start_alias);
-                if (colon_pos < end_alias) {
-                    end_alias = colon_pos;
-                }
 
-                auto start_prefix = line.find_first_not_of(whitespaces, colon_pos+1);
-                auto end_prefix1 = line.find_first_of(whitespaces, start_prefix+1);
-                if (end_prefix1 == std::string::npos) {
-                    end_prefix1 = line.size();
-                }
-                auto end_prefix2 = line.find_last_not_of(whitespaces) + 1;
+                auto prefix = line.substr(start_prefix, end_prefix - start_prefix);
 
-                // end_prefix1 != end_prefix2 means there is a whitespace inside the prefix
-                if (end_prefix1 != end_prefix2) {
-                    std::cout << "Bad prefix line: " << line << "\n";
-                    continue;
+                if (!prefix_set.insert(prefix).second) {
+                    std::cout << "Duplicated prefix: " << prefix << "\n";
                 }
-                auto alias = line.substr(start_alias, end_alias-start_alias);
-                auto prefix = line.substr(start_prefix, end_prefix1-start_prefix);
-
-                auto insertion = prefix_map.insert({prefix, alias});
-                if (!insertion.second) {
-                    std::cout << "duplicated prefix: " << prefix << "\n";
-                }
-            }
-            // insert in inverse order so a longer prefix comes first if there is a substring
-            // e.g. "http://www." should be considered before "http://"
-            for (auto iter = prefix_map.crbegin(); iter != prefix_map.crend(); ++iter) {
-                prefixes.push_back(iter->first);
-                aliases.push_back(iter->second);
             }
             prefixes_file.close();
         }
+
+        for (auto& prefix : RdfModel::default_compression_prefixes) {
+            if (prefix_set.size() < 256) {
+                prefix_set.insert(prefix);
+            } else {
+                break;
+            }
+        }
+
+        std::string line;
+        int lines_checked = 0;
+        const std::regex prefix_regex("^\\s*@?(prefix|base)", std::regex::icase);
+        std::fstream ttl_stream(input_filename);
+
+        while (prefix_set.size() < 256
+            && lines_checked < MAX_LINES_TLL_PREFIX
+            && std::getline(ttl_stream, line))
+        {
+            lines_checked++;
+
+            if (std::regex_search(line, prefix_regex)) {
+                auto start = line.find_first_of('<');
+                if (start == std::string::npos) {
+                    continue;
+                }
+
+                auto end = line.find_last_of('>');
+                if (end == std::string::npos || start >= end) {
+                    continue;
+                }
+
+                auto iri = line.substr(start + 1, end - start - 1);
+                prefix_set.insert(iri);
+            }
+        }
+
+        prefixes.init(std::move(prefix_set));
     }
 
     {   // TTL parsing
         FILE* input_file = fopen(input_filename.c_str(), "r");
         // It receives a pointer to this class for accessing its members in the callback function on_statement
         reader = serd_reader_new(SERD_TURTLE, this, NULL, on_base, on_prefix, on_statement, NULL);
-        serd_reader_start_stream(reader, input_file, NULL, true);
+        serd_reader_start_stream(reader, input_file, reinterpret_cast<const uint8_t*>(input_filename.c_str()), true);
 
-        while (serd_reader_read_chunk(reader) != SERD_FAILURE) { // Read until EOF
-            continue;
+        while (true) {
+            auto status = serd_reader_read_chunk(reader);
+            switch (status) {
+            case SERD_SUCCESS:
+                continue;
+            case SERD_FAILURE:
+                goto exit_while;
+            case SERD_ERR_UNKNOWN:
+            case SERD_ERR_BAD_SYNTAX:
+            case SERD_ERR_BAD_ARG:
+            case SERD_ERR_NOT_FOUND:
+            case SERD_ERR_ID_CLASH:
+            case SERD_ERR_BAD_CURIE:
+            case SERD_ERR_INTERNAL: {
+                auto& cursor = reader->source.cur;
+                std::string error = "INTERNAL ERROR on line " + std::to_string(cursor.line) + ":"
+                    + std::to_string(cursor.col) + ". " + std::string((char*) serd_strerror(status));
+                NON_FATAL_ERROR(error);
+            }
+            }
         }
+        exit_while:
 
         // Finish reading and Cleanup
         serd_reader_end_stream(reader);
@@ -208,9 +212,9 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     previous_external_strings_offset += external_strings_end;
 
     // Big enough buffer to store any string
-    char* pending_string_buffer = reinterpret_cast<char*>(std::aligned_alloc(
-                                                            Page::MDB_PAGE_SIZE,
-                                                            StringManager::STRING_BLOCK_SIZE));
+    char* pending_string_buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(
+        VPage::SIZE,
+        StringManager::STRING_BLOCK_SIZE));
     int i = 0; // used for tmp filenames
     pending_triples->finish_appends();
 
@@ -236,27 +240,27 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
             const auto original_data_mask = ObjectId::SUB_TYPE_MASK | ObjectId::MASK_LITERAL_TAG;
             if ((pending_triple[0] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 uint64_t mask = (pending_triple[0] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[0] & ObjectId::MASK_LITERAL);
-                auto str_len = read_pending_str(*old_pending_strings, pending_string_buffer);
-                subject_id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
+                old_pending_strings->seekg(pending_triple[0] & ObjectId::MASK_EXTERNAL_ID);
+                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
+                subject_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
             } else {
-                subject_id = pending_triple[0];
+                subject_id.id = pending_triple[0];
             }
             if ((pending_triple[1] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 uint64_t mask = (pending_triple[1] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[1] & ObjectId::MASK_LITERAL);
-                auto str_len = read_pending_str(*old_pending_strings, pending_string_buffer);
-                predicate_id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
+                old_pending_strings->seekg(pending_triple[1] & ObjectId::MASK_EXTERNAL_ID);
+                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
+                predicate_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
             } else {
-                predicate_id = pending_triple[1];
+                predicate_id.id = pending_triple[1];
             }
             if ((pending_triple[2] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 uint64_t mask = (pending_triple[2] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[2] & ObjectId::MASK_LITERAL);
-                auto str_len = read_pending_str(*old_pending_strings, pending_string_buffer);
-                object_id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
+                old_pending_strings->seekg(pending_triple[2] & ObjectId::MASK_EXTERNAL_ID);
+                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
+                object_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
             } else {
-                object_id = pending_triple[2];
+                object_id.id = pending_triple[2];
             }
             save_triple();
         }
@@ -284,7 +288,10 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     uint64_t last_str_pos = strings_file.tellp();
     uint64_t last_block_offset = last_str_pos % StringManager::STRING_BLOCK_SIZE;
     uint64_t remaining = StringManager::STRING_BLOCK_SIZE - last_block_offset;
-    strings_file.write(external_strings, remaining); // copies anything, content doesn't matter
+
+    // can copy anything, content doesn't matter, but setting zeros is better for debug
+    memset(external_strings, '\0', remaining);
+    strings_file.write(external_strings, remaining);
 
     // Write strings_file metadata
     strings_file.seekp(0, strings_file.beg);
@@ -303,7 +310,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     }
 
     {   // Create StringsHash
-    // we reuse the allocated memory for external strings as a buffer
+        // we reuse the allocated memory for external strings as a buffer
         StringsHashBulkOnDiskImport strings_hash(db_folder + "/str_hash",
                                                  external_strings,
                                                  external_strings_capacity);
@@ -322,19 +329,19 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
                 strings_file.read(pending_string_buffer, remaining_in_block);
             }
 
-            auto str_len = read_pending_str(strings_file, pending_string_buffer);
+            auto str_len = read_str(strings_file, pending_string_buffer);
             strings_hash.create_id(pending_string_buffer, current_pos, str_len);
             current_pos = strings_file.tellg();
         }
         strings_file.close();
-        free(pending_string_buffer);
+        MDB_ALIGNED_FREE(pending_string_buffer);
     }
 
-    print_duration("Write strings hash strings", start);
+    print_duration("Write strings and strings hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
     char* const buffer = external_strings;
-    const auto buffer_size = external_strings_capacity;
+    buffer_size = external_strings_capacity;
 
     // Save lasts blocks to disk
     triples.finish_appends();
@@ -353,24 +360,26 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     {   // B+tree creation for triple
         size_t COL_SUBJ = 0, COL_PRED = 1, COL_OBJ = 2;
 
-        Import::DistinctStat<3> subject_stat;
-        Import::PredicateStat   predicate_stat;
-        Import::DistinctStat<3> object_stat;
-        Import::NoStat<3>       no_stat;
+        Import::PredicateStat pred_stat;
+        Import::NoStat<3>     no_stat;
 
-        triples.create_bpt(db_folder + "/spo", { COL_SUBJ, COL_PRED, COL_OBJ }, subject_stat);
-        catalog.triples_count = subject_stat.all;
-        catalog.distinct_subjects = subject_stat.distinct;
+        triples.create_bpt(db_folder + "/spo", { COL_SUBJ, COL_PRED, COL_OBJ }, no_stat);
 
-        triples.create_bpt(db_folder + "/pos", { COL_PRED, COL_OBJ, COL_SUBJ }, predicate_stat);
-        predicate_stat.end();
-        catalog.distinct_predicates = predicate_stat.distinct_values;
-        catalog.predicate2total_count = std::move(predicate_stat.map_predicate_count);
+        triples.create_bpt(db_folder + "/pos", { COL_PRED, COL_OBJ, COL_SUBJ }, pred_stat);
+        pred_stat.end();
+        catalog.set_triples_count(pred_stat.all_count);
+        catalog.set_predicate_stats(std::move(pred_stat.map_predicate_count));
 
-        triples.create_bpt(db_folder + "/osp", { COL_OBJ, COL_SUBJ, COL_PRED }, object_stat);
-        catalog.distinct_objects = object_stat.distinct;
+        triples.create_bpt(db_folder + "/osp", { COL_OBJ, COL_SUBJ, COL_PRED }, no_stat);
 
-        triples.create_bpt(db_folder + "/pso", { COL_PRED, COL_SUBJ, COL_OBJ }, no_stat);
+        if (index_permutations >= 4) {
+            triples.create_bpt(db_folder + "/pso", { COL_PRED, COL_SUBJ, COL_OBJ }, no_stat);
+        }
+
+        if (index_permutations == 6) {
+            triples.create_bpt(db_folder + "/sop", { COL_SUBJ, COL_OBJ, COL_PRED }, no_stat);
+            triples.create_bpt(db_folder + "/ops", { COL_OBJ, COL_PRED, COL_SUBJ }, no_stat);
+        }
     }
 
     print_duration("Write triples indexes", start);
@@ -382,7 +391,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
         equal_sp.create_bpt(db_folder + "/equal_sp",
                             { COL_SUBJ_PRED, COL_OBJ },
                             all_stat);
-        catalog.equal_sp_count = all_stat.all;
+        catalog.set_equal_sp_count(all_stat.all);
 
         Import::NoStat<2> no_stat_inverted;
         equal_sp.create_bpt(db_folder + "/equal_sp_inverted",
@@ -397,7 +406,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
         equal_so.create_bpt(db_folder + "/equal_so",
                             { COL_SUBJ_OBJ, COL_PRED },
                             all_stat);
-        catalog.equal_so_count = all_stat.all;
+        catalog.set_equal_so_count(all_stat.all);
         Import::NoStat<2> no_stat_inverted;
         equal_so.create_bpt(db_folder + "/equal_so_inverted",
                             { COL_PRED, COL_SUBJ_OBJ },
@@ -411,7 +420,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
         equal_po.create_bpt(db_folder + "/equal_po",
                             { COL_PRED_OBJ, COL_SUBJ },
                             all_stat);
-        catalog.equal_po_count = all_stat.all;
+        catalog.set_equal_po_count(all_stat.all);
 
         Import::NoStat<2> no_stat_inverted;
         equal_po.create_bpt(db_folder + "/equal_po_inverted",
@@ -426,7 +435,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
         equal_spo.create_bpt(db_folder + "/equal_spo",
                              { COL_SUBJ_PRED_OBJ },
                              all_stat);
-        catalog.equal_spo_count = all_stat.all;
+        catalog.set_equal_spo_count(all_stat.all);
     }
 
     // calling finish_indexing() closes and removes the file.
@@ -435,12 +444,11 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
     equal_so.finish_indexing();
     equal_po.finish_indexing();
     equal_spo.finish_indexing();
-    free(external_strings);
+    MDB_ALIGNED_FREE(external_strings);
 
     print_duration("Write special cases B+tree index", start);
 
     // Store IRI aliases, prefixes and literal datatypes/languages into catalog
-    catalog.aliases  = std::move(aliases);
     catalog.prefixes = std::move(prefixes);
     catalog.datatypes.resize(datatype_ids_map.size());
     for (auto&& [datatype, id] : datatype_ids_map) {
@@ -451,8 +459,7 @@ void OnDiskImport::start_import(const std::string& input_filename, const std::st
         catalog.languages[id] = language;
     }
 
-    catalog.save_changes();
-    catalog.print();
+    catalog.print(std::cout);
 
     print_duration("Write catalog", start);
     print_duration("Total Import", import_start);

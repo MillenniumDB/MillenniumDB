@@ -10,21 +10,21 @@ public:
         const         uint64_t max_count
     ) :
         var           (var),
-        mask          (mask),
-        max_count     (max_count) { }
+        max_count     (max_count),
+        mask          (mask) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
     const VarId var;
-    const uint64_t mask;
     const uint64_t max_count;
+
+private:
+    const uint64_t mask;
     uint64_t current_node = 0;
-    uint64_t results = 0;
 
     Binding* parent_binding;
 };

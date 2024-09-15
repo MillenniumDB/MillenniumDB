@@ -2,33 +2,31 @@
 
 #include <cstring>
 
-#include "storage/buffer_manager.h"
 #include "graph_models/object_id.h"
+#include "system/buffer_manager.h"
 
-using namespace std;
 
-template <class T>
-DistinctBindingHashBucket<T>::DistinctBindingHashBucket(const TmpFileId file_id,
-                                                        const uint_fast32_t bucket_number,
-                                                        std::size_t tuple_size) :
-    page        (buffer_manager.get_tmp_page(file_id, bucket_number)),
+DistinctBindingHashBucket::DistinctBindingHashBucket(
+    TmpFileId file_id,
+    uint_fast32_t bucket_number,
+    uint_fast32_t tuple_size
+) :
+    page        (buffer_manager.get_ppage(file_id, bucket_number)),
     tuple_size  (tuple_size),
-    max_tuples  ( (Page::MDB_PAGE_SIZE - sizeof(*tuple_count) - sizeof(local_depth))
-                  / (sizeof(*hashes) + tuple_size*sizeof(T) ) ),
-    tuples      (reinterpret_cast<T*>(page.get_bytes())),
-    hashes      (reinterpret_cast<uint64_t*>(page.get_bytes() + tuple_size*max_tuples*sizeof(T))),
+    max_tuples  ( (PPage::SIZE - sizeof(*tuple_count) - sizeof(local_depth))
+                  / (sizeof(*hashes) + tuple_size*sizeof(ObjectId) ) ),
+    tuples      (reinterpret_cast<ObjectId*>(page.get_bytes())),
+    hashes      (reinterpret_cast<uint64_t*>(page.get_bytes() + tuple_size*max_tuples*sizeof(ObjectId))),
     tuple_count (reinterpret_cast<uint8_t*> (reinterpret_cast<uint8_t*>(hashes) + max_tuples*sizeof(*hashes))),
     local_depth (reinterpret_cast<uint8_t*> (reinterpret_cast<uint8_t*>(tuple_count) + sizeof(*tuple_count))) { }
 
 
-template <class T>
-DistinctBindingHashBucket<T>::~DistinctBindingHashBucket() {
+DistinctBindingHashBucket::~DistinctBindingHashBucket() {
     buffer_manager.unpin(page);
 }
 
 
-template <class T>
-bool DistinctBindingHashBucket<T>::is_in(const std::vector<T>& tuple, uint64_t hash)
+bool DistinctBindingHashBucket::is_in(const std::vector<ObjectId>& tuple, uint64_t hash)
 {
     for (uint8_t i = 0; i < *tuple_count; ++i) {
         if (hashes[i] == hash) {
@@ -49,10 +47,10 @@ bool DistinctBindingHashBucket<T>::is_in(const std::vector<T>& tuple, uint64_t h
 }
 
 
-template <class T>
-bool DistinctBindingHashBucket<T>::is_in_or_insert(const std::vector<T>& tuple,
-                                                   uint64_t hash,
-                                                   bool* const need_split)
+
+bool DistinctBindingHashBucket::is_in_or_insert(const std::vector<ObjectId>& tuple,
+                                                uint64_t hash,
+                                                bool* const need_split)
 {
     for (uint8_t i = 0; i < *tuple_count; ++i) {
         if (hashes[i] == hash) {
@@ -88,10 +86,10 @@ bool DistinctBindingHashBucket<T>::is_in_or_insert(const std::vector<T>& tuple,
 }
 
 
-template <class T>
-void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& other,
-                                                const uint64_t mask,
-                                                const uint64_t other_suffix)
+
+void DistinctBindingHashBucket::redistribute(DistinctBindingHashBucket& other,
+                                             uint64_t mask,
+                                             uint64_t other_suffix)
 {
     uint8_t other_pos = 0;
     uint8_t this_pos = 0;
@@ -106,7 +104,7 @@ void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& ot
             std::memcpy(
                 &other.tuples[tuple_size * other_pos],
                 &tuples[tuple_size*i],
-                tuple_size * sizeof(T)
+                tuple_size * sizeof(ObjectId)
             );
             ++other_pos;
         } else {
@@ -117,7 +115,7 @@ void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& ot
                 std::memcpy(
                     &tuples[tuple_size * this_pos],
                     &tuples[tuple_size *i],
-                    tuple_size * sizeof(T)
+                    tuple_size * sizeof(ObjectId)
                 );
             }
             ++this_pos;
@@ -129,5 +127,3 @@ void DistinctBindingHashBucket<T>::redistribute(DistinctBindingHashBucket<T>& ot
     this->page.make_dirty();
     other.page.make_dirty();
 }
-
-template class DistinctBindingHashBucket<ObjectId>;

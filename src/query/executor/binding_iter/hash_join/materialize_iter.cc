@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-#include "storage/buffer_manager.h"
-#include "storage/file_manager.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -14,24 +13,24 @@ MaterializeIter::MaterializeIter(
 ) :
     depth                (depth),
     vars                 (vars),
-    tmp_file             (file_manager.get_tmp_file_id()),
-    max_tuples_per_page  (Page::MDB_PAGE_SIZE / (vars.size() * sizeof(ObjectId))) { }
+    tmp_file             (buffer_manager.get_tmp_file_id()),
+    max_tuples_per_page  (PPage::SIZE / (vars.size() * sizeof(ObjectId))) { }
 
 
 MaterializeIter::~MaterializeIter() {
     buffer_manager.unpin(*current_page);
-    file_manager.remove_tmp(tmp_file);
+    buffer_manager.remove_tmp(tmp_file);
 }
 
 
-void MaterializeIter::begin(Binding& _parent_binding) {
+void MaterializeIter::_begin(Binding& _parent_binding) {
     this->parent_binding = &_parent_binding;
 
     current_page_number = 0;
     current_page_index = 0;
     tuples_returned = 0;
 
-    current_page = &buffer_manager.get_tmp_page(tmp_file, 0);
+    current_page = &buffer_manager.get_ppage(tmp_file, 0);
     current_page->make_dirty();
     start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
 }
@@ -44,7 +43,7 @@ void MaterializeIter::add() {
         current_page_index = 0;
         buffer_manager.unpin(*current_page);
         // Get new page
-        current_page = &buffer_manager.get_tmp_page(tmp_file, current_page_number);
+        current_page = &buffer_manager.get_ppage(tmp_file, current_page_number);
         current_page->make_dirty();
         start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
     }
@@ -78,15 +77,14 @@ unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_var
     new_split->begin(*parent_binding);
     reset();
 
-    auto write_current_page = &buffer_manager.get_tmp_page(tmp_file, 0);
+    auto write_current_page = &buffer_manager.get_ppage(tmp_file, 0);
     write_current_page->make_dirty();
     auto write_start_page_pointer = reinterpret_cast<ObjectId*>(write_current_page->get_bytes());
 
     auto mask = ((1ul << depth) - 1ul);
 
     auto key = new uint64_t[join_vars.size()];
-    // TODO: don't use next, read directly from page.
-    // TODO: avoid modifying the binding
+
     while (next()) {
         for (size_t i = 0; i < join_vars.size(); i++) {
             key[i] = (*parent_binding)[join_vars[i]].id;
@@ -98,7 +96,7 @@ unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_var
                 write_page_n++;
                 write_current_index = 0;
                 buffer_manager.unpin(*write_current_page);
-                write_current_page = &buffer_manager.get_tmp_page(tmp_file, write_page_n);
+                write_current_page = &buffer_manager.get_ppage(tmp_file, write_page_n);
                 write_current_page->make_dirty();
                 write_start_page_pointer = reinterpret_cast<ObjectId*>(write_current_page->get_bytes());
             }
@@ -122,14 +120,14 @@ unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_var
 }
 
 
-bool MaterializeIter::next() {
+bool MaterializeIter::_next() {
     // Check no return invalid tuples due to not full page
     if (tuples_returned < total_tuples) {
         if (current_page_index == max_tuples_per_page) {
             current_page_number++;
             current_page_index = 0;
             buffer_manager.unpin(*current_page);
-            current_page = &buffer_manager.get_tmp_page(tmp_file, current_page_number);
+            current_page = &buffer_manager.get_ppage(tmp_file, current_page_number);
             start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
         }
         // Get next tuple
@@ -147,17 +145,19 @@ bool MaterializeIter::next() {
 }
 
 
-void MaterializeIter::reset() {
+void MaterializeIter::_reset() {
     current_page_number = 0;
     current_page_index = 0;
     tuples_returned = 0;
     buffer_manager.unpin(*current_page);
-    current_page = &buffer_manager.get_tmp_page(tmp_file, 0);
+    current_page = &buffer_manager.get_ppage(tmp_file, 0);
     start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
 }
 
 
-void MaterializeIter::analyze(std::ostream& /*os*/, int /*indent*/) const { }
+void MaterializeIter::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
+}
 
 
 void MaterializeIter::assign_nulls() { }
@@ -203,7 +203,6 @@ void MaterializeIter::make_partitions(
         partitions[hash].second->add();
     }
 
-    // TODO: maybe lazy evaluation to improve when we don't need all the results
     for (size_t i = 0; i < partitions.size(); i++) {
         if (partitions[i].first->total_tuples > max_hash_table_size &&
             partitions[i].second->total_tuples > max_hash_table_size)

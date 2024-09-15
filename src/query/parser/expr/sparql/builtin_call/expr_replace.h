@@ -58,16 +58,7 @@ public:
     }
 
     bool has_aggregation() const override {
-        return expr1->has_aggregation() or expr2->has_aggregation() or expr3->has_aggregation() or (expr4 and expr4->has_aggregation());
-    }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ') << "REPLACE("
-           << *expr1 << ", "  << *expr2 << ", " << *expr3;
-        if (expr4 != nullptr) {
-            os << ", " << *expr4;
-        }
-        return os << ')';
+        return expr1->has_aggregation() || expr2->has_aggregation() || expr3->has_aggregation() || (expr4 && expr4->has_aggregation());
     }
 };
 } // namespace SPARQL

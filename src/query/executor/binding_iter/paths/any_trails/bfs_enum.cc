@@ -3,12 +3,12 @@
 #include <cassert>
 
 #include "query/var_id.h"
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnyTrails;
 
-void BFSEnum::begin(Binding& _parent_binding) {
+void BFSEnum::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     // first_next = true;
 
@@ -20,7 +20,7 @@ void BFSEnum::begin(Binding& _parent_binding) {
 }
 
 
-void BFSEnum::reset() {
+void BFSEnum::_reset() {
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -37,7 +37,7 @@ void BFSEnum::reset() {
 }
 
 
-bool BFSEnum::next() {
+bool BFSEnum::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -55,7 +55,6 @@ bool BFSEnum::next() {
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state.path_state->node_id);
-            results_found++;
             return true;
         }
     }
@@ -69,7 +68,6 @@ bool BFSEnum::next() {
             auto path_id = path_manager.set_path(reached_final_state->path_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, reached_final_state->path_state->node_id);
-            results_found++;
             return true;
         } else {
             // Pop and visit next state
@@ -143,7 +141,6 @@ void BFSEnum::set_iter(const SearchState& s) {
 }
 
 
-void BFSEnum::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Paths::AnyTrails::BFSEnum(idx_searches: " << idx_searches << ", found: " << results_found << ")";
+void BFSEnum::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

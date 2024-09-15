@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "query/parser/op/op.h"
 #include "query/parser/expr/expr.h"
+#include "query/parser/op/op.h"
 
 namespace SPARQL {
 
@@ -61,19 +61,23 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpHaving(";
-        bool first = true;
+        os << std::string(indent, ' ') << "OpHaving(";
+
+        ExprPrinter printer(os);
+
+        auto first = true;
         for (auto& expr : exprs) {
-            if (first) {
-                first = false;
-            } else {
-                os << ", ";
-            }
-            os << '?' << *expr;
+            if (first) first = false; else os << ", ";
+            expr->accept_visitor(printer);
         }
 
         os << ")\n";
+
+        for (size_t i = 0; i < printer.ops.size(); i++) {
+            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
+            printer.ops[i]->print_to_ostream(os, indent + 4);
+        }
+
         return op->print_to_ostream(os, indent + 2);
     }
 };
