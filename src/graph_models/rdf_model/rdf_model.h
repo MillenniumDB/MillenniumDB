@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <type_traits>
 
 #include "graph_models/model_destroyer.h"
 #include "query/parser/op/op.h"
@@ -32,7 +31,7 @@ public:
     std::unique_ptr<BPlusTree<2>> equal_so_inverted; // (predicate, subject=object)
     std::unique_ptr<BPlusTree<2>> equal_po_inverted; // (subject,   predicate=object)
 
-    RdfCatalog m_catalog;
+    RdfCatalog catalog;
 
     uint64_t MAX_LIMIT = Op::DEFAULT_LIMIT;
 
@@ -88,10 +87,6 @@ public:
 
     // necessary to be called before first usage
     static std::unique_ptr<ModelDestroyer> init();
-
-    inline RdfCatalog& catalog() noexcept {
-        return m_catalog;
-    }
 
 private:
     RdfModel();

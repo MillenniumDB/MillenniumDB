@@ -35,8 +35,6 @@ private:
 
     StreamingRequestReader request_reader;
 
-    std::unique_ptr<StreamingQueryExecutor> current_physical_plan;
-
     virtual std::unique_ptr<Op> create_readonly_logical_plan(const std::string& query) = 0;
 
     virtual std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(Op& logical_plan) = 0;

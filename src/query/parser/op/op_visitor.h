@@ -21,6 +21,7 @@ class OpProperty;
 class OpReturn;
 class OpSet;
 class OpWhere;
+class OpBruteSimilaritySearch;
 class OpSimilaritySearch;
 class OpProjectSimilarity;
 } // namespace MQL
@@ -64,24 +65,25 @@ public:
     // MillenniumDB
     virtual void visit(MQL::OpUpdate&)            { throw LogicException("visit MQL::OpUpdate not implemented"); }
 
-    virtual void visit(MQL::OpBasicGraphPattern&) { throw LogicException("visit MQL::OpBasicGraphPattern not implemented"); }
-    virtual void visit(MQL::OpDescribe&)          { throw LogicException("visit MQL::OpDescribe not implemented"); }
-    virtual void visit(MQL::OpEdge&)              { throw LogicException("visit MQL::OpEdge not implemented"); }
-    virtual void visit(MQL::OpGroupBy&)           { throw LogicException("visit MQL::OpGroupBy not implemented"); }
-    virtual void visit(MQL::OpInsert&)            { throw LogicException("visit MQL::OpInsert not implemented"); }
-    virtual void visit(MQL::OpDisjointTerm&)      { throw LogicException("visit MQL::OpDisjointTerm not implemented"); }
-    virtual void visit(MQL::OpDisjointVar&)       { throw LogicException("visit MQL::OpDisjointVar not implemented"); }
-    virtual void visit(MQL::OpLabel&)             { throw LogicException("visit MQL::OpLabel not implemented"); }
-    virtual void visit(MQL::OpMatch&)             { throw LogicException("visit MQL::OpMatch not implemented"); }
-    virtual void visit(MQL::OpOptional&)          { throw LogicException("visit MQL::OpOptional not implemented"); }
-    virtual void visit(MQL::OpOrderBy&)           { throw LogicException("visit MQL::OpOrderBy not implemented"); }
-    virtual void visit(MQL::OpPath&)              { throw LogicException("visit MQL::OpPath not implemented"); }
-    virtual void visit(MQL::OpProperty&)          { throw LogicException("visit MQL::OpProperty not implemented"); }
-    virtual void visit(MQL::OpReturn&)            { throw LogicException("visit MQL::OpReturn not implemented"); }
-    virtual void visit(MQL::OpSet&)               { throw LogicException("visit MQL::OpSet not implemented"); }
-    virtual void visit(MQL::OpWhere&)             { throw LogicException("visit MQL::OpWhere not implemented"); }
-    virtual void visit(MQL::OpSimilaritySearch&)  { throw LogicException("visit MQL::OpSimilaritySearch not implemented"); }
-    virtual void visit(MQL::OpProjectSimilarity&) { throw LogicException("visit MQL::OpProjectSimilarity not implemented"); }
+    virtual void visit(MQL::OpBasicGraphPattern&)     { throw LogicException("visit MQL::OpBasicGraphPattern not implemented"); }
+    virtual void visit(MQL::OpDescribe&)              { throw LogicException("visit MQL::OpDescribe not implemented"); }
+    virtual void visit(MQL::OpEdge&)                  { throw LogicException("visit MQL::OpEdge not implemented"); }
+    virtual void visit(MQL::OpGroupBy&)               { throw LogicException("visit MQL::OpGroupBy not implemented"); }
+    virtual void visit(MQL::OpInsert&)                { throw LogicException("visit MQL::OpInsert not implemented"); }
+    virtual void visit(MQL::OpDisjointTerm&)          { throw LogicException("visit MQL::OpDisjointTerm not implemented"); }
+    virtual void visit(MQL::OpDisjointVar&)           { throw LogicException("visit MQL::OpDisjointVar not implemented"); }
+    virtual void visit(MQL::OpLabel&)                 { throw LogicException("visit MQL::OpLabel not implemented"); }
+    virtual void visit(MQL::OpMatch&)                 { throw LogicException("visit MQL::OpMatch not implemented"); }
+    virtual void visit(MQL::OpOptional&)              { throw LogicException("visit MQL::OpOptional not implemented"); }
+    virtual void visit(MQL::OpOrderBy&)               { throw LogicException("visit MQL::OpOrderBy not implemented"); }
+    virtual void visit(MQL::OpPath&)                  { throw LogicException("visit MQL::OpPath not implemented"); }
+    virtual void visit(MQL::OpProperty&)              { throw LogicException("visit MQL::OpProperty not implemented"); }
+    virtual void visit(MQL::OpReturn&)                { throw LogicException("visit MQL::OpReturn not implemented"); }
+    virtual void visit(MQL::OpSet&)                   { throw LogicException("visit MQL::OpSet not implemented"); }
+    virtual void visit(MQL::OpWhere&)                 { throw LogicException("visit MQL::OpWhere not implemented"); }
+    virtual void visit(MQL::OpSimilaritySearch&)      { throw LogicException("visit MQL::OpSimilaritySearch not implemented"); }
+    virtual void visit(MQL::OpBruteSimilaritySearch&) { throw LogicException("visit MQL::OpBruteSimilaritySearch not implemented"); }
+    virtual void visit(MQL::OpProjectSimilarity&)     { throw LogicException("visit MQL::OpProjectSimilarity not implemented"); }
 
     // SPARQL
     virtual void visit(SPARQL::OpUpdate&)            { throw LogicException("visit SPARQL::OpUpdate not implemented"); }

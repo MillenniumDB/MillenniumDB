@@ -35,6 +35,7 @@ public:
     void visit(OpSet&) override;
     void visit(OpWhere&) override;
     void visit(OpProjectSimilarity&) override;
+    void visit(OpBruteSimilaritySearch&) override;
 
     void visit(OpInsert&) override { }
     void visit(OpEdge&) override { }

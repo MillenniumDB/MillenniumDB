@@ -35,6 +35,7 @@ public:
     void visit(OpSet&) override;
     void visit(OpWhere&) override;
     void visit(OpProjectSimilarity&) override;
+    void visit(OpBruteSimilaritySearch&) override;
 
     void visit(OpBasicGraphPattern&) override { }
     void visit(OpOptional&) override { }
@@ -84,5 +85,6 @@ public:
     void visit(ExprAnd&) override;
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
+    void visit(ExprRegex&) override;
 };
 } // namespace MQL

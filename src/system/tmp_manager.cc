@@ -54,6 +54,15 @@ void TmpManager::print_str(std::ostream& os, uint64_t id) const {
 }
 
 
+uint64_t TmpManager::print_to_buffer(char* buffer, uint64_t id) {
+    auto idx = get_query_ctx().thread_info.worker_index;
+    auto& _info = info[idx];
+    if (id >= _info.next_str_id) return 0;
+    memcpy(buffer, _info.id_to_str[id].c_str(), _info.id_to_str[id].size());
+    return _info.id_to_str[id].size();
+}
+
+
 uint64_t TmpManager::get_str_id(const std::string& str) {
     auto idx = get_query_ctx().thread_info.worker_index;
     auto& _info = info[idx];

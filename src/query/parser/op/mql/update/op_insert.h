@@ -1,31 +1,22 @@
 #pragma once
 
-#include <vector>
-
 #include "query/parser/op/op.h"
-#include "query/parser/op/mql/graph_pattern/op_edge.h"
-#include "query/parser/op/mql/graph_pattern/op_label.h"
-#include "query/parser/op/mql/graph_pattern/op_property.h"
+#include "query/parser/op/mql/graph_pattern/op_basic_graph_pattern.h"
 
 namespace MQL {
 class OpInsert : public Op {
 public:
     // graph pattern
-    std::vector<OpLabel> labels;
-    std::vector<OpProperty> properties;
-    std::vector<OpEdge> edges;
+    std::unique_ptr<OpBasicGraphPattern> bgp;
 
-    OpInsert(
-        std::vector<OpLabel>&&    labels,
-        std::vector<OpProperty>&& properties,
-        std::vector<OpEdge>&&     edges
-    ) :
-        labels     (std::move(labels)),
-        properties (std::move(properties)),
-        edges      (std::move(edges)) { }
+    OpInsert(std::unique_ptr<OpBasicGraphPattern> bgp) :
+        bgp (std::move(bgp)) { }
 
     virtual std::unique_ptr<Op> clone() const override {
-        return std::make_unique<OpInsert>(*this);
+        auto bgp_clone = std::make_unique<OpBasicGraphPattern>(
+            *bgp
+        );
+        return std::make_unique<OpInsert>(std::move(bgp_clone));
     }
 
     bool read_only() const override { return false; }
@@ -53,6 +44,7 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ');
         os << "OpInsert()\n";
+        bgp->print_to_ostream(os, indent + 2);
         return os;
     }
 };

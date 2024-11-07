@@ -65,7 +65,7 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
         if (content_type == "application/x-www-form-urlencoded") {
             url_encoded = req.body();
         } else if (content_type != "application/sparql-query" &&
-                   content_type != "application/sparql-update")
+                    content_type != "application/sparql-update")
         {
             // This case is invalid according to the SPARQL standard. Try to guess
             std::string req_body = req.body();

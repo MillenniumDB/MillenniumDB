@@ -41,7 +41,15 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
     case RDF_OID::Type::IRI_INLINE:
     case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
     case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP: {
+    case RDF_OID::Type::IRI_TMP:
+    case RDF_OID::Type::IRI_UUID_LOWER:
+    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
+    case RDF_OID::Type::IRI_UUID_UPPER:
+    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
+    case RDF_OID::Type::IRI_HEX_LOWER:
+    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
+    case RDF_OID::Type::IRI_HEX_UPPER:
+    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
         os << '<';
         escape(os, Conversions::unpack_iri(oid));
         os << '>';

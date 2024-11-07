@@ -1,19 +1,18 @@
 #include "cli.h"
 
+#include <codecvt>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include <codecvt>
 
 #include "misc/logger.h"
 #include "query/optimizer/quad_model/executor_constructor.h"
 #include "query/optimizer/rdf_model/executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_query_parser.h"
-#include "system/tmp_manager.h"
 
 #define _XOPEN_SOURCE 700
 #ifdef __APPLE__
@@ -765,21 +764,21 @@ void CLI::AddOutput(std::wstring str, LineType type) {
                 mvwaddnwstr(win, y, 0, prompt_cstr + offset, prompt_width-offset);
                 wattrset(win, COLOR_PAIR(CP_NORMAL));
                 if (offset - prompt_width + 1 < static_cast<int>(line.data.size())) {
-                    mvwaddnwstr(win, y, prompt_width-offset, line_cstr, win->_maxx + 1 - (prompt_width-offset));
+                    mvwaddnwstr(win, y, prompt_width-offset, line_cstr, getmaxx(win) + 1 - (prompt_width-offset));
                 }
             } else {
-                mvwaddnwstr(win, y, 0, line_cstr + offset - prompt_width, output_win->_maxy + 1);
+                mvwaddnwstr(win, y, 0, line_cstr + offset - prompt_width, getmaxy(output_win) + 1);
             }
             break;
         }
         case LineType::OutputError: {
             wattrset(win, COLOR_PAIR(CP_ERROR));
-            mvwaddnwstr(win, y, 0, line_cstr + offset, win->_maxx + 1);
+            mvwaddnwstr(win, y, 0, line_cstr + offset, getmaxx(win) + 1);
             wattrset(win, COLOR_PAIR(CP_NORMAL));
             break;
         }
         default: {
-            mvwaddnwstr(win, y, 0, line_cstr + offset, win->_maxx + 1);
+            mvwaddnwstr(win, y, 0, line_cstr + offset, getmaxx(win) + 1);
             break;
         }
     }
@@ -1164,8 +1163,8 @@ void CLI::HandleMouse() {
     input_offset_x = std::clamp(input_offset_x, 0, static_cast<int>(input_data[cursor_y].size()));
     input_offset_y = std::clamp(input_offset_y, 0, static_cast<int>(input_data.size()) - 1);
 
-    cursor_x = std::clamp(cursor_x, input_offset_x, input_offset_x + input_win->_maxx);
-    cursor_y = std::clamp(cursor_y, input_offset_y, input_offset_y + input_win->_maxy);
+    cursor_x = std::clamp(cursor_x, input_offset_x, input_offset_x + getmaxx(input_win));
+    cursor_y = std::clamp(cursor_y, input_offset_y, input_offset_y + getmaxy(input_win));
 }
 
 
@@ -1349,18 +1348,18 @@ void CLI::UpdateOffsets() {
     cursor_y = std::clamp(cursor_y, 0, static_cast<int>(input_data.size()) - 1);
     cursor_x = std::clamp(cursor_x, 0, static_cast<int>(input_data[cursor_y].size()));
 
-    auto input_min_offset_x = std::max(0, cursor_x - input_win->_maxx);
+    auto input_min_offset_x = std::max(0, cursor_x - getmaxx(input_win));
     input_offset_x = std::clamp(input_offset_x, input_min_offset_x, cursor_x);
 
-    auto input_min_offset_y = std::max(0, cursor_y - input_win->_maxy);
-    auto input_max_offset_y = std::max(0, static_cast<int>(input_data.size()) - (input_win->_maxy + 1));
+    auto input_min_offset_y = std::max(0, cursor_y - getmaxy(input_win));
+    auto input_max_offset_y = std::max(0, static_cast<int>(input_data.size()) - (getmaxy(input_win) + 1));
     input_max_offset_y = std::min(cursor_y, input_max_offset_y);
     input_offset_y = std::clamp(input_offset_y, input_min_offset_y, input_max_offset_y);
 
-    auto output_max_offset_x = std::max(0, static_cast<int>(output_max_width) - (output_win->_maxx + 1));
+    auto output_max_offset_x = std::max(0, static_cast<int>(output_max_width) - (getmaxx(output_win) + 1));
     output_offset_x = std::clamp(output_offset_x, 0, output_max_offset_x);
 
-    auto output_max_offset_y = std::max(0, static_cast<int>(output_lines.size()) - (output_win->_maxy + 2));
+    auto output_max_offset_y = std::max(0, static_cast<int>(output_lines.size()) - (getmaxy(output_win) + 2));
     output_offset_y = std::clamp(output_offset_y, 0, output_max_offset_y);
 }
 
@@ -1370,8 +1369,8 @@ void CLI::UpdateScreen() {
     for (auto& button : buttons) {
         total_button_width += button.size() + 1;
     }
-    auto button_start = (divider_win->_maxx + 1) - total_button_width;
-    mvwhline_set(divider_win, 0, 0, 0, (divider_win->_maxx + 1));
+    auto button_start = (getmaxx(divider_win) + 1) - total_button_width;
+    mvwhline_set(divider_win, 0, 0, 0, (getmaxx(divider_win) + 1));
 
     wattrset(divider_win, COLOR_PAIR(CP_PRIMARY) | WA_REVERSE);
     for (auto& button : buttons) {
@@ -1383,24 +1382,24 @@ void CLI::UpdateScreen() {
 
     wattrset(prompt_win, COLOR_PAIR(CP_PRIMARY) | WA_BOLD);
     mvwaddnwstr(prompt_win, 0, 0, prompt_start.c_str(), prompt_start.size());
-    for (int i = 1; i <= prompt_win->_maxy; i++) {
+    for (int i = 1; i <= getmaxy(prompt_win); i++) {
         mvwaddnwstr(prompt_win, i, 0, prompt_cont.c_str(), prompt_cont.size());
     }
     wattrset(prompt_win, COLOR_PAIR(CP_NORMAL));
 
-    for (int i = 0; i <= input_win->_maxy; i++) {
+    for (int i = 0; i <= getmaxy(input_win); i++) {
         if (i + input_offset_y >= static_cast<int>(input_data.size())) {
             break;
         }
 
         auto& line = input_data[i+input_offset_y];
         if (static_cast<int>(line.size()) > input_offset_x) {
-            mvwaddnwstr(input_win, i, 0, line.c_str() + input_offset_x, input_win->_maxx + 1);
+            mvwaddnwstr(input_win, i, 0, line.c_str() + input_offset_x, getmaxx(input_win) + 1);
         }
     }
 
-    for (int i = output_win->_maxy; i >= 0; i--) {
-        auto hist_idx = static_cast<int>(output_lines.size()) - output_win->_maxy - 1 + i - output_offset_y;
+    for (int i = getmaxy(output_win); i >= 0; i--) {
+        auto hist_idx = static_cast<int>(output_lines.size()) - getmaxy(output_win) - 1 + i - output_offset_y;
 
         if (hist_idx < 0 || hist_idx >= static_cast<int>(output_lines.size())) {
             continue;
@@ -1830,8 +1829,8 @@ int CLI::MainLoop() {
             else if (input == KEY_BACKSPACE)       { HandleKeyBackspace(); }
             else if (input == KEY_HOME)            { cursor_x = 0; }
             else if (input == KEY_END)             { cursor_x = input_data[cursor_y].size(); }
-            else if (input == KEY_PPAGE)           { output_offset_y += output_win->_maxy + 1; }
-            else if (input == KEY_NPAGE)           { output_offset_y -= output_win->_maxy + 1; }
+            else if (input == KEY_PPAGE)           { output_offset_y += getmaxy(output_win) + 1; }
+            else if (input == KEY_NPAGE)           { output_offset_y -= getmaxy(output_win) + 1; }
             else if (input == KEY_SLEFT)           { output_offset_x -= 2; }
             else if (input == KEY_SRIGHT)          { output_offset_x += 2; }
             else if (input == KEY_CODE_SHIFT_UP)   { output_offset_y += 2; }

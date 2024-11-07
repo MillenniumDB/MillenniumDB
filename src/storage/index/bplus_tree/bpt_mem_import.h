@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <cstring>
 #include <fstream>
 #include <ios>
@@ -24,14 +25,16 @@ public:
         delete[] buffer;
     }
 
-    void process_block(char* bytes, uint32_t size, uint32_t next_block) {
+    void process_block(char* bytes, uint32_t size, std::bitset<N * 8> bitset, uint32_t next_block) {
         auto value_count = reinterpret_cast<uint32_t*>(buffer);
         auto next_leaf   = reinterpret_cast<uint32_t*>(buffer + sizeof(uint32_t));
 
         memset(buffer, 0, VPage::SIZE);
         *value_count = size;
         *next_leaf = next_block;
-        std::memcpy(buffer + 2*sizeof(uint32_t), bytes, size*(N*sizeof(uint64_t)));
+        std::memcpy(buffer + 2 * sizeof(uint32_t),
+                    bytes,
+                    N + bitset.count() + size * (sizeof(uint64_t) * N - bitset.count()));
         file.write(buffer, VPage::SIZE);
     }
 

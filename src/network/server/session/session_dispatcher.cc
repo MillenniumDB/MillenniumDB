@@ -59,6 +59,7 @@ void SessionDispatcher::run() {
 
 void SessionDispatcher::read_http_header() {
     http_parser.eager(true);
+    http_parser.body_limit(16 * 1024 * 1024);
 
     auto self = this->shared_from_this();
     asio::async_read_until(
@@ -68,7 +69,7 @@ void SessionDispatcher::read_http_header() {
         [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 self->socket.close();
-                logger(Category::Error) << "Could not read the HTTP header" << ec.message();
+                logger(Category::Error) << "Could not read the HTTP header: " << ec.message();
                 return;
             }
             auto tmp_buf = boost::asio::buffer(self->read_buffer.data(), self->read_buffer.size());
@@ -78,7 +79,7 @@ void SessionDispatcher::read_http_header() {
 
             if (ec2) {
                 self->socket.close();
-                logger(Category::Error) << "Could not parse the HTTP header" << ec2.message();
+                logger(Category::Error) << "Could not parse the HTTP header: " << ec2.message();
                 return;
             }
             self->read_http_body();
@@ -96,7 +97,7 @@ void SessionDispatcher::read_http_body() {
             [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
                 if (ec) {
                     self->socket.close();
-                    logger(Category::Error) << "Could not parse the HTTP body" << ec.message();
+                    logger(Category::Error) << "Could not parse the HTTP body: " << ec.message();
                     return;
                 }
                 auto tmp_buf = boost::asio::buffer(self->read_buffer.data(), self->read_buffer.size());
@@ -104,7 +105,7 @@ void SessionDispatcher::read_http_body() {
                 self->http_parser.put(tmp_buf, ec2);
                 if (ec2) {
                     self->socket.close();
-                    logger(Category::Error) << "Could not parse the HTTP" << ec2.message();
+                    logger(Category::Error) << "Could not parse the HTTP: " << ec2.message();
                     return;
                 }
                 self->read_buffer.consume(self->read_buffer.size());

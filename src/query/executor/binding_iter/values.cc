@@ -1,17 +1,20 @@
 #include "values.h"
 
-void Values::_begin(Binding& _parent_binding) {
+void Values::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     current = 0;
 }
 
 
-void Values::_reset() {
+void Values::_reset()
+{
     current = 0;
 }
 
 
-bool Values::_next() {
+bool Values::_next()
+{
 while_loop_begin:
     while (current < values.size()) {
         for (unsigned i = 0; i < vars.size(); i++) {
@@ -36,13 +39,15 @@ while_loop_begin:
 }
 
 
-void Values::assign_nulls() {
+void Values::assign_nulls()
+{
     for (auto& [var_id, fixed] : vars) {
         parent_binding->add(var_id, ObjectId::get_null());
     }
 }
 
 
-void Values::accept_visitor(BindingIterVisitor& visitor) {
+void Values::accept_visitor(BindingIterVisitor& visitor)
+{
     visitor.visit(*this);
 }

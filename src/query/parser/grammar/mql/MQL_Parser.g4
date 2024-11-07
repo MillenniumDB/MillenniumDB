@@ -1,12 +1,67 @@
+
 parser grammar MQL_Parser;
 
 options {
 	tokenVocab = MQL_Lexer;
 }
 
-root: setStatement? (matchQuery | describeQuery | insertQuery) EOF;
+root: ((setStatement? matchQuery | describeQuery) | insertPatterns) EOF;
 
-matchQuery: matchStatement projectSimilarity? whereStatement? groupByStatement? orderByStatement? returnStatement;
+matchQuery: matchStatement (projectSimilarity | bruteSimilaritySearch)? whereStatement? groupByStatement? orderByStatement? returnStatement;
+
+insertPatterns: K_INSERT insertLinearPattern (',' insertLinearPattern)*;
+
+insertLinearPattern: insertPlainNode (insertPlainEdge insertPlainNode)*;
+
+insertPlainNode: '(' insertPlainNodeInside? TYPE* properties?')';
+
+insertPlainNodeInside: identifier;
+
+insertPlainEdge: '<' '-' '[' TYPE properties? ']''-'
+|                '-' '[' TYPE properties? ']''-' '>'
+;
+
+// updateStatements: (insertStatement | deleteStatement | updateSetStatement)+;
+
+// insertStatement: K_INSERT insertElement (',' insertElement)*;
+
+// deleteStatement: K_DELETE deleteElement (',' deleteElement)*;
+
+// deleteElement: (identifier) (TYPE|KEY)?
+// |              EDGE_ID KEY?
+// |              VARIABLE KEY?
+// |              K_LABELS '(' insertObj ')'
+// |              K_PROPERTIES '(' insertObj ')'
+// ;
+
+// insertObj: identifier|EDGE_ID|VARIABLE;
+
+// updateSetStatement: K_SET setElement (',' setElement)*;
+
+// setElement: K_PROPERTIES '(' insertObj ')' '=' insertProperties
+// |           K_LABELS '(' insertObj ')' '=' '{' TYPE (',' TYPE)* '}'
+// |           (identifier|VARIABLE) KEY '=' '{' TYPE (',' TYPE)* '}'
+// ;
+
+// insertElement: insertNode (insertEdge insertNode)*;
+
+// insertNode: '(' insertObj? TYPE* insertProperties?')';
+
+// insertEdge: '<' '-' '[' TYPE insertProperties? ']''-'
+// |           '-' '[' TYPE insertProperties? ']''-' '>'
+// ;
+
+// insertProperties: '{' insertProperty (',' insertProperty)* '}';
+
+
+// TODO: maybe allow expressions as values?
+// insertProperty2 is necessary when the property is written without spaces after the colon, example:
+// key:date("2001-02-03")
+// key        :date
+// identifier TYPE  '(' STRING ')';
+// insertProperty: identifier (':' value | TRUE_PROP | FALSE_PROP) # insertProperty1
+// |               identifier TYPE '(' STRING ')' # insertProperty2
+// ;
 
 projectSimilarity:  K_PROJECT_SIMILARITY '(' VARIABLE ',' VARIABLE ',' STRING ',' (fixedNodeInside | tensor) ',' metricType ')';
 
@@ -15,21 +70,6 @@ metricType: K_ANGULAR | K_EUCLIDEAN | K_MANHATTAN;
 describeQuery: K_DESCRIBE describeFlag* fixedNodeInside;
 
 describeFlag: ( K_LABELS | K_PROPERTIES| K_OUTGOING | K_INCOMING ) (K_LIMIT UNSIGNED_INTEGER)?;
-
-insertQuery: K_INSERT (insertLabelList | insertPropertyList | insertEdgeList);
-
-insertLabelList: K_LABEL insertLabelElement (',' insertLabelElement)*;
-
-insertPropertyList: K_PROPERTY insertPropertyElement (',' insertPropertyElement)*;
-
-insertEdgeList: K_EDGE insertEdgeElement (',' insertEdgeElement)*;
-
-insertLabelElement: '(' (identifier | ANON_ID) ',' STRING ')';
-
-insertPropertyElement: '(' fixedNodeInside ',' STRING ',' value ')';
-
-// FROM, TO, TYPE
-insertEdgeElement: '(' fixedNodeInside ',' fixedNodeInside ',' identifier ')';
 
 setStatement: K_SET setItem (',' setItem)*;
 
@@ -83,6 +123,8 @@ optionalPattern: K_OPTIONAL '{' graphPattern '}';
 
 similaritySearch: K_SIMILARITY_SEARCH '(' VARIABLE ',' VARIABLE ',' STRING ',' (fixedNodeInside | tensor) ',' ('+' | '-')? UNSIGNED_INTEGER (',' ('+')? UNSIGNED_INTEGER)? ')';
 
+bruteSimilaritySearch: K_BRUTE_SIMILARITY_SEARCH '(' VARIABLE ',' VARIABLE ',' STRING ',' (fixedNodeInside | tensor) ',' metricType ',' ('+')? UNSIGNED_INTEGER ')';
+
 tensor: '[' numericValue (',' numericValue)* ']';
 
 basicPattern: linearPattern (',' linearPattern)*;
@@ -133,7 +175,12 @@ properties: '{' property (',' property)* '}';
 // identifier TYPE  '(' STRING ')';
 property: identifier (':' value | TRUE_PROP | FALSE_PROP) # property1
 |         identifier TYPE '(' STRING ')' # property2
+|         identifier K_IS K_NOT? exprTypename (conditionalOrType)*# property3
+|         identifier  (op=('=='|'!='|'<'|'>'|'<='|'>=') value)# property4
 ;
+
+
+conditionalOrType: K_OR exprTypename;
 
 identifier: NAME | keyword;
 
@@ -158,17 +205,20 @@ additiveExpr: multiplicativeExpr (op+=('+'|'-') multiplicativeExpr)*;
 multiplicativeExpr: unaryExpr (op+=('*'|'/'|'%') unaryExpr)*;
 
 unaryExpr: K_NOT unaryExpr
+|          atomicExpr
 |          '+' unaryExpr
 |          '-' unaryExpr
-|          atomicExpr
 ;
 
 atomicExpr:  VARIABLE KEY? # exprVar
-|            valueExpr # exprValueExpr
+|            value # exprValue
 |            '(' conditionalOrExpr ')' # exprParenthesis
+|            function #exprFunction
 ;
 
-valueExpr: UNSIGNED_INTEGER | UNSIGNED_FLOAT | STRING | boolValue | datatypeValue;
+function: regex;
+
+regex: K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (',' conditionalOrExpr)? ')';
 
 exprTypename: K_NULL
 |             K_STRING
@@ -188,6 +238,7 @@ keyword: K_ACYCLIC
 | 	     K_BY
 | 	     K_BOOL
 | 	     K_COUNT
+| 	     K_DELETE
 | 	     K_DESCRIBE
 | 	     K_DESC
 | 	     K_DISTINCT

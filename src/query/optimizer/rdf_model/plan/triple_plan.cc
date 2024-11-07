@@ -99,7 +99,7 @@ double TriplePlan::_estimate_output_size() const {
     assigned_vars += static_cast<int>(predicate.is_var() && predicate_assigned);
     assigned_vars += static_cast<int>(object.is_var() && object_assigned);
 
-    const auto& catalog = rdf_model.catalog();
+    const auto& catalog = rdf_model.catalog;
 
     switch (terms) {
     case 3: {

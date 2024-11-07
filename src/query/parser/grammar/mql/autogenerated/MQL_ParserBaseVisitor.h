@@ -23,6 +23,26 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertPlainNodeInside(MQL_Parser::InsertPlainNodeInsideContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitProjectSimilarity(MQL_Parser::ProjectSimilarityContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -36,34 +56,6 @@ public:
   }
 
   virtual std::any visitDescribeFlag(MQL_Parser::DescribeFlagContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertLabelList(MQL_Parser::InsertLabelListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertPropertyList(MQL_Parser::InsertPropertyListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertEdgeList(MQL_Parser::InsertEdgeListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertLabelElement(MQL_Parser::InsertLabelElementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertEdgeElement(MQL_Parser::InsertEdgeElementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -155,6 +147,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitBruteSimilaritySearch(MQL_Parser::BruteSimilaritySearchContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitTensor(MQL_Parser::TensorContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -231,6 +227,18 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitProperty3(MQL_Parser::Property3Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitProperty4(MQL_Parser::Property4Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitConditionalOrType(MQL_Parser::ConditionalOrTypeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitIdentifier(MQL_Parser::IdentifierContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -283,7 +291,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprValueExpr(MQL_Parser::ExprValueExprContext *ctx) override {
+  virtual std::any visitExprValue(MQL_Parser::ExprValueContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -291,7 +299,15 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitValueExpr(MQL_Parser::ValueExprContext *ctx) override {
+  virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFunction(MQL_Parser::FunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRegex(MQL_Parser::RegexContext *ctx) override {
     return visitChildren(ctx);
   }
 

@@ -68,3 +68,7 @@ void CheckWellDesigned::visit(OpOrderBy& op_order_by) {
 void CheckWellDesigned::visit(OpProjectSimilarity& op_project_similarity) {
     op_project_similarity.op->accept_visitor(*this);
 }
+
+void CheckWellDesigned::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
+    op_brute_similarity_search.op->accept_visitor(*this);
+}

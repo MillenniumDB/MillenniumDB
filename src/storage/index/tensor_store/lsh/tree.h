@@ -5,14 +5,15 @@
  */
 #pragma once
 
-#include "storage/index/tensor_store/lsh/tree_node.h"
 
 #include <chrono>
 #include <cstdint>
-#include <memory>
 #include <random>
-#include <string>
 #include <vector>
+
+#include "storage/index/tensor_store/lsh/metric.h"
+#include "storage/index/tensor_store/lsh/tree_node.h"
+
 
 class TensorStore;
 
@@ -21,7 +22,16 @@ enum class MetricType;
 
 class Tree {
 public:
-    static constexpr uint_fast32_t GENERATE_PLANE_EPOCHS = 200UL;
+    // Number of epochs to use for two-means
+    static constexpr uint_fast32_t GENERATE_PLANE_EPOCHS = 300UL;
+
+    // Number of attempts to split a node until reaching the imbalance threshold
+    static constexpr uint_fast32_t SPLIT_ATTEMPS = 3UL;
+
+    // For example an imbalance threshold of 0.6, means that the proportion of ObjectIds on each side of
+    // the split is 60%/40%. Lowering the imbalance_threshold enhances the quality of the tree, but
+    // increases the probability of triggering the random split node
+    static constexpr double IMBALANCE_THRESHOLD = 0.99l;
 
     static inline auto random_engine =
       std::default_random_engine(std::chrono::system_clock::now().time_since_epoch().count());
@@ -74,8 +84,10 @@ private:
     // Used to prevent multiple allocations
     std::vector<float> tensor_buffer;
 
-    // Split the leaf node into two children. Return a reference to each one ({ left, right })
-    std::pair<LeafNode*, LeafNode*> create_split(LeafNode* leaf_node);
+    // Split the nodes from source into left and right. Also returns the node used for the split
+    TreeNode* split_nodes(const std::vector<uint64_t>& source,
+                          std::vector<uint64_t>&       left_object_ids,
+                          std::vector<uint64_t>&       right_object_ids);
 
     // Returns the best plane for the split. It returns its normal and offset
     std::pair<std::vector<float>, float> generate_plane(const std::vector<uint64_t>& object_ids);

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Set project name and version
-project(MillenniumDB VERSION 0.3.0)
+project(MillenniumDB VERSION 0.3.1)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -9,14 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Enable export of compile commands output
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Use all cores but one for compilation
-include(ProcessorCount)
-ProcessorCount(NUM_CORES)
-if(NUM_CORES GREATER 1)
-    math(EXPR PARALLEL_LEVEL "${NUM_CORES} - 1")
-    set(CMAKE_BUILD_PARALLEL_LEVEL ${PARALLEL_LEVEL})
-endif()
 
 # Set output directories
 set(EXECUTABLE_OUTPUT_PATH bin)

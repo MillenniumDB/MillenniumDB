@@ -37,6 +37,9 @@ public:
 
     void print(std::ostream& os, uint64_t id) const;
 
+    // returns the length of the data, assumes buffer is big enough
+    uint64_t print_to_buffer(char* buffer, uint64_t id);
+
     uint64_t get_bytes_id(const char* bytes, uint64_t size) const;
 
     uint64_t get_str_id(const std::string& str) const {

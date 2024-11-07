@@ -123,7 +123,7 @@ void TensorStore::bulk_import(const std::string& tensors_csv_path,
 
         // ObjectId
         std::getline(ss, cell, ',');
-        const auto object_id = QuadObjectId::get_named_node(cell);
+        const auto object_id = QuadObjectId::get_fixed_node_inside(cell);
         if (object_ids.contains(object_id.id)) {
             std::cout << "Skipping duplicate ObjectId: \"" << cell << "\" at line " << current_line_index << "\n";
             continue;
@@ -190,13 +190,13 @@ void TensorStore::load_tensor_stores(uint64_t tensor_page_buffer_size_in_bytes, 
                     std::cout << "  max_bucket_size : " << tensor_store->forest_index->max_bucket_size << "\n";
                     std::cout << "  max_depth       : " << tensor_store->forest_index->max_depth << "\n";
                 }
-                quad_model.catalog().name2tensor_store.emplace(tensor_store_name, std::move(tensor_store));
+                quad_model.catalog.name2tensor_store.emplace(tensor_store_name, std::move(tensor_store));
             }
         }
     }
 
-    if (quad_model.catalog().name2tensor_store.size() > 0) {
-        std::cout << "Successfully loaded " << quad_model.catalog().name2tensor_store.size() << " Tensor Store(s)\n";
+    if (quad_model.catalog.name2tensor_store.size() > 0) {
+        std::cout << "Successfully loaded " << quad_model.catalog.name2tensor_store.size() << " Tensor Store(s)\n";
         std::cout << "-------------------------------------\n";
     }
 }
@@ -213,8 +213,8 @@ bool TensorStore::get(uint64_t object_id, std::vector<float>& vec) const {
     if (it == object_id2tensor_offset.end())
         return false;
 
-    auto vec_bytes      = reinterpret_cast<char*>(vec.data());
-    auto vec_bytes_size = vec.size() * sizeof(float);
+    auto vec_bytes            = reinterpret_cast<char*>(vec.data());
+    const auto vec_bytes_size = sizeof(float) * vec.size();
 
     // Start from the corresponding page and offset
     auto page_number         = it->second / TensorPage::SIZE;
@@ -222,21 +222,22 @@ bool TensorStore::get(uint64_t object_id, std::vector<float>& vec) const {
     TensorPage* current_page = &tensor_buffer_manager->get_page(page_number);
 
     // Read the tensor directly to the vector bytes
-    size_t remaining = sizeof(float) * vec.size();
-    while (remaining > 0) {
-        size_t max_read   = (TensorPage::SIZE - page_offset);
-        char* current_ptr = current_page->get_bytes() + page_offset;
-        if (remaining <= max_read) {
+    size_t remaining_bytes = sizeof(float) * vec.size();
+    while (remaining_bytes > 0) {
+        size_t max_read_bytes = (TensorPage::SIZE - page_offset);
+        auto   current_ptr    = current_page->get_bytes() + page_offset;
+        if (remaining_bytes <= max_read_bytes) {
             // All the remaining bytes are in the current page
-            std::memcpy(&vec_bytes[vec_bytes_size - remaining], current_ptr, remaining);
+            std::memcpy(&vec_bytes[vec_bytes_size - remaining_bytes], current_ptr, remaining_bytes);
             tensor_buffer_manager->unpin(*current_page);
             break;
         } else {
             // There are remaining bytes in the next page
-            std::memcpy(&vec_bytes[vec_bytes_size - remaining], current_ptr, max_read);
+            std::memcpy(&vec_bytes[vec_bytes_size - remaining_bytes], current_ptr, max_read_bytes);
             tensor_buffer_manager->unpin(*current_page);
-            remaining -= max_read;
+            remaining_bytes -= max_read_bytes;
             ++page_number;
+            page_offset  = 0;
             current_page = &tensor_buffer_manager->get_page(page_number);
         }
     }

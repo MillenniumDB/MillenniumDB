@@ -163,7 +163,15 @@ void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
     case RDF_OID::Type::IRI_INLINE:
     case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
     case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP: {
+    case RDF_OID::Type::IRI_TMP:
+    case RDF_OID::Type::IRI_UUID_LOWER:
+    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
+    case RDF_OID::Type::IRI_UUID_UPPER:
+    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
+    case RDF_OID::Type::IRI_HEX_LOWER:
+    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
+    case RDF_OID::Type::IRI_HEX_UPPER:
+    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
         os << "<uri>";
         Conversions::print_iri(oid, os);
         os << "</uri>";

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <type_traits>
-
 #include "graph_models/model_destroyer.h"
 #include "graph_models/quad_model/quad_catalog.h"
 #include "query/parser/paths/regular_path_expr.h"
@@ -40,7 +38,7 @@ public:
     std::unique_ptr<BPlusTree<3>> equal_from_type_inverted; // (to,   from=type, edge)
     std::unique_ptr<BPlusTree<3>> equal_to_type_inverted;   // (from, to=type,   edge)
 
-    QuadCatalog m_catalog;
+    QuadCatalog catalog;
 
     uint64_t MAX_LIMIT = UINT64_MAX;
 
@@ -49,10 +47,6 @@ public:
 
     // necessary to be called before first usage
     static std::unique_ptr<ModelDestroyer> init();
-
-    inline QuadCatalog& catalog() noexcept {
-        return m_catalog;
-    }
 
 private:
     QuadModel();

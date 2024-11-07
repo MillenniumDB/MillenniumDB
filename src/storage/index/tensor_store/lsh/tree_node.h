@@ -9,13 +9,13 @@
 
 namespace LSH {
 
-enum class TreeNodeType {
+enum class TreeNodeType : uint8_t {
     LEAF,
     ANGULAR_SPLIT,
     MINKOWSKI_SPLIT,
+    RANDOM_SPLIT,
 };
 
-// TODO: RandomSplitNode
 
 class TreeNode {
 public:
@@ -78,8 +78,8 @@ public:
     }
 
     void deserialize(std::fstream& fs) override {
-        auto plane_normal_size = Serialization::read_uint64(fs);
-        plane_normal           = Serialization::read_float_vec(fs, plane_normal_size);
+        const auto plane_normal_size = Serialization::read_uint64(fs);
+        plane_normal                 = Serialization::read_float_vec(fs, plane_normal_size);
     }
 };
 
@@ -125,6 +125,31 @@ public:
 };
 
 
+class RandomSplitNode : public TreeNode {
+public:
+    RandomSplitNode(TreeNode* parent) :
+        TreeNode(parent){ }
+
+    RandomSplitNode(std::fstream& /*fs*/) : TreeNode(nullptr) { }
+
+    bool side(const std::vector<float>& /*tensor*/) override {
+        return (rand() % 2) == 0;
+    }
+
+    TreeNodeType type() const override {
+        return TreeNodeType::RANDOM_SPLIT;
+    }
+
+    void serialize(std::fstream& /*fs*/) const override {
+        // Nothing to serialize
+    }
+
+    void deserialize(std::fstream& /*fs*/) override {
+        // Nothing to deserialize
+    }
+};
+
+
 class LeafNode : public TreeNode {
 public:
     std::vector<uint64_t> object_ids;
@@ -152,8 +177,8 @@ public:
     }
 
     void deserialize(std::fstream& fs) override {
-        auto object_ids_size = Serialization::read_uint64(fs);
-        object_ids           = Serialization::read_uint64_vec(fs, object_ids_size);
+        const auto object_ids_size = Serialization::read_uint64(fs);
+        object_ids                 = Serialization::read_uint64_vec(fs, object_ids_size);
     }
 };
 } // namespace LSH

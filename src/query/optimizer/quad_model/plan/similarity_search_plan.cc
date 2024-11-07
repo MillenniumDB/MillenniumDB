@@ -27,10 +27,10 @@ SimilaritySearchPlan::SimilaritySearchPlan(VarId                     object_var_
     assert((query_tensor.empty() ^ (query_object.id == ObjectId::NULL_ID))
            && "Exactly one of the following must be non-null: query_tensor, query_object");
 
-    if (!quad_model.catalog().name2tensor_store.contains(tensor_store_name))
+    if (!quad_model.catalog.name2tensor_store.contains(tensor_store_name))
         throw QueryException("Tensor store \"" + tensor_store_name + "\" does not exist");
 
-    TensorStore& tensor_store = *quad_model.catalog().name2tensor_store.at(tensor_store_name);
+    TensorStore& tensor_store = *quad_model.catalog.name2tensor_store.at(tensor_store_name);
 
     if (query_tensor.empty()) {
         // It is necessary to read from the tensor store
@@ -71,7 +71,7 @@ double SimilaritySearchPlan::estimate_cost() const {
 
 
 double SimilaritySearchPlan::estimate_output_size() const {
-    auto store_size = quad_model.catalog().name2tensor_store.at(tensor_store_name)->size();
+    auto store_size = quad_model.catalog.name2tensor_store.at(tensor_store_name)->size();
     return ((k > 0) && (uint64_t(k) < store_size)) ? k : store_size;
 }
 
@@ -88,10 +88,10 @@ std::set<VarId> SimilaritySearchPlan::get_vars() const {
 
 std::unique_ptr<BindingIter> SimilaritySearchPlan::get_binding_iter() const {
     if (k < 0) {
-        auto query_iter = quad_model.catalog().name2tensor_store.at(tensor_store_name)->query_iter(query_tensor);
+        auto query_iter = quad_model.catalog.name2tensor_store.at(tensor_store_name)->query_iter(query_tensor);
         return std::make_unique<LSH::ForestIndexTopAll>(object_var, similarity_var, std::move(query_iter));
     } else {
-        const auto& tensor_store = *quad_model.catalog().name2tensor_store.at(tensor_store_name);
+        const auto& tensor_store = *quad_model.catalog.name2tensor_store.at(tensor_store_name);
         return std::make_unique<LSH::ForestIndexTopK>(object_var, similarity_var, query_tensor, k, search_k, tensor_store);
     }
 }
@@ -108,7 +108,7 @@ bool SimilaritySearchPlan::get_leapfrog_iter(std::vector<std::unique_ptr<Leapfro
     std::vector<VarId> intersection_vars = { object_var };
     std::vector<VarId> enumeration_vars  = { similarity_var };
 
-    const auto& tensor_store = *quad_model.catalog().name2tensor_store.at(tensor_store_name);
+    const auto& tensor_store = *quad_model.catalog.name2tensor_store.at(tensor_store_name);
 
     leapfrog_iters.push_back(std::make_unique<LeapfrogSimilaritySearchIter>(
         &get_query_ctx().thread_info.interruption_requested,

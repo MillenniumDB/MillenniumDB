@@ -30,6 +30,8 @@ class ExprAggCount;
 class ExprAggMax;
 class ExprAggMin;
 class ExprAggSum;
+
+class ExprRegex;
 }
 
 namespace SPARQL {
@@ -154,6 +156,7 @@ public:
     virtual void visit(MQL::ExprAggMin&)      { throw LogicException("visit MQL::ExprAggMin not implemented"); }
     virtual void visit(MQL::ExprAggSum&)      { throw LogicException("visit MQL::ExprAggSum not implemented"); }
 
+    virtual void visit(MQL::ExprRegex&)      { throw LogicException("visit MQL::ExprRegex not implemented"); }
 
     // SPARQL exprs
     virtual void visit(SPARQL::ExprVar&)            { throw LogicException("visit SPARQL::ExprVar not implemented"); }

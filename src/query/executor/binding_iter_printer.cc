@@ -6,6 +6,7 @@
 #include "storage/index/tensor_store/lsh/binding_iters/forest_index_top_k.h"
 #include "storage/index/tensor_store/lsh/binding_iters/forest_index_top_all.h"
 #include "storage/index/tensor_store/lsh/binding_iters/project_tensor_similarity.h"
+#include "storage/index/tensor_store/lsh/binding_iters/brute_similarity_search.h"
 #include "storage/index/tensor_store/lsh/metric.h"
 #include "storage/index/tensor_store/tensor_store.h"
 
@@ -1151,6 +1152,32 @@ void BindingIterPrinter::visit(LSH::ProjectTensorSimilarity& binding_iter) {
         os << "unknown";
         break;
     }
+    os << ")\n";
+    binding_iter.child_iter->accept_visitor(*this);
+}
+
+
+void BindingIterPrinter::visit(LSH::BruteSimilaritySearch& binding_iter) {
+    auto helper = BindingIterPrinterHelper("BruteSimilaritySearch", *this, binding_iter);
+    os << "object: ?" << get_query_ctx().get_var_name(binding_iter.object_var);
+    os << ", similarity: ?" << get_query_ctx().get_var_name(binding_iter.similarity_var);
+    os << ", tensor_store: " << binding_iter.tensor_store.name;
+    os << ", metric: ";
+    switch (binding_iter.metric_type) {
+    case LSH::MetricType::ANGULAR:
+        os << "Angular";
+        break;
+    case LSH::MetricType::EUCLIDEAN:
+        os << "Euclidean";
+        break;
+    case LSH::MetricType::MANHATTAN:
+        os << "Manhattan";
+        break;
+    default:
+        os << "unknown";
+        break;
+    }
+    os << ", k: " << binding_iter.k;
     os << ")\n";
     binding_iter.child_iter->accept_visitor(*this);
 }

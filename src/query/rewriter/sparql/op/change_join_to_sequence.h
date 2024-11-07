@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <optional>
-#include <set>
 #include <vector>
 
 #include "query/parser/op/op.h"
@@ -11,18 +10,22 @@
 namespace SPARQL {
 /*
   Create sequence objects that have the structure for Op:
-    BGP? Op* service*
+    BIND* VALUE* BGP? Op* service*
   and rewrite all BGP JOIN BGP as BGP, concatenating all of their
   children.
 */
 class ChangeJoinToSequence : public OpVisitor {
 private:
     struct SequenceInformation {
-        std::optional<std::unique_ptr<OpBasicGraphPattern>> last_bgp;
-        std::vector<std::unique_ptr<Op>>                    ops;
-        std::vector<std::unique_ptr<OpService>>             services;
-        bool                                                is_from_join = false;
-        bool                                                visited_bind = false;
+        std::vector<std::unique_ptr<OpBind>> op_binds;
+
+        std::vector<std::unique_ptr<OpValues>> op_values;
+
+        std::optional<std::unique_ptr<OpBasicGraphPattern>> bgp;
+
+        std::vector<std::unique_ptr<Op>> other_ops;
+
+        std::vector<std::unique_ptr<OpService>> services;
     };
     std::vector<SequenceInformation> potential_sequences;
 
@@ -68,7 +71,7 @@ private:
     }
 
     void add_op_to_sequence_information(std::unique_ptr<Op> op);
-    void add_basic_graph_pattern(std::unique_ptr<OpBasicGraphPattern> op);
+
     void transform_child_if_necessary(std::unique_ptr<Op>& op);
 
     std::optional<std::unique_ptr<Op>> get_pertinent_sequence();

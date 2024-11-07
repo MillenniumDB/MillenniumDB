@@ -44,6 +44,14 @@ namespace RDF_OID {
         IRI_INLINE_INT_SUFFIX,
         IRI_EXTERN,
         IRI_TMP,
+        IRI_UUID_UPPER,
+        IRI_UUID_UPPER_TMP,
+        IRI_UUID_LOWER,
+        IRI_UUID_LOWER_TMP,
+        IRI_HEX_UPPER,
+        IRI_HEX_UPPER_TMP,
+        IRI_HEX_LOWER,
+        IRI_HEX_LOWER_TMP,
         // URI,
         STRING_SIMPLE_INLINE,
         STRING_SIMPLE_EXTERN,
@@ -94,6 +102,24 @@ namespace RDF_OID {
         case (ObjectId::MASK_IRI_EXTERN >> 56):
             return Type::IRI_EXTERN;
         case (ObjectId::MASK_IRI_TMP >> 56):
+            return Type::IRI_TMP;
+
+        case (ObjectId::MASK_IRI_UUID_LOWER >> 56):
+            return Type::IRI_EXTERN;
+        case (ObjectId::MASK_IRI_UUID_LOWER_TMP >> 56):
+            return Type::IRI_TMP;
+        case (ObjectId::MASK_IRI_UUID_UPPER >> 56):
+            return Type::IRI_EXTERN;
+        case (ObjectId::MASK_IRI_UUID_UPPER_TMP >> 56):
+            return Type::IRI_TMP;
+
+        case (ObjectId::MASK_IRI_HEX_LOWER >> 56):
+            return Type::IRI_EXTERN;
+        case (ObjectId::MASK_IRI_HEX_LOWER_TMP >> 56):
+            return Type::IRI_TMP;
+        case (ObjectId::MASK_IRI_HEX_UPPER >> 56):
+            return Type::IRI_EXTERN;
+        case (ObjectId::MASK_IRI_HEX_UPPER_TMP >> 56):
             return Type::IRI_TMP;
 
         case (ObjectId::MASK_STRING_SIMPLE_INLINED >> 56):
@@ -174,6 +200,14 @@ namespace RDF_OID {
             case Type::IRI_INLINE_INT_SUFFIX:
             case Type::IRI_EXTERN:
             case Type::IRI_TMP:
+            case Type::IRI_UUID_UPPER:
+            case Type::IRI_UUID_UPPER_TMP:
+            case Type::IRI_UUID_LOWER:
+            case Type::IRI_UUID_LOWER_TMP:
+            case Type::IRI_HEX_UPPER:
+            case Type::IRI_HEX_UPPER_TMP:
+            case Type::IRI_HEX_LOWER:
+            case Type::IRI_HEX_LOWER_TMP:
                 return GenericSubType::IRI;
             case Type::STRING_SIMPLE_INLINE:
             case Type::STRING_SIMPLE_EXTERN:
@@ -229,6 +263,14 @@ namespace RDF_OID {
             case Type::IRI_INLINE_INT_SUFFIX:
             case Type::IRI_EXTERN:
             case Type::IRI_TMP:
+            case Type::IRI_UUID_UPPER:
+            case Type::IRI_UUID_UPPER_TMP:
+            case Type::IRI_UUID_LOWER:
+            case Type::IRI_UUID_LOWER_TMP:
+            case Type::IRI_HEX_UPPER:
+            case Type::IRI_HEX_UPPER_TMP:
+            case Type::IRI_HEX_LOWER:
+            case Type::IRI_HEX_LOWER_TMP:
                 return GenericType::IRI;
             case Type::STRING_SIMPLE_INLINE:
             case Type::STRING_SIMPLE_EXTERN:

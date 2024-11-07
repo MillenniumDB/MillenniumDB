@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
         case QuadCatalog::MODEL_ID: {
             std::cout << "Initializing Quad Model...\n";
 
-            auto model_destroyed = QuadModel::init();
+            auto model_destroyer = QuadModel::init();
 
             if (limit != 0) {
                 quad_model.MAX_LIMIT = limit;
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
                 quad_model.path_mode = path_mode == "dfs" ? PathMode::DFS : PathMode::BFS;
             }
 
-            quad_model.catalog().print(std::cout);
+            quad_model.catalog.print(std::cout);
 
             TensorStore::load_tensor_stores(tensor_pages_buffer, preload_tensors);
 
@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
         case RdfCatalog::MODEL_ID: {
             std::cout << "Initializing RDF Model...\n";
 
-            auto model_destroyed = RdfModel::init();
+            auto model_destroyer = RdfModel::init();
 
             if (limit != 0) {
                 rdf_model.MAX_LIMIT = limit;
@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
                 rdf_model.path_mode = path_mode == "dfs" ? PathMode::DFS : PathMode::BFS;
             }
 
-            rdf_model.catalog().print(std::cout);
+            rdf_model.catalog.print(std::cout);
 
             server.model_id = MDBServer::Protocol::RDF_MODEL_ID;
             server.run(port, browser_port, !no_browser, max_threads, std::chrono::seconds(query_timeout_seconds));

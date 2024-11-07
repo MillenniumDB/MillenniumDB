@@ -40,6 +40,7 @@ namespace LSH {
 class ForestIndexTopK;
 class ForestIndexTopAll;
 class ProjectTensorSimilarity;
+class BruteSimilaritySearch;
 }
 
 
@@ -229,4 +230,5 @@ public:
     virtual void visit(LSH::ForestIndexTopK&) = 0;
     virtual void visit(LSH::ForestIndexTopAll&) = 0;
     virtual void visit(LSH::ProjectTensorSimilarity&) = 0;
+    virtual void visit(LSH::BruteSimilaritySearch&) = 0;
 };

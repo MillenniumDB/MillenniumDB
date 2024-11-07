@@ -13,44 +13,45 @@ class  MQL_Parser : public antlr4::Parser {
 public:
   enum {
     K_ACYCLIC = 1, K_AND = 2, K_ANGULAR = 3, K_ANY = 4, K_AVG = 5, K_ALL = 6, 
-    K_ASC = 7, K_BY = 8, K_BOOL = 9, K_COUNT = 10, K_DESCRIBE = 11, K_DESC = 12, 
-    K_DISTINCT = 13, K_EDGE = 14, K_EUCLIDEAN = 15, K_INCOMING = 16, K_INSERT = 17, 
-    K_INTEGER = 18, K_IS = 19, K_FALSE = 20, K_FLOAT = 21, K_GROUP = 22, 
-    K_LABELS = 23, K_LABEL = 24, K_LIMIT = 25, K_MANHATTAN = 26, K_MATCH = 27, 
-    K_MAX = 28, K_MIN = 29, K_OFFSET = 30, K_OPTIONAL = 31, K_ORDER = 32, 
-    K_OR = 33, K_OUTGOING = 34, K_PROJECT_SIMILARITY = 35, K_PROPERTIES = 36, 
-    K_PROPERTY = 37, K_NOT = 38, K_NULL = 39, K_SHORTEST = 40, K_SIMPLE = 41, 
-    K_RETURN = 42, K_SET = 43, K_SIMILARITY_SEARCH = 44, K_SUM = 45, K_STRING = 46, 
-    K_TRUE = 47, K_TRAILS = 48, K_WALKS = 49, K_WHERE = 50, TRUE_PROP = 51, 
-    FALSE_PROP = 52, ANON_ID = 53, EDGE_ID = 54, KEY = 55, TYPE = 56, TYPE_VAR = 57, 
-    VARIABLE = 58, STRING = 59, UNSIGNED_INTEGER = 60, UNSIGNED_FLOAT = 61, 
-    UNSIGNED_SCIENTIFIC_NOTATION = 62, NAME = 63, LEQ = 64, GEQ = 65, EQ = 66, 
-    NEQ = 67, LT = 68, GT = 69, SINGLE_EQ = 70, PATH_SEQUENCE = 71, PATH_ALTERNATIVE = 72, 
-    PATH_NEGATION = 73, STAR = 74, PERCENT = 75, QUESTION_MARK = 76, PLUS = 77, 
-    MINUS = 78, L_PAR = 79, R_PAR = 80, LCURLY_BRACKET = 81, RCURLY_BRACKET = 82, 
-    LSQUARE_BRACKET = 83, RSQUARE_BRACKET = 84, COMMA = 85, COLON = 86, 
-    WHITE_SPACE = 87, SINGLE_LINE_COMMENT = 88, UNRECOGNIZED = 89
+    K_ASC = 7, K_BRUTE_SIMILARITY_SEARCH = 8, K_BY = 9, K_BOOL = 10, K_COUNT = 11, 
+    K_DELETE = 12, K_DESCRIBE = 13, K_DESC = 14, K_DISTINCT = 15, K_EDGE = 16, 
+    K_EUCLIDEAN = 17, K_INCOMING = 18, K_INSERT = 19, K_INTEGER = 20, K_IS = 21, 
+    K_FALSE = 22, K_FLOAT = 23, K_GROUP = 24, K_LABELS = 25, K_LABEL = 26, 
+    K_LIMIT = 27, K_MANHATTAN = 28, K_MATCH = 29, K_MAX = 30, K_MIN = 31, 
+    K_OFFSET = 32, K_OPTIONAL = 33, K_ORDER = 34, K_OR = 35, K_OUTGOING = 36, 
+    K_PROJECT_SIMILARITY = 37, K_PROPERTIES = 38, K_PROPERTY = 39, K_NOT = 40, 
+    K_NULL = 41, K_SHORTEST = 42, K_SIMPLE = 43, K_REGEX = 44, K_RETURN = 45, 
+    K_SET = 46, K_SIMILARITY_SEARCH = 47, K_SUM = 48, K_STRING = 49, K_TRUE = 50, 
+    K_TRAILS = 51, K_WALKS = 52, K_WHERE = 53, TRUE_PROP = 54, FALSE_PROP = 55, 
+    ANON_ID = 56, EDGE_ID = 57, KEY = 58, TYPE = 59, TYPE_VAR = 60, VARIABLE = 61, 
+    STRING = 62, UNSIGNED_INTEGER = 63, UNSIGNED_FLOAT = 64, UNSIGNED_SCIENTIFIC_NOTATION = 65, 
+    NAME = 66, LEQ = 67, GEQ = 68, EQ = 69, NEQ = 70, LT = 71, GT = 72, 
+    SINGLE_EQ = 73, PATH_SEQUENCE = 74, PATH_ALTERNATIVE = 75, PATH_NEGATION = 76, 
+    STAR = 77, PERCENT = 78, QUESTION_MARK = 79, PLUS = 80, MINUS = 81, 
+    L_PAR = 82, R_PAR = 83, LCURLY_BRACKET = 84, RCURLY_BRACKET = 85, LSQUARE_BRACKET = 86, 
+    RSQUARE_BRACKET = 87, COMMA = 88, COLON = 89, WHITE_SPACE = 90, SINGLE_LINE_COMMENT = 91, 
+    UNRECOGNIZED = 92
   };
 
   enum {
-    RuleRoot = 0, RuleMatchQuery = 1, RuleProjectSimilarity = 2, RuleMetricType = 3, 
-    RuleDescribeQuery = 4, RuleDescribeFlag = 5, RuleInsertQuery = 6, RuleInsertLabelList = 7, 
-    RuleInsertPropertyList = 8, RuleInsertEdgeList = 9, RuleInsertLabelElement = 10, 
-    RuleInsertPropertyElement = 11, RuleInsertEdgeElement = 12, RuleSetStatement = 13, 
-    RuleMatchStatement = 14, RuleWhereStatement = 15, RuleGroupByStatement = 16, 
-    RuleOrderByStatement = 17, RuleReturnStatement = 18, RuleLimitOffsetClauses = 19, 
-    RuleLimitClause = 20, RuleOffsetClause = 21, RuleSetItem = 22, RuleReturnItem = 23, 
-    RuleAggregateFunc = 24, RuleOrderByItem = 25, RuleGroupByItem = 26, 
-    RuleGraphPattern = 27, RuleOptionalPattern = 28, RuleSimilaritySearch = 29, 
-    RuleTensor = 30, RuleBasicPattern = 31, RuleLinearPattern = 32, RulePath = 33, 
-    RulePathAlternatives = 34, RulePathSequence = 35, RulePathAtom = 36, 
-    RulePathSuffix = 37, RulePathType = 38, RuleNode = 39, RuleFixedNode = 40, 
-    RuleFixedNodeInside = 41, RuleEdge = 42, RuleEdgeInside = 43, RuleVarNode = 44, 
-    RuleProperties = 45, RuleProperty = 46, RuleIdentifier = 47, RuleBoolValue = 48, 
+    RuleRoot = 0, RuleMatchQuery = 1, RuleInsertPatterns = 2, RuleInsertLinearPattern = 3, 
+    RuleInsertPlainNode = 4, RuleInsertPlainNodeInside = 5, RuleInsertPlainEdge = 6, 
+    RuleProjectSimilarity = 7, RuleMetricType = 8, RuleDescribeQuery = 9, 
+    RuleDescribeFlag = 10, RuleSetStatement = 11, RuleMatchStatement = 12, 
+    RuleWhereStatement = 13, RuleGroupByStatement = 14, RuleOrderByStatement = 15, 
+    RuleReturnStatement = 16, RuleLimitOffsetClauses = 17, RuleLimitClause = 18, 
+    RuleOffsetClause = 19, RuleSetItem = 20, RuleReturnItem = 21, RuleAggregateFunc = 22, 
+    RuleOrderByItem = 23, RuleGroupByItem = 24, RuleGraphPattern = 25, RuleOptionalPattern = 26, 
+    RuleSimilaritySearch = 27, RuleBruteSimilaritySearch = 28, RuleTensor = 29, 
+    RuleBasicPattern = 30, RuleLinearPattern = 31, RulePath = 32, RulePathAlternatives = 33, 
+    RulePathSequence = 34, RulePathAtom = 35, RulePathSuffix = 36, RulePathType = 37, 
+    RuleNode = 38, RuleFixedNode = 39, RuleFixedNodeInside = 40, RuleEdge = 41, 
+    RuleEdgeInside = 42, RuleVarNode = 43, RuleProperties = 44, RuleProperty = 45, 
+    RuleConditionalOrType = 46, RuleIdentifier = 47, RuleBoolValue = 48, 
     RuleNumericValue = 49, RuleDatatypeValue = 50, RuleValue = 51, RuleConditionalOrExpr = 52, 
     RuleConditionalAndExpr = 53, RuleComparisonExpr = 54, RuleAdditiveExpr = 55, 
     RuleMultiplicativeExpr = 56, RuleUnaryExpr = 57, RuleAtomicExpr = 58, 
-    RuleValueExpr = 59, RuleExprTypename = 60, RuleKeyword = 61
+    RuleFunction = 59, RuleRegex = 60, RuleExprTypename = 61, RuleKeyword = 62
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -72,17 +73,15 @@ public:
 
   class RootContext;
   class MatchQueryContext;
+  class InsertPatternsContext;
+  class InsertLinearPatternContext;
+  class InsertPlainNodeContext;
+  class InsertPlainNodeInsideContext;
+  class InsertPlainEdgeContext;
   class ProjectSimilarityContext;
   class MetricTypeContext;
   class DescribeQueryContext;
   class DescribeFlagContext;
-  class InsertQueryContext;
-  class InsertLabelListContext;
-  class InsertPropertyListContext;
-  class InsertEdgeListContext;
-  class InsertLabelElementContext;
-  class InsertPropertyElementContext;
-  class InsertEdgeElementContext;
   class SetStatementContext;
   class MatchStatementContext;
   class WhereStatementContext;
@@ -100,6 +99,7 @@ public:
   class GraphPatternContext;
   class OptionalPatternContext;
   class SimilaritySearchContext;
+  class BruteSimilaritySearchContext;
   class TensorContext;
   class BasicPatternContext;
   class LinearPatternContext;
@@ -117,6 +117,7 @@ public:
   class VarNodeContext;
   class PropertiesContext;
   class PropertyContext;
+  class ConditionalOrTypeContext;
   class IdentifierContext;
   class BoolValueContext;
   class NumericValueContext;
@@ -129,7 +130,8 @@ public:
   class MultiplicativeExprContext;
   class UnaryExprContext;
   class AtomicExprContext;
-  class ValueExprContext;
+  class FunctionContext;
+  class RegexContext;
   class ExprTypenameContext;
   class KeywordContext; 
 
@@ -138,9 +140,9 @@ public:
     RootContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *EOF();
+    InsertPatternsContext *insertPatterns();
     MatchQueryContext *matchQuery();
     DescribeQueryContext *describeQuery();
-    InsertQueryContext *insertQuery();
     SetStatementContext *setStatement();
 
 
@@ -157,6 +159,7 @@ public:
     MatchStatementContext *matchStatement();
     ReturnStatementContext *returnStatement();
     ProjectSimilarityContext *projectSimilarity();
+    BruteSimilaritySearchContext *bruteSimilaritySearch();
     WhereStatementContext *whereStatement();
     GroupByStatementContext *groupByStatement();
     OrderByStatementContext *orderByStatement();
@@ -167,6 +170,90 @@ public:
   };
 
   MatchQueryContext* matchQuery();
+
+  class  InsertPatternsContext : public antlr4::ParserRuleContext {
+  public:
+    InsertPatternsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_INSERT();
+    std::vector<InsertLinearPatternContext *> insertLinearPattern();
+    InsertLinearPatternContext* insertLinearPattern(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  InsertPatternsContext* insertPatterns();
+
+  class  InsertLinearPatternContext : public antlr4::ParserRuleContext {
+  public:
+    InsertLinearPatternContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<InsertPlainNodeContext *> insertPlainNode();
+    InsertPlainNodeContext* insertPlainNode(size_t i);
+    std::vector<InsertPlainEdgeContext *> insertPlainEdge();
+    InsertPlainEdgeContext* insertPlainEdge(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  InsertLinearPatternContext* insertLinearPattern();
+
+  class  InsertPlainNodeContext : public antlr4::ParserRuleContext {
+  public:
+    InsertPlainNodeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *R_PAR();
+    InsertPlainNodeInsideContext *insertPlainNodeInside();
+    std::vector<antlr4::tree::TerminalNode *> TYPE();
+    antlr4::tree::TerminalNode* TYPE(size_t i);
+    PropertiesContext *properties();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  InsertPlainNodeContext* insertPlainNode();
+
+  class  InsertPlainNodeInsideContext : public antlr4::ParserRuleContext {
+  public:
+    InsertPlainNodeInsideContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    IdentifierContext *identifier();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  InsertPlainNodeInsideContext* insertPlainNodeInside();
+
+  class  InsertPlainEdgeContext : public antlr4::ParserRuleContext {
+  public:
+    InsertPlainEdgeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LT();
+    std::vector<antlr4::tree::TerminalNode *> MINUS();
+    antlr4::tree::TerminalNode* MINUS(size_t i);
+    antlr4::tree::TerminalNode *LSQUARE_BRACKET();
+    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *RSQUARE_BRACKET();
+    PropertiesContext *properties();
+    antlr4::tree::TerminalNode *GT();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  InsertPlainEdgeContext* insertPlainEdge();
 
   class  ProjectSimilarityContext : public antlr4::ParserRuleContext {
   public:
@@ -239,129 +326,6 @@ public:
   };
 
   DescribeFlagContext* describeFlag();
-
-  class  InsertQueryContext : public antlr4::ParserRuleContext {
-  public:
-    InsertQueryContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_INSERT();
-    InsertLabelListContext *insertLabelList();
-    InsertPropertyListContext *insertPropertyList();
-    InsertEdgeListContext *insertEdgeList();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertQueryContext* insertQuery();
-
-  class  InsertLabelListContext : public antlr4::ParserRuleContext {
-  public:
-    InsertLabelListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_LABEL();
-    std::vector<InsertLabelElementContext *> insertLabelElement();
-    InsertLabelElementContext* insertLabelElement(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertLabelListContext* insertLabelList();
-
-  class  InsertPropertyListContext : public antlr4::ParserRuleContext {
-  public:
-    InsertPropertyListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_PROPERTY();
-    std::vector<InsertPropertyElementContext *> insertPropertyElement();
-    InsertPropertyElementContext* insertPropertyElement(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertPropertyListContext* insertPropertyList();
-
-  class  InsertEdgeListContext : public antlr4::ParserRuleContext {
-  public:
-    InsertEdgeListContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_EDGE();
-    std::vector<InsertEdgeElementContext *> insertEdgeElement();
-    InsertEdgeElementContext* insertEdgeElement(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertEdgeListContext* insertEdgeList();
-
-  class  InsertLabelElementContext : public antlr4::ParserRuleContext {
-  public:
-    InsertLabelElementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *COMMA();
-    antlr4::tree::TerminalNode *STRING();
-    antlr4::tree::TerminalNode *R_PAR();
-    IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *ANON_ID();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertLabelElementContext* insertLabelElement();
-
-  class  InsertPropertyElementContext : public antlr4::ParserRuleContext {
-  public:
-    InsertPropertyElementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *L_PAR();
-    FixedNodeInsideContext *fixedNodeInside();
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *STRING();
-    ValueContext *value();
-    antlr4::tree::TerminalNode *R_PAR();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertPropertyElementContext* insertPropertyElement();
-
-  class  InsertEdgeElementContext : public antlr4::ParserRuleContext {
-  public:
-    InsertEdgeElementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *L_PAR();
-    std::vector<FixedNodeInsideContext *> fixedNodeInside();
-    FixedNodeInsideContext* fixedNodeInside(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *R_PAR();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  InsertEdgeElementContext* insertEdgeElement();
 
   class  SetStatementContext : public antlr4::ParserRuleContext {
   public:
@@ -742,6 +706,31 @@ public:
 
   SimilaritySearchContext* similaritySearch();
 
+  class  BruteSimilaritySearchContext : public antlr4::ParserRuleContext {
+  public:
+    BruteSimilaritySearchContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_BRUTE_SIMILARITY_SEARCH();
+    antlr4::tree::TerminalNode *L_PAR();
+    std::vector<antlr4::tree::TerminalNode *> VARIABLE();
+    antlr4::tree::TerminalNode* VARIABLE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *STRING();
+    MetricTypeContext *metricType();
+    antlr4::tree::TerminalNode *UNSIGNED_INTEGER();
+    antlr4::tree::TerminalNode *R_PAR();
+    FixedNodeInsideContext *fixedNodeInside();
+    TensorContext *tensor();
+    antlr4::tree::TerminalNode *PLUS();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  BruteSimilaritySearchContext* bruteSimilaritySearch();
+
   class  TensorContext : public antlr4::ParserRuleContext {
   public:
     TensorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1085,7 +1074,52 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  Property4Context : public PropertyContext {
+  public:
+    Property4Context(PropertyContext *ctx);
+
+    antlr4::Token *op = nullptr;
+    IdentifierContext *identifier();
+    ValueContext *value();
+    antlr4::tree::TerminalNode *EQ();
+    antlr4::tree::TerminalNode *NEQ();
+    antlr4::tree::TerminalNode *LT();
+    antlr4::tree::TerminalNode *GT();
+    antlr4::tree::TerminalNode *LEQ();
+    antlr4::tree::TerminalNode *GEQ();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Property3Context : public PropertyContext {
+  public:
+    Property3Context(PropertyContext *ctx);
+
+    IdentifierContext *identifier();
+    antlr4::tree::TerminalNode *K_IS();
+    ExprTypenameContext *exprTypename();
+    antlr4::tree::TerminalNode *K_NOT();
+    std::vector<ConditionalOrTypeContext *> conditionalOrType();
+    ConditionalOrTypeContext* conditionalOrType(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   PropertyContext* property();
+
+  class  ConditionalOrTypeContext : public antlr4::ParserRuleContext {
+  public:
+    ConditionalOrTypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_OR();
+    ExprTypenameContext *exprTypename();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ConditionalOrTypeContext* conditionalOrType();
 
   class  IdentifierContext : public antlr4::ParserRuleContext {
   public:
@@ -1242,10 +1276,10 @@ public:
 
   class  AdditiveExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s77 = nullptr;
+    antlr4::Token *s80 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s78 = nullptr;
-    antlr4::Token *_tset1214 = nullptr;
+    antlr4::Token *s81 = nullptr;
+    antlr4::Token *_tset1342 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<MultiplicativeExprContext *> multiplicativeExpr();
@@ -1264,11 +1298,11 @@ public:
 
   class  MultiplicativeExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s74 = nullptr;
+    antlr4::Token *s77 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s71 = nullptr;
-    antlr4::Token *s75 = nullptr;
-    antlr4::Token *_tset1233 = nullptr;
+    antlr4::Token *s74 = nullptr;
+    antlr4::Token *s78 = nullptr;
+    antlr4::Token *_tset1361 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExprContext *> unaryExpr();
@@ -1293,9 +1327,9 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *K_NOT();
     UnaryExprContext *unaryExpr();
+    AtomicExprContext *atomicExpr();
     antlr4::tree::TerminalNode *PLUS();
     antlr4::tree::TerminalNode *MINUS();
-    AtomicExprContext *atomicExpr();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1317,11 +1351,20 @@ public:
    
   };
 
-  class  ExprValueExprContext : public AtomicExprContext {
+  class  ExprFunctionContext : public AtomicExprContext {
   public:
-    ExprValueExprContext(AtomicExprContext *ctx);
+    ExprFunctionContext(AtomicExprContext *ctx);
 
-    ValueExprContext *valueExpr();
+    FunctionContext *function();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprValueContext : public AtomicExprContext {
+  public:
+    ExprValueContext(AtomicExprContext *ctx);
+
+    ValueContext *value();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -1349,22 +1392,37 @@ public:
 
   AtomicExprContext* atomicExpr();
 
-  class  ValueExprContext : public antlr4::ParserRuleContext {
+  class  FunctionContext : public antlr4::ParserRuleContext {
   public:
-    ValueExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    FunctionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *UNSIGNED_INTEGER();
-    antlr4::tree::TerminalNode *UNSIGNED_FLOAT();
-    antlr4::tree::TerminalNode *STRING();
-    BoolValueContext *boolValue();
-    DatatypeValueContext *datatypeValue();
+    RegexContext *regex();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
    
   };
 
-  ValueExprContext* valueExpr();
+  FunctionContext* function();
+
+  class  RegexContext : public antlr4::ParserRuleContext {
+  public:
+    RegexContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_REGEX();
+    antlr4::tree::TerminalNode *L_PAR();
+    std::vector<ConditionalOrExprContext *> conditionalOrExpr();
+    ConditionalOrExprContext* conditionalOrExpr(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  RegexContext* regex();
 
   class  ExprTypenameContext : public antlr4::ParserRuleContext {
   public:
@@ -1397,6 +1455,7 @@ public:
     antlr4::tree::TerminalNode *K_BY();
     antlr4::tree::TerminalNode *K_BOOL();
     antlr4::tree::TerminalNode *K_COUNT();
+    antlr4::tree::TerminalNode *K_DELETE();
     antlr4::tree::TerminalNode *K_DESCRIBE();
     antlr4::tree::TerminalNode *K_DESC();
     antlr4::tree::TerminalNode *K_DISTINCT();

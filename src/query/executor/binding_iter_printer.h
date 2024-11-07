@@ -128,7 +128,8 @@ public:
     virtual void visit(Paths::AnyTrails::DFSCheck&)                override;
     virtual void visit(Paths::AnyTrails::DFSEnum&)                 override;
 
-    virtual void visit(LSH::ForestIndexTopK&)   override;
-    virtual void visit(LSH::ForestIndexTopAll&) override;
+    virtual void visit(LSH::ForestIndexTopK&)         override;
+    virtual void visit(LSH::ForestIndexTopAll&)       override;
     virtual void visit(LSH::ProjectTensorSimilarity&) override;
+    virtual void visit(LSH::BruteSimilaritySearch&)   override;
 };

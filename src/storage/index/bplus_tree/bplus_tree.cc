@@ -123,6 +123,35 @@ double BPlusTree<N>::estimate_records(const BPlusTreeDir<N>& root,
 
 
 /******************************* BptIter ********************************/
+template<std::size_t N>
+BptIter<N>::BptIter(bool* interruption_requested, SearchLeafResult<N>&& leaf_and_pos, const Record<N>& max) noexcept :
+    interruption_requested(interruption_requested),
+    current_pos(leaf_and_pos.result_index),
+    max(max),
+    current_leaf(std::move(leaf_and_pos.leaf))
+{
+    current_leaf.set_redundant_record(current_record);
+}
+
+template<std::size_t N>
+BptIter<N>::BptIter(BptIter&& other) noexcept :
+    interruption_requested(other.interruption_requested),
+    current_pos(other.current_pos),
+    max(std::move(other.max)),
+    current_leaf(std::move(other.current_leaf))
+{
+    current_leaf.set_redundant_record(current_record);
+}
+
+template<std::size_t N>
+void BptIter<N>::operator=(BptIter&& other) noexcept {
+    interruption_requested = other.interruption_requested;
+    current_pos            = other.current_pos;
+    max                    = std::move(other.max);
+    current_leaf           = std::move(other.current_leaf);
+    current_leaf.set_redundant_record(current_record);
+}
+
 template <std::size_t N>
 const Record<N>* BptIter<N>::next() {
     while (true) {
@@ -130,7 +159,7 @@ const Record<N>* BptIter<N>::next() {
             throw InterruptedException();
         }
         if (current_pos < current_leaf.get_value_count()) {
-            current_leaf.get_record(current_pos, &current_record);
+            current_leaf.update_record(current_pos, current_record);
             // check if res is less than max
             for (size_t i = 0; i < N; ++i) {
                 if (current_record[i] < max[i]) {
@@ -148,6 +177,7 @@ const Record<N>* BptIter<N>::next() {
         else if (current_leaf.has_next()) {
             current_leaf.update_to_next_leaf();
             current_pos = 0;
+            current_leaf.set_redundant_record(current_record);
             // continue while
         }
         else {

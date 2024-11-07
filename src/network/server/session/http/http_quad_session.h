@@ -10,7 +10,6 @@
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/op.h"
 
-
 namespace MDBServer {
 
 class Server;
@@ -47,16 +46,14 @@ private:
 
     std::chrono::seconds query_timeout;
 
-    void execute_readonly_query(const std::string& query, std::ostream& os, MQL::ReturnType response_type);
+    void execute_query(const std::string& query, std::ostream& os, MQL::ReturnType response_type);
 
-    std::unique_ptr<Op> create_readonly_logical_plan(const std::string& query);
+    std::unique_ptr<Op> create_logical_plan(const std::string& query);
 
     std::unique_ptr<QueryExecutor> create_readonly_physical_plan(Op& logical_plan, MQL::ReturnType response_type);
 
     void execute_readonly_query_plan(QueryExecutor& physical_plan, std::ostream& os, MQL::ReturnType response_type);
 
-    void execute_update_query(const std::string& query, std::ostream& os);
-
-    // std::unique_ptr<MQL::OpUpdate> create_update_logical_plan(const std::string& query);
+    void execute_update(Op& logical_plan, BufferManager::VersionScope& version_scope, std::ostream& os);
 };
 } // namespace MDBServer

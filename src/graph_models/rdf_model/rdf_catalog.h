@@ -4,16 +4,17 @@
 #include <ostream>
 #include <string>
 
+#include <boost/unordered_map.hpp>
+
 #include "graph_models/rdf_model/iri_prefixes.h"
 #include "storage/catalog/catalog.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 
 class RdfCatalog : public Catalog {
 public:
     static constexpr uint64_t MODEL_ID = 1;
 
-    static constexpr uint64_t VERSION  = 4;
+    static constexpr uint64_t VERSION  = 5;
 
     // The database can handle more than MAX_LANG_AND_DTT languages and datatypes,
     // but the catalog can save up to this this many
@@ -60,7 +61,7 @@ public:
         blank_node_count = count;
     }
 
-    void set_predicate_stats(robin_hood::unordered_map<uint64_t, uint64_t>&& predicate_stats) {
+    void set_predicate_stats(boost::unordered_map<uint64_t, uint64_t>&& predicate_stats) {
         predicate2total_count = std::move(predicate_stats);
     }
 
@@ -103,5 +104,5 @@ private:
     uint64_t equal_so_count;
     uint64_t equal_po_count;
 
-    robin_hood::unordered_map<uint64_t, uint64_t> predicate2total_count;
+    boost::unordered_map<uint64_t, uint64_t> predicate2total_count;
 };

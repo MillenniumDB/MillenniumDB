@@ -92,7 +92,7 @@ void PathPlan::print(std::ostream& os, int indent) const {
 
 double PathPlan::estimate_output_size() const {
     // TODO: find a better estimation
-    const auto total_connections = static_cast<double>(quad_model.catalog().connections_count);
+    const auto total_connections = static_cast<double>(quad_model.catalog.edge_count);
     return total_connections * total_connections;
 }
 
@@ -347,16 +347,16 @@ bool PathPlan::from_is_better_start_direction() const {
 
     for (auto& transition : automaton.from_to_connections[0]) {
         auto predicate_id = transition.type_id.id;
-        auto it = quad_model.catalog().type2total_count.find(predicate_id);
-        if (it != quad_model.catalog().type2total_count.end()) {
+        auto it = quad_model.catalog.type2total_count.find(predicate_id);
+        if (it != quad_model.catalog.type2total_count.end()) {
             cost_normal_dir += it->second;
         }
     }
 
     for (auto& transition : automaton_inverted.from_to_connections[0]) {
         auto predicate_id = transition.type_id.id;
-        auto it = quad_model.catalog().type2total_count.find(predicate_id);
-        if (it != quad_model.catalog().type2total_count.end()) {
+        auto it = quad_model.catalog.type2total_count.find(predicate_id);
+        if (it != quad_model.catalog.type2total_count.end()) {
             cost_inverse_dir += it->second;
         }
     }

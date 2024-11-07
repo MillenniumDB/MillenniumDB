@@ -4,11 +4,13 @@
 #include <queue>
 #include <type_traits>
 
+#include <boost/unordered/unordered_node_set.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
+
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths { namespace Any {
 
@@ -30,7 +32,7 @@ private:
     Binding* parent_binding;
 
     // Set of visited SearchStates
-    robin_hood::unordered_node_set<SearchState> visited;
+    boost::unordered_node_set<SearchState, std::hash<SearchState>> visited;
 
     // Queue for BFS. Pointers point to the states in visited
     std::queue<const SearchState*> open;
@@ -46,7 +48,7 @@ private:
 
     // Template type for storing nodes reached with a final state
     typename std::conditional<MULTIPLE_FINAL,
-                              robin_hood::unordered_set<uint64_t>,
+                              boost::unordered_flat_set<uint64_t>,
                               DummySet>::type reached_final;
 
 public:

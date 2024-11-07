@@ -6,13 +6,12 @@
 #include <cstring>
 
 #include "graph_models/rdf_model/conversions.h"
+#include "graph_models/rdf_model/iri_compression.h"
 #include "graph_models/rdf_model/iri_prefixes.h"
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "import/disk_vector.h"
 #include "import/exceptions.h"
 #include "import/external_string.h"
-#include "import/stats_processor.h"
-#include "storage/index/hash/strings_hash/strings_hash.h"
 #include "third_party/robin_hood/robin_hood.h"
 #include "third_party/serd/reader.h"
 #include "third_party/serd/serd.h"
@@ -37,7 +36,14 @@ public:
         equal_spo   (db_folder + "/tmp_equal_spo"),
         equal_sp    (db_folder + "/tmp_equal_sp"),
         equal_so    (db_folder + "/tmp_equal_so"),
-        equal_po    (db_folder + "/tmp_equal_po") {}
+        equal_po    (db_folder + "/tmp_equal_po")
+    {
+        buffer_iri = new char[StringManager::STRING_BLOCK_SIZE];
+    }
+
+    ~OnDiskImport() {
+        delete[] buffer_iri;
+    }
 
     SerdReader* reader;
 
@@ -223,6 +229,9 @@ private:
     uint64_t previous_external_strings_offset = 0;
 
     uint64_t external_strings_align_offset = 0;
+
+    // buffer used to store a copy of the iri and compress it
+    char* buffer_iri;
 
     void save_subject_id_iri(const SerdNode* subject) {
         auto subject_str = reinterpret_cast<const char*>(subject->buf);
@@ -430,14 +439,43 @@ private:
     ObjectId get_iri_id(const char* str, size_t str_len) {
         // If a prefix matches the IRI, store just the suffix and a pointer to the prefix
         auto [prefix_id, prefix_size] = prefixes.get_prefix_id(str, str_len);
+        uint64_t prefix_id_shifted = static_cast<uint64_t>(prefix_id) << 48;
 
         str += prefix_size;
         str_len -= prefix_size;
 
+        if (UUIDCompression::compress_lower(str, str_len, buffer_iri)) {
+            str_len = str_len - 20;
+            return ObjectId(get_or_create_external_id(buffer_iri, str_len) | ObjectId::MASK_IRI_UUID_LOWER
+                            | prefix_id_shifted);
+
+        } else if (UUIDCompression::compress_upper(str, str_len, buffer_iri)) {
+            str_len = str_len - 20;
+            return ObjectId(get_or_create_external_id(buffer_iri, str_len) | ObjectId::MASK_IRI_UUID_UPPER
+                            | prefix_id_shifted);
+        }
+
+        if (str_len >= HexCompression::MIN_LEN_TO_COMPRESS) {
+            auto lower_hex_length = HexCompression::get_lower_hex_length(str, str_len);
+            auto upper_hex_length = HexCompression::get_upper_hex_length(str, str_len);
+
+            // Compress lowercase hex characters
+            if (lower_hex_length >= upper_hex_length && lower_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
+                str_len = HexCompression::compress(str, str_len, lower_hex_length, buffer_iri);
+                return ObjectId(get_or_create_external_id(buffer_iri, str_len) | ObjectId::MASK_IRI_HEX_LOWER
+                                | prefix_id_shifted);
+
+            // Compress uppercase hex characters
+            } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
+                str_len = HexCompression::compress(str, str_len, upper_hex_length, buffer_iri);
+                return ObjectId(get_or_create_external_id(buffer_iri, str_len) | ObjectId::MASK_IRI_HEX_UPPER
+                                | prefix_id_shifted);
+            }
+        }
+
         if (str_len <= RDF_OID::MAX_INLINE_LEN_IRI) {
-            return Conversions::pack_iri_inline(str, prefix_id);
+            return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
         } else {
-            uint64_t prefix_id_shifted = static_cast<uint64_t>(prefix_id) << 48;
             return ObjectId(get_or_create_external_id(str, str_len) | ObjectId::MASK_IRI | prefix_id_shifted);
         }
     }

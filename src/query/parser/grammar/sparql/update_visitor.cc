@@ -116,7 +116,7 @@ ObjectId UpdateVisitor::handleIntegerString(const std::string& str,
 
 
 ObjectId UpdateVisitor::get_new_blank_node() {
-    auto new_blank_id = rdf_model.catalog().get_new_blank_node();
+    auto new_blank_id = rdf_model.catalog.get_new_blank_node();
 
     return Conversions::pack_blank_inline(new_blank_id);
 }

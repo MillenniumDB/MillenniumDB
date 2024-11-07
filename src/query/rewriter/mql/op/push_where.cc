@@ -28,6 +28,15 @@ void PushWhere::visit(OpProjectSimilarity& op_project_similarity) {
 }
 
 
+void PushWhere::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
+    op_brute_similarity_search.op->accept_visitor(*this);
+    if (must_delete_where) {
+        must_delete_where = false;
+        op_brute_similarity_search.op = std::move(where_child);
+    }
+}
+
+
 void PushWhere::visit(OpReturn& op_return) {
     op_return.op->accept_visitor(*this);
     if (must_delete_where) {
@@ -140,3 +149,4 @@ void PushWhereExpr::visit(ExprLess&)            { can_remove = false; }
 void PushWhereExpr::visit(ExprNotEquals&)       { can_remove = false; }
 void PushWhereExpr::visit(ExprNot&)             { can_remove = false; }
 void PushWhereExpr::visit(ExprOr&)              { can_remove = false; }
+void PushWhereExpr::visit(ExprRegex&)           { can_remove = false; }

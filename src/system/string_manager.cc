@@ -114,6 +114,38 @@ void StringManager::print(std::ostream& os, uint64_t id) const {
     }
 }
 
+
+uint64_t StringManager::print_to_buffer(char* buffer, uint64_t id) {
+    uint64_t current_block_number = id/STRING_BLOCK_SIZE;
+    char* current_block = string_blocks[current_block_number];
+    char* ptr = current_block + (id % STRING_BLOCK_SIZE);
+
+    uint64_t bytes_for_len;
+    const uint64_t len = get_string_len(ptr, &bytes_for_len);
+    ptr += bytes_for_len;
+
+    auto current_offset = (id + bytes_for_len) % STRING_BLOCK_SIZE;
+    auto remaining_string = len;
+
+    // We suppose that every string is smaller than STRING_BLOCK_SIZE
+    assert(remaining_string < STRING_BLOCK_SIZE);
+    auto remaining_in_page = STRING_BLOCK_SIZE - current_offset;
+    if (remaining_string < remaining_in_page) {
+        memcpy(buffer, ptr, remaining_string);
+    } else {
+        memcpy(buffer, ptr, remaining_in_page);
+
+        current_block_number++;
+        ptr = string_blocks[current_block_number];
+        remaining_string -= remaining_in_page;
+        assert(remaining_string < STRING_BLOCK_SIZE);
+
+        memcpy(buffer + remaining_in_page, ptr, remaining_string);
+    }
+    return len;
+}
+
+
 bool StringManager::bytes_eq(const char* bytes, uint64_t size, uint64_t id) const {
     char* current_block = string_blocks[id/STRING_BLOCK_SIZE];
     char* ptr = current_block + (id % STRING_BLOCK_SIZE);

@@ -26,6 +26,7 @@ public:
     void visit(OpSet&) override;
     void visit(OpWhere&) override;
     void visit(OpProjectSimilarity&) override;
+    void visit(OpBruteSimilaritySearch&) override;
 
     void visit(OpInsert&) override { }
     void visit(OpEdge&) override { }
@@ -70,6 +71,7 @@ public:
     void visit(ExprAnd&) override;
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
+    void visit(ExprRegex&) override;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;

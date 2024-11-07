@@ -6,6 +6,7 @@
 
 std::unique_ptr<Plan> GreedyOptimizer::get_plan(const std::vector<std::unique_ptr<Plan>>& real_base_plans)
 {
+    assert(!real_base_plans.empty());
     const auto base_plans_size = real_base_plans.size();
 
     // We have to duplicate the base plans to not affect them outside this function
@@ -13,7 +14,6 @@ std::unique_ptr<Plan> GreedyOptimizer::get_plan(const std::vector<std::unique_pt
     for (auto& plan : real_base_plans) {
         base_plans.push_back(plan->clone());
     }
-    assert(base_plans_size > 0);
 
     // choose the first scan
     int best_index = 0;

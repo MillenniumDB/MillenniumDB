@@ -26,7 +26,8 @@ public:
         object_assigned    (other.object_assigned),
         path_semantic      (other.path_semantic),
         automaton          (other.automaton),
-        automaton_inverted (other.automaton_inverted) { }
+        automaton_inverted (other.automaton_inverted),
+        cached_output_estimation_is_valid (other.cached_output_estimation_is_valid) { }
 
     std::unique_ptr<Plan> clone() const override {
         return std::make_unique<PathPlan>(*this);
@@ -69,6 +70,12 @@ private:
 
     RPQ_DFA automaton;
     RPQ_DFA automaton_inverted;
+
+    mutable double cached_output_estimation;
+
+    mutable bool cached_output_estimation_is_valid = false;
+
+    double _estimate_output_size() const;
 
     // When we can start the path in either way, we want to choose the cheapest one
     // This method returns `automaton` or `automaton_inverted` depending on cardinality of

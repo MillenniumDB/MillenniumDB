@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -11,7 +12,6 @@
 #include <queue>
 #include <stdexcept>
 #include <vector>
-#include <thread>
 
 #include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
@@ -42,6 +42,12 @@ public:
         }
         file.close();
         file.open(filename, std::ios::in|std::ios::out|std::ios::binary);
+
+        compression_buffer = new char[VPage::SIZE*2];
+    }
+
+    ~DiskVector() {
+        delete[] compression_buffer;
     }
 
     // returns the tuple count
@@ -130,6 +136,10 @@ private:
         return (a / b) + (a % b != 0);
     }
 
+    uint32_t get_page_size(std::bitset<N * 8> bitset, uint64_t leaf_records) {
+        return 2 * sizeof(uint32_t) + N + bitset.count() + leaf_records * (sizeof(uint64_t) * N - bitset.count());
+    }
+
     void merge_sort(const std::string& base_name, StatsProcessor<N>& stat_processor) {
         BPTLeafWriter<N> leaf_writer(base_name + ".leaf");
         BPTDirWriter<N> dir_writer(base_name + ".dir");
@@ -149,34 +159,68 @@ private:
             uint32_t leaf_current_block = 0;
             uint64_t current_tuple = 0;
             uint64_t valid_tuples = total_tuples - repeated_tuples;
+
+            std::bitset<N * 8> bitset_tmp;
+            std::bitset<N * 8> bitset;
+            uint32_t leaf_tuples = 0;
+
             while (current_tuple < valid_tuples) {
                 // skip first leaf from going into B+tree directory
                 if (current_tuple != 0) {
                     dir_writer.bulk_insert(ptr, 0, leaf_current_block);
                 }
 
+                char* first_record_ptr = (char*) ptr;
+                bitset_tmp.set();
+                bitset.set();
+
+                while (current_tuple + leaf_tuples < valid_tuples) {
+                    char* record_ptr = (char*) (ptr + leaf_tuples);
+
+                    for (size_t i = 0; i < sizeof(uint64_t) * N; ++i) {
+                        if (bitset_tmp[i] && record_ptr[i] != first_record_ptr[i]) {
+                            bitset_tmp.set(i, 0);
+                        }
+                    }
+
+                    if (get_page_size(bitset_tmp, leaf_tuples + 1) > VPage::SIZE) {
+                        break;
+                    }
+
+                    bitset = bitset_tmp;
+                    leaf_tuples++;
+                }
+
+                write_to_buffer(ptr, bitset, leaf_tuples);
+
                 uint64_t tuples_written;
-                if (current_tuple + leaf_writer.max_records < valid_tuples) {
+                if (current_tuple + leaf_tuples < valid_tuples) {
                     // this leaf is full and there are more leaves
-                    tuples_written = leaf_writer.max_records;
-                    leaf_writer.process_block(reinterpret_cast<char*>(ptr),
-                                              leaf_writer.max_records,
+                    tuples_written = leaf_tuples;
+                    leaf_writer.process_block(compression_buffer,
+                                              tuples_written,
+                                              bitset,
                                               ++leaf_current_block);
                 } else {
                     // last leaf
-                    tuples_written = valid_tuples - current_tuple;
-                    leaf_writer.process_block(reinterpret_cast<char*>(ptr),
+                    tuples_written = leaf_tuples;
+                    leaf_writer.process_block(compression_buffer,
                                               tuples_written,
+                                              bitset,
                                               0);
                 }
+
+
                 for (uint64_t i = 0; i < tuples_written; i++) {
                     stat_processor.process_tuple(*(ptr + i));
                 }
                 // Its better to sum a compile-time constant than a variable (tuples_written)
                 // doesn't matter when we overflow
-                current_tuple += leaf_writer.max_records;
-                ptr += leaf_writer.max_records;
+                leaf_tuples = 0;
+                current_tuple += tuples_written;
+                ptr += tuples_written;
             }
+
             return;
         }
 
@@ -262,31 +306,61 @@ private:
         std::array<uint64_t, N> last_seen_record; // used to remove duplicates
         for (uint64_t i = 0; i < N; i++) { last_seen_record[i] = UINT64_MAX; }
 
+        std::bitset<N * 8> bitset_tmp;
+        std::bitset<N * 8> bitset;
+        bitset_tmp.set();
+        bitset.set();
+
+        std::array<uint64_t, N> first_record = queue.top().first;
+        char* first_record_ptr = (char*) &first_record;
+
         // Merge runs
         while (!queue.empty()) {
             const auto queue_top_pair = queue.top();
             queue.pop();
 
-            if (output_block_curr == BPTLeafWriter<N>::max_records) {
+            // add tuple to output only if distinct
+            if (queue_top_pair.first != last_seen_record) {
+                last_seen_record = queue_top_pair.first;
+                stat_processor.process_tuple(last_seen_record);
+                char* record_ptr = (char*) &last_seen_record;
+
+                // update the bitset
+                for (size_t i = 0; i < sizeof(uint64_t) * N; ++i) {
+                    if (bitset_tmp[i] && record_ptr[i] != first_record_ptr[i]) {
+                        bitset_tmp.set(i, 0);
+                    }
+                }
+
+                output_block[output_block_curr] = queue_top_pair.first;
+                output_block_curr++;
+            }
+
+            if (get_page_size(bitset_tmp, output_block_curr) > VPage::SIZE) {
                 // skip first leaf
                 if (leaf_current_block > 0) {
                     dir_writer.bulk_insert(output_block, 0, leaf_current_block);
                 }
+
+                write_to_buffer(output_block, bitset, output_block_curr - 1);
+
                 ++leaf_current_block;
                 uint32_t next_bpt_block = leaf_current_block < leaf_last_block ? leaf_current_block : 0;
-                leaf_writer.process_block((char*)output_block,
-                                          leaf_writer.max_records,
+                leaf_writer.process_block(compression_buffer,
+                                          output_block_curr - 1,
+                                          bitset,
                                           next_bpt_block);
-                output_block_curr = 0;
+
+
+                output_block[0] = last_seen_record;
+                output_block_curr = 1;
+                first_record = last_seen_record;
+                first_record_ptr = (char*) &first_record;
+                bitset_tmp.set();
+                bitset.set();
             }
 
-            // add tuple to output only if distinct
-            if (queue_top_pair.first != last_seen_record) {
-                last_seen_record = queue_top_pair.first;
-                stat_processor.process_tuple(queue_top_pair.first);
-                output_block[output_block_curr] = queue_top_pair.first;
-                output_block_curr++;
-            }
+            bitset = bitset_tmp;
 
             const auto min_run = queue_top_pair.second;
             current_pos[min_run]++;
@@ -320,7 +394,8 @@ private:
             if (leaf_current_block > 0) {
                 dir_writer.bulk_insert(output_block, 0, leaf_current_block);
             }
-            leaf_writer.process_block((char*)output_block, output_block_curr, 0);
+            write_to_buffer(output_block, bitset, output_block_curr);
+            leaf_writer.process_block(compression_buffer, output_block_curr, bitset, 0);
         }
 
         // delete aux arrays
@@ -331,6 +406,37 @@ private:
         delete[](end_block);
 
         return;
+    }
+
+
+    void write_to_buffer(std::array<uint64_t, N>* records_buffer, std::bitset<N * 8> bitset, uint32_t n_records) {
+        uint64_t buffer_pos = 0;
+
+        // bitset
+        unsigned long bits_ul = bitset.to_ulong();
+        memcpy(compression_buffer, &bits_ul, N);
+        buffer_pos += N;
+
+        char* first_record_ptr = (char*) records_buffer;
+
+        // redundant bytes
+        for (size_t i = 0; i < N * 8; ++i) {
+            if (bitset[i]) {
+                compression_buffer[buffer_pos] = first_record_ptr[i];
+                buffer_pos++;
+            }
+        }
+
+        // non redundant bytes of each record
+        for (uint32_t i = 0; i < n_records; ++i) {
+            char* record_ptr = (char*) (records_buffer + i);
+            for (size_t j = 0; j < N * 8; ++j) {
+                if (!bitset[j]) {
+                    compression_buffer[buffer_pos] = record_ptr[j];
+                    buffer_pos++;
+                }
+            }
+        }
     }
 
 
@@ -521,6 +627,7 @@ private:
     uint64_t iter_buffer_offset;
 
     char* buffer;
+    char* compression_buffer;
 
     // will be set and used only when total_runs = 1
     uint64_t repeated_tuples = 0;

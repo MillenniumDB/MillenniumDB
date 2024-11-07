@@ -100,6 +100,16 @@ public:
     static constexpr uint64_t MASK_PATH                    = 0x90'00000000000000UL; // 0b1001'00'00  GENERIC
     static constexpr uint64_t MASK_NOT_FOUND               = 0xA0'00000000000000UL; // 0b1010'00'00  GENERIC
 
+    static constexpr uint64_t MASK_IRI_UUID_LOWER          = 0xA1'00000000000000UL; // 0b1010'00'01
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP      = 0xA2'00000000000000UL; // 0b1010'00'10
+    static constexpr uint64_t MASK_IRI_UUID_UPPER          = 0xA5'00000000000000UL; // 0b1010'01'01
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP      = 0xA6'00000000000000UL; // 0b1010'01'10
+
+    static constexpr uint64_t MASK_IRI_HEX_LOWER           = 0xA9'00000000000000UL; // 0b1010'10'01
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP       = 0xAA'00000000000000UL; // 0b1010'10'10
+    static constexpr uint64_t MASK_IRI_HEX_UPPER           = 0xAD'00000000000000UL; // 0b1010'11'01
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP       = 0xAE'00000000000000UL; // 0b1010'11'10
+
     static_assert(MASK_NEGATIVE_INT < MASK_POSITIVE_INT, "Integers won't be ordered properly in the B+Tree.");
     static_assert(MASK_NEGATIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");
     static_assert(MASK_POSITIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");

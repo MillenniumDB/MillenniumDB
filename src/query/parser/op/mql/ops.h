@@ -1,21 +1,22 @@
 #pragma once
 
-#include "query/parser/op/mql/graph_pattern/op_basic_graph_pattern.h"
-#include "query/parser/op/mql/graph_pattern/op_disjoint_term.h"
-#include "query/parser/op/mql/graph_pattern/op_disjoint_var.h"
-#include "query/parser/op/mql/graph_pattern/op_edge.h"
-#include "query/parser/op/mql/graph_pattern/op_label.h"
-#include "query/parser/op/mql/graph_pattern/op_optional.h"
-#include "query/parser/op/mql/graph_pattern/op_path.h"
-#include "query/parser/op/mql/graph_pattern/op_project_similarity.h"
-#include "query/parser/op/mql/graph_pattern/op_property.h"
-#include "query/parser/op/mql/graph_pattern/op_similarity_search.h"
-#include "query/parser/op/mql/op_describe.h"
-#include "query/parser/op/mql/op_group_by.h"
-#include "query/parser/op/mql/op_insert.h"
-#include "query/parser/op/mql/op_match.h"
-#include "query/parser/op/mql/op_order_by.h"
-#include "query/parser/op/mql/op_return.h"
-#include "query/parser/op/mql/op_set.h"
-#include "query/parser/op/mql/op_where.h"
-#include "query/parser/op/mql/update/op_update.h"
+#include "query/parser/op/mql/graph_pattern/op_basic_graph_pattern.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_brute_similarity_search.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_disjoint_term.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_disjoint_var.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_edge.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_label.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_optional.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_path.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_project_similarity.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_property.h" // IWYU pragma: export
+#include "query/parser/op/mql/graph_pattern/op_similarity_search.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_describe.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_group_by.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_match.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_order_by.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_return.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_set.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_where.h" // IWYU pragma: export
+#include "query/parser/op/mql/update/op_insert.h" // IWYU pragma: export
+// #include "query/parser/op/mql/update/op_update.h" // IWYU pragma: export

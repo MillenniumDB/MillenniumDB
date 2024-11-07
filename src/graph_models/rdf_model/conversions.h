@@ -108,4 +108,14 @@ namespace SPARQL { namespace Conversions {
     std::string to_lexical_str(ObjectId oid);
 
     std::ostream& debug_print(std::ostream& os, ObjectId object_id);
+
+    void print_iri_uuid_lower(ObjectId oid, std::ostream& os);
+    void print_iri_uuid_upper(ObjectId oid, std::ostream& os);
+    void print_tmp_iri_uuid_lower(ObjectId oid, std::ostream& os);
+    void print_tmp_iri_uuid_upper(ObjectId oid, std::ostream& os);
+
+    void print_iri_hex_lower(ObjectId oid, std::ostream& os);
+    void print_tmp_iri_hex_lower(ObjectId oid, std::ostream& os);
+    void print_iri_hex_upper(ObjectId oid, std::ostream& os);
+    void print_tmp_iri_hex_upper(ObjectId oid, std::ostream& os);
 }} // namespace SPARQL::Conversions

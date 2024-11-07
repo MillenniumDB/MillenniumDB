@@ -166,6 +166,19 @@ void ExprPrinter::visit(ExprOr& expr) {
 }
 
 
+void ExprPrinter::visit(ExprRegex& expr) {
+    os << "REGEX(";
+    expr.expr1->accept_visitor(*this);
+    os << ", ";
+    expr.expr2->accept_visitor(*this);
+    if (expr.expr3 != nullptr) {
+        os << ", ";
+        expr.expr3->accept_visitor(*this);
+    }
+    os << ')';
+}
+
+
 void ExprPrinter::visit(MQL::ExprAggAvg& expr) {
     os << "AVG(";
     expr.expr->accept_visitor(*this);

@@ -1,5 +1,7 @@
 #include "quad_model.h"
 
+#include <type_traits>
+
 #include "query/executor/binding_iter/binding_expr/mql_binding_expr_printer.h"
 #include "query/executor/query_executor/mql/return_executor.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
@@ -13,8 +15,7 @@ static typename std::aligned_storage<sizeof(QuadModel), alignof(QuadModel)>::typ
 QuadModel& quad_model = reinterpret_cast<QuadModel&>(quad_model_buf);
 
 
-std::unique_ptr<ModelDestroyer> QuadModel::init()
-{
+std::unique_ptr<ModelDestroyer> QuadModel::init() {
     new (&quad_model) QuadModel();
     return std::make_unique<ModelDestroyer>([]() { quad_model.~QuadModel(); });
 }
@@ -32,8 +33,7 @@ std::ostream& debug_print(std::ostream& os, ObjectId oid) {
 
 
 QuadModel::QuadModel() :
-    m_catalog("catalog.dat")
-{
+    catalog("catalog.dat") {
     QueryContext::_debug_print = debug_print;
     QueryContext::create_binding_expr_printer = create_quad_binding_expr_printer;
 
@@ -52,12 +52,12 @@ QuadModel::QuadModel() :
     type_from_to_edge = make_unique<BPlusTree<4>>("type_from_to_edge");
     type_to_from_edge = make_unique<BPlusTree<4>>("type_to_from_edge");
 
-    equal_from_to      = make_unique<BPlusTree<3>>("equal_from_to");
-    equal_from_type    = make_unique<BPlusTree<3>>("equal_from_type");
-    equal_to_type      = make_unique<BPlusTree<3>>("equal_to_type");
+    equal_from_to = make_unique<BPlusTree<3>>("equal_from_to");
+    equal_to_type = make_unique<BPlusTree<3>>("equal_to_type");
+    equal_from_type = make_unique<BPlusTree<3>>("equal_from_type");
     equal_from_to_type = make_unique<BPlusTree<2>>("equal_from_to_type");
 
-    equal_from_to_inverted   = make_unique<BPlusTree<3>>("equal_from_to_inverted");
+    equal_from_to_inverted = make_unique<BPlusTree<3>>("equal_from_to_inverted");
+    equal_to_type_inverted = make_unique<BPlusTree<3>>("equal_to_type_inverted");
     equal_from_type_inverted = make_unique<BPlusTree<3>>("equal_from_type_inverted");
-    equal_to_type_inverted   = make_unique<BPlusTree<3>>("equal_to_type_inverted");
 }

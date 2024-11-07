@@ -4,14 +4,10 @@
 
 class ObjectEnum : public BindingIter {
 public:
-    ObjectEnum(
-        VarId         var,
-        const         uint64_t mask,
-        const         uint64_t max_count
-    ) :
-        var           (var),
-        max_count     (max_count),
-        mask          (mask) { }
+    ObjectEnum(VarId var, const uint64_t mask, const uint64_t max_count) :
+        var(var),
+        max_count(max_count),
+        mask(mask) { }
 
     void accept_visitor(BindingIterVisitor& visitor) override;
     void _begin(Binding& parent_binding) override;
@@ -24,6 +20,7 @@ public:
 
 private:
     const uint64_t mask;
+
     uint64_t current_node = 0;
 
     Binding* parent_binding;

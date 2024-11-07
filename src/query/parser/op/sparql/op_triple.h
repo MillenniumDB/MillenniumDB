@@ -65,7 +65,7 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ') << "OpTriple(";
-        os << subject << ", " << predicate << ", " << object << ")\n";
+        os << subject << " " << predicate << " " << object << ")\n";
         return os;
     }
 };

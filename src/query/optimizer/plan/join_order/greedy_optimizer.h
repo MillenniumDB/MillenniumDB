@@ -1,6 +1,5 @@
 #pragma once
 
-#include "query/query_context.h"
 #include "query/optimizer/plan/plan.h"
 
 class GreedyOptimizer {

@@ -36,6 +36,7 @@ public:
     const std::string& get_str(uint64_t id) const;
 
     void print_str(std::ostream& os, uint64_t id) const;
+    uint64_t print_to_buffer(char* buffer, uint64_t id);
 
     uint64_t get_str_id(const std::string&);
 

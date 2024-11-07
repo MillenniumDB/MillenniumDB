@@ -19,24 +19,11 @@ public:
 
     BptIter(bool* interruption_requested,
             SearchLeafResult<N>&& leaf_and_pos,
-            const Record<N>& max) noexcept :
-        interruption_requested (interruption_requested),
-        current_pos            (leaf_and_pos.result_index),
-        max                    (max),
-        current_leaf           (std::move(leaf_and_pos.leaf)) { }
+            const Record<N>& max) noexcept;
 
-    BptIter(BptIter&& other) noexcept :
-        interruption_requested (other.interruption_requested),
-        current_pos            (other.current_pos),
-        max                    (std::move(other.max)),
-        current_leaf           (std::move(other.current_leaf)) { }
+    BptIter(BptIter&& other) noexcept;
 
-    void operator=(BptIter&& other) noexcept {
-        interruption_requested = other.interruption_requested;
-        current_pos            = other.current_pos;
-        max                    = std::move(other.max);
-        current_leaf           = std::move(other.current_leaf);
-    }
+    void operator=(BptIter&& other) noexcept;
 
     const Record<N>* next();
 

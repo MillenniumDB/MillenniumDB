@@ -6,6 +6,7 @@
 #include "query/executor/binding_iter.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "query/executor/binding_iter/scan_ranges/scan_range.h"
+#include "query/executor/binding_iter/scan_ranges/range_type.h"
 
 template <std::size_t N>
 class IndexScan : public BindingIter {

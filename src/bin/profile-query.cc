@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
                         quad_model.path_mode = PathMode::DFS;
                 }
 
-                quad_model.catalog().print(std::cout);
+                quad_model.catalog.print(std::cout);
 
                 TensorStore::load_tensor_stores(tensor_pages_buffer, preload_tensors);
 
@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
                         rdf_model.path_mode = PathMode::DFS;
                 }
 
-                rdf_model.catalog().print(std::cout);
+                rdf_model.catalog.print(std::cout);
 
                 try {
                     auto version_scope = buffer_manager.init_version_readonly();

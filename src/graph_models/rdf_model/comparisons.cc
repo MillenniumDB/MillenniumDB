@@ -48,8 +48,8 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         auto lhs_prefix_id = (lhs_oid.id & ObjectId::MASK_IRI_PREFIX) >> ObjectId::IRI_INLINE_BYTES * 8;
         auto rhs_prefix_id = (rhs_oid.id & ObjectId::MASK_IRI_PREFIX) >> ObjectId::IRI_INLINE_BYTES * 8;
 
-        auto& lhs_prefix = rdf_model.catalog().prefixes.get_prefix(lhs_prefix_id);
-        auto& rhs_prefix = rdf_model.catalog().prefixes.get_prefix(rhs_prefix_id);
+        auto& lhs_prefix = rdf_model.catalog.prefixes.get_prefix(lhs_prefix_id);
+        auto& rhs_prefix = rdf_model.catalog.prefixes.get_prefix(rhs_prefix_id);
 
         auto lhs_content = lhs_oid.id & ObjectId::MASK_IRI_CONTENT;
         auto rhs_content = rhs_oid.id & ObjectId::MASK_IRI_CONTENT;

@@ -2,7 +2,6 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_check.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_enum.h"
@@ -74,19 +73,67 @@ void PathPlan::print(std::ostream& os, int indent) const {
     for (int i = 0; i < indent; ++i) {
         os << ' ';
     }
-    os << "  ↳ Estimated factor: " << estimate_output_size();
+    os << "  ↳ Estimated factor: " << estimate_output_size() << '\n';
 }
 
 
 double PathPlan::estimate_output_size() const {
+    if (!cached_output_estimation_is_valid) {
+        cached_output_estimation = _estimate_output_size();
+        cached_output_estimation_is_valid = true;
+    }
+
+    return cached_output_estimation;
+}
+
+
+double PathPlan::_estimate_output_size() const {
     double res = 0;
-    // TODO: find a better estimation
     // cost is the sum of all properties multiplied with a factor
     // we chose 1.1 so a simple path (eg: :P1*) is more expensive than a simple triple
-    for (auto& state_transitions : automaton.from_to_connections) {
-        for (auto& transition : state_transitions) {
+    Record<3> min;
+    Record<3> max;
+    if (subject.is_OID()) {
+        if (object.is_OID()) {
+            // TODO: mandatory check? cost doesn't matter
+            return 1.0;
+        } else {
+            for (auto& transition : automaton.from_to_connections[0]) {
+                auto predicate_id = transition.type_id.id;
+
+                // SPO
+                min[0] = subject.get_OID().id;
+                min[1] = predicate_id;
+                min[2] = 0;
+
+                max[0] = subject.get_OID().id;
+                max[1] = predicate_id;
+                max[2] = UINT64_MAX;
+
+                res += 1.1 * rdf_model.spo->estimate_records(min, max);
+            }
+        }
+    } else if (object.is_OID()) {
+        for (auto& transition : automaton_inverted.from_to_connections[0]) {
             auto predicate_id = transition.type_id.id;
-            res += rdf_model.catalog().get_predicate_count(predicate_id) * 1.1;
+
+            // POS
+            min[0] = predicate_id;
+            min[1] = object.get_OID().id;
+            min[2] = 0;
+
+            max[0] = predicate_id;
+            max[1] = object.get_OID().id;
+            max[2] = UINT64_MAX;
+
+            res += 1.1 * rdf_model.pos->estimate_records(min, max);
+        }
+    } else {
+        for (auto& state_transitions : automaton.from_to_connections) {
+            for (auto& transition : state_transitions) {
+                auto predicate_id = transition.type_id.id;
+                res += rdf_model.catalog.get_predicate_count(predicate_id) * 1.1;
+            }
         }
     }
     return res;
@@ -107,8 +154,18 @@ std::set<VarId> PathPlan::get_vars() const {
 
 
 void PathPlan::set_input_vars(const std::set<VarId>& input_vars) {
+    auto previous_assigned_count = static_cast<int>(subject_assigned)
+                                 + static_cast<int>(object_assigned);
+
     set_input_var(input_vars, subject, &subject_assigned);
     set_input_var(input_vars, object,  &object_assigned);
+
+    auto after_assigned_count = static_cast<int>(subject_assigned)
+                              + static_cast<int>(object_assigned);
+
+    if (previous_assigned_count != after_assigned_count) {
+        cached_output_estimation_is_valid = false;
+    }
 }
 
 
@@ -308,12 +365,12 @@ bool PathPlan::subject_is_better_start_direction() const {
 
     for (auto& transition : automaton.from_to_connections[0]) {
         auto predicate_id = transition.type_id.id;
-        cost_normal_dir += rdf_model.catalog().get_predicate_count(predicate_id);
+        cost_normal_dir += rdf_model.catalog.get_predicate_count(predicate_id);
     }
 
     for (auto& transition : automaton_inverted.from_to_connections[0]) {
         auto predicate_id = transition.type_id.id;
-        cost_inverse_dir += rdf_model.catalog().get_predicate_count(predicate_id);
+        cost_inverse_dir += rdf_model.catalog.get_predicate_count(predicate_id);
     }
 
     if (cost_inverse_dir < cost_normal_dir) {

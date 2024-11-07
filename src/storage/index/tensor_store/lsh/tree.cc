@@ -2,8 +2,6 @@
 
 #include <cassert>
 #include <fstream>
-#include <numeric>
-#include <random>
 
 #include "storage/index/tensor_store/lsh/metric.h"
 #include "storage/index/tensor_store/serialization.h"
@@ -83,13 +81,72 @@ void Tree::build() {
     // Create splits while possible
     std::vector<std::pair<LeafNode*, uint_fast32_t>> node_depth_stack = { { tmp, 0 } };
     while (node_depth_stack.size() > 0) {
-        auto [current_node, current_depth] = node_depth_stack.back();
+        auto [current_leaf, current_depth] = node_depth_stack.back();
         node_depth_stack.pop_back();
 
-        if (current_depth < max_depth && current_node->object_ids.size() > max_bucket_size) {
-            auto [left_child, right_child] = create_split(current_node);
+        if (current_depth < max_depth && current_leaf->object_ids.size() > max_bucket_size) {
+            std::vector<uint64_t> left_object_ids;
+            std::vector<uint64_t> right_object_ids;
+            TreeNode*             new_parent = nullptr;
+
+            // Try to split the node with the sufficient imbalance threshold
+            for (auto i = 0u; i < SPLIT_ATTEMPS; ++i) {
+                new_parent = split_nodes(current_leaf->object_ids, left_object_ids, right_object_ids);
+
+                double imbalance = double(left_object_ids.size()) / double(left_object_ids.size() + right_object_ids.size());
+                imbalance = fmax(imbalance, 1.0l - imbalance);
+
+                if (imbalance < IMBALANCE_THRESHOLD) {
+                    break;
+                }
+
+                delete new_parent;
+                new_parent = nullptr;
+            }
+
+
+            if (new_parent == nullptr) {
+                // The split failed, just use a random split
+                left_object_ids.clear();
+                right_object_ids.clear();
+
+                new_parent = new RandomSplitNode(nullptr);
+
+                for (const auto& object_id : current_leaf->object_ids) {
+                    // No need to call new_parent->side(), method can be inlined
+                    const bool side = (rand() % 2) == 0;
+                    if (side == false) {
+                        left_object_ids.emplace_back(object_id);
+                    } else {
+                        right_object_ids.emplace_back(object_id);
+                    }
+                }
+            }
+
+            // Update previous parent
+            if (current_leaf->parent == nullptr) {
+                // There were just one leaf node
+                root = new_parent;
+            } else {
+                // Replace the leaf node with the new parent
+                new_parent->parent = current_leaf->parent;
+                // Get which child was current node
+                const bool side = current_leaf->parent->children[1] == current_leaf;
+                // Update its parent
+                current_leaf->parent->children[side] = new_parent;
+            }
+
+            // Connect the new parent with its children. Reuse the leaf node to optimize memory allocation
+            current_leaf->parent     = new_parent;
+            current_leaf->object_ids = std::move(left_object_ids);
+
+            new_parent->children[0] = current_leaf;
+
+            LeafNode* right_child = new LeafNode(new_parent, std::move(right_object_ids));
+            new_parent->children[1] = right_child;
+
             node_depth_stack.emplace_back(right_child, current_depth + 1);
-            node_depth_stack.emplace_back(left_child, current_depth + 1);
+            node_depth_stack.emplace_back(current_leaf, current_depth + 1);
         }
     }
 }
@@ -122,14 +179,12 @@ void Tree::serialize(std::fstream& fs) const {
     while (!stack.empty()) {
         TreeNode* current_node = stack.back();
         stack.pop_back();
-        if (current_node->type() == TreeNodeType::LEAF) {
-            Serialization::write_bool(fs, true);
-        } else {
-            Serialization::write_bool(fs, false);
+        Serialization::write_uint8(fs, static_cast<uint8_t>(current_node->type()));
+        current_node->serialize(fs);
+        if (current_node->type() != TreeNodeType::LEAF) {
             stack.push_back(current_node->children[1]);
             stack.push_back(current_node->children[0]);
         }
-        current_node->serialize(fs);
     }
 }
 
@@ -161,19 +216,41 @@ void Tree::deserialize(std::fstream& fs) {
     }
 
     // Deserialize the pre-order traversal serialized tree
-    if (Serialization::read_bool(fs)) {
-        // Base case when there is only one node
-        root = new LeafNode(fs);
-        return;
+    const auto root_type = static_cast<TreeNodeType>(Serialization::read_uint8(fs));
+    switch (root_type) {
+        case TreeNodeType::LEAF: {
+            // Base case when there is only one node
+            root = new LeafNode(fs);
+            return;
+        }
+        case TreeNodeType::RANDOM_SPLIT: {
+            root = new RandomSplitNode(fs);
+            break;
+        }
+        default: {
+            root = deserialize_split_node(fs);
+            break;
+        }
     }
-
-    root = deserialize_split_node(fs);
 
     std::vector<TreeNode*> stack = { root };
     while (!stack.empty()) {
         TreeNode* current_node;
-        bool      is_leaf = Serialization::read_bool(fs);
-        current_node      = is_leaf ? new LeafNode(fs) : deserialize_split_node(fs);
+        const auto current_type = static_cast<TreeNodeType>(Serialization::read_uint8(fs));
+        switch (current_type) {
+        case TreeNodeType::LEAF: {
+            current_node = new LeafNode(fs);
+            break;
+        }
+        case TreeNodeType::RANDOM_SPLIT: {
+            current_node = new RandomSplitNode(fs);
+            break;
+        }
+        default: {
+            current_node = deserialize_split_node(fs);
+            break;
+        }
+        };
         current_node->parent = stack.back();
         if (stack.back()->children[0] == nullptr) {
             stack.back()->children[0] = current_node;
@@ -181,64 +258,41 @@ void Tree::deserialize(std::fstream& fs) {
             stack.back()->children[1] = current_node;
             stack.pop_back();
         }
-        if (!is_leaf) {
+        if (current_node->type() != TreeNodeType::LEAF) {
             stack.push_back(current_node);
         }
     }
 }
 
+TreeNode* Tree::split_nodes(const std::vector<uint64_t>& source,
+                            std::vector<uint64_t>&       left,
+                            std::vector<uint64_t>&       right) {
+    TreeNode* split_node;
+    left.clear();
+    right.clear();
 
-std::pair<LeafNode*, LeafNode*> Tree::create_split(LeafNode* leaf_node) {
-    // Create the new split node
-    TreeNode* new_parent;
     switch (metric_type) {
     case MetricType::ANGULAR: {
-        auto plane = generate_plane(leaf_node->object_ids);
-        new_parent = new AngularSplitNode(nullptr, std::move(plane.first));
+        auto&& [plane_normal, _] = generate_plane(source);
+        split_node = new AngularSplitNode(nullptr, std::move(plane_normal));
         break;
     }
     default: { // MetricType::EUCLIDEAN or MetricType::MANHATTAN
-        auto plane = generate_plane(leaf_node->object_ids);
-        new_parent = new MinkowskiSplitNode(nullptr, std::move(plane.first), plane.second);
+        auto&& [plane_normal, plane_offset] = generate_plane(source);
+        split_node = new MinkowskiSplitNode(nullptr, std::move(plane_normal), plane_offset);
         break;
     }
     }
 
-    // Distribute the objects into two children
-    std::vector<uint64_t> left_object_ids;
-    std::vector<uint64_t> right_object_ids;
-    for (auto& object_id : leaf_node->object_ids) {
+    for (const auto& object_id : source) {
         tensor_store.get(object_id, tensor_buffer);
-        if (new_parent->side(tensor_buffer))
-            right_object_ids.emplace_back(object_id);
+        if (split_node->side(tensor_buffer))
+            right.emplace_back(object_id);
         else
-            left_object_ids.emplace_back(object_id);
+            left.emplace_back(object_id);
     }
 
-    // Update previous parent
-    if (leaf_node->parent == nullptr) {
-        // There was just one leaf node
-        root = new_parent;
-    } else {
-        // Replace the leaf node with the new parent
-        new_parent->parent = leaf_node->parent;
-        // Get which child was the leaf node
-        bool side = leaf_node->parent->children[1] == leaf_node;
-        // Update its parent
-        leaf_node->parent->children[side] = new_parent;
-    }
-
-
-    // Connect the new parent with its children. Reuse the leaf node to optimize memory allocation
-    leaf_node->parent       = new_parent;
-    leaf_node->object_ids   = std::move(left_object_ids);
-
-    new_parent->children[0] = leaf_node;
-
-    LeafNode* right_child = new LeafNode(new_parent, std::move(right_object_ids));
-    new_parent->children[1] = right_child;
-
-    return { leaf_node, right_child };
+    return split_node;
 }
 
 
@@ -246,7 +300,7 @@ std::pair<std::vector<float>, float> Tree::generate_plane(const std::vector<uint
     assert(object_ids.size() > 1);
     uint64_t centroid_index_a = get_uniform_uint64(0, object_ids.size() - 1);
     uint64_t centroid_index_b = get_uniform_uint64(0, object_ids.size() - 2);
-    centroid_index_b += (centroid_index_b >= centroid_index_a); // prevents centroid_a == centroid_b
+    if (centroid_index_b == centroid_index_a) ++centroid_index_b; // prevents centroid_a == centroid_b
 
     std::vector<float> centroid_a(tensor_store.tensors_dim);
     std::vector<float> centroid_b(tensor_store.tensors_dim);

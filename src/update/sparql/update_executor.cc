@@ -180,22 +180,22 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid) {
 
     switch (oid_type) {
     case RDF_OID::Type::STRING_LANG_INLINE: {
-        return try_transform_inline(oid, rdf_model.catalog().languages, '@');
+        return try_transform_inline(oid, rdf_model.catalog.languages, '@');
     }
     case RDF_OID::Type::STRING_LANG_EXTERN: {
-        return try_transform_extern(oid, rdf_model.catalog().languages, '@');
+        return try_transform_extern(oid, rdf_model.catalog.languages, '@');
     }
     case RDF_OID::Type::STRING_LANG_TMP: {
-        return try_transform_tmp(oid, rdf_model.catalog().languages, '@');
+        return try_transform_tmp(oid, rdf_model.catalog.languages, '@');
     }
     case RDF_OID::Type::STRING_DATATYPE_INLINE: {
-        return try_transform_inline(oid, rdf_model.catalog().datatypes, '^');
+        return try_transform_inline(oid, rdf_model.catalog.datatypes, '^');
     }
     case RDF_OID::Type::STRING_DATATYPE_EXTERN: {
-        return try_transform_extern(oid, rdf_model.catalog().datatypes, '^');
+        return try_transform_extern(oid, rdf_model.catalog.datatypes, '^');
     }
     case RDF_OID::Type::STRING_DATATYPE_TMP: {
-        return try_transform_tmp(oid, rdf_model.catalog().datatypes, '^');
+        return try_transform_tmp(oid, rdf_model.catalog.datatypes, '^');
     }
     default: {
         if (oid.is_tmp()) {
@@ -245,7 +245,7 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data) {
         bool is_new_record = rdf_model.spo->insert(record_spo);
 
         if (is_new_record) {
-            rdf_model.catalog().insert_triple(S.id, P.id, O.id);
+            rdf_model.catalog.insert_triple(S.id, P.id, O.id);
             triples_inserted++;
 
             Record<3> record_pos = { P.id, O.id, S.id };
@@ -335,7 +335,7 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
         bool exists = rdf_model.spo->delete_record(record_spo);
 
         if (exists) {
-            rdf_model.catalog().delete_triple(S.id, P.id, O.id);
+            rdf_model.catalog.delete_triple(S.id, P.id, O.id);
             triples_deleted++;
 
             Record<3> record_pos = { P.id, O.id, S.id };

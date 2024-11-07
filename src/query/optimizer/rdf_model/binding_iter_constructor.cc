@@ -16,7 +16,6 @@
 #include "query/optimizer/rdf_model/plan/path_plan.h"
 #include "query/optimizer/rdf_model/plan/triple_plan.h"
 #include "query/parser/op/sparql/ops.h"
-#include "query/rewriter/mql/op/optimize_optional_tree.h"
 
 using namespace SPARQL;
 using namespace misc;
@@ -400,8 +399,6 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern) 
 
     assert(tmp == nullptr);
 
-    const auto binding_size = get_query_ctx().get_var_size();
-
     // Set input vars
     for (auto& plan : base_plans) {
         plan->set_input_vars(safe_assigned_vars);
@@ -411,9 +408,9 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern) 
     // try to use leapfrog if there is a join
     if (base_plans.size() > 1) {
         if (safe_assigned_vars.size() > 0) {
-            tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans, binding_size);
+            tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans);
         } else {
-            tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans, binding_size);
+            tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans);
         }
     }
 

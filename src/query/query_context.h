@@ -16,6 +16,7 @@
 #include "query/id.h"
 #include "query/var_id.h"
 #include "system/buffer_manager.h"
+#include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
 class BindingExprPrinter;
@@ -57,6 +58,8 @@ public:
     // Creates a BindingExprPrinter used to debug print BindingExprs of the physical plan
     static inline std::unique_ptr<BindingExprPrinter> (*create_binding_expr_printer)(std::ostream&);
 
+    static constexpr uint64_t buffer_size = 64 * 1024;
+
 private:
     VarContext var_ctx;
 
@@ -72,7 +75,21 @@ private:
 
     static inline boost::uuids::random_generator uuid_generator;
 
+    // buffers for general use
+    char* buffer1;
+    char* buffer2;
+
 public:
+    QueryContext() {
+        buffer1 = new char[StringManager::STRING_BLOCK_SIZE];
+        buffer2 = new char[StringManager::STRING_BLOCK_SIZE];
+    }
+
+    ~QueryContext() {
+        delete[] buffer1;
+        delete[] buffer2;
+    }
+
     // Cleans up everything. Must be called before parsing the query
     void prepare(BufferManager::VersionScope& version_scope, std::chrono::seconds timeout) {
         blank_node_ids.clear();
@@ -188,6 +205,14 @@ public:
 
     static inline void set_query_ctx(QueryContext* ctx) {
         _query_ctx = ctx;
+    }
+
+    char* get_buffer1() {
+        return buffer1;
+    }
+
+    char* get_buffer2() {
+        return buffer2;
     }
 };
 

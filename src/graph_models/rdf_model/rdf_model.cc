@@ -1,5 +1,7 @@
 #include "rdf_model.h"
 
+#include <type_traits>
+
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
@@ -24,7 +26,7 @@ std::unique_ptr<BindingExprPrinter> create_rdf_binding_expr_printer(std::ostream
 
 
 RdfModel::RdfModel() :
-    m_catalog("catalog.dat")
+    catalog("catalog.dat")
 {
     QueryContext::_debug_print = SPARQL::Conversions::debug_print;
     QueryContext::create_binding_expr_printer = create_rdf_binding_expr_printer;
@@ -33,11 +35,11 @@ RdfModel::RdfModel() :
     pos = make_unique<BPlusTree<3>>("pos");
     osp = make_unique<BPlusTree<3>>("osp");
 
-    if (catalog().permutations >= 4) {
+    if (catalog.permutations >= 4) {
         pso = make_unique<BPlusTree<3>>("pso");
     }
 
-    if (catalog().permutations == 6) {
+    if (catalog.permutations == 6) {
         sop = make_unique<BPlusTree<3>>("sop");
         ops = make_unique<BPlusTree<3>>("ops");
     }

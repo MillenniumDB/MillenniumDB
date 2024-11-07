@@ -37,8 +37,7 @@ LeapfrogBptIter<N>::LeapfrogBptIter(bool*                           interruption
 
     // check border case when B+tree is empty
     if (current_pos_in_leaf < current_leaf.get_value_count()) {
-        // current_tuple = current_leaf.get_record(current_pos_in_leaf);
-        current_leaf.get_record(current_pos_in_leaf, &current_tuple);
+        current_leaf.set_record(current_pos_in_leaf, current_tuple);
     } else {
         for (size_t i = 0; i < N; i++) {
             current_tuple[i] = UINT64_MAX;
@@ -124,18 +123,12 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
     // if leaf.min <= min <= leaf.max, search inside the leaf and return
     if (current_leaf.check_range(min)) {
         auto new_current_pos_in_leaf = current_leaf.search_index(min);
-        // check new_current_pos_in_leaf is a valid position
-        if (new_current_pos_in_leaf < current_leaf.get_value_count()) {
-            Record<N> new_current_tuple;
-            current_leaf.get_record(new_current_pos_in_leaf, &new_current_tuple);
-            if (new_current_tuple <= max) {
-                // current_leaf stays the same
-                current_tuple       = new_current_tuple;
-                current_pos_in_leaf = new_current_pos_in_leaf;
-                return true;
-            } else {
-                return false;
-            }
+        Record<N> new_current_tuple = current_leaf.get_record(new_current_pos_in_leaf);
+        if (new_current_tuple <= max) {
+            // current_leaf stays the same
+            current_tuple       = new_current_tuple;
+            current_pos_in_leaf = new_current_pos_in_leaf;
+            return true;
         } else {
             return false;
         }
@@ -166,8 +159,7 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
             }
         }
 
-        Record<N> new_current_tuple;
-        new_current_leaf.get_record(new_current_pos_in_leaf, &new_current_tuple);
+        Record<N> new_current_tuple = new_current_leaf.get_record(new_current_pos_in_leaf);
         if (new_current_tuple <= max) {
             current_tuple       = new_current_tuple;
             current_leaf        = std::move(new_current_leaf);

@@ -145,6 +145,8 @@ public:
 
     std::unique_ptr<VersionScope> init_version_editable();
 
+    void upgrade_to_editable(VersionScope&);
+
 private:
     ////////////////////// VERSIONED PAGES BUFFER //////////////////////
 

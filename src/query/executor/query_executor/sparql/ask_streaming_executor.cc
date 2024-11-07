@@ -33,7 +33,7 @@ uint64_t AskStreamingExecutor::execute(MDBServer::StreamingResponseWriter& respo
 
 
 void AskStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
-    os << std::string(indent, ' ') << "AskStreamingExecutor()";
+    os << std::string(indent, ' ') << "AskStreamingExecutor()\n";
     BindingIterPrinter printer(os, print_stats, indent + 2);
     iter->accept_visitor(printer);
 }

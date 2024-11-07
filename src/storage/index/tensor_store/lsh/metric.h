@@ -45,14 +45,17 @@ public:
 
     static float cosine_distance(const std::vector<float>& tensor1, const std::vector<float>& tensor2) {
         assert(tensor1.size() == tensor2.size());
+        float ab = 0.0f;
         float aa = 0.0f;
         float bb = 0.0f;
-        float ab = 0.0f;
 
+        #ifdef _OPENMP
+        #pragma omp simd reduction(+ : ab, aa, bb)
+        #endif
         for (uint_fast32_t i = 0; i < tensor1.size(); ++i) {
+            ab += tensor1[i] * tensor2[i];
             aa += tensor1[i] * tensor1[i];
             bb += tensor2[i] * tensor2[i];
-            ab += tensor1[i] * tensor2[i];
         }
 
         const auto denominator = aa * bb;

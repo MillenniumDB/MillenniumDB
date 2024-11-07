@@ -3,13 +3,12 @@
 #include <chrono>
 #include <cstdio>
 #include <ctime>
-#include <locale>
-#include <map>
 #include <regex>
 
 #include "graph_models/rdf_model/rdf_model.h"
 #include "import/disk_vector.h"
 #include "import/import_helper.h"
+#include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
 #include "misc/fatal_error.h"
 #include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"

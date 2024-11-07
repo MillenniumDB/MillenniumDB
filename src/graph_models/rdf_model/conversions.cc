@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "graph_models/inliner.h"
+#include "graph_models/rdf_model/iri_compression.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 #include "system/path_manager.h"
@@ -65,11 +66,11 @@ ObjectId Conversions::pack_string_lang_inline(uint64_t lang_id, const char* str)
  * First looks up the language in the datatype catalog and if found returns
  * the index (shifted).
  * If not found, the tmp_manager is checked, which creates the language if it does
- * not already exist. The id received from the tmp_manager has it's most significant
+ * not already exist. The id received from the tmp_manager has its most significant
  * bit (bit 15) set and is returned (shifted).
  */
 uint64_t Conversions::get_language_id(const std::string& lang) {
-    const auto& languages = rdf_model.catalog().languages;
+    const auto& languages = rdf_model.catalog.languages;
     auto it = std::find(languages.cbegin(), languages.cend(), lang);
 
     if (it != languages.end()) {
@@ -84,13 +85,13 @@ uint64_t Conversions::get_language_id(const std::string& lang) {
  * @brief First looks up the datatype in the datatype catalog and if found returns
  * the id (index). If not found, the tmp_manager is checked,
  * which creates the datatype if it does not already exist. The id received from the
- * tmp_manager has it's most significant bit (bit 15) set and is returned.
+ * tmp_manager has its most significant bit (bit 15) set and is returned.
  *
  * @param datatype the datatype to look up in string_manager and tmp_manager.
  * @return an uint64_t containing the shifted id.
  */
 uint64_t Conversions::get_datatype_id(const std::string& datatype) {
-    const auto& datatypes = rdf_model.catalog().datatypes;
+    const auto& datatypes = rdf_model.catalog.datatypes;
     auto it = std::find(datatypes.cbegin(), datatypes.cend(), datatype);
 
     if (it != datatypes.end()) {
@@ -565,7 +566,7 @@ void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
 }
 
 
-// Converts an ObjectId into it's lexical representation.
+// Converts an ObjectId into its lexical representation.
 std::string Conversions::to_lexical_str(ObjectId oid) {
     switch (RDF_OID::get_type(oid)) {
     case RDF_OID::Type::BLANK_INLINED: {
@@ -623,7 +624,15 @@ std::string Conversions::to_lexical_str(ObjectId oid) {
     case RDF_OID::Type::IRI_INLINE:
     case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
     case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP: {
+    case RDF_OID::Type::IRI_TMP:
+    case RDF_OID::Type::IRI_UUID_LOWER:
+    case RDF_OID::Type::IRI_UUID_UPPER:
+    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
+    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
+    case RDF_OID::Type::IRI_HEX_LOWER:
+    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
+    case RDF_OID::Type::IRI_HEX_UPPER:
+    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
         return unpack_iri(oid);
     }
     case RDF_OID::Type::STRING_DATATYPE_INLINE:
@@ -732,7 +741,15 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid) {
     case RDF_OID::Type::IRI_INLINE:
     case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
     case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP: {
+    case RDF_OID::Type::IRI_TMP:
+    case RDF_OID::Type::IRI_UUID_LOWER:
+    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
+    case RDF_OID::Type::IRI_UUID_UPPER:
+    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
+    case RDF_OID::Type::IRI_HEX_LOWER:
+    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
+    case RDF_OID::Type::IRI_HEX_UPPER:
+    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
         os << '<';
         Conversions::print_iri(oid, os);
         os << '>';
@@ -823,30 +840,69 @@ ObjectId Conversions::pack_string_xsd(const std::string& str) {
 
 ObjectId Conversions::pack_iri(const std::string& str) {
     // If a prefix matches the IRI, store just the suffix and a pointer to the prefix
-    auto [prefix_id, prefix_size] = rdf_model.catalog().prefixes.get_prefix_id(str);
+    auto [prefix_id, prefix_size] = rdf_model.catalog.prefixes.get_prefix_id(str);
 
     auto suffix = str.substr(prefix_size);
+    // Pointer to the iri, it is updated if the iri is compressed
+    const char* suffix_ptr = suffix.c_str();
+    size_t suffix_len = suffix.size();
 
     auto prefix_id_shifted = static_cast<uint64_t>(prefix_id) << ObjectId::IRI_INLINE_BYTES*8;
 
     uint64_t suffix_id;
-    if (suffix.size() <= ObjectId::IRI_INLINE_BYTES) {
-        suffix_id = Inliner::inline_iri(suffix.c_str()) | ObjectId::MASK_IRI_INLINED;
-    } else {
-        auto str_id = string_manager.get_str_id(suffix);
-        if (str_id != ObjectId::MASK_NOT_FOUND) {
-            suffix_id = ObjectId::MASK_IRI_EXTERN | str_id;
-        } else {
-            suffix_id = ObjectId::MASK_IRI_TMP | tmp_manager.get_str_id(suffix);
+
+    char* buffer_iri = get_query_ctx().get_buffer1();
+
+    uint64_t iri_type_mask = ObjectId::MASK_IRI;
+
+    if (UUIDCompression::compress_lower(suffix_ptr, suffix_len, buffer_iri)) {
+        suffix_ptr = buffer_iri;
+        suffix_len = suffix_len - 20;
+        iri_type_mask = ObjectId::MASK_IRI_UUID_LOWER;
+
+    } else if (UUIDCompression::compress_upper(suffix_ptr, suffix_len, buffer_iri)) {
+        suffix_ptr = buffer_iri;
+        suffix_len = suffix_len - 20;
+        iri_type_mask = ObjectId::MASK_IRI_UUID_UPPER;
+    }
+
+    else if (suffix_len >= HexCompression::MIN_LEN_TO_COMPRESS) {
+        auto lower_hex_length = HexCompression::get_lower_hex_length(suffix_ptr, suffix_len);
+        auto upper_hex_length = HexCompression::get_upper_hex_length(suffix_ptr, suffix_len);
+
+        // Compress lowercase hex characters
+        if (lower_hex_length >= upper_hex_length && lower_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
+            suffix_len = HexCompression::compress(suffix_ptr, suffix_len, lower_hex_length, buffer_iri);
+            suffix_ptr = buffer_iri;
+            iri_type_mask = ObjectId::MASK_IRI_HEX_LOWER;
+
+        // Compress uppercase hex characters
+        } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
+            suffix_len = HexCompression::compress(suffix_ptr, suffix_len, upper_hex_length, buffer_iri);
+            suffix_ptr = buffer_iri;
+            iri_type_mask = ObjectId::MASK_IRI_HEX_UPPER;
         }
     }
+
+    if (suffix_len <= ObjectId::IRI_INLINE_BYTES) {
+        suffix_id = Inliner::inline_iri(suffix_ptr) | ObjectId::MASK_IRI_INLINED;
+    } else {
+        auto str_id = string_manager.get_str_id(std::string(suffix_ptr, suffix_len));
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            suffix_id = iri_type_mask | ObjectId::MOD_EXTERNAL | str_id;
+        } else {
+            iri_type_mask &= ~ObjectId::MOD_MASK;
+            suffix_id = iri_type_mask | ObjectId::MOD_TMP | tmp_manager.get_str_id(std::string(suffix_ptr, suffix_len));
+        }
+    }
+
     return ObjectId(suffix_id | prefix_id_shifted);
 }
 
 
 void Conversions::print_iri(ObjectId oid, std::ostream& os) {
     auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
-    auto& prefix = rdf_model.catalog().prefixes.get_prefix(prefix_id);
+    auto& prefix = rdf_model.catalog.prefixes.get_prefix(prefix_id);
     os << prefix;
 
     switch (oid.get_type()) {
@@ -864,14 +920,143 @@ void Conversions::print_iri(ObjectId oid, std::ostream& os) {
         tmp_manager.print_str(os, external_id);
         break;
     }
+    case ObjectId::MASK_IRI_UUID_LOWER_TMP:{
+        print_tmp_iri_uuid_lower(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_UUID_LOWER: {
+        print_iri_uuid_lower(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER_TMP: {
+        print_tmp_iri_uuid_upper(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER: {
+        print_iri_uuid_upper(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER_TMP: {
+        print_tmp_iri_hex_lower(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER: {
+        print_iri_hex_lower(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER_TMP: {
+        print_tmp_iri_hex_upper(oid, os);
+        break;
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER: {
+        print_iri_hex_upper(oid, os);
+        break;
+    }
     default:
         throw LogicException("Called unpack_iri with incorrect ObjectId type, this should never happen");
     }
 }
 
+
+void Conversions::print_iri_uuid_lower(ObjectId oid, std::ostream& os) {
+    char* iri_buffer    = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size        = string_manager.print_to_buffer(iri_buffer, external_id);
+    UUIDCompression::decompress_lower(iri_buffer, size, result_buffer);
+
+    os.write(result_buffer, size + 20);
+}
+
+
+void Conversions::print_iri_uuid_upper(ObjectId oid, std::ostream& os) {
+    char* iri_buffer    = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size        = string_manager.print_to_buffer(iri_buffer, external_id);
+    UUIDCompression::decompress_upper(iri_buffer, size, result_buffer);
+
+    os.write(result_buffer, size + 20);
+}
+
+
+void Conversions::print_tmp_iri_uuid_lower(ObjectId oid, std::ostream& os) {
+    char* iri_buffer    = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size        = tmp_manager.print_to_buffer(iri_buffer, external_id);
+    UUIDCompression::decompress_lower(iri_buffer, size, result_buffer);
+
+    os.write(result_buffer, size + 20);
+}
+
+
+void Conversions::print_tmp_iri_uuid_upper(ObjectId oid, std::ostream& os) {
+    char* iri_buffer    = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size        = tmp_manager.print_to_buffer(iri_buffer, external_id);
+    UUIDCompression::decompress_upper(iri_buffer, size, result_buffer);
+
+    os.write(result_buffer, size + 20);
+}
+
+
+void Conversions::print_iri_hex_lower(ObjectId oid, std::ostream& os) {
+    char* buffer        = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    auto size = string_manager.print_to_buffer(buffer, external_id);
+    auto decompressed_size = HexCompression::decompress_lower(buffer, size, result_buffer);
+
+    os.write(result_buffer, decompressed_size);
+}
+
+
+void Conversions::print_tmp_iri_hex_lower(ObjectId oid, std::ostream& os) {
+    char* buffer        = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    auto size = tmp_manager.print_to_buffer(buffer, external_id);
+    auto decompressed_size = HexCompression::decompress_lower(buffer, size, result_buffer);
+
+    os.write(result_buffer, decompressed_size);
+}
+
+
+void Conversions::print_iri_hex_upper(ObjectId oid, std::ostream& os) {
+    char* buffer        = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    auto size = string_manager.print_to_buffer(buffer, external_id);
+    auto decompressed_size = HexCompression::decompress_upper(buffer, size, result_buffer);
+
+    os.write(result_buffer, decompressed_size);
+}
+
+
+void Conversions::print_tmp_iri_hex_upper(ObjectId oid, std::ostream& os) {
+    char* buffer        = get_query_ctx().get_buffer1();
+    char* result_buffer = get_query_ctx().get_buffer2();
+
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    auto size = tmp_manager.print_to_buffer(buffer, external_id);
+    auto decompressed_size = HexCompression::decompress_upper(buffer, size, result_buffer);
+
+    os.write(result_buffer, decompressed_size);
+}
+
+
 std::string Conversions::unpack_iri(ObjectId oid) {
     auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
-    auto prefix = rdf_model.catalog().prefixes.get_prefix(prefix_id);
+    auto prefix = rdf_model.catalog.prefixes.get_prefix(prefix_id);
 
     switch (oid.get_type()) {
     case ObjectId::MASK_IRI_INLINED: {
@@ -885,11 +1070,59 @@ std::string Conversions::unpack_iri(ObjectId oid) {
         prefix.append(ss.str());
         return prefix;
     }
+    case ObjectId::MASK_IRI_UUID_LOWER: {
+        std::stringstream ss;
+        print_iri_uuid_lower(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER: {
+        std::stringstream ss;
+        print_iri_uuid_upper(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_UUID_LOWER_TMP: {
+        std::stringstream ss;
+        print_tmp_iri_uuid_lower(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER_TMP: {
+        std::stringstream ss;
+        print_tmp_iri_uuid_upper(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER_TMP:{
+        std::stringstream ss;
+        print_tmp_iri_hex_lower(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER_TMP: {
+        std::stringstream ss;
+        print_tmp_iri_hex_upper(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
     case ObjectId::MASK_IRI_TMP: {
         std::stringstream ss;
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(ss, external_id);
 
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER: {
+        std::stringstream ss;
+        print_iri_hex_lower(oid, ss);
+        prefix.append(ss.str());
+        return prefix;
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER: {
+        std::stringstream ss;
+        print_iri_hex_upper(oid, ss);
         prefix.append(ss.str());
         return prefix;
     }
@@ -989,7 +1222,7 @@ std::pair<std::string, std::string> Conversions::unpack_string_lang(ObjectId oid
         lang = str.substr(found+1);
         str = str.substr(0,found);
     } else {
-        lang = rdf_model.catalog().languages[lang_id];
+        lang = rdf_model.catalog.languages[lang_id];
     }
     return std::make_pair(std::move(lang), std::move(str));
 }
@@ -1057,7 +1290,7 @@ std::pair<std::string, std::string> Conversions::unpack_string_datatype(ObjectId
         datatype = str.substr(found+1);
         str = str.substr(0,found);
     } else {
-        datatype = rdf_model.catalog().datatypes[datatype_id];
+        datatype = rdf_model.catalog.datatypes[datatype_id];
     }
     return std::make_pair(std::move(datatype), std::move(str));
 }

@@ -5,7 +5,6 @@
 #include "network/exceptions.h"
 #include "network/server/protocol.h"
 #include "query/query_context.h"
-#include "system/tmp_manager.h"
 
 
 using namespace MDBServer;
@@ -46,7 +45,7 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
 
 
 void StreamingRequestHandler::handle_run(const std::string& query) {
-    auto version_scope = buffer_manager.init_version_readonly(); // TODO: updates
+    auto version_scope = buffer_manager.init_version_readonly(); // TODO: handle updates?
     {
         std::lock_guard<std::mutex> lock(session.get_thread_info_vec_mutex());
         get_query_ctx().prepare(*version_scope, session.get_timeout());
@@ -64,7 +63,7 @@ void StreamingRequestHandler::handle_run(const std::string& query) {
         }
 
         auto optimizer_start  = std::chrono::system_clock::now();
-        current_physical_plan = create_readonly_physical_plan(*current_logical_plan);
+        auto current_physical_plan = create_readonly_physical_plan(*current_logical_plan);
         optimizer_duration_ms = get_duration(optimizer_start);
 
         logger.log(Category::PhysicalPlan, [&](std::ostream& os) {

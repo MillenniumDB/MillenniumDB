@@ -77,12 +77,12 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
 
     if (split != nullptr) {
         uint_fast32_t splitted_index = search_child_index(split->record);
+        uint_fast32_t splitted_index2 = search_child_index(split->record2);
 
         upgrade_to_editable();
 
         // Case 1: no need to split this node
-        if (*key_count < BPlusTree<N>::dir_max_records) {
-
+        if (!split->double_split && *key_count < BPlusTree<N>::dir_max_records) {
             if (*key_count > 0) {
                 shift_right_keys(splitted_index, (*key_count)-1);
             }
@@ -90,33 +90,74 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
             update_key(splitted_index, split->record);
             update_child(splitted_index+1, split->encoded_page_number);
             ++(*key_count);
+
             return nullptr;
         }
-        // Case 2: we need to split this node and this node is the root
+        // Case 2: no need to split this node, 2 keys are inserted
+        else if (split->double_split && *key_count + 1 < BPlusTree<N>::dir_max_records) {
+            if (*key_count > 0) {
+                shift_right_keys(splitted_index2, *key_count);
+            }
+            shift_right_children(splitted_index2 + 1, *key_count);
+            update_key(splitted_index2, split->record2);
+            update_child(splitted_index2 + 1, split->encoded_page_number2);
+            ++*key_count;
+
+            shift_right_keys(splitted_index, *key_count);
+            shift_right_children(splitted_index + 1, *key_count + 1);
+            update_key(splitted_index, split->record);
+            update_child(splitted_index + 1, split->encoded_page_number);
+            ++*key_count;
+
+            return nullptr;
+        }
+        // Case 3: we need to split this node and this node is the root
         else if (page->get_page_number() == 0) {
             // put new record/dir and save the last (that does not fit)
-            std::array<uint64_t, N> last_key;
-            int_fast32_t last_dir;
-            if (splitted_index == *key_count) { // splitted key is the last key
-                std::memcpy(
-                    last_key.data(),
-                    split->record.data(),
-                    N * sizeof(uint64_t)
-                );
-                last_dir = split->encoded_page_number;
+            std::vector<std::array<uint64_t, N>> last_keys(2);
+            std::vector<int_fast32_t> last_dirs(2);
+
+            // splitted key is the last key
+            if (splitted_index == *key_count) {
+                last_keys[0] = record;
+                last_dirs[0] = split->encoded_page_number;
             }
             else {
                 std::memcpy(
-                    last_key.data(),
+                    last_keys[0].data(),
                     &keys[((*key_count)-1) * N],
                     N * sizeof(uint64_t)
                 );
-                last_dir = children[*key_count];
+
+                last_dirs[0] = children[*key_count];
                 shift_right_keys(splitted_index, (*key_count)-2);
                 shift_right_children(splitted_index+1, (*key_count)-1);
                 update_key(splitted_index, split->record);
                 update_child(splitted_index+1, split->encoded_page_number);
             }
+
+            if (split->double_split && splitted_index2 == *key_count) {
+                last_keys[1] = split->record2;
+                last_dirs[1] = split->encoded_page_number2;
+            }
+            else if (split->double_split) {
+                last_keys[1] = last_keys[0];
+
+                std::memcpy(
+                    last_keys[0].data(),
+                    &keys[((*key_count)-1) * N],
+                    N * sizeof(uint64_t)
+                );
+
+                last_dirs[1] = last_dirs[0];
+
+                last_dirs[0] = children[*key_count];
+                shift_right_keys(splitted_index2, (*key_count)-2);
+                shift_right_children(splitted_index2+1, (*key_count)-1);
+                update_key(splitted_index2, split->record2);
+                update_child(splitted_index2+1, split->encoded_page_number2);
+            }
+
             int_fast32_t middle_index = ((*key_count)+1)/2;
             auto& new_lhs_page = buffer_manager.append_vpage(dir_file_id);
             auto& new_rhs_page = buffer_manager.append_vpage(dir_file_id);
@@ -139,7 +180,7 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
 
             std::memcpy(
                 &new_rhs_dir.keys[(BPlusTree<N>::dir_max_records - (middle_index + 1)) * N],
-                last_key.data(),
+                last_keys[0].data(),
                 N * sizeof(uint64_t)
             );
 
@@ -156,11 +197,26 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
                 &children[middle_index + 1],
                 ((*key_count) - middle_index) * sizeof(int32_t)
             );
-            new_rhs_dir.children[(*key_count) - middle_index] = last_dir;
+
+            new_rhs_dir.children[(*key_count) - middle_index] = last_dirs[0];
+
             // update counts
             (*key_count) = 1;
             *new_lhs_dir.key_count = middle_index;
             *new_rhs_dir.key_count = BPlusTree<N>::dir_max_records - middle_index;
+
+            // write the last record if there was a double split before
+            if (split->double_split) {
+                std::memcpy(
+                    &new_rhs_dir.keys[(BPlusTree<N>::dir_max_records - middle_index) * N],
+                    last_keys[1].data(),
+                    N * sizeof(uint64_t)
+                );
+
+                new_rhs_dir.children[(*key_count) - middle_index + 1] = last_dirs[1];
+
+                ++*new_rhs_dir.key_count;
+            }
 
             // record at middle_index becomes the first and only record of the root
             std::memcpy(
@@ -170,33 +226,55 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
             );
             children[0] = static_cast<int32_t>(new_lhs_dir.page->get_page_number()) * -1;
             children[1] = static_cast<int32_t>(new_rhs_dir.page->get_page_number()) * -1;
+
             return nullptr;
         }
-        // Case 3: normal split (this node is not the root)
+        // Case 4: normal split (this node is not the root)
         else {
             // put new record/dir and save the last (that does not fit)
-            std::array<uint64_t, N> last_key;
-            int_fast32_t last_dir;
-            if (splitted_index == *key_count) { // splitted key is the last key
-                std::memcpy(
-                    last_key.data(),
-                    split->record.data(),
-                    N * sizeof(uint64_t)
-                );
-                last_dir = split->encoded_page_number;
+            std::vector<std::array<uint64_t, N>> last_keys(2);
+            std::vector<int_fast32_t> last_dirs(2);
+
+            // splitted key is the last key
+            if (splitted_index == *key_count) {
+                last_keys[0] = record;
+                last_dirs[0] = split->encoded_page_number;
             }
             else {
                 std::memcpy(
-                    last_key.data(),
+                    last_keys[0].data(),
                     &keys[((*key_count)-1) * N],
                     N * sizeof(uint64_t)
                 );
-                last_dir = children[*key_count];
+                last_dirs[0] = children[*key_count];
                 shift_right_keys(splitted_index, (*key_count)-2);
                 shift_right_children(splitted_index+1, (*key_count)-1);
                 update_key(splitted_index, split->record);
                 update_child(splitted_index+1, split->encoded_page_number);
             }
+
+            if (split->double_split && splitted_index2 == *key_count) {
+                last_keys[1] = split->record2;
+                last_dirs[1] = split->encoded_page_number2;
+            }
+            else if (split->double_split) {
+                last_keys[1] = last_keys[0];
+
+                std::memcpy(
+                    last_keys[0].data(),
+                    &keys[((*key_count)-1) * N],
+                    N * sizeof(uint64_t)
+                );
+
+                last_dirs[1] = last_dirs[0];
+
+                last_dirs[0] = children[*key_count];
+                shift_right_keys(splitted_index2, (*key_count)-2);
+                shift_right_children(splitted_index2+1, (*key_count)-1);
+                update_key(splitted_index2, split->record2);
+                update_child(splitted_index2+1, split->encoded_page_number2);
+            }
+
             int_fast32_t middle_index = ((*key_count)+1)/2;
 
             auto& new_page = buffer_manager.append_vpage(dir_file_id);
@@ -210,7 +288,7 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
             );
             std::memcpy(
                 &new_dir.keys[(BPlusTree<N>::dir_max_records - (middle_index+1))*N],
-                last_key.data(),
+                last_keys[0].data(),
                 N * sizeof(uint64_t)
             );
             // write children from middle_index + 1 to key_count and the last dir saved before
@@ -219,10 +297,24 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
                 &children[middle_index + 1],
                 ((*key_count) - middle_index) * sizeof(int32_t)
             );
-            new_dir.children[(*key_count) - middle_index] = last_dir;
+            new_dir.children[(*key_count) - middle_index] = last_dirs[0];
+
             // update counts
             *key_count = middle_index;
             *new_dir.key_count = BPlusTree<N>::dir_max_records - middle_index;
+
+            // write the last record if there was a double split before
+            if (split->double_split) {
+                std::memcpy(
+                    &new_dir.keys[(BPlusTree<N>::dir_max_records - middle_index) * N],
+                    last_keys[1].data(),
+                    N * sizeof(uint64_t)
+                );
+
+                new_dir.children[(*key_count) - middle_index + 1] = last_dirs[1];
+
+                ++*new_dir.key_count;
+            }
 
             // key at middle_index is returned
             std::array<uint64_t, N> split_key;
@@ -398,9 +490,9 @@ bool BPlusTreeDir<N>::check(std::ostream& os) const {
     // check children and keys are consistent
     int_fast32_t current_pos = 0;
     for (uint_fast32_t i = 0; i < *key_count; i++) {
-        auto key = Record<N>(std::array<uint64_t, N>());
-        auto greatest_left_key = Record<N>(std::array<uint64_t, N>());
-        auto smallest_right_key = Record<N>(std::array<uint64_t, N>());
+        Record<N> key;
+        Record<N> greatest_left_key;
+        Record<N> smallest_right_key;
 
         for (uint_fast32_t j = 0; j < N; j++) {
             key[j] = keys[current_pos++];
@@ -418,9 +510,7 @@ bool BPlusTreeDir<N>::check(std::ostream& os) const {
         else { // positive number: pointer to leaf
             auto& left_page = buffer_manager.get_page_readonly(leaf_file_id, left_pointer);
             BPlusTreeLeaf<N> left_child(&left_page);
-            for (uint_fast32_t j = 0; j < N; j++) {
-                greatest_left_key[j] = left_child.records[((*left_child.value_count-1) * N) + j];
-            }
+            left_child.set_record(*left_child.value_count - 1, greatest_left_key);
         }
 
         // Set smallest_right_key
@@ -439,9 +529,7 @@ bool BPlusTreeDir<N>::check(std::ostream& os) const {
         else { // positive number: pointer to leaf
             auto& right_page = buffer_manager.get_page_readonly(leaf_file_id, right_pointer);
             BPlusTreeLeaf<N> right_child(&right_page);
-            for (uint_fast32_t j = 0; j < N; j++) {
-                smallest_right_key[j] = right_child.records[j];
-            }
+            right_child.set_record(0, smallest_right_key);
             if (*right_child.value_count == 0) {
                 right_empty = true;
             }

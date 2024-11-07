@@ -73,5 +73,5 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
 
 
 void DescribeExecutor::analyze(std::ostream& os, bool, int indent) const {
-    os << std::string(indent, ' ') << "DescribeExecutor()";
+    os << std::string(indent, ' ') << "DescribeExecutor()\n";
 }

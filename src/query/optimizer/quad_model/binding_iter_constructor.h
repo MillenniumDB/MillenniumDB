@@ -7,8 +7,9 @@
 #include <vector>
 
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/query_context.h"
+#include "query/parser/op/mql/ops.h"
 #include "query/parser/op/op.h"
+#include "query/query_context.h"
 
 class BindingIter;
 namespace MQL {
@@ -42,6 +43,22 @@ public:
     // var, key, value, value_var
     std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>> fixed_properties;
 
+    // properties in query with one type fixed (not null).
+    // example: (?x {value IS INTEGER}). value only has one type in query fixed, and is not null.
+    // var, key, bitmap_final_types
+    std::vector<PropertyTypeConstraint> fixed_types_properties;
+
+    // Properties info in type queries
+    // (?x {value IS INTEGER})
+    // (?x) WHERE ?x.value IS INTEGER
+    // var_without_propertyId, keyId, var_with_propertyId, type_bitmap
+    std::vector<PropertyTypeConstraint> properties_types_queries;
+
+    // Properties info in queries with operators (==, !=, >, <, >=, <=)
+    // (?x {value == 4})
+    // var_without_propertyId, keyId
+    std::vector<PropertyOperatorConstraint> properties_operators;
+
     // For path_manager to print in the correct direction
     std::vector<bool> begin_at_left;
 
@@ -59,26 +76,34 @@ public:
     // True when a group is needed (Aggregation or Group By are present)
     bool grouping = false;
 
-    void visit(MQL::OpMatch&)             override;
+    void visit(MQL::OpMatch&) override;
     void visit(MQL::OpBasicGraphPattern&) override;
-    void visit(MQL::OpOptional&)          override;
-    void visit(MQL::OpWhere&)             override;
-    void visit(MQL::OpGroupBy&)           override;
-    void visit(MQL::OpOrderBy&)           override;
+    void visit(MQL::OpOptional&) override;
+    void visit(MQL::OpWhere&) override;
+    void visit(MQL::OpGroupBy&) override;
+    void visit(MQL::OpOrderBy&) override;
     void visit(MQL::OpProjectSimilarity&) override;
-    void visit(MQL::OpReturn&)            override;
+    void visit(MQL::OpBruteSimilaritySearch&) override;
+    void visit(MQL::OpReturn&) override;
 
     /* These are processed in BindingIterVisitor */
-    void visit(MQL::OpSet&)      override { throw LogicException("OpSet must be processed outside"); }
-    void visit(MQL::OpDescribe&) override { throw LogicException("OpDescribe must be processed outside"); }
+    void visit(MQL::OpSet&) override
+    {
+        throw LogicException("OpSet must be processed outside");
+    }
+
+    void visit(MQL::OpDescribe&) override
+    {
+        throw LogicException("OpDescribe must be processed outside");
+    }
 
     /* These are processed inside OpBasicGraphPattern */
-    void visit(MQL::OpEdge&)             override { }
-    void visit(MQL::OpDisjointTerm&)     override { }
-    void visit(MQL::OpDisjointVar&)      override { }
-    void visit(MQL::OpLabel&)            override { }
-    void visit(MQL::OpPath&)             override { }
-    void visit(MQL::OpProperty&)         override { }
+    void visit(MQL::OpEdge&) override { }
+    void visit(MQL::OpDisjointTerm&) override { }
+    void visit(MQL::OpDisjointVar&) override { }
+    void visit(MQL::OpLabel&) override { }
+    void visit(MQL::OpPath&) override { }
+    void visit(MQL::OpProperty&) override { }
 
 private:
     bool term_exists(ObjectId) const;

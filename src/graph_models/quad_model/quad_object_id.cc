@@ -5,7 +5,9 @@
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
-ObjectId QuadObjectId::get_fixed_node_inside(const std::string& str) {
+namespace QuadObjectId {
+
+ObjectId get_fixed_node_inside(const std::string& str) {
     assert(!str.empty());
     switch (str[0]) {
     case '"': { // "string"
@@ -65,7 +67,7 @@ ObjectId QuadObjectId::get_fixed_node_inside(const std::string& str) {
     }
 }
 
-ObjectId QuadObjectId::get_edge(const std::string& str) {
+ObjectId get_edge(const std::string& str) {
     assert(str.size() >= 3);
     std::string tmp = str.substr(2, str.size() - 2);
     assert(str[1] == 'e');
@@ -74,10 +76,10 @@ ObjectId QuadObjectId::get_edge(const std::string& str) {
 }
 
 
-ObjectId QuadObjectId::get_named_node(const std::string& str) {
+ObjectId get_named_node(const std::string& str) {
     if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
         uint64_t res = 0;
-        int shift_size = 8*(ObjectId::NAMED_NODE_INLINE_BYTES-1);
+        int shift_size = 8 * (ObjectId::NAMED_NODE_INLINE_BYTES - 1);
         // MUST convert to uint8_t and then to uint64_t.
         // Shift with shift_size >=32 is undefined behaviour.
         for (uint8_t byte : str) {
@@ -97,10 +99,10 @@ ObjectId QuadObjectId::get_named_node(const std::string& str) {
 }
 
 
-ObjectId QuadObjectId::get_string(const std::string& str) {
+ObjectId get_string(const std::string& str) {
     if (str.size() <= ObjectId::STR_INLINE_BYTES) {
         uint64_t res = 0;
-        int shift_size = 8*(ObjectId::STR_INLINE_BYTES-1);
+        int shift_size = 8 * (ObjectId::STR_INLINE_BYTES - 1);
         // MUST convert to uint8_t and then to uint64_t.
         // Shift with shift_size >=32 is undefined behaviour.
         for (uint8_t byte : str) {
@@ -118,3 +120,4 @@ ObjectId QuadObjectId::get_string(const std::string& str) {
         }
     }
 }
+} // namespace QuadObjectId

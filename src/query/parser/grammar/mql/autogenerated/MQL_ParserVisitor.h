@@ -23,6 +23,16 @@ public:
 
     virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext *context) = 0;
 
+    virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *context) = 0;
+
+    virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext *context) = 0;
+
+    virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext *context) = 0;
+
+    virtual std::any visitInsertPlainNodeInside(MQL_Parser::InsertPlainNodeInsideContext *context) = 0;
+
+    virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *context) = 0;
+
     virtual std::any visitProjectSimilarity(MQL_Parser::ProjectSimilarityContext *context) = 0;
 
     virtual std::any visitMetricType(MQL_Parser::MetricTypeContext *context) = 0;
@@ -30,20 +40,6 @@ public:
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext *context) = 0;
 
     virtual std::any visitDescribeFlag(MQL_Parser::DescribeFlagContext *context) = 0;
-
-    virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext *context) = 0;
-
-    virtual std::any visitInsertLabelList(MQL_Parser::InsertLabelListContext *context) = 0;
-
-    virtual std::any visitInsertPropertyList(MQL_Parser::InsertPropertyListContext *context) = 0;
-
-    virtual std::any visitInsertEdgeList(MQL_Parser::InsertEdgeListContext *context) = 0;
-
-    virtual std::any visitInsertLabelElement(MQL_Parser::InsertLabelElementContext *context) = 0;
-
-    virtual std::any visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext *context) = 0;
-
-    virtual std::any visitInsertEdgeElement(MQL_Parser::InsertEdgeElementContext *context) = 0;
 
     virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *context) = 0;
 
@@ -89,6 +85,8 @@ public:
 
     virtual std::any visitSimilaritySearch(MQL_Parser::SimilaritySearchContext *context) = 0;
 
+    virtual std::any visitBruteSimilaritySearch(MQL_Parser::BruteSimilaritySearchContext *context) = 0;
+
     virtual std::any visitTensor(MQL_Parser::TensorContext *context) = 0;
 
     virtual std::any visitBasicPattern(MQL_Parser::BasicPatternContext *context) = 0;
@@ -127,6 +125,12 @@ public:
 
     virtual std::any visitProperty2(MQL_Parser::Property2Context *context) = 0;
 
+    virtual std::any visitProperty3(MQL_Parser::Property3Context *context) = 0;
+
+    virtual std::any visitProperty4(MQL_Parser::Property4Context *context) = 0;
+
+    virtual std::any visitConditionalOrType(MQL_Parser::ConditionalOrTypeContext *context) = 0;
+
     virtual std::any visitIdentifier(MQL_Parser::IdentifierContext *context) = 0;
 
     virtual std::any visitBoolValue(MQL_Parser::BoolValueContext *context) = 0;
@@ -153,11 +157,15 @@ public:
 
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext *context) = 0;
 
-    virtual std::any visitExprValueExpr(MQL_Parser::ExprValueExprContext *context) = 0;
+    virtual std::any visitExprValue(MQL_Parser::ExprValueContext *context) = 0;
 
     virtual std::any visitExprParenthesis(MQL_Parser::ExprParenthesisContext *context) = 0;
 
-    virtual std::any visitValueExpr(MQL_Parser::ValueExprContext *context) = 0;
+    virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *context) = 0;
+
+    virtual std::any visitFunction(MQL_Parser::FunctionContext *context) = 0;
+
+    virtual std::any visitRegex(MQL_Parser::RegexContext *context) = 0;
 
     virtual std::any visitExprTypename(MQL_Parser::ExprTypenameContext *context) = 0;
 

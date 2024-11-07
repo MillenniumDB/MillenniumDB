@@ -158,5 +158,5 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
 
 
 void DescribeStreamingExecutor::analyze(std::ostream& os, bool /*print_stats*/, int indent) const {
-    os << std::string(indent, ' ') << "DescribeStreamingExecutor()";
+    os << std::string(indent, ' ') << "DescribeStreamingExecutor()\n";
 }

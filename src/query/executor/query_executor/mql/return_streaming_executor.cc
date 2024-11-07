@@ -35,7 +35,7 @@ uint64_t ReturnStreamingExecutor::execute(MDBServer::StreamingResponseWriter& re
 
 
 void ReturnStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
-    os << std::string(indent, ' ') << "ReturnStreamingExecutor()";
+    os << std::string(indent, ' ') << "ReturnStreamingExecutor()\n";
     BindingIterPrinter printer(os, print_stats, indent + 2);
     iter->accept_visitor(printer);
 }

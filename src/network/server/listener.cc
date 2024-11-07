@@ -53,6 +53,9 @@ void Listener::run() {
             // A new connection is accepted
             logger(Category::Debug) << "New client connected";
             if (!ec) {
+                // Disable Nagle's Algorithm to reduce latency, as our protocol may flush many small
+                // messages when answering requests
+                socket.set_option(asio::ip::tcp::no_delay(true));
                 std::make_shared<SessionDispatcher>(server, std::move(socket), query_timeout)->run();
             }
 

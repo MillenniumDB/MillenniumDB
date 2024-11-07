@@ -32,7 +32,7 @@ bool EdgeTableLookup::_next() {
         } else {
             edge_assignation = edge.get_OID();
         }
-        if ( (ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::MASK_EDGE) {
+        if ((ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::MASK_EDGE) {
             return false;
         }
         auto edge_id = ObjectId::VALUE_MASK & edge_assignation.id;
@@ -40,9 +40,10 @@ bool EdgeTableLookup::_next() {
 
         auto record = table[edge_id - 1]; // first edge has the id 1, and its inserted at pos 0 in the table
 
-        if (record == nullptr) return false;
+        if (record == nullptr)
+            return false;
 
-        auto check_id = [] (Binding& binding, Id id, bool assigned, ObjectId obj_id) -> bool {
+        auto check_id = [](Binding& binding, Id id, bool assigned, ObjectId obj_id) -> bool {
             if (id.is_var()) {
                 if (assigned) {
                     return binding[id.get_var()] == obj_id;
@@ -59,8 +60,8 @@ bool EdgeTableLookup::_next() {
         };
 
         // check if assigned variables (not null) have the same value
-        if (   check_id(*parent_binding, from, from_assigned, ObjectId((*record)[0]))
-            && check_id(*parent_binding, to,   to_assigned,   ObjectId((*record)[1]))
+        if (check_id(*parent_binding, from, from_assigned, ObjectId((*record)[0]))
+            && check_id(*parent_binding, to, to_assigned, ObjectId((*record)[1]))
             && check_id(*parent_binding, type, type_assigned, ObjectId((*record)[2])))
         {
             return true;

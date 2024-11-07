@@ -539,6 +539,17 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editabl
 }
 
 
+void BufferManager::upgrade_to_editable(VersionScope& version_scope) {
+    if (version_scope.is_editable) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lck(running_version_count_mutex);
+    running_version_count[version_scope.start_version+1]++;
+    version_scope.is_editable = true;
+}
+
+
 void BufferManager::terminate(const VersionScope& version_scope) {
     std::lock_guard<std::mutex> lck(running_version_count_mutex);
     auto it1 = running_version_count.find(version_scope.start_version);

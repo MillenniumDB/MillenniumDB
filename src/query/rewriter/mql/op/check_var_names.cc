@@ -127,6 +127,19 @@ void CheckVarNames::visit(OpProjectSimilarity& op_project_similarity) {
 }
 
 
+void CheckVarNames::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
+    op_brute_similarity_search.op->accept_visitor(*this);
+    if (declared_vars.find(op_brute_similarity_search.object_var) == declared_vars.end()) {
+        throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(op_brute_similarity_search.object_var)
+                                     + "\" not declared for similarity projection");
+    }
+    if (!declared_vars.insert(op_brute_similarity_search.similarity_var).second)
+        throw QuerySemanticException("Duplicated unjoinable variable \""
+                                     + get_query_ctx().get_var_name(op_brute_similarity_search.similarity_var) + "\"");
+    unjoinable_vars.insert(op_brute_similarity_search.similarity_var);
+}
+
+
 void CheckVarNames::visit(OpSet& op_set) {
     op_set.op->accept_visitor(*this);
 }
@@ -275,6 +288,16 @@ void CheckVarNamesExpr::visit(ExprAnd& expr) {
 void CheckVarNamesExpr::visit(ExprOr& expr) {
     for (auto& e : expr.or_list) {
         e->accept_visitor(*this);
+    }
+}
+
+
+void CheckVarNamesExpr::visit(ExprRegex& expr) {
+    expr.expr1->accept_visitor(*this);
+    expr.expr2->accept_visitor(*this);
+
+    if (expr.expr3 != nullptr) {
+        expr.expr3->accept_visitor(*this);
     }
 }
 

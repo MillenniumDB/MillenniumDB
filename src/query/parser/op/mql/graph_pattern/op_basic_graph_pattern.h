@@ -11,6 +11,7 @@
 #include "query/parser/op/mql/graph_pattern/op_label.h"
 #include "query/parser/op/mql/graph_pattern/op_path.h"
 #include "query/parser/op/mql/graph_pattern/op_property.h"
+#include "query/parser/op/mql/graph_pattern/op_brute_similarity_search.h"
 #include "query/parser/op/mql/graph_pattern/op_similarity_search.h"
 #include "query/parser/op/op.h"
 
@@ -18,15 +19,16 @@ namespace MQL {
 
 class OpBasicGraphPattern : public Op {
 public:
-    std::set<OpLabel>        labels;
-    std::set<OpProperty>     properties;
-    std::set<OpEdge>         edges;
-    std::set<OpPath>         paths;
-    std::set<OpDisjointVar>  disjoint_vars;
-    std::set<OpDisjointTerm> disjoint_terms;
-    std::set<OpSimilaritySearch> similarity_searches;
+    std::set<OpLabel>                 labels;
+    std::set<OpProperty>              properties;
+    std::set<OpEdge>                  edges;
+    std::set<OpPath>                  paths;
+    std::set<OpDisjointVar>           disjoint_vars;
+    std::set<OpDisjointTerm>          disjoint_terms;
+    std::set<OpSimilaritySearch>      similarity_searches;
 
     std::set<VarId> vars; // contains declared variables and anonymous (auto-generated in the constructor)
+
 
     std::unique_ptr<Op> clone() const override {
         return std::make_unique<OpBasicGraphPattern>(*this);
