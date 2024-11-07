@@ -2,24 +2,29 @@ MillenniumDB
 ================================================================================
 MillenniumDB is a graph oriented database management system developed by the [Millennium Institute for Foundational Research on Data (IMFD)](https://imfd.cl/).
 
-The main objective of this project is to create a fully functional and easy-to-extend DBMS that serves as the basis for testing new techniques and algorithms related to databases and graphs. We aim to support multiple graph models. RDF/SPARQL support is fairly complete and we are also working on a variation of property graphs.
+The main objective of this project is to create a fully functional and easy-to-extend DBMS that serves as the basis for testing new techniques and algorithms related to databases and graphs. We support multiple graph models, RDF/SPARQL support is fairly complete and we have a custom language to work with Property Graphs. We are working to add support for GQL in the near future.
 
 This project is still in active development and is not production ready yet, some functionality is missing and there may be bugs.
 
 
-
 Table of Contents
 ================================================================================
-- [SPARQL Support](#sparql-support)
+- [Graph Models](#graph-models)
+    - [RDF](#rdf-model)
+    - [Property Graphs](#property-graph-model)
 - [Project Build](#project-build)
 - [Using MillenniumDB](#using-millenniumdb)
 - [Example](#example)
 - [Docker](#docker)
 
 
+# [Graph Models](#millenniumdb)
+We support two different graph models, each graph model has its corresponding query language (i.e. once you import an RDF graph, you must use SPARQL to query it, our property graph query language will not work in that graph).
 
-[SPARQL Support](#millenniumdb)
-================================================================================
+## [RDF Model](#millenniumdb)
+
+We can import RDF graphs in `.ttl`, `.n3` or `.nt` formats and we support most of  [SPARQL](https://www.w3.org/TR/sparql11-query/), with exceptions explained below.
+
 Currently Unsupported SPARQL Features
 --------------------------------------------------------------------------------
 - Updates other that [INSERT DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#insertData) and [DELETE DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#deleteData)
@@ -41,6 +46,11 @@ Deviations from the SPARQL Specification
 This is explained in more detail [here](doc/sparql/sparql_deviations.md).
 
 
+## [Property Graph Model](#millenniumdb)
+The definition of the graph model and how to create a graph file is explained [here](doc/quad_model/data_model.md).
+The query language is inspired on Cypher and its defined [here](doc/quad_model/query_language.md).
+
+
 
 [Project build](#millenniumdb)
 ================================================================================
@@ -57,6 +67,7 @@ MillenniumDB needs the following dependencies:
 - libssl
 - ncursesw and less for the CLI
 - Python >= 3.8 with venv to run tests
+- Boost 1.82
 
 On current Debian and Ubuntu based distributions they can be installed by running:
 ```bash
@@ -143,7 +154,7 @@ https://other.prefix.com/foo
 https://other.prefix.com/bar
 ```
 
-Using a prefix file is optional, but helps reduce the space occupied by IRIs in the database. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space. The total number of user defined prefixes cannot exceed 255.
+Using a prefix file is optional (and only considered when working with RDF), but helps reduce the space occupied by IRIs in the database. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space. The total number of user defined prefixes cannot exceed 255.
 
 
 Querying a Database
@@ -157,12 +168,9 @@ build/Release/bin/mdb-server <db-directory>
 ```
 
 ### Execute a Query
-The MillenniumDB SPARQL server supports all three query operations specified in the [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation):
-- `query via GET`
-- `query via URL-encoded POST`
-- `query via POST directly`
+The easiest way to run a query is to use the Web Browser at http://localhost:4321/ after starting the server.
 
-We also provide a script to make queries using curl.
+If you prefer to work in a terminal, we also provide a script to make queries using curl.
 To use it you have to pass a file with the query as a parameter:
 ```bash
 bash scripts/query <query-file>
@@ -172,10 +180,13 @@ where `<query-file>` is the path to a file containing a query in SPARQL format.
 
 For updates, we have an analogous script:
 ```bash
-bash scripts/query <query-file>
+bash scripts/update <query-file>
 ```
 
-Currently our updates only support [INSERT DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#insertData) and [DELETE DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#deleteData).
+The MillenniumDB SPARQL server supports all three query operations specified in the [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation):
+- `query via GET`
+- `query via URL-encoded POST`
+- `query via POST directly`
 
 [Example](#millenniumdb)
 ================================================================================
@@ -202,16 +213,7 @@ build/Release/bin/mdb-server data/example-rdf-database
 
 Execute a Query
 --------------------------------------------------------------------------------
-```bash
-bash scripts/query <query-file>
-```
-The query result should be shown in the terminal.
-
-You can specify the output to be CSV, TSV, XML or JSON, example:
-
-```bash
-bash scripts/query <query-file> TSV
-```
+Go to http://localhost:4321/
 
 Remove the Database
 --------------------------------------------------------------------------------
@@ -262,7 +264,7 @@ docker run --rm --volume "$PWD"/data:/data -p 1234:1234 -p 4321:4321 mdb \
 
 Executing a Query
 --------------------------------------------------------------------------------
-go to http://localhost:4321/ to see the web interface (available while running the server).
+Go to http://localhost:4321/ to see the web interface (available while running the server).
 
 Also we provide a script to make queries using the console:
 
