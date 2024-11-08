@@ -3,173 +3,97 @@
 #include "query/exceptions.h"
 #include "query/parser/expr/mql_exprs.h"
 #include "query/parser/op/mql/ops.h"
-// #include "query/rewriter/mql/op/return_item_check_group.h"
-// #include "query/rewriter/mql/op/return_item_check_var_name.h"
-// #include "query/parser/return_item/return_item_var.h"
 
 using namespace MQL;
 
-// void CheckVarNames::visit(OpGroupBy& op_group_by) {
-//     op_group_by.op->accept_visitor(*this);
+void CheckVarNames::visit(OpGroupBy& op_group_by) {
+    op_group_by.op->accept_visitor(*this);
 
-    // TODO: remake aggs
-    // ReturnItemCheckVarName visitor(declared_vars, declared_path_vars, "GROUP BY");
-
-    // // check no repeated var, "GROUP BY ?x, ?x.key" is not possible
-    // std::set<Var> vars;
-
-    // for (auto& var : op_group_by.items) {
-    //     ReturnItemVar item(var);
-    //     item.accept_visitor(visitor);
-
-    //     auto pos = var.name.find('.');
-    //     if (pos == std::string::npos) {
-    //         if (vars.find(var) == vars.end()) {
-    //             vars.insert(var);
-    //         } else {
-    //             throw QuerySemanticException("Variable \"" + var.name
-    //                                        + "\" can't be used twice in GROUP BY");
-    //         }
-    //     }
-    //     group_var_names.insert(var.name);
-    // }
-
-    // for (auto& var : op_group_by.items) {
-    //     ReturnItemVar item(var);
-    //     item.accept_visitor(visitor);
-
-    //     auto pos = var.name.find('.');
-    //     if (pos != std::string::npos) {
-    //         // var is like "?x.key" transform into "?x"
-    //         Var var_without_property(var.name.substr(0, pos));
-    //         if (vars.find(var_without_property) == vars.end()) {
-    //             vars.insert(var);
-    //         } else {
-    //             throw QuerySemanticException("Variable \"" + var.name
-    //                                        + "\" can't be used in GROUP BY along with " + var_without_property.name);
-    //         }
-    //     }
-    // }
-// }
+    for (auto var : op_group_by.vars) {
+        if (declared_vars.find(var) == declared_vars.end()) {
+            throw QuerySemanticException("Variable \""
+                + get_query_ctx().get_var_name(var)
+                + "\" not declared");
+        }
+    }
+}
 
 
 void CheckVarNames::visit(OpReturn& op_return) {
     op_return.op->accept_visitor(*this);
 
-    // TODO: remake aggs
-    // ReturnItemCheckVarName visitor(declared_vars, declared_path_vars, "RETURN", op_return.distinct);
-    // ReturnItemCheckGroup visitor2(group_var_names);
-
-    // bool seen_agg = false;
-    // bool seen_non_agg = false;
-
-    // for (auto& item : op_return.return_items) {
-    //     item->accept_visitor(visitor);
-    //     item->accept_visitor(visitor2);
-    //     const auto& varname = item->get_var().name;
-    //     if (varname[0] == '?') {
-    //         // non_agg
-    //         seen_non_agg = true;
-    //         if (group_var_names.size() == 0 && seen_agg) {
-    //             throw QuerySemanticException("Can't mix aggregates with non aggregates in return when there is no group by");
-    //         }
-    //     } else {
-    //         // agg
-    //         seen_agg = true;
-    //         if (group_var_names.size() == 0 && seen_non_agg) {
-    //             throw QuerySemanticException("Can't mix aggregates with non aggregates in return when there is no group by");
-    //         }
-    //     }
-    // }
+    for (auto&& [var, expr] : op_return.projection) {
+        if (expr) {
+            CheckVarNamesExpr expr_visitor(declared_vars, unjoinable_vars);
+            expr->accept_visitor(expr_visitor);
+        } else {
+            if (declared_vars.find(var) == declared_vars.end()) {
+                throw QuerySemanticException("Variable \""
+                    + get_query_ctx().get_var_name(var)
+                    + "\" not declared");
+            }
+        }
+    }
 }
 
 
 void CheckVarNames::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
-    std::set<VarId> vars;
-    for (auto& item : op_order_by.items) {
-        // check no repeated vars, "ORDER BY ?x, ?y, ?x" would cause trouble
-        if (vars.find(item) == vars.end()) {
-            vars.insert(item);
+
+    for (auto&& [var, expr] : op_order_by.items) {
+        if (expr) {
+            CheckVarNamesExpr expr_visitor(declared_vars, unjoinable_vars);
+            expr->accept_visitor(expr_visitor);
         } else {
-            throw QuerySemanticException("Variable \""
-             + get_query_ctx().get_var_name(item)
-             + "\" can't be repeated in ORDER BY");
+            if (declared_vars.find(var) == declared_vars.end()) {
+                throw QuerySemanticException("Variable \""
+                    + get_query_ctx().get_var_name(var)
+                    + "\" not declared");
+            }
         }
     }
-
-    // TODO: remake aggs
-    // ReturnItemCheckVarName visitor(declared_vars, declared_path_vars, "ORDER BY");
-    // ReturnItemCheckGroup visitor2(group_var_names);
-    // std::set<Var> vars;
-    // for (auto& item : op_order_by.items) {
-    //     item->accept_visitor(visitor);
-    //     item->accept_visitor(visitor2);
-
-    //     auto var = item->get_var();
-
-    //     // check no repeated vars, "ORDER BY ?x, ?y, ?x" would cause trouble
-    //     if (vars.find(var) == vars.end()) {
-    //         vars.insert(var);
-    //     } else {
-    //         throw QuerySemanticException("Variable \"" + var.name + "\" can't be repeated in ORDER BY");
-    //     }
-    // }
 }
 
 
 void CheckVarNames::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
-    auto insert_vars = [&](const std::set<VarId>& vars) {
-        for (auto& var : vars) {
-            declared_vars.insert(var);
-            if (declared_path_vars.find(var) != declared_path_vars.end()) {
-                throw QuerySemanticException("Duplicated path variable \""
-                                            + get_query_ctx().get_var_name(var)
-                                            + "\". Paths must have an unique variable");
-            }
-        }
+    auto insert_joinable_var = [&](const VarId var) {
+        declared_vars.insert(var);
+        if (unjoinable_vars.find(var) != unjoinable_vars.end())
+            throw QuerySemanticException("Duplicated unjoinable variable \"" + get_query_ctx().get_var_name(var) + "\"");
+    };
+    auto insert_unjoinable_var = [&](const VarId var) {
+        if (!declared_vars.insert(var).second)
+            throw QuerySemanticException("Duplicated unjoinable variable \"" + get_query_ctx().get_var_name(var) + "\"");
+        unjoinable_vars.insert(var);
+    };
+    auto insert_joinable_vars = [&](const std::set<VarId>& vars) {
+        for (auto& var : vars)
+            insert_joinable_var(var);
     };
 
     for (auto& label : op_basic_graph_pattern.labels) {
-        insert_vars(label.get_all_vars());
+        insert_joinable_vars(label.get_all_vars());
     }
     for (auto& property : op_basic_graph_pattern.properties) {
-        insert_vars(property.get_all_vars());
+        insert_joinable_vars(property.get_all_vars());
     }
     for (auto& edge : op_basic_graph_pattern.edges) {
-        insert_vars(edge.get_all_vars());
+        insert_joinable_vars(edge.get_all_vars());
     }
     for (auto& disjoint_var : op_basic_graph_pattern.disjoint_vars) {
-        insert_vars(disjoint_var.get_all_vars());
+        insert_joinable_vars(disjoint_var.get_all_vars());
+    }
+    for (auto& similarity_search : op_basic_graph_pattern.similarity_searches) {
+        insert_joinable_var(similarity_search.object_var);
+        insert_unjoinable_var(similarity_search.similarity_var);
     }
 
     for (auto& path : op_basic_graph_pattern.paths) {
-        if (path.from.is_var()) {
-            auto var = path.from.get_var();
-            declared_vars.insert(var);
-            if (declared_path_vars.find(var) != declared_path_vars.end()) {
-                throw QuerySemanticException("Duplicated path variable \"" + get_query_ctx().get_var_name(var)
-                                            + "\". Paths must have an unique variable");
-            }
-        }
-
-        if (path.to.is_var()) {
-            auto var = path.to.get_var();
-            declared_vars.insert(var);
-            if (declared_path_vars.find(var) != declared_path_vars.end()) {
-                throw QuerySemanticException("Duplicated path variable \"" + get_query_ctx().get_var_name(var)
-                                            + "\". Paths must have an unique variable");
-            }
-        }
-
-        if (!declared_path_vars.insert(path.var).second) {
-            throw QuerySemanticException("Duplicated path variable \"" + get_query_ctx().get_var_name(path.var)
-                                         + "\". Paths must have an unique variable");
-        }
-        if (!declared_vars.insert(path.var).second) {
-            throw QuerySemanticException("Duplicated path variable \"" + get_query_ctx().get_var_name(path.var)
-                                         + "\". Paths must have an unique variable");
-        }
+        if (path.from.is_var())
+            insert_joinable_var(path.from.get_var());
+        if (path.to.is_var())
+            insert_joinable_var(path.to.get_var());
+        insert_unjoinable_var(path.var);
     }
 }
 
@@ -184,8 +108,35 @@ void CheckVarNames::visit(OpOptional& op_optional) {
 
 void CheckVarNames::visit(OpWhere& op_where) {
     op_where.op->accept_visitor(*this);
-    CheckVarNamesExpr expr_visitor(declared_vars, declared_path_vars);
+    CheckVarNamesExpr expr_visitor(declared_vars, unjoinable_vars);
     op_where.expr->accept_visitor(expr_visitor);
+}
+
+
+void CheckVarNames::visit(OpProjectSimilarity& op_project_similarity) {
+    op_project_similarity.op->accept_visitor(*this);
+    if (declared_vars.find(op_project_similarity.object_var) == declared_vars.end()) {
+        throw QuerySemanticException("Variable \""
+            + get_query_ctx().get_var_name(op_project_similarity.object_var)
+            + "\" not declared for similarity projection");
+    }
+    if (!declared_vars.insert(op_project_similarity.similarity_var).second)
+        throw QuerySemanticException("Duplicated unjoinable variable \""
+                                     + get_query_ctx().get_var_name(op_project_similarity.similarity_var) + "\"");
+    unjoinable_vars.insert(op_project_similarity.similarity_var);
+}
+
+
+void CheckVarNames::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
+    op_brute_similarity_search.op->accept_visitor(*this);
+    if (declared_vars.find(op_brute_similarity_search.object_var) == declared_vars.end()) {
+        throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(op_brute_similarity_search.object_var)
+                                     + "\" not declared for similarity projection");
+    }
+    if (!declared_vars.insert(op_brute_similarity_search.similarity_var).second)
+        throw QuerySemanticException("Duplicated unjoinable variable \""
+                                     + get_query_ctx().get_var_name(op_brute_similarity_search.similarity_var) + "\"");
+    unjoinable_vars.insert(op_brute_similarity_search.similarity_var);
 }
 
 
@@ -196,26 +147,49 @@ void CheckVarNames::visit(OpSet& op_set) {
 
 void CheckVarNames::visit(OpMatch& op_match) {
     op_match.op->accept_visitor(*this);
+
+    for (auto op_property : op_match.optional_properties) {
+        if (op_property.node.is_var()) {
+            if (declared_vars.find(op_property.node.get_var()) == declared_vars.end()) {
+                throw QuerySemanticException("Variable \""
+                    + get_query_ctx().get_var_name(op_property.node.get_var())
+                    + "\" not declared");
+            }
+        }
+        if (op_property.value.is_var()) {
+            declared_vars.insert(op_property.value.get_var());
+        }
+    }
 }
 
 
 /*************************** ExprVisitor ***************************/
 void CheckVarNamesExpr::visit(ExprVar& expr) {
     if (declared_vars.find(expr.var) == declared_vars.end()) {
-        throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" used in WHERE is not declared in MATCH");
+        throw QuerySemanticException(
+            "Variable \""
+            + get_query_ctx().get_var_name(expr.var)
+            + "\" used in WHERE is not declared in MATCH"
+        );
     }
 }
 
 
-// void CheckVarNamesExpr::visit(ExprVarProperty& expr) {
-//     if (declared_vars.find(expr.object_var) == declared_vars.end()) {
-//         throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(expr.object_var)
-//                                         + "\" used in WHERE is not declared in MATCH");
-//     } else if (declared_path_vars.find(expr.object_var) != declared_path_vars.end()) {
-//         throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(expr.object_var)
-//                                         + "\" is a path and cannot have properties");
-//     }
-// }
+void CheckVarNamesExpr::visit(ExprVarProperty& expr) {
+    if (declared_vars.find(expr.var_without_property) == declared_vars.end()) {
+        throw QuerySemanticException(
+            "Variable \""
+            + get_query_ctx().get_var_name(expr.var_without_property)
+            + "\" used in WHERE is not declared in MATCH"
+        );
+    }
+    if (unjoinable_vars.find(expr.var_without_property) != unjoinable_vars.end()) {
+        throw QuerySemanticException(
+            "Variable \""
+            + get_query_ctx().get_var_name(expr.var_without_property)
+            + "\" is unjoinable and cannot have properties");
+    }
+}
 
 
 void CheckVarNamesExpr::visit(ExprAddition& expr) {
@@ -315,4 +289,44 @@ void CheckVarNamesExpr::visit(ExprOr& expr) {
     for (auto& e : expr.or_list) {
         e->accept_visitor(*this);
     }
+}
+
+
+void CheckVarNamesExpr::visit(ExprRegex& expr) {
+    expr.expr1->accept_visitor(*this);
+    expr.expr2->accept_visitor(*this);
+
+    if (expr.expr3 != nullptr) {
+        expr.expr3->accept_visitor(*this);
+    }
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggAvg& expr) {
+    expr.expr->accept_visitor(*this);
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggCountAll&) {
+    // Do nothing
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggCount&) {
+    // Do nothing
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggMax& expr) {
+    expr.expr->accept_visitor(*this);
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggMin& expr) {
+    expr.expr->accept_visitor(*this);
+}
+
+
+void CheckVarNamesExpr::visit(ExprAggSum& expr) {
+    expr.expr->accept_visitor(*this);
 }

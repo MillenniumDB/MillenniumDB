@@ -1,7 +1,9 @@
 %option noyywrap
 %option nounput
 %option noinput
+%option nounistd
 %{
+#include "lex.yy.h"
 #include "lexer.h"
 %}
 COLON         [\:]
@@ -11,13 +13,13 @@ IMPLICIT      [@]+
 TRUE          "true"
 FALSE         "false"
 STRING        \"([^"\\]|\\.)*\"
+TYPED_STRING  [a-zA-Z]+[ \r\t]*\([ \r\t]*\"([^"\\]|\\.)*\"[ \r\t]*\)
 IDENTIFIER    [a-zA-Z][a-zA-Z0-9_]*
-IRI           <([^><\"{}\^\\\|`\x00-\x20])*>
 ANON          "_a"[1-9][0-9]*
 INTEGER       [-+]?[0-9]+
 FLOAT         [-+]?([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)?
 WHITESPACE    [ \r\t]+
-ENDLINE       [\n<<EOF>>]
+ENDLINE       [\n]
 UNRECOGNIZED  .
 %%
 {COLON}         { return Import::Token::COLON; }
@@ -27,14 +29,15 @@ UNRECOGNIZED  .
 {TRUE}          { return Import::Token::TRUE; }
 {FALSE}         { return Import::Token::FALSE; }
 {STRING}        { return Import::Token::STRING; }
+{TYPED_STRING}  { return Import::Token::TYPED_STRING; }
 {IDENTIFIER}    { return Import::Token::IDENTIFIER; }
-{IRI}           { return Import::Token::IRI; }
 {ANON}          { return Import::Token::ANON; }
 {INTEGER}       { return Import::Token::INTEGER; }
 {FLOAT}         { return Import::Token::FLOAT; }
 {WHITESPACE}    { return Import::Token::WHITESPACE; }
 {ENDLINE}       { return Import::Token::ENDLINE; }
 {UNRECOGNIZED}  { return Import::Token::UNRECOGNIZED; }
+<<EOF>>         { return Import::Token::END_OF_FILE; }
 %%
 
 void Import::Lexer::begin(const std::string& file) {

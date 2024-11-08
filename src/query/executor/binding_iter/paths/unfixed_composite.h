@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "query/executor/binding_iter.h"
-#include "query/id.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 #include "third_party/robin_hood/robin_hood.h"
@@ -26,7 +25,6 @@ private:
     // Attributes determined in begin
     Binding* parent_binding;
 
-    std::unique_ptr<BindingIter> path_enum;
 
     // Only used to remember the starting nodes, in order to not repeat them
     robin_hood::unordered_set<uint64_t> visited;
@@ -39,35 +37,36 @@ private:
     // index of the start transition for the current iter
     uint32_t current_start_transition = 0;
 
-    // Statistics
-    uint_fast32_t results_found = 0;
-    uint_fast32_t idx_searches = 0;
-
     const std::vector<RPQ_DFA::Transition>& start_transitions;
 
     bool set_next_starting_node();
 
 public:
+    // Statistics
+    uint_fast32_t idx_searches = 0;
+
+    std::unique_ptr<BindingIter> child_iter;
+
     UnfixedComposite(
         VarId                          path_var,
         VarId                          start,
         VarId                          end,
         RPQ_DFA                        _automaton,
         std::unique_ptr<IndexProvider> provider,
-        std::unique_ptr<BindingIter> path_enum
+        std::unique_ptr<BindingIter>   child_iter
     ) :
         path_var          (path_var),
         start             (start),
         end               (end),
         automaton         (_automaton),
         provider          (std::move(provider)),
-        path_enum         (std::move(path_enum)),
-        start_transitions (automaton.from_to_connections[0]) { }
+        start_transitions (automaton.from_to_connections[0]),
+        child_iter        (std::move(child_iter)) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    void reset() override;
-    bool next() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    void _reset() override;
+    bool _next() override;
 
     void assign_nulls() override {
         parent_binding->add(start, ObjectId::get_null());

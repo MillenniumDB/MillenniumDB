@@ -2,25 +2,25 @@
 
 #include <cassert>
 
+#include "macros/likely.h"
 #include "query/exceptions.h"
 
-void EdgeTableLookup::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "EdgeTableLookup(lookups: " << lookups << ", found: " << results << ")";
+void EdgeTableLookup::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
-void EdgeTableLookup::begin(Binding& parent_binding) {
+void EdgeTableLookup::_begin(Binding& parent_binding) {
     this->parent_binding = &parent_binding;
     already_looked = false;
 }
 
 
-bool EdgeTableLookup::next() {
+bool EdgeTableLookup::_next() {
     if (already_looked) {
         return false;
     } else {
-        if (__builtin_expect(!!(get_query_ctx().thread_info.interruption_requested), 0)) {
+        if (MDB_unlikely(get_query_ctx().thread_info.interruption_requested)) {
             throw InterruptedException();
         }
         already_looked = true;
@@ -32,7 +32,7 @@ bool EdgeTableLookup::next() {
         } else {
             edge_assignation = edge.get_OID();
         }
-        if ( (ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::MASK_EDGE) {
+        if ((ObjectId::TYPE_MASK & edge_assignation.id) != ObjectId::MASK_EDGE) {
             return false;
         }
         auto edge_id = ObjectId::VALUE_MASK & edge_assignation.id;
@@ -40,13 +40,13 @@ bool EdgeTableLookup::next() {
 
         auto record = table[edge_id - 1]; // first edge has the id 1, and its inserted at pos 0 in the table
 
-        if (record == nullptr) return false;
+        if (record == nullptr)
+            return false;
 
-        auto check_id = [] (Binding& binding, Id id, ObjectId obj_id) -> bool {
+        auto check_id = [](Binding& binding, Id id, bool assigned, ObjectId obj_id) -> bool {
             if (id.is_var()) {
-                auto binding_value = binding[id.get_var()];
-                if (!binding_value.is_null() && binding_value != obj_id) {
-                    return false;
+                if (assigned) {
+                    return binding[id.get_var()] == obj_id;
                 } else {
                     binding.add(id.get_var(), obj_id);
                 }
@@ -60,11 +60,10 @@ bool EdgeTableLookup::next() {
         };
 
         // check if assigned variables (not null) have the same value
-        if (   check_id(*parent_binding, from, ObjectId((*record)[0]))
-            && check_id(*parent_binding, to,   ObjectId((*record)[1]))
-            && check_id(*parent_binding, type, ObjectId((*record)[2])))
+        if (check_id(*parent_binding, from, from_assigned, ObjectId((*record)[0]))
+            && check_id(*parent_binding, to, to_assigned, ObjectId((*record)[1]))
+            && check_id(*parent_binding, type, type_assigned, ObjectId((*record)[2])))
         {
-            ++results;
             return true;
         } else {
             return false;
@@ -73,7 +72,7 @@ bool EdgeTableLookup::next() {
 }
 
 
-void EdgeTableLookup::reset() {
+void EdgeTableLookup::_reset() {
     already_looked = false;
 }
 
@@ -82,13 +81,16 @@ void EdgeTableLookup::assign_nulls() {
     if (edge.is_var()) {
         parent_binding->add(edge.get_var(), ObjectId::get_null());
     }
-    if (from.is_var()) {
+    if (!from_assigned) {
+        assert(from.is_var());
         parent_binding->add(from.get_var(), ObjectId::get_null());
     }
-    if (to.is_var()) {
+    if (!to_assigned) {
+        assert(to.is_var());
         parent_binding->add(to.get_var(), ObjectId::get_null());
     }
-    if (type.is_var()) {
+    if (!type_assigned) {
+        assert(type.is_var());
         parent_binding->add(type.get_var(), ObjectId::get_null());
     }
 }

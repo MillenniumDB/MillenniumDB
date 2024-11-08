@@ -2,21 +2,22 @@
 
 using namespace std;
 
-void DistinctHash::begin(Binding& parent_binding) {
+void DistinctHash::_begin(Binding& parent_binding) {
     this->parent_binding = &parent_binding;
     child_iter->begin(parent_binding);
     current_tuple = std::vector<ObjectId>(projected_vars.size());
 }
 
 
-void DistinctHash::reset() {
+void DistinctHash::_reset() {
     child_iter->reset();
     extendable_table.reset();
 }
 
 
-bool DistinctHash::next() {
+bool DistinctHash::_next() {
     while (child_iter->next()) {
+        processed++;
         // load current objects
         for (size_t i = 0; i < projected_vars.size(); i++) {
             current_tuple[i] = (*parent_binding)[projected_vars[i]];
@@ -40,8 +41,6 @@ bool DistinctHash::current_tuple_distinct() {
 }
 
 
-void DistinctHash::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "DistinctHash()\n";
-    child_iter->analyze(os, indent + 2);
+void DistinctHash::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

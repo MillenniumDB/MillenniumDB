@@ -1,4 +1,4 @@
-# Query language
+# MillenniumDB Query language
 
 A query would look like:
 ```

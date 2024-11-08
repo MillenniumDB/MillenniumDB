@@ -1,0 +1,10 @@
+# Testing builtInCall
+PREFIX : <http://www.example.org/>
+
+SELECT (COUNT(*) as ?c)
+WHERE {
+    ?s ?p_a ?o_a .
+    ?s ?p_b ?o_b .
+}
+GROUP BY CONCAT(STR(?o_a), STR(?o_b))
+ORDER BY DESC(?c)

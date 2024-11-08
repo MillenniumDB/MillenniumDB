@@ -1,0 +1,4 @@
+PREFIX : <http://www.path.com/>
+select (2*?o AS ?x)
+WHERE { ?s :t24 ?o }
+ORDER BY ABS(?x)

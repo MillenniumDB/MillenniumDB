@@ -75,7 +75,7 @@ TODO/*
 
 .antlr
 
-third_party/boost_1_81
+third_party/boost_1_82
 
 # Python virtual environment
 .venv
@@ -87,8 +87,22 @@ third_party/boost_1_81
 /query.rq
 
 /data/
+/tests/tmp
 /tests/sparql/tmp
 /tests/sparql/test-status-last.txt
 /tests/mql/tmp
 /tests/mql/test-status-last.txt
 /tests/trie/tmp-db
+
+/logs/
+
+/deb-package/boost_1_*
+/deb-package/output/
+
+# Jetbrains IDEs
+/.idea/
+
+/trie.dot
+/trie.dot.svg
+
+**/.DS_Store

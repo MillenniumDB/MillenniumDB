@@ -16,8 +16,10 @@ struct QueryException : public std::runtime_error {
 
 // Used when the query received is not a valid query (syntax error)
 struct QueryParsingException : public QueryException {
-    QueryParsingException(std::string msg) :
-        QueryException(msg) { }
+    size_t line;
+    size_t column;
+    QueryParsingException(std::string msg, size_t line, size_t column) :
+        QueryException(msg), line(line), column(column) { }
 };
 
 // Used when the query received is not a valid query (semantic error)

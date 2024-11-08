@@ -5,7 +5,6 @@
 #include <sstream>
 #include <string>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -22,17 +21,14 @@ public:
 
         std::string str;
 
-        switch (expr_oid.get_sub_type()) {
-        case ObjectId::MASK_STRING_SIMPLE: {
-            str = Conversions::unpack_string_simple(expr_oid);
+        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::STRING_SIMPLE:
+        case RDF_OID::GenericSubType::STRING_XSD: {
+            str = Conversions::unpack_string(expr_oid);
             break;
         }
-        case ObjectId::MASK_STRING_XSD: {
-            str = Conversions::unpack_string_xsd(expr_oid);
-            break;
-        }
-        case ObjectId::MASK_STRING_LANG: {
-            auto [l, s] = Conversions::unpack_string_lang(expr_oid);
+        case RDF_OID::GenericSubType::STRING_LANG: {
+            auto&& [l, s] = Conversions::unpack_string_lang(expr_oid);
             str = s;
             break;
         }
@@ -59,9 +55,8 @@ public:
         return Conversions::pack_string_simple(ss.str());
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "ENCODE_FOR_URI(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

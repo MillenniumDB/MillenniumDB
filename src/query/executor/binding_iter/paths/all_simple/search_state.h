@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <ostream>
 #include <vector>
 
@@ -27,8 +28,8 @@ struct PathState {
         prev_state  (prev_state) { }
 
     void print(std::ostream& os,
-               void (*print_node) (std::ostream&, ObjectId),
-               void (*print_edge) (std::ostream&, ObjectId, bool inverse),
+               std::function<void(std::ostream& os, ObjectId)> print_node,
+               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
                bool begin_at_left) const;
 };
 
@@ -43,49 +44,17 @@ struct SearchState {
         automaton_state (automaton_state) { }
 };
 
-// Structure that manages access & storage for visited path states
-class Visited {
-public:
-    Visited() {
-        blocks.push_back(new PathState[4096]);
-    }
-
-    ~Visited() {
-        clear();
-    }
-
-    PathState* add(ObjectId node_id, ObjectId type_id, bool inverse_dir, const PathState* prev_state) {
-        if (current_index >= 4096) {
-            blocks.push_back(new PathState[4096]);
-            current_index = 0;
-        }
-
-        auto& res = blocks.back()[current_index];
-        res = PathState(node_id, type_id, inverse_dir, prev_state);
-        current_index++;
-        return &res;
-    }
-
-    void clear() {
-        for (auto block : blocks) {
-            delete[](block);
-        }
-        blocks.clear();
-    }
-
-private:
-    std::vector<PathState*> blocks;
-    size_t current_index = 0;
-};
-
 // Represents a search state to expand with DFS
 struct SearchStateDFS {
     uint32_t automaton_state;
     uint32_t transition;  // Current transition for the automaton state
+
     std::unique_ptr<EdgeIter> iter;
+
     ObjectId node_id;
     ObjectId type_id;
     bool inverse_dir;
+
     const SearchStateDFS* prev_state;
 
     SearchStateDFS(uint32_t                       automaton_state,
@@ -104,8 +73,8 @@ struct SearchStateDFS {
         prev_state      (prev_state) { }
 
     void print(std::ostream& os,
-               void (*print_node) (std::ostream&, ObjectId),
-               void (*print_edge) (std::ostream&, ObjectId, bool inverse),
+               std::function<void(std::ostream& os, ObjectId)> print_node,
+               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
                bool begin_at_left) const;
 };
 
@@ -122,16 +91,4 @@ inline bool is_simple_path(const PathState* path_state, ObjectId new_node) {
     return true;
 }
 
-inline bool is_simple_path(const SearchStateDFS& path_state, ObjectId new_node) {
-    // Iterate over path backwards
-    auto current = &path_state;
-    while (current != nullptr) {
-        // Path is not simple (two nodes are equal)
-        if (current->node_id == new_node) {
-            return false;
-        }
-        current = current->prev_state;
-    }
-    return true;
-}
 }} // namespace Paths::AllSimple

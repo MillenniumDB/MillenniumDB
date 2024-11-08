@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "edge_trie.h"
 
 using namespace std;
@@ -52,37 +50,37 @@ pair<pair<uint64_t, uint64_t>*, pair<uint64_t, uint64_t>*> EdgeTrie::query(uint6
 }
 
 
-void EdgeTrie::print() {
-    cout << "Edge Trie: \n" << endl;
+// void EdgeTrie::print(std::ostream& os) {
+//     os << "Edge Trie: \n" << endl;
 
-    // Prefix level
-    cout << "L0: ";
-    for (size_t i = 0; i < prefix_lvl.size(); i++) {
-        cout << prefix_lvl[i] << ",";
-    }
-    cout << endl;
+//     // Prefix level
+//     os << "L0: ";
+//     for (size_t i = 0; i < prefix_lvl.size(); i++) {
+//         os << prefix_lvl[i] << ",";
+//     }
+//     os << endl;
 
-    // Data level
-    auto offset_idx = 1;
-    cout << "L1: *";
-    for (size_t i = 0; i < data_lvl.size(); i++) {
-        cout << "(" << data_lvl[i].first << " e" << data_lvl[i].second << ")";
-        if (i + 1 == offsets[offset_idx]) {
-            offset_idx++;
-            cout << "*";
-        } else {
-            cout << ",";
-        }
-    }
-    cout << "\n" << endl;
-}
+//     // Data level
+//     auto offset_idx = 1;
+//     os << "L1: *";
+//     for (size_t i = 0; i < data_lvl.size(); i++) {
+//         os << "(" << data_lvl[i].first << " e" << data_lvl[i].second << ")";
+//         if (i + 1 == offsets[offset_idx]) {
+//             offset_idx++;
+//             os << "*";
+//         } else {
+//             os << ",";
+//         }
+//     }
+//     os << "\n" << endl;
+// }
 
 
-void EdgeTrie::print_offsets() {
-    // Offsets
-    cout << "Offsets: \n" << endl;
-    for (size_t i = 0; i < prefix_lvl.size(); i++) {
-        cout << prefix_lvl[i] << ": (" << offsets[i] << "," << offsets[i + 1] << ")" << endl;
-    }
-    cout << endl;
-}
+// void EdgeTrie::print_offsets(std::ostream& os) {
+//     // Offsets
+//     os << "Offsets: \n" << endl;
+//     for (size_t i = 0; i < prefix_lvl.size(); i++) {
+//         os << prefix_lvl[i] << ": (" << offsets[i] << "," << offsets[i + 1] << ")" << endl;
+//     }
+//     os << endl;
+// }

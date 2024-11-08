@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_is.h"
 
@@ -13,9 +14,9 @@ public:
 
     bool negation;
 
-    ExprTypeName type;
+    ExprIs::TypeName type;
 
-    BindingExprIs(std::unique_ptr<BindingExpr> expr, bool negation, ExprTypeName type) :
+    BindingExprIs(std::unique_ptr<BindingExpr> expr, bool negation, ExprIs::TypeName type) :
         expr     (std::move(expr)),
         negation (negation),
         type     (type) { }
@@ -24,48 +25,43 @@ public:
         auto oid = expr->eval(binding);
         bool res = false;
         switch (type) {
-        case ExprTypeName::NULL_:
+        case ExprIs::TypeName::NULL_:
             res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_NULL;
             break;
-        case ExprTypeName::INTEGER:
+        case ExprIs::TypeName::INTEGER:
             res = (oid.id & ObjectId::SUB_TYPE_MASK) == ObjectId::MASK_INT;
             break;
-        case ExprTypeName::FLOAT:
+        case ExprIs::TypeName::FLOAT:
             res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_FLOAT;
             break;
-        case ExprTypeName::BOOL:
+        case ExprIs::TypeName::BOOL:
             res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_BOOL;
             break;
-        case ExprTypeName::STRING:
+        case ExprIs::TypeName::STRING:
             res = (oid.id & ObjectId::SUB_TYPE_MASK) == ObjectId::MASK_STRING_SIMPLE;
             break;
         default:
-            throw std::logic_error("ExprTypeName case not implemented in BindingExprIs");
+            throw std::logic_error("ExprIs::TypeName case not implemented in BindingExprIs");
         }
-        if (res ^ negation) {
-            return ObjectId(ObjectId::BOOL_TRUE);
-        } else {
-            return ObjectId(ObjectId::BOOL_FALSE);
-        }
+
+        return Conversions::pack_bool(res ^= negation);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '(' << *expr << (negation ? " IS NOT " : " IS ") << get_type_name(type) << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 
-private:
-    std::string get_type_name(ExprTypeName type) const {
+    std::string get_type_name(ExprIs::TypeName type) const {
         switch (type) {
-            case ExprTypeName::NULL_:
+            case ExprIs::TypeName::NULL_:
                 return "NULL";
-            case ExprTypeName::INTEGER:
+            case ExprIs::TypeName::INTEGER:
                 return "INTEGER";
-            case ExprTypeName::FLOAT:
+            case ExprIs::TypeName::FLOAT:
                 return "FLOAT";
-            case ExprTypeName::BOOL:
+            case ExprIs::TypeName::BOOL:
                 return "BOOL";
-            case ExprTypeName::STRING:
+            case ExprIs::TypeName::STRING:
                 return "STRING";
         }
         return "";

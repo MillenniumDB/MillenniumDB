@@ -1,7 +1,7 @@
 #include "char_iter.h"
 
-#include "storage/string_manager.h"
-#include "storage/tmp_manager.h"
+#include "system/string_manager.h"
+#include "system/tmp_manager.h"
 
 StringExternalIter::StringExternalIter(uint64_t string_start, uint64_t str_len) {
     current_page_offset = string_start % StringManager::STRING_BLOCK_SIZE;

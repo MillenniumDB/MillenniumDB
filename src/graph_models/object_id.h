@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "query/exceptions.h"
-
 class ObjectId {
 public:
     static constexpr auto MAX_INLINED_BYTES = 7;  // Ids have 8 bytes, 1 for type and 7 remaining
@@ -28,9 +26,8 @@ public:
     static constexpr uint64_t MOD_EXTERNAL      = 0x01'00000000000000UL; // 0b0000'00'01
     static constexpr uint64_t MOD_TMP           = 0x02'00000000000000UL; // 0b0000'00'10
 
-    static constexpr uint64_t MASK_LITERAL_TAG  = 0x00'FFFF0000000000UL; // Language/Datatype of string
-    static constexpr uint64_t MASK_LITERAL      = 0x00'0000FFFFFFFFFFUL; // Inline/external/temporal string id
-    static constexpr uint64_t MASK_TAG_MANAGER  = 0x00'00000000008000UL; // Tag mask, 1->tmp manager, 0->catalog
+    static constexpr uint64_t MASK_LITERAL_TAG  = 0x00'FFF00000000000UL; // 12 bits for language/datatype of string
+    static constexpr uint64_t MASK_EXTERNAL_ID  = 0x00'000FFFFFFFFFFFUL; // 44 least significant bits for external/tmp id
 
     static constexpr uint64_t MASK_IRI_PREFIX   = 0x00'FF000000000000UL;
     static constexpr uint64_t MASK_IRI_CONTENT  = 0x00'00FFFFFFFFFFFFUL;
@@ -102,29 +99,36 @@ public:
     static constexpr uint64_t MASK_EDGE                    = 0x80'00000000000000UL; // 0b1000'00'00  GENERIC
     static constexpr uint64_t MASK_PATH                    = 0x90'00000000000000UL; // 0b1001'00'00  GENERIC
     static constexpr uint64_t MASK_NOT_FOUND               = 0xA0'00000000000000UL; // 0b1010'00'00  GENERIC
-    static constexpr uint64_t MASK_MAX                     = 0xFF'FFFFFFFFFFFFFFUL; // 0b1010'00'00  GENERIC
+
+    static constexpr uint64_t MASK_IRI_UUID_LOWER          = 0xA1'00000000000000UL; // 0b1010'00'01
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP      = 0xA2'00000000000000UL; // 0b1010'00'10
+    static constexpr uint64_t MASK_IRI_UUID_UPPER          = 0xA5'00000000000000UL; // 0b1010'01'01
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP      = 0xA6'00000000000000UL; // 0b1010'01'10
+
+    static constexpr uint64_t MASK_IRI_HEX_LOWER           = 0xA9'00000000000000UL; // 0b1010'10'01
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP       = 0xAA'00000000000000UL; // 0b1010'10'10
+    static constexpr uint64_t MASK_IRI_HEX_UPPER           = 0xAD'00000000000000UL; // 0b1010'11'01
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP       = 0xAE'00000000000000UL; // 0b1010'11'10
 
     static_assert(MASK_NEGATIVE_INT < MASK_POSITIVE_INT, "Integers won't be ordered properly in the B+Tree.");
     static_assert(MASK_NEGATIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");
     static_assert(MASK_POSITIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");
 
-    static constexpr uint64_t NULL_ID             = MASK_NULL;
-    static constexpr uint64_t BOOL_FALSE          = MASK_BOOL | 0UL;
-    static constexpr uint64_t BOOL_TRUE           = MASK_BOOL | 1UL;
-    static constexpr uint64_t STRING_SIMPLE_EMPTY = MASK_STRING_SIMPLE_INLINED | 0UL;
-    static constexpr uint64_t STRING_XSD_EMPTY    = MASK_STRING_XSD_INLINED | 0UL;
+    static constexpr uint64_t NULL_ID    = MASK_NULL;
+    static constexpr uint64_t BOOL_FALSE = MASK_BOOL | 0UL;
+    static constexpr uint64_t BOOL_TRUE  = MASK_BOOL | 1UL;
 
     uint64_t id;
 
-    explicit ObjectId(uint64_t id) : id(id) { }
+    explicit constexpr ObjectId(uint64_t id) : id(id) { }
 
-    ObjectId() : id(NULL_ID) { }
+    ObjectId() = default;
 
-    static inline ObjectId get_null() noexcept {
+    static constexpr ObjectId get_null() noexcept {
         return ObjectId(NULL_ID);
     }
 
-    static inline ObjectId get_not_found() noexcept {
+    static constexpr ObjectId get_not_found() noexcept {
         return ObjectId(MASK_NOT_FOUND);
     }
 
@@ -134,10 +138,6 @@ public:
 
     inline uint64_t get_sub_type() const noexcept {
         return id & SUB_TYPE_MASK;
-    }
-
-    inline uint64_t get_generic_type() const noexcept {
-        return id & GENERIC_TYPE_MASK;
     }
 
     inline uint64_t get_mod() const noexcept {
@@ -152,36 +152,20 @@ public:
         return id == NULL_ID;
     }
 
+    inline bool is_tmp() const noexcept {
+        return (id & MOD_MASK) == MOD_TMP;
+    }
+
     inline bool is_true() const noexcept {
-        auto gen_type = id & GENERIC_TYPE_MASK;
-        auto value = id & VALUE_MASK;
-        return gen_type == MASK_BOOL && value == 1;
+        return id == BOOL_TRUE;
     }
 
     inline bool is_false() const noexcept {
-        auto gen_type = id & GENERIC_TYPE_MASK;
-        auto value = id & VALUE_MASK;
-        return gen_type == MASK_BOOL && value == 0;
-    }
-
-    inline bool is_numeric() const noexcept {
-        return (id & GENERIC_TYPE_MASK) == MASK_NUMERIC;
-    }
-
-    inline bool is_iri() const noexcept {
-        return (id & GENERIC_TYPE_MASK) == MASK_IRI;
-    }
-
-    inline bool is_bnode() const noexcept {
-        return (id & GENERIC_TYPE_MASK) == MASK_ANON;
-    }
-
-    inline bool is_string() const noexcept{
-        return (id & GENERIC_TYPE_MASK) == MASK_STRING;
+        return id == BOOL_FALSE;
     }
 
     inline bool is_not_found() const noexcept {
-        return (id & GENERIC_TYPE_MASK) == MASK_NOT_FOUND;
+        return id == MASK_NOT_FOUND;
     }
 
     inline bool is_valid() const noexcept {

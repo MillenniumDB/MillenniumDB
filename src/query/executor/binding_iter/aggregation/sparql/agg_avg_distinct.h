@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/datatypes/decimal.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
@@ -8,8 +9,13 @@ namespace SPARQL {
 class AggAvgDistinct : public Agg {
 public:
     using Agg::Agg;
+
+    AggAvgDistinct(VarId var_id, std::unique_ptr<BindingExpr> expr) :
+        Agg (var_id, std::move(expr)),
+        hash_table (1) { }
+
     void begin() override {
-        hash_table = std::make_unique<DistinctBindingHash<ObjectId>>(1);
+        hash_table.reset();
 
         sum_integer = 0;
         sum_decimal = Decimal(0);
@@ -34,7 +40,7 @@ public:
         }
 
         oid_vec[0] = oid;
-        if (hash_table->is_in_or_insert(oid_vec)) {
+        if (hash_table.is_in_or_insert(oid_vec)) {
             return;
         }
 
@@ -76,10 +82,10 @@ public:
     // indicates the end of a group
     ObjectId get() override {
         if (count == 0) {
-            return ObjectId(ObjectId::MASK_POSITIVE_INT);
+            return Conversions::pack_int(0);
         }
 
-         if (type == Conversions::OPTYPE_INTEGER) {
+        if (type == Conversions::OPTYPE_INTEGER) {
             Decimal avg;
             if (sum_integer % count == 0) {
                 // Optimization to avoid expensive Decimal divide
@@ -103,7 +109,10 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "AVG(DISTINCT " << *expr << ")";
+        os << "AVG(DISTINCT ";
+        BindingExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")";
         return os;
     }
 
@@ -117,7 +126,7 @@ private:
 
     uint64_t count = 0;
 
-    std::unique_ptr<DistinctBindingHash<ObjectId>> hash_table;
+    DistinctBindingHash hash_table;
 
     // Vector to pass oid to the hash table
     std::vector<ObjectId> oid_vec{1};

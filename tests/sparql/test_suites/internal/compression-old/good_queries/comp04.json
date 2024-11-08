@@ -1,0 +1,23 @@
+{
+    "head": {
+        "vars": [
+            "after"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "这是什么"
+                }
+            },
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "是律师。"
+                }
+            }
+        ]
+    }
+}

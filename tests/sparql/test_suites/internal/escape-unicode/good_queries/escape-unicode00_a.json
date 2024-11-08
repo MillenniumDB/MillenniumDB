@@ -1,0 +1,23 @@
+{
+    "head": {
+        "vars": [
+            "pred"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/esc_U"
+                }
+            },
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/symbol"
+                }
+            }
+        ]
+    }
+}

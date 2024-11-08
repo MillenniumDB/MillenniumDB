@@ -1,5 +1,5 @@
 
-// Generated from MQL_Parser.g4 by ANTLR 4.9.3
+// Generated from MQL_Parser.g4 by ANTLR 4.13.1
 
 #pragma once
 
@@ -15,255 +15,307 @@
 class  MQL_ParserBaseVisitor : public MQL_ParserVisitor {
 public:
 
-  virtual antlrcpp::Any visitRoot(MQL_Parser::RootContext *ctx) override {
+  virtual std::any visitRoot(MQL_Parser::RootContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitMatchQuery(MQL_Parser::MatchQueryContext *ctx) override {
+  virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitDescribeQuery(MQL_Parser::DescribeQueryContext *ctx) override {
+  virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitDescribeFlag(MQL_Parser::DescribeFlagContext *ctx) override {
+  virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertQuery(MQL_Parser::InsertQueryContext *ctx) override {
+  virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertLabelList(MQL_Parser::InsertLabelListContext *ctx) override {
+  virtual std::any visitInsertPlainNodeInside(MQL_Parser::InsertPlainNodeInsideContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertPropertyList(MQL_Parser::InsertPropertyListContext *ctx) override {
+  virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertEdgeList(MQL_Parser::InsertEdgeListContext *ctx) override {
+  virtual std::any visitProjectSimilarity(MQL_Parser::ProjectSimilarityContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertLabelElement(MQL_Parser::InsertLabelElementContext *ctx) override {
+  virtual std::any visitMetricType(MQL_Parser::MetricTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext *ctx) override {
+  virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitInsertEdgeElement(MQL_Parser::InsertEdgeElementContext *ctx) override {
+  virtual std::any visitDescribeFlag(MQL_Parser::DescribeFlagContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitSetStatement(MQL_Parser::SetStatementContext *ctx) override {
+  virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitMatchStatement(MQL_Parser::MatchStatementContext *ctx) override {
+  virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitWhereStatement(MQL_Parser::WhereStatementContext *ctx) override {
+  virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitGroupByStatement(MQL_Parser::GroupByStatementContext *ctx) override {
+  virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOrderByStatement(MQL_Parser::OrderByStatementContext *ctx) override {
+  virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitReturnList(MQL_Parser::ReturnListContext *ctx) override {
+  virtual std::any visitReturnList(MQL_Parser::ReturnListContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitReturnAll(MQL_Parser::ReturnAllContext *ctx) override {
+  virtual std::any visitReturnAll(MQL_Parser::ReturnAllContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitSetItem(MQL_Parser::SetItemContext *ctx) override {
+  virtual std::any visitLimitOffsetClauses(MQL_Parser::LimitOffsetClausesContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *ctx) override {
+  virtual std::any visitLimitClause(MQL_Parser::LimitClauseContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext *ctx) override {
+  virtual std::any visitOffsetClause(MQL_Parser::OffsetClauseContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitReturnItemCount(MQL_Parser::ReturnItemCountContext *ctx) override {
+  virtual std::any visitSetItem(MQL_Parser::SetItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitAggregateFunc(MQL_Parser::AggregateFuncContext *ctx) override {
+  virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext *ctx) override {
+  virtual std::any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext *ctx) override {
+  virtual std::any visitReturnItemCount(MQL_Parser::ReturnItemCountContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext *ctx) override {
+  virtual std::any visitAggregateFunc(MQL_Parser::AggregateFuncContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitGroupByItem(MQL_Parser::GroupByItemContext *ctx) override {
+  virtual std::any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitGraphPattern(MQL_Parser::GraphPatternContext *ctx) override {
+  virtual std::any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitOptionalPattern(MQL_Parser::OptionalPatternContext *ctx) override {
+  virtual std::any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitBasicPattern(MQL_Parser::BasicPatternContext *ctx) override {
+  virtual std::any visitGroupByItem(MQL_Parser::GroupByItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitLinearPattern(MQL_Parser::LinearPatternContext *ctx) override {
+  virtual std::any visitGraphPattern(MQL_Parser::GraphPatternContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPath(MQL_Parser::PathContext *ctx) override {
+  virtual std::any visitOptionalPattern(MQL_Parser::OptionalPatternContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathAlternatives(MQL_Parser::PathAlternativesContext *ctx) override {
+  virtual std::any visitSimilaritySearch(MQL_Parser::SimilaritySearchContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathSequence(MQL_Parser::PathSequenceContext *ctx) override {
+  virtual std::any visitBruteSimilaritySearch(MQL_Parser::BruteSimilaritySearchContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathAtomSimple(MQL_Parser::PathAtomSimpleContext *ctx) override {
+  virtual std::any visitTensor(MQL_Parser::TensorContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathAtomAlternatives(MQL_Parser::PathAtomAlternativesContext *ctx) override {
+  virtual std::any visitBasicPattern(MQL_Parser::BasicPatternContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathSuffix(MQL_Parser::PathSuffixContext *ctx) override {
+  virtual std::any visitLinearPattern(MQL_Parser::LinearPatternContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitPathType(MQL_Parser::PathTypeContext *ctx) override {
+  virtual std::any visitPath(MQL_Parser::PathContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitNode(MQL_Parser::NodeContext *ctx) override {
+  virtual std::any visitPathAlternatives(MQL_Parser::PathAlternativesContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitFixedNode(MQL_Parser::FixedNodeContext *ctx) override {
+  virtual std::any visitPathSequence(MQL_Parser::PathSequenceContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext *ctx) override {
+  virtual std::any visitPathAtomSimple(MQL_Parser::PathAtomSimpleContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitEdge(MQL_Parser::EdgeContext *ctx) override {
+  virtual std::any visitPathAtomAlternatives(MQL_Parser::PathAtomAlternativesContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitEdgeInside(MQL_Parser::EdgeInsideContext *ctx) override {
+  virtual std::any visitPathSuffix(MQL_Parser::PathSuffixContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitVarNode(MQL_Parser::VarNodeContext *ctx) override {
+  virtual std::any visitPathType(MQL_Parser::PathTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitProperties(MQL_Parser::PropertiesContext *ctx) override {
+  virtual std::any visitNode(MQL_Parser::NodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitProperty(MQL_Parser::PropertyContext *ctx) override {
+  virtual std::any visitFixedNode(MQL_Parser::FixedNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitIdentifier(MQL_Parser::IdentifierContext *ctx) override {
+  virtual std::any visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitBoolValue(MQL_Parser::BoolValueContext *ctx) override {
+  virtual std::any visitEdge(MQL_Parser::EdgeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitNumericValue(MQL_Parser::NumericValueContext *ctx) override {
+  virtual std::any visitEdgeInside(MQL_Parser::EdgeInsideContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitValue(MQL_Parser::ValueContext *ctx) override {
+  virtual std::any visitVarNode(MQL_Parser::VarNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext *ctx) override {
+  virtual std::any visitProperties(MQL_Parser::PropertiesContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitConditionalAndExpr(MQL_Parser::ConditionalAndExprContext *ctx) override {
+  virtual std::any visitProperty1(MQL_Parser::Property1Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitComparisonExprOp(MQL_Parser::ComparisonExprOpContext *ctx) override {
+  virtual std::any visitProperty2(MQL_Parser::Property2Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext *ctx) override {
+  virtual std::any visitProperty3(MQL_Parser::Property3Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitAdditiveExpr(MQL_Parser::AdditiveExprContext *ctx) override {
+  virtual std::any visitProperty4(MQL_Parser::Property4Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitMultiplicativeExpr(MQL_Parser::MultiplicativeExprContext *ctx) override {
+  virtual std::any visitConditionalOrType(MQL_Parser::ConditionalOrTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitUnaryExpr(MQL_Parser::UnaryExprContext *ctx) override {
+  virtual std::any visitIdentifier(MQL_Parser::IdentifierContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExprVar(MQL_Parser::ExprVarContext *ctx) override {
+  virtual std::any visitBoolValue(MQL_Parser::BoolValueContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExprValueExpr(MQL_Parser::ExprValueExprContext *ctx) override {
+  virtual std::any visitNumericValue(MQL_Parser::NumericValueContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExprParenthesis(MQL_Parser::ExprParenthesisContext *ctx) override {
+  virtual std::any visitDatatypeValue(MQL_Parser::DatatypeValueContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitValueExpr(MQL_Parser::ValueExprContext *ctx) override {
+  virtual std::any visitValue(MQL_Parser::ValueContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExprTypename(MQL_Parser::ExprTypenameContext *ctx) override {
+  virtual std::any visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitKeyword(MQL_Parser::KeywordContext *ctx) override {
+  virtual std::any visitConditionalAndExpr(MQL_Parser::ConditionalAndExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitComparisonExprOp(MQL_Parser::ComparisonExprOpContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAdditiveExpr(MQL_Parser::AdditiveExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMultiplicativeExpr(MQL_Parser::MultiplicativeExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitUnaryExpr(MQL_Parser::UnaryExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprVar(MQL_Parser::ExprVarContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprValue(MQL_Parser::ExprValueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprParenthesis(MQL_Parser::ExprParenthesisContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFunction(MQL_Parser::FunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRegex(MQL_Parser::RegexContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprTypename(MQL_Parser::ExprTypenameContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitKeyword(MQL_Parser::KeywordContext *ctx) override {
     return visitChildren(ctx);
   }
 

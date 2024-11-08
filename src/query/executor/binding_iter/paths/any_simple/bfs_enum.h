@@ -3,8 +3,8 @@
 #include <memory>
 #include <queue>
 
+#include "misc/arena.h"
 #include "query/executor/binding_iter.h"
-#include "query/id.h"
 #include "query/executor/binding_iter/paths/any_simple/search_state.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 #include "third_party/robin_hood/robin_hood.h"
@@ -29,18 +29,14 @@ private:
     Binding* parent_binding;
     bool first_next = true;
 
-    // Array of all simple paths (based on prefix tree + linked list idea)
-    Visited visited;
+    // struct with all simple paths
+    Arena<PathState> visited;
 
     // Queue of search states
     std::queue<SearchState> open;
 
     // The index of the transition being currently explored
     uint32_t current_transition = 0;
-
-    // Statistics
-    uint_fast32_t results_found = 0;
-    uint_fast32_t idx_searches = 0;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;
@@ -49,6 +45,9 @@ private:
     robin_hood::unordered_set<uint64_t> reached_final;
 
 public:
+    // Statistics
+    uint_fast32_t idx_searches = 0;
+
     BFSEnum(
         VarId                          path_var,
         Id                             start,
@@ -65,10 +64,10 @@ public:
     // Expand neighbors from current state
     const PathState* expand_neighbors(const SearchState& current_state);
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    void reset() override;
-    bool next() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    void _reset() override;
+    bool _next() override;
 
     void assign_nulls() override {
         parent_binding->add(end, ObjectId::get_null());

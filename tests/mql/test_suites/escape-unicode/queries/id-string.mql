@@ -1,0 +1,2 @@
+MATCH (?x)-[?e :idstring]->(?y)
+RETURN ?x, ?y

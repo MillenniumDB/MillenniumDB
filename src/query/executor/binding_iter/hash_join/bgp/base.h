@@ -1,10 +1,10 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "storage/index/hash/key_value_hash/key_value_pair_hasher.h"
-
 
 namespace HashJoin { namespace BGP {
 

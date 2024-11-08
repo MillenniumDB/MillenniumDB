@@ -1,0 +1,5 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?pred WHERE {
+    ?subj ?pred "\\U0001F34E" .
+}

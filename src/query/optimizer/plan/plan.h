@@ -41,6 +41,9 @@ public:
 
     virtual void print(std::ostream& os, int indent) const = 0;
 
+    // only meant to be used by base plans, not joins
+    virtual int relation_size() const = 0;
+
     bool cartesian_product_needed(const Plan& other) {
         auto other_vars = other.get_vars();
         for (auto var : get_vars()) {

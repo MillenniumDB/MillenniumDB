@@ -29,14 +29,11 @@ public:
             fixed_vars)
         ) { }
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
-
-private:
-    Binding* parent_binding;
 
     // Variables that are in scope after evaluating this service
     std::set<VarId> scope_vars;
@@ -46,12 +43,14 @@ private:
     std::set<VarId> fixed_join_vars;
 
     bool silent;
-    bool failed; // Used when the SILENT token is present
-    bool first_next; // Try to consume API in the first next
 
     ResponseParser response_parser;
 
     uint64_t network_requests = 0;
-    uint64_t result_count = 0;
-    uint64_t executions = 0;
+
+private:
+    Binding* parent_binding;
+
+    bool failed; // Used when the SILENT token is present
+    bool first_next; // Try to consume API in the first next
 };

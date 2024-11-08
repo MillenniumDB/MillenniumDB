@@ -2,11 +2,11 @@
 
 #include <algorithm>
 
-#include "query/var_id.h"
 #include "query/executor/binding_iter/empty_binding_iter.h"
+#include "query/var_id.h"
 
 template<bool B>
-void NestedLoopAntiJoin<B>::begin(Binding& _parent_binding) {
+void NestedLoopAntiJoin<B>::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     lhs_binding = std::make_unique<Binding>(parent_binding->size);
@@ -24,7 +24,7 @@ void NestedLoopAntiJoin<B>::begin(Binding& _parent_binding) {
 
 
 template<bool match_without_common_variables>
-bool NestedLoopAntiJoin<match_without_common_variables>::next() {
+bool NestedLoopAntiJoin<match_without_common_variables>::_next() {
     while (lhs->next()) {
         // assign values from left binding into the right binding
         for (const auto& var : safe_join_vars) {
@@ -80,7 +80,6 @@ bool NestedLoopAntiJoin<match_without_common_variables>::next() {
             for (const auto& var : safe_join_vars) {
                 parent_binding->add(var, (*lhs_binding)[var]);
             }
-            result_count++;
             return true;
         }
     }
@@ -89,7 +88,7 @@ bool NestedLoopAntiJoin<match_without_common_variables>::next() {
 
 
 template<bool B>
-void NestedLoopAntiJoin<B>::reset() {
+void NestedLoopAntiJoin<B>::_reset() {
     // copy parent_safe_vars from parent_binding into lhs_binding and rhs_binding
     for (const auto& var : parent_safe_vars) {
         lhs_binding->add(var, (*parent_binding)[var]);
@@ -97,7 +96,6 @@ void NestedLoopAntiJoin<B>::reset() {
     }
     lhs->reset();
     rhs->reset();
-    executions++;
 }
 
 
@@ -121,70 +119,8 @@ void NestedLoopAntiJoin<B>::assign_nulls() {
 
 
 template<bool B>
-void NestedLoopAntiJoin<B>::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ') << "NestedLoopAntiJoin(";
-
-    os << "executions:" << executions;
-    os << " found:" << result_count;
-
-    os << "; parent_safe_vars:";
-    auto first = true;
-    for (auto& var: parent_safe_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; lhs:";
-    first = true;
-    for (auto& var: lhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; safe_join_vars:";
-    first = true;
-    for (auto& var: safe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; unsafe_join_vars:";
-    first = true;
-    for (auto& var: unsafe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; rhs:";
-    first = true;
-    for (auto& var: rhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << ")\n";
-    lhs->analyze(os, indent + 2);
-    rhs->analyze(os, indent + 2);
+void NestedLoopAntiJoin<B>::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 template class NestedLoopAntiJoin<true>;

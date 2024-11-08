@@ -1,0 +1,41 @@
+{
+    "head": {
+        "vars": [
+            "obj"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "ab"
+                }
+            },
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "ab bc"
+                }
+            },
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "¥1000"
+                }
+            },
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "ಠ_ಠ"
+                }
+            },
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "🂠🂡🂱🃁🃑"
+                }
+            }
+        ]
+    }
+}

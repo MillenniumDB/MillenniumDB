@@ -1,12 +1,12 @@
 #include "union.h"
 
-void Union::begin(Binding& _parent_binding) {
+void Union::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     iters[0]->begin(_parent_binding);
 }
 
 
-bool Union::next() {
+bool Union::_next() {
     while (current_iter < iters.size()) {
         if (iters[current_iter]->next()) {
             return true;
@@ -22,7 +22,7 @@ bool Union::next() {
 }
 
 
-void Union::reset() {
+void Union::_reset() {
     if (current_iter < iters.size()) {
         iters[current_iter]->assign_nulls();
     }
@@ -40,10 +40,6 @@ void Union::assign_nulls() {
 }
 
 
-void Union::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Union()\n";
-    for (const auto& iter : iters) {
-        iter->analyze(os, indent + 2);
-    }
+void Union::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

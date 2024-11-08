@@ -1,13 +1,13 @@
 #pragma once
 
+#include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/expr/sparql/builtin_call/expr_cast.h"
 
@@ -29,25 +29,27 @@ public:
             return oid;
         }
 
-        auto subtype = oid.get_sub_type();
-        auto value = oid.get_value();
+        auto subtype = RDF_OID::get_generic_sub_type(oid);
 
         switch (subtype) {
-        case ObjectId::MASK_STRING_XSD:
-        case ObjectId::MASK_STRING_SIMPLE: {
+        case RDF_OID::GenericSubType::STRING_XSD:
+        case RDF_OID::GenericSubType::STRING_SIMPLE: {
             switch (cast_type) {
             case CastType::xsd_string: {
-                if (subtype == ObjectId::MASK_STRING_XSD) {
+                if (subtype == RDF_OID::GenericSubType::STRING_XSD) {
                     return oid;
                 }
-                return ObjectId((oid.id & (~ObjectId::SUB_TYPE_MASK)) | ObjectId::MASK_STRING_XSD);
+                return Conversions::string_simple_to_xsd(oid);
             }
             case CastType::xsd_float: {
                 auto str = Conversions::to_lexical_str(oid);
                 float flt;
                 size_t idx;
-                try { flt = std::stof(str, &idx); }
-                catch (...) { return ObjectId::get_null(); }
+                try {
+                    flt = std::stof(str, &idx);
+                } catch (...) {
+                    return ObjectId::get_null();
+                }
                 if (idx != str.size()) {
                     return ObjectId::get_null();
                 }
@@ -57,8 +59,11 @@ public:
                 auto str = Conversions::to_lexical_str(oid);
                 double dbl;
                 size_t idx;
-                try { dbl = std::stod(str, &idx); }
-                catch (...) { return ObjectId::get_null(); }
+                try {
+                    dbl = std::stod(str, &idx);
+                } catch (...) {
+                    return ObjectId::get_null();
+                }
                 if (idx != str.size()) {
                     return ObjectId::get_null();
                 }
@@ -96,9 +101,9 @@ public:
             case CastType::xsd_boolean: {
                 auto str = Conversions::to_lexical_str(oid);
                 if (str == "0" || str == "false") {
-                    return ObjectId(ObjectId::BOOL_FALSE);
+                    return Conversions::pack_bool(false);
                 } else if (str == "1" || str == "true") {
-                    return ObjectId(ObjectId::BOOL_TRUE);
+                    return Conversions::pack_bool(true);
                 } else {
                     return ObjectId::get_null();
                 }
@@ -106,65 +111,97 @@ public:
             default: return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_FLOAT: {
+        case RDF_OID::GenericSubType::FLOAT: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
-            case CastType::xsd_float: return oid;
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::xsd_float:
+                return oid;
             case CastType::xsd_double: {
                 float flt = Conversions::unpack_float(oid);
                 return Conversions::pack_double(flt);
             }
-            case CastType::xsd_decimal:  {
-                auto str = Conversions::to_lexical_str(oid);
-                bool error;
-                Decimal dec(str, &error);
-                if (error) {
-                    return ObjectId::get_null();
+            case CastType::xsd_decimal: {
+                float f = Conversions::unpack_float(oid);
+                Decimal dec(0);
+                switch (std::fpclassify(f)) {
+                    case FP_NORMAL: {
+                        dec = Decimal::from_float(f);
+                        break;
+                    }
+                    case FP_ZERO: {
+                        // decimal is already 0
+                        break;
+                    }
+                    case FP_INFINITE:
+                    case FP_NAN:
+                    case FP_SUBNORMAL: {
+                        return ObjectId::get_null();
+                    }
+                    default:
+                        return ObjectId::get_null();
                 }
                 return Conversions::pack_decimal(dec);
             }
             case CastType::xsd_integer: {
                 auto flt = Conversions::unpack_float(oid);
-                if (std::abs(flt) > static_cast<float>(Conversions::INTEGER_MAX)) {
+                if (flt > static_cast<float>(INT64_MAX) || flt < static_cast<float>(INT64_MIN)) {
                     return ObjectId::get_null();
                 }
                 return Conversions::pack_int(static_cast<int64_t>(flt));
-            };
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: return Conversions::to_boolean(oid);
-            default: return ObjectId::get_null();
+            }
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
+            default:
+                return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_DOUBLE: {
+        case RDF_OID::GenericSubType::DOUBLE: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
-            case CastType::xsd_float:  {
-                float flt = Conversions::unpack_double(oid);
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::xsd_float: {
+                float flt = static_cast<float>(Conversions::unpack_double(oid));
                 return Conversions::pack_float(flt);
             }
-            case CastType::xsd_double: return oid;
-            case CastType::xsd_decimal:  {
-                auto str = Conversions::to_lexical_str(oid);
-                bool error;
-                Decimal dec(str, &error);
-                if (error) {
-                    return ObjectId::get_null();
+            case CastType::xsd_double:
+                return oid;
+            case CastType::xsd_decimal: {
+                double d = Conversions::unpack_double(oid);
+                Decimal dec(0);
+                switch (std::fpclassify(d)) {
+                    case FP_NORMAL: {
+                        dec = Decimal::from_double(d);
+                        break;
+                    }
+                    case FP_ZERO: {
+                        // decimal is already 0
+                        break;
+                    }
+                    case FP_INFINITE:
+                    case FP_NAN:
+                    case FP_SUBNORMAL: {
+                        return ObjectId::get_null();
+                    }
+                    default:
+                        return ObjectId::get_null();
                 }
                 return Conversions::pack_decimal(dec);
             }
             case CastType::xsd_integer: {
                 auto dbl = Conversions::unpack_double(oid);
-                if (std::abs(dbl) > static_cast<double>(Conversions::INTEGER_MAX)) {
+                if (dbl > static_cast<double>(INT64_MAX) || dbl < static_cast<double>(INT64_MIN)) {
                     return ObjectId::get_null();
                 }
                 return Conversions::pack_int(static_cast<int64_t>(dbl));
-            };
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: return Conversions::to_boolean(oid);
-            default: return ObjectId::get_null();
+            }
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
+            default:
+                return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_DECIMAL: {
+        case RDF_OID::GenericSubType::DECIMAL: {
             switch (cast_type) {
             case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
             case CastType::xsd_float: {
@@ -175,24 +212,27 @@ public:
                 double dbl = Conversions::unpack_decimal(oid).to_double();
                 return Conversions::pack_double(dbl);
             }
-            case CastType::xsd_decimal: return oid;
+            case CastType::xsd_decimal:
+                return oid;
             case CastType::xsd_integer: {
                 auto dec = Conversions::unpack_decimal(oid);
                 bool error;
                 int64_t i = dec.to_int(&error);
-                if (error || std::abs(i) > Conversions::INTEGER_MAX) {
+                if (error) {
                     return ObjectId::get_null();
                 }
                 return Conversions::pack_int(i);
             }
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: return Conversions::to_boolean(oid);
-            default: return ObjectId::get_null();
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
+            default:
+                return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_INT: {
+        case RDF_OID::GenericSubType::INTEGER: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
             case CastType::xsd_float: {
                 float flt = Conversions::unpack_int(oid);
                 return Conversions::pack_float(flt);
@@ -206,70 +246,67 @@ public:
                 Decimal dec(num);
                 return Conversions::pack_decimal(dec);
             }
-            case CastType::xsd_integer: return oid;
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: return Conversions::to_boolean(oid);
+            case CastType::xsd_integer:
+                return oid;
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
             default:
                 return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_DT_DATETIME: {
+        case RDF_OID::GenericSubType::DATE: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
-            case CastType::xsd_float: return ObjectId::get_null();
-            case CastType::xsd_double: return ObjectId::get_null();
-            case CastType::xsd_decimal: return ObjectId::get_null();
-            case CastType::xsd_integer: return ObjectId::get_null();
-            case CastType::xsd_dateTime: return oid;
-            case CastType::xsd_boolean: return ObjectId::get_null();
-            default: return ObjectId::get_null();
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::xsd_dateTime:
+                return oid;
+            default:
+                return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_BOOL: {
+        case RDF_OID::GenericSubType::BOOL: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_simple(Conversions::to_lexical_str(oid));
+            case CastType::xsd_string:
+                return Conversions::pack_string_simple(Conversions::to_lexical_str(oid));
             case CastType::xsd_float: {
-                float flt = oid.is_true() ? 1.0 : 0.0;
+                float flt = oid == Conversions::pack_bool(true) ? 1.0 : 0.0;
                 return Conversions::pack_float(flt);
             }
             case CastType::xsd_double: {
-               double dbl = oid.is_true() ? 1.0 : 0.0;
+               double dbl = oid == Conversions::pack_bool(true) ? 1.0 : 0.0;
                 return Conversions::pack_double(dbl);
             }
             case CastType::xsd_decimal: {
-                int64_t num = oid.is_true() ? 1 : 0;
+                int64_t num = oid == Conversions::pack_bool(true) ? 1 : 0;
                 Decimal dec(num);
                 return Conversions::pack_decimal(dec);
             }
             case CastType::xsd_integer:{
-                int64_t num = oid.is_true() ? 1 : 0;
+                int64_t num = oid == Conversions::pack_bool(true) ? 1 : 0;
                 return Conversions::pack_int(num);
             }
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: {
-                return ObjectId(ObjectId::MASK_BOOL | value);
-            }
-            default: return ObjectId::get_null();
+            case CastType::xsd_dateTime:
+                return ObjectId::get_null();
+            case CastType::xsd_boolean:
+                return oid;
+            default:
+                return ObjectId::get_null();
             }
         }
-        case ObjectId::MASK_IRI: {
+        case RDF_OID::GenericSubType::IRI: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
-            case CastType::xsd_float: return ObjectId::get_null();
-            case CastType::xsd_double: return ObjectId::get_null();
-            case CastType::xsd_decimal: return ObjectId::get_null();
-            case CastType::xsd_integer: return ObjectId::get_null();
-            case CastType::xsd_dateTime: return ObjectId::get_null();
-            case CastType::xsd_boolean: return ObjectId::get_null();
-            default: return ObjectId::get_null();
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            default:
+                return ObjectId::get_null();
             }
         }
         default: return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        return os << cast_type_to_string(cast_type) << '(' << *expr << ')';
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

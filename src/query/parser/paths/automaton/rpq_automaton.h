@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <set>
 #include <string>
 #include <vector>
@@ -40,6 +41,7 @@ public:
         }
     };
 
+    // after transformations, start_state may be != 0
     uint32_t start_state = 0;
 
     // Number of states. States are numbered from 0 to (total_states-1)
@@ -54,34 +56,19 @@ public:
     // from_to_connections[i] is a list of the transitions that start at state i
     std::vector<std::vector<Transition>> from_to_connections;
 
-    // Stores the distance to the nearest end state.
-    std::vector<uint32_t> distance_to_final;
+    // reverse_connections[i] is a list of the transitions that reach state i, but reversed
+    std::vector<std::vector<Transition>> reverse_connections;
 
-    void print();
+    // Constructs all reverse transitions
+    void add_reverse_connections();
+
+    void print(std::ostream& os) const;
+
+    static RPQ_DFA optimize(const RPQ_DFA& automata);
 };
 
 
-/* TODO: clean and re-comment
-RPQ_NFA: Regular path query nondeterministic finite automaton
-RPQAutomaton represents a Non-Deterministic Finite Automaton (NFA) with  epsilon
-transitions. This class builds an automaton, and transform it into an automaton
-without epsilon transitions.
-The automaton is built using Thompson Algorithm, each operator allowed by the
-language is represented in the corresponding IPath subclass.
-There are some methods used  to  transform  the  automaton  into a  final automaton.
-The final automaton does not have  epsilon  transitions  and  as  maximum  two final
-states. All transformations and the description of this are handled in the following
-methods:
- 1.  delete_mergeable_states
- 2.  delete_epsilon_transitions
- 3.  set_final_state
- 4.  delete_absorbing_states
-States of automaton are not emulated by a specific class. A state is only represented
-by a number i, that indicates that the transitions of this state are stored in the i
-position of the from_to_connections, to_from_connections and transitions vectors.
-Final the distance to a final state is computed, this metric can be used as heuristic
-by a path finder algorithm to select the state which is nearest to final state.
-*/
+// RPQ_NFA: Regular path query nondeterministic finite automaton
 class RPQ_NFA {
 public:
     struct Transition {
@@ -121,13 +108,6 @@ public:
     // Number of states
     uint32_t total_states = 1;
 
-    // `final_state` will be set at the automaton transformation in the method
-    // `set_final_state()`, until then there can be multiple final states
-    // uint32_t final_state;
-
-    // True if the start state is a final state
-    // bool start_is_final = false;
-
     // Final states before `set_final_state()` is called
     std::set<uint32_t> end_states;
 
@@ -137,23 +117,13 @@ public:
     // inner_transitions[i] is a list of the transitions that reach the state i
     std::vector<std::vector<Transition>> inner_transitions;
 
-    // Stores the distance to end state. It can be used by
-    // AStar algorithm in enum and check binding_iter algorithms.
-    // std::vector<uint32_t> distance_to_final;
-
     // ----- Methods to handle automaton transformations -----
-
-    // Check if two states are mergeable and merge them if is possible.
-    void delete_mergeable_states();
 
     // Delete epsilon transitions of the automaton
     void delete_epsilon_transitions();
 
     // Delete states that can not be reached from start
     void delete_unreachable_states();
-
-    // Delete states that can not reach to any state of end_states set
-    void delete_absorbing_states();
 
     // Return epsilon closure of state state is not included
     std::set<uint32_t> get_epsilon_closure(uint32_t state);
@@ -165,9 +135,6 @@ public:
     // merge 'source' into 'destiny'
     void merge_states(uint32_t destiny, uint32_t source);
 
-    // Compute the minimum distance between final_state and a state of the automaton
-    void calculate_distance_to_final_state();
-
     // Sort the transitions for each state according to the distance to final state
     void sort_state_transition(uint32_t state);
     void sort_transitions();
@@ -175,7 +142,7 @@ public:
     inline uint32_t get_start() const noexcept { return start; }
     inline uint32_t get_total_states() const noexcept  { return total_states; }
 
-    void print();
+    void print(std::ostream& os);
 
     // Add states from other to this, rename 'other' states, update 'other'
     // end states to be consistent with rename. Don't update 'other' connections
@@ -188,5 +155,5 @@ public:
     void add_epsilon_transition(uint32_t from, uint32_t to);
 
     // Apply transformations to get final automaton
-    RPQ_DFA transform_automaton(std::function<ObjectId(const std::string&)>);
+    RPQ_DFA transform_automaton(ObjectId(*str_to_oid)(const std::string&));
 };

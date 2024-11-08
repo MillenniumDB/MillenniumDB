@@ -16,7 +16,7 @@ enum class CastType {
     xsd_string,
 };
 
-static std::string cast_type_to_string(CastType cast_type) {
+inline std::string cast_type_to_string(CastType cast_type) {
     switch (cast_type) {
         case CastType::xsd_boolean:  return "xsd:boolean";
         case CastType::xsd_double:   return "xsd:double";
@@ -52,10 +52,6 @@ public:
 
     bool has_aggregation() const override {
         return expr->has_aggregation();
-    }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << cast_type_to_string(cast_type) << '(' << *expr << ')';
     }
 };
 } // namespace SPARQL

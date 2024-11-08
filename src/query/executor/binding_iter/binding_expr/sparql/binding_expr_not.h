@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -19,18 +18,17 @@ public:
 
         ObjectId expr_bool = Conversions::to_boolean(expr_oid);
 
-        if (expr_bool.is_true()) {
-            return ObjectId(ObjectId::BOOL_FALSE);
-        } else if (expr_bool.is_false()) {
-            return ObjectId(ObjectId::BOOL_TRUE);
+        if (expr_bool == Conversions::pack_bool(true)) {
+            return Conversions::pack_bool(false);
+        } else if (expr_bool == Conversions::pack_bool(false)) {
+            return Conversions::pack_bool(true);
         } else {
             return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '!' << *expr;
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

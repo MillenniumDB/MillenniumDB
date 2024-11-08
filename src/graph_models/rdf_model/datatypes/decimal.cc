@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <exception>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -13,6 +12,7 @@
 
 #include "query/exceptions.h"
 #include "graph_models/object_id.h"
+#include "third_party/dragonbox/dragonbox.h"
 
 using namespace std::literals::string_literals;
 
@@ -34,7 +34,7 @@ static uint8_t atoi(char c) {
  *  @return A char containing the ASCII representation of the digit.
  */
 static char itoa(uint8_t i) {
-    assert(i >= 0 && i <= 9);
+    assert(i <= 9);
     return '0' + i;
 }
 
@@ -72,6 +72,45 @@ Decimal::Decimal(int64_t i) {
     }
     return;
 }
+
+
+Decimal Decimal::from_float(float f) {
+    assert(std::isnormal(f)); // assumes not zero, infinity, nan
+
+    auto v = jkj::dragonbox::to_decimal(f);
+
+    Decimal res;
+    res.exponent = v.exponent;
+    res.sign = v.is_negative;
+    auto digits = std::to_string(v.significand);
+
+    res.digits = std::vector<uint8_t>(digits.size());
+    for (unsigned i = 0; i < digits.size(); i++) {
+        res.digits[i] = atoi(digits[digits.size() - i - 1]);
+    }
+
+    return res;
+}
+
+
+Decimal Decimal::from_double(double d) {
+    assert(std::isnormal(d)); // assumes not zero, infinity, nan
+
+    auto v = jkj::dragonbox::to_decimal(d);
+
+    Decimal res;
+    res.exponent = v.exponent;
+    res.sign = v.is_negative;
+    auto digits = std::to_string(v.significand);
+
+    res.digits = std::vector<uint8_t>(digits.size());
+    for (unsigned i = 0; i < digits.size(); i++) {
+        res.digits[i] = atoi(digits[digits.size() - i - 1]);
+    }
+
+    return res;
+}
+
 
 /**
  *  @brief Creates a Decimal from the human representation of a Decimal (eg "-123.034")
@@ -161,7 +200,6 @@ Decimal::Decimal(std::vector<uint8_t> vec) {
  *  @param sv The string_view representing the Decimal from which to deserialize.
  */
 Decimal Decimal::from_external(std::string_view sv) {
-    // TODO: performance, avoid allocating and copying
     auto bytes = std::vector<uint8_t>(sv.begin(), sv.end());
     return Decimal(bytes);
 }
@@ -451,7 +489,6 @@ std::vector<uint8_t> Decimal::to_bytes() const {
  */
 std::string Decimal::to_external() const {
     auto bytes = this->to_bytes();
-    // TODO: performance, avoid allocating and copying
     return std::string(bytes.begin(), bytes.end());
 }
 
@@ -622,7 +659,6 @@ Decimal Decimal::operator*(const Decimal& rhs) const {
         }
         sum.digits[lhs_s] = carry;
         sum.trim_zeros();
-        // TODO: implement and use +=
         res = res + sum;
     }
 
@@ -770,7 +806,6 @@ Decimal Decimal::operator/(const Decimal& rhs) const {
             d.exponent = res.exponent + 1;
             res        = res + d;
         }
-        // TODO: avoid unnecessary allocation
         res.digits = std::vector<uint8_t>(res.digits.begin() + 1, res.digits.end());
         res.exponent++;
     }
@@ -780,7 +815,7 @@ Decimal Decimal::operator/(const Decimal& rhs) const {
 }
 
 bool Decimal::operator<(const Decimal& rhs) const {
-    if (this->digits.size() == 0 and rhs.digits.size() == 0) {
+    if (this->digits.size() == 0 && rhs.digits.size() == 0) {
         return false;
     }
 

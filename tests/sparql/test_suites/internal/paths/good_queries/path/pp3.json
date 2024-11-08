@@ -1,0 +1,22 @@
+{
+  "head": { "vars": [ "l", "o" ] },
+  "results": {
+    "bindings": [
+      { "l": { "type": "uri", "value": "http://www.path.com/Joe" },
+        "o": { "type": "uri", "value": "http://www.path.com/Joe" }
+      },
+      {
+        "l": { "type": "uri", "value": "http://www.path.com/Joe" },
+        "o": { "type": "uri", "value": "http://www.path.com/O1" }
+      },
+      {
+        "l": { "type": "uri", "value": "http://www.path.com/O1" },
+        "o": { "type": "uri", "value": "http://www.path.com/Joe" }
+      },
+      {
+        "l": { "type": "uri", "value": "http://www.path.com/O1" },
+        "o": { "type": "uri", "value": "http://www.path.com/O1" }
+      }
+    ]
+  }
+}

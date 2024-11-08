@@ -1,0 +1,25 @@
+{
+    "head": {
+        "vars": [
+            "after"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "долор сит амет",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            },
+            {
+                "after": {
+                    "type": "literal",
+                    "value": "ферри путант 1",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            }
+        ]
+    }
+}

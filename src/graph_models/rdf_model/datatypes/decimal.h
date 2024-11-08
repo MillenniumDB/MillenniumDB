@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -15,9 +16,16 @@ public:
 
     Decimal();
     Decimal(int64_t);
-    Decimal(std::string_view, bool*);
+    Decimal(std::string_view, bool* error);
     Decimal(std::vector<uint8_t>);
+
     static Decimal from_external(std::string_view);
+
+    // assumes std::fpclassify is FP_NORMAL
+    static Decimal from_float(float);
+
+    // assumes std::fpclassify is FP_NORMAL
+    static Decimal from_double(double);
 
     void trim_zeros();
 

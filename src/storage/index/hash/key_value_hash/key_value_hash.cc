@@ -1,13 +1,11 @@
 #include "key_value_hash.h"
 
 #include <cassert>
-#include <iostream>
 
 #include "graph_models/object_id.h"
-#include "storage/file_manager.h"
-#include "storage/buffer_manager.h"
 #include "storage/index/hash/key_value_hash/key_value_hash_bucket.h"
 #include "storage/index/hash/key_value_hash/key_value_pair_hasher.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
 
@@ -15,15 +13,15 @@ template <class K, class V>
 KeyValueHash<K, V>::KeyValueHash(std::size_t key_size, std::size_t value_size) :
     key_size        (key_size),
     value_size      (value_size),
-    max_tuples      ( (Page::MDB_PAGE_SIZE - sizeof(uint64_t)) / (key_size*sizeof(K) + value_size*sizeof(V)) ),
-    buckets_file    ( file_manager.get_tmp_file_id())
+    max_tuples      ( (PPage::SIZE - sizeof(uint64_t)) / (key_size*sizeof(K) + value_size*sizeof(V)) ),
+    buckets_file    ( buffer_manager.get_tmp_file_id())
     { }
 
 
 template <class K, class V>
 KeyValueHash<K, V>::~KeyValueHash() {
     //current_buckets_pages.clear();
-    file_manager.remove_tmp(buckets_file);
+    buffer_manager.remove_tmp(buckets_file);
 }
 
 
@@ -110,7 +108,7 @@ void KeyValueHash<K, V>::insert(const std::vector<K>& key, const std::vector<V>&
     }
 
     while (current_bucket_page->get_tuple_count() >= max_tuples) {
-        if (tuples_count >= get_split_treshold()) {  // split treshold should depend on depth or could be infinite
+        if (tuples_count >= get_split_threshold()) {  // split threshold should depend on depth or could be infinite
             split();
             mask = (1 << depth) - 1;
             bucket_number = hash_ & mask;
@@ -215,7 +213,7 @@ void KeyValueHash<K, V>::split() {
         *(new_bucket_page->tuple_count) = 0;
         new_bucket_page->page.make_dirty();
 
-        // we need an auxiliar bucket for writing tuples, because we are reading with current_buckets_pages
+        // we need an auxiliary bucket for writing tuples, because we are reading with current_buckets_pages
         auto writing_old_bucket_page = make_unique<KeyValueHashBucket<K, V>>(buckets_file,
                                                                              buckets_page_numbers[bucket_number][0],
                                                                              key_size,
@@ -313,38 +311,38 @@ void KeyValueHash<K, V>::sort_buckets(){
 }
 
 
-template <class K, class V>
-void KeyValueHash<K, V>::check_order() {
-    const uint_fast32_t number_of_buckets = 1 << depth; // 2^depth
-    std::unique_ptr<KeyValueHashBucket<K, V>> current_bucket_page;
-    K* last_key;
-    K* current_key;
-    for (uint_fast32_t bucket_number=0; bucket_number<number_of_buckets; bucket_number++) {
-        uint32_t current_pos = 0;
-        if (buckets_sizes[bucket_number] > 0) {
-            last_key = get_key(bucket_number, current_pos);
-        }
-        current_pos++;
-        while (current_pos < buckets_sizes[bucket_number]) {
-            current_key = get_key(bucket_number, current_pos);
-            bool smaller = false;
-            for (uint_fast16_t i = 0; i < key_size; i++) {
-                if (current_key[i] < last_key[i]) {
-                    smaller = true;
-                    break;
-                }
-                else if (current_key[i] > last_key[i]) {
-                    break;
-                }
-            }
-            if (smaller) {
-                cout << "bucket: " << bucket_number << ", pos: " << current_pos << "not ordered\n";
-            }
-            last_key = current_key;
-            current_pos++;
-        }
-    }
-}
+// template <class K, class V>
+// void KeyValueHash<K, V>::check_order() {
+//     const uint_fast32_t number_of_buckets = 1 << depth; // 2^depth
+//     std::unique_ptr<KeyValueHashBucket<K, V>> current_bucket_page;
+//     K* last_key;
+//     K* current_key;
+//     for (uint_fast32_t bucket_number=0; bucket_number<number_of_buckets; bucket_number++) {
+//         uint32_t current_pos = 0;
+//         if (buckets_sizes[bucket_number] > 0) {
+//             last_key = get_key(bucket_number, current_pos);
+//         }
+//         current_pos++;
+//         while (current_pos < buckets_sizes[bucket_number]) {
+//             current_key = get_key(bucket_number, current_pos);
+//             bool smaller = false;
+//             for (uint_fast16_t i = 0; i < key_size; i++) {
+//                 if (current_key[i] < last_key[i]) {
+//                     smaller = true;
+//                     break;
+//                 }
+//                 else if (current_key[i] > last_key[i]) {
+//                     break;
+//                 }
+//             }
+//             if (smaller) {
+//                 cout << "bucket: " << bucket_number << ", pos: " << current_pos << "not ordered\n";
+//             }
+//             last_key = current_key;
+//             current_pos++;
+//         }
+//     }
+// }
 
 
 template <class K, class V>
@@ -599,7 +597,7 @@ void KeyValueHash<K, V>::sort_bucket(uint_fast32_t bucket_number){
                 }
             }
         }
-        buckets_page_numbers[bucket_number] = move(new_page_numbers);
+        buckets_page_numbers[bucket_number] = std::move(new_page_numbers);
         merge_size *= 2;
     }
 }

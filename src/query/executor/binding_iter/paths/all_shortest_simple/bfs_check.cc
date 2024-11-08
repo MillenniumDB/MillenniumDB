@@ -1,13 +1,13 @@
 #include "bfs_check.h"
 
 #include "query/var_id.h"
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllShortestSimple;
 
 template <bool CYCLIC>
-void BFSCheck<CYCLIC>::begin(Binding& _parent_binding) {
+void BFSCheck<CYCLIC>::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     // setted at object initialization:
@@ -27,7 +27,7 @@ void BFSCheck<CYCLIC>::begin(Binding& _parent_binding) {
 
 
 template <bool CYCLIC>
-void BFSCheck<CYCLIC>::reset() {
+void BFSCheck<CYCLIC>::_reset() {
     // Empty BFS structures
     queue<SearchState> empty;
     open.swap(empty);
@@ -48,7 +48,7 @@ void BFSCheck<CYCLIC>::reset() {
 
 
 template <bool CYCLIC>
-bool BFSCheck<CYCLIC>::next() {
+bool BFSCheck<CYCLIC>::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -65,7 +65,6 @@ bool BFSCheck<CYCLIC>::next() {
             if (automaton.is_final_state[automaton.start_state]) {
                 auto path_id = path_manager.set_path(current_state.path_state, path_var);
                 parent_binding->add(path_var, path_id);
-                results_found++;
                 queue<SearchState> empty;  // Empty queue because the only state with 0 distance is the first state
                 open.swap(empty);
                 return true;
@@ -84,7 +83,6 @@ bool BFSCheck<CYCLIC>::next() {
         if (reached_final_state != nullptr) {
             auto path_id = path_manager.set_path(reached_final_state, path_var);
             parent_binding->add(path_var, path_id);
-            results_found++;
             return true;
         } else {
             open.pop(); // Pop and visit next state
@@ -185,13 +183,8 @@ const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_s
 
 
 template <bool CYCLIC>
-void BFSCheck<CYCLIC>::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    if (CYCLIC) {
-        os << "Paths::AllShortestSimple::BFSCheck<SIMPLE>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    } else {
-        os << "Paths::AllShortestSimple::BFSCheck<ACYCLIC>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    }
+void BFSCheck<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 

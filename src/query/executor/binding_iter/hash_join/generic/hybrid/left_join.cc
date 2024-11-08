@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -12,9 +12,9 @@ using namespace HashJoin::Generic::Hybrid;
 LeftJoin::LeftJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     original_lhs  (std::move(_lhs)),
     original_rhs  (std::move(_rhs)),
@@ -50,7 +50,7 @@ LeftJoin::~LeftJoin() {
 }
 
 
-void LeftJoin::begin(Binding& _parent_binding) {
+void LeftJoin::_begin(Binding& _parent_binding) {
     this->parent_binding = &_parent_binding;
 
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -85,7 +85,7 @@ void LeftJoin::begin(Binding& _parent_binding) {
 }
 
 
-bool LeftJoin::next() {
+bool LeftJoin::_next() {
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -139,7 +139,7 @@ bool LeftJoin::next() {
 }
 
 
-void LeftJoin::reset() {
+void LeftJoin::_reset() {
     hash_table.clear();
     found_nulls = 0;
     found_not_nulls = 0;
@@ -189,11 +189,8 @@ void LeftJoin::assign_nulls() {
 }
 
 
-void LeftJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "LeftJoinHybrid(Not nulls: " << found_not_nulls << ", Mulls: " << found_nulls << ")\n";
-    original_lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void LeftJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -232,8 +229,8 @@ bool LeftJoin::build_0_partition() {
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
 
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -241,8 +238,8 @@ bool LeftJoin::build_0_partition() {
         auto iterator = hash_table.emplace(key, Value(data_pointer, data_pointer));
         if (iterator.second) {
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }
@@ -296,8 +293,8 @@ void LeftJoin::build_hash_table() {
 
         // Check if data chunk is full and add a new one if is needed
         data_chunk_index++;
-        if (data_chunk_index == Page::MDB_PAGE_SIZE) {
-            data_chunk = new uint64_t[data_tuple_size * Page::MDB_PAGE_SIZE];
+        if (data_chunk_index == PPage::SIZE) {
+            data_chunk = new uint64_t[data_tuple_size * PPage::SIZE];
             data_chunks_dir.push_back(data_chunk);
             data_chunk_index = 0;
         }
@@ -305,8 +302,8 @@ void LeftJoin::build_hash_table() {
         auto iterator = hash_table.emplace(key, Value(data_pointer, data_pointer));
         if (iterator.second) {
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }
@@ -342,11 +339,11 @@ void LeftJoin::prepare_chunks_for_new_partition() {
     key_chunk_index = 0;
 
     // Size of data row:  build attr + 1 (one space to reserve next pointer)
-    data_chunk = new uint64_t[(rhs_vars.size() + 1) * Page::MDB_PAGE_SIZE];
+    data_chunk = new uint64_t[(rhs_vars.size() + 1) * PPage::SIZE];
     data_chunks_dir.push_back(data_chunk);
 
     // Size of key row: join var
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
 }
 

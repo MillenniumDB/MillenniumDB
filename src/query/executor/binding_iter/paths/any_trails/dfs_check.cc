@@ -2,12 +2,12 @@
 
 #include <cassert>
 
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnyTrails;
 
-void DFSCheck::begin(Binding& _parent_binding) {
+void DFSCheck::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     first_next = true;
 
@@ -20,7 +20,7 @@ void DFSCheck::begin(Binding& _parent_binding) {
 }
 
 
-bool DFSCheck::next() {
+bool DFSCheck::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -36,7 +36,6 @@ bool DFSCheck::next() {
         if (automaton.is_final_state[automaton.start_state] && current_state.node_id == end_object_id) {
             auto path_id = path_manager.set_path(&current_state, path_var);
             parent_binding->add(path_var, path_id);
-            results_found++;
             return true;
         }
     }
@@ -52,6 +51,7 @@ bool DFSCheck::next() {
         {
             stack<SearchStateDFS> empty;
             open.swap(empty);
+            current_state_edges.clear();
             return false;
         }
 
@@ -66,11 +66,11 @@ bool DFSCheck::next() {
             {
                 auto path_id = path_manager.set_path(state_reached, path_var);
                 parent_binding->add(path_var, path_id);
-                results_found++;
                 return true;
             }
         } else {
             // Pop and visit next state
+            current_state_edges.erase(current_state.edge_id.id);
             open.pop();
         }
     }
@@ -95,15 +95,16 @@ SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state) {
 
         // Iterate over records and return trails
         while (current_state.iter->next()) {
-            // Reconstruct path and check if it's a trail, discard paths that are not trails
-            if (!is_trail(current_state, ObjectId(current_state.iter->get_edge()))) {
+            auto it = current_state_edges.insert(current_state.iter->get_edge());
+            if (!it.second) { // it.second is false if element was present before insert
                 continue;
             }
 
             // Return new state to expand later
             return &open.emplace(
                 transition.to,
-                0, make_unique<NullIndexIterator>(),
+                0,
+                make_unique<NullIndexIterator>(),
                 ObjectId(current_state.iter->get_reached_node()),
                 ObjectId(current_state.iter->get_edge()),
                 transition.type_id,
@@ -131,11 +132,13 @@ void DFSCheck::set_iter(SearchStateDFS& s) {
 }
 
 
-void DFSCheck::reset() {
+void DFSCheck::_reset() {
     // Empty open
     stack<SearchStateDFS> empty;
     open.swap(empty);
     first_next = true;
+
+    current_state_edges.clear();
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
@@ -146,7 +149,6 @@ void DFSCheck::reset() {
 }
 
 
-void DFSCheck::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Paths::AnyTrails::DFSCheck(idx_searches: " << idx_searches << ", found: " << results_found << ")";
+void DFSCheck::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

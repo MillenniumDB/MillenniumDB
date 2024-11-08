@@ -83,13 +83,15 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ')
-           << "OpPath(" << Paths::get_semantic_str(semantic)
+        os << std::string(indent, ' ') << "OpPath(";
+
+        os << Paths::get_semantic_str(semantic)
            << ", " << get_query_ctx().get_var_name(var)
            << ", " << subject
            << ", " << object
-           << ", " << path->to_string()
-           << ")\n";
+           << ", " << path->to_string();
+
+        os << ")\n";
         return os;
     }
 };

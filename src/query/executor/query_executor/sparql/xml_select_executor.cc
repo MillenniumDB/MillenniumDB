@@ -1,14 +1,9 @@
 #include "xml_select_executor.h"
 
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
-#include "graph_models/rdf_model/datatypes/decimal_inlined.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 #include "query/executor/query_executor/xml_ostream_escape.h"
-#include "storage/string_manager.h"
-#include "storage/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace SPARQL;
@@ -70,23 +65,6 @@ uint64_t XMLSelectExecutor::execute(std::ostream& os) {
     return result_count;
 }
 
-void print_datatype_rdf_xml(std::ostream& os, uint64_t datatype_id) {
-    if ((datatype_id & ObjectId::MASK_TAG_MANAGER) == 0) {
-        os << rdf_model.catalog().datatypes[datatype_id];
-    } else {
-        tmp_manager.print_dtt(os, (datatype_id & (~ObjectId::MASK_TAG_MANAGER)));
-    }
-}
-
-
-void print_language_rdf_xml(std::ostream& os, uint64_t language_id) {
-    if ((language_id & ObjectId::MASK_TAG_MANAGER) == 0) {
-        os << rdf_model.catalog().languages[language_id];
-    } else {
-        tmp_manager.print_lan(os, (language_id & (~ObjectId::MASK_TAG_MANAGER)));
-    }
-}
-
 
 void XMLSelectExecutor::print_path_node(std::ostream& os, ObjectId node_id) {
     XMLOstreamEscape xml_ostream_escape(os);
@@ -105,61 +83,46 @@ void XMLSelectExecutor::print_path_edge(std::ostream& os, ObjectId edge_id, bool
 }
 
 
-void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId object_id) {
-    const auto mask        = object_id.id & ObjectId::TYPE_MASK;
-    const auto unmasked_id = object_id.id & ObjectId::VALUE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_ANON_INLINED: {
+void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid) {
+    switch (RDF_OID::get_type(oid)) {
+    case RDF_OID::Type::BLANK_INLINED: {
         os << "<bnode>b"
-           << unmasked_id
+           << Conversions::unpack_blank(oid)
            << "</bnode>";
         break;
     }
-    case ObjectId::MASK_ANON_TMP: {
+    case RDF_OID::Type::BLANK_TMP: {
         os << "<bnode>c"
-           << unmasked_id
+           << Conversions::unpack_blank(oid)
            << "</bnode>";
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case RDF_OID::Type::STRING_SIMPLE_INLINE:
+    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
+    case RDF_OID::Type::STRING_SIMPLE_TMP: {
         os << "<literal>";
-        string_manager.print(escaped_os, unmasked_id);
+        Conversions::print_string(oid, escaped_os);
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
-        os << "<literal>";
-        Inliner::print_string_inlined<7>(escaped_os, unmasked_id);
+    case RDF_OID::Type::STRING_XSD_INLINE:
+    case RDF_OID::Type::STRING_XSD_EXTERN:
+    case RDF_OID::Type::STRING_XSD_TMP:{
+        os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#string\">";
+        Conversions::print_string(oid, escaped_os);
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
-        os << "<literal>";
-        tmp_manager.print_str(escaped_os, unmasked_id);
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_POSITIVE_INT: {
-        int64_t i = unmasked_id;
+    case RDF_OID::Type::INT56_INLINE:
+    case RDF_OID::Type::INT64_EXTERN:
+    case RDF_OID::Type::INT64_TMP: {
         os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#integer\">";
-        os << i;
+        os << Conversions::unpack_int(oid);
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_NEGATIVE_INT: {
-        int64_t i = (~object_id.id) & 0x00FF'FFFF'FFFF'FFFFUL;
-        os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#integer\">";
-        os << (i*-1);
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_FLOAT: {
-        float f;
-        uint8_t* dest = reinterpret_cast<uint8_t*>(&f);
-        dest[0] =  object_id.id        & 0xFF;
-        dest[1] = (object_id.id >> 8)  & 0xFF;
-        dest[2] = (object_id.id >> 16) & 0xFF;
-        dest[3] = (object_id.id >> 24) & 0xFF;
+    case RDF_OID::Type::FLOAT32: {
+        float f = Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
         jkj::dragonbox::to_chars(f, float_buffer);
@@ -169,171 +132,105 @@ void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_DOUBLE_EXTERN:
-    case ObjectId::MASK_DOUBLE_TMP: {
-        double d = Conversions::unpack_double(object_id);
+    case RDF_OID::Type::DOUBLE64_EXTERN:
+    case RDF_OID::Type::DOUBLE64_TMP: {
+        double d = Conversions::unpack_double(oid);
+
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
         jkj::dragonbox::to_chars(d, double_buffer);
+
         os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#float\">";
         os << double_buffer;
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_BOOL: {
+    case RDF_OID::Type::BOOL: {
         os << "<boolean>";
-        os << (object_id.get_value() == 0 ? "false" : "true");
+        os << (Conversions::unpack_bool(oid) ? "true" : "false");
         os << "</boolean>";
         break;
     }
-    case ObjectId::MASK_PATH: {
+    case RDF_OID::Type::PATH: {
+        using namespace std::placeholders;
         os << "<path>";
-        path_manager.print(os, unmasked_id, &print_path_node, &print_path_edge);
+        path_manager.print(os,
+                           Conversions::get_path_id(oid),
+                           std::bind(&XMLSelectExecutor::print_path_node, _1, _2),
+                           std::bind(&XMLSelectExecutor::print_path_edge, _1, _2, _3));
         os << "</path>";
         break;
     }
-    case ObjectId::MASK_IRI_EXTERN: {
-        uint64_t iri_id = unmasked_id & ObjectId::MASK_IRI_CONTENT;
-        uint8_t prefix_id = (unmasked_id & ObjectId::MASK_IRI_PREFIX) >> 48;
-
+    case RDF_OID::Type::IRI_INLINE:
+    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
+    case RDF_OID::Type::IRI_EXTERN:
+    case RDF_OID::Type::IRI_TMP:
+    case RDF_OID::Type::IRI_UUID_LOWER:
+    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
+    case RDF_OID::Type::IRI_UUID_UPPER:
+    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
+    case RDF_OID::Type::IRI_HEX_LOWER:
+    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
+    case RDF_OID::Type::IRI_HEX_UPPER:
+    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
         os << "<uri>";
-        os << rdf_model.catalog().prefixes[prefix_id];
-        string_manager.print(os, iri_id);
+        Conversions::print_iri(oid, os);
         os << "</uri>";
         break;
     }
-    case ObjectId::MASK_IRI_INLINED: {
-        uint8_t prefix_id = (object_id.id & ObjectId::MASK_IRI_PREFIX) >> (8*ObjectId::IRI_INLINE_BYTES);
-        os << "<uri>";
-        os << rdf_model.catalog().prefixes[prefix_id];
-        Inliner::print_string_inlined<6>(os, unmasked_id);
-        os << "</uri>";
-        break;
-    }
-    case ObjectId::MASK_IRI_TMP: {
-        uint8_t prefix_id = (unmasked_id & ObjectId::MASK_IRI_PREFIX) >> 48;
-        uint64_t iri_id = unmasked_id & ObjectId::MASK_IRI_CONTENT;
-
-        os << "<uri>";
-        os << rdf_model.catalog().prefixes[prefix_id];
-        tmp_manager.print_str(os, iri_id); // gets string from id
-        os << "</uri>";
-        break;
-    }
-    case ObjectId::MASK_STRING_DATATYPE_INLINED: {
-        int prefix_shift_size = 8 * ObjectId::STR_DT_INLINE_BYTES;
-        uint16_t datatype_id = (object_id.id & ObjectId::MASK_LITERAL_TAG) >> prefix_shift_size;
+    case RDF_OID::Type::STRING_DATATYPE_INLINE:
+    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
+    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+        auto&& [dtt, str] = Conversions::unpack_string_datatype(oid);
 
         os << "<literal datatype=\"";
-        print_datatype_rdf_xml(os, datatype_id);
+        os << dtt;
         os << "\">";
-        Inliner::print_string_inlined<5>(escaped_os, unmasked_id);
+        escaped_os << str;
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_STRING_DATATYPE_EXTERN: {
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        uint16_t datatype_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-
-        os << "<literal datatype=\"";
-        print_datatype_rdf_xml(os, datatype_id);
-        os << "\">";
-        string_manager.print(escaped_os, str_id);
-        os << "</literal>";
-
-        break;
-    }
-    case ObjectId::MASK_STRING_DATATYPE_TMP: {
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        uint64_t datatype_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-
-        os << "<literal datatype=\"";
-        print_datatype_rdf_xml(os, datatype_id);
-        os << "\">";
-        tmp_manager.print_str(escaped_os, str_id);
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_STRING_LANG_INLINED: {
-        int prefix_shift_size = 8 * ObjectId::STR_LANG_INLINE_BYTES;
-        uint16_t language_id = (object_id.id & ObjectId::MASK_LITERAL_TAG) >> prefix_shift_size;
+    case RDF_OID::Type::STRING_LANG_INLINE:
+    case RDF_OID::Type::STRING_LANG_EXTERN:
+    case RDF_OID::Type::STRING_LANG_TMP: {
+        auto&& [lang, str] = Conversions::unpack_string_lang(oid);
 
         os << "<literal xml:lang=\"";
-        print_language_rdf_xml(os, language_id);
+        os << lang;
         os << "\">";
-        Inliner::print_string_inlined<5>(escaped_os, unmasked_id);
+        escaped_os << str;
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_STRING_LANG_EXTERN: {
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        uint16_t language_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
+    case RDF_OID::Type::DATE:
+    case RDF_OID::Type::DATETIME:
+    case RDF_OID::Type::TIME:
+    case RDF_OID::Type::DATETIMESTAMP: {
+        DateTime datetime = Conversions::unpack_date(oid);
 
-        os << "<literal xml:lang=\"";
-        print_language_rdf_xml(os, language_id);
-        os << "\">";
-        string_manager.print(escaped_os, str_id);
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_STRING_LANG_TMP: {
-        uint64_t str_id = unmasked_id & ObjectId::MASK_LITERAL;
-        uint64_t language_id = (unmasked_id & ObjectId::MASK_LITERAL_TAG) >> 40;
-
-        os << "<literal xml:lang=\"";
-        print_language_rdf_xml(os, language_id);
-        os << "\">";
-
-        tmp_manager.print_str(escaped_os, str_id);
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_DT_DATE:
-    case ObjectId::MASK_DT_DATETIME:
-    case ObjectId::MASK_DT_TIME:
-    case ObjectId::MASK_DT_DATETIMESTAMP: {
-        os << "{\"type\":\"literal\",\"value\":\"";
-        DateTime datetime(object_id);
+        os << "<literal datatype=\"" << datetime.get_datatype_string() << "\">";
         os << datetime.get_value_string();
-        os << "\",\"datatype\":\"";
-        os << datetime.get_datatype_string() << "\"}";
-        break;
-    }
-    case ObjectId::MASK_DECIMAL_EXTERN: {
-        os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#decimal\">";
-        std::stringstream ss;
-        string_manager.print(ss, unmasked_id);
-        os << Decimal::from_external(ss.str());
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_DECIMAL_INLINED: {
+    case RDF_OID::Type::DECIMAL_INLINE:
+    case RDF_OID::Type::DECIMAL_EXTERN:
+    case RDF_OID::Type::DECIMAL_TMP: {
+        auto decimal = Conversions::unpack_decimal(oid);
+
         os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#decimal\">";
-        DecimalInlined decimal_inlined(unmasked_id);
-        os << decimal_inlined.get_value_string();
+        os << decimal;
         os << "</literal>";
         break;
     }
-    case ObjectId::MASK_DECIMAL_TMP: {
-        os << "<literal datatype=\"http://www.w3.org/2001/XMLSchema#decimal\">";
-        std::ostringstream ss;
-        tmp_manager.print_str(ss, unmasked_id);
-        os << Decimal::from_external(ss.str());
-        os << "</literal>";
-        break;
-    }
-    case ObjectId::MASK_NULL: {
+    case RDF_OID::Type::NULL_ID: {
         // executor should not call print with NULL
         break;
     }
-
-    default:
-        throw std::logic_error("Unmanaged mask in XMLSelectExecutor::print: "
-            + std::to_string(mask));
     }
 }
 
 
-void XMLSelectExecutor::analyze(std::ostream& os, int indent) const {
+void XMLSelectExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
     os << std::string(indent, ' ');
     os << "XMLSelectExecutor(";
     for (size_t i = 0; i < projection_vars.size(); i++) {
@@ -343,5 +240,7 @@ void XMLSelectExecutor::analyze(std::ostream& os, int indent) const {
         os << '?' << get_query_ctx().get_var_name(projection_vars[i]);
     }
     os << ")\n";
-    root->analyze(os, indent + 2);
+
+    BindingIterPrinter printer(os, print_stats, indent + 2);
+    root->accept_visitor(printer);
 }

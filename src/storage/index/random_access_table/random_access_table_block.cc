@@ -1,9 +1,9 @@
 #include "random_access_table_block.h"
 
-#include "storage/buffer_manager.h"
+#include "system/buffer_manager.h"
 
 template <std::size_t N>
-RandomAccessTableBlock<N>::RandomAccessTableBlock(Page& page) :
+RandomAccessTableBlock<N>::RandomAccessTableBlock(VPage& page) :
     page         (page),
     records      (reinterpret_cast<uint64_t*>(page.get_bytes())),
     record_count (reinterpret_cast<uint32_t*>(page.get_bytes()
@@ -18,28 +18,20 @@ RandomAccessTableBlock<N>::~RandomAccessTableBlock() {
 
 
 template <std::size_t N>
-bool RandomAccessTableBlock<N>::try_append_record(Record<N> record) {
-    if (*record_count < max_records) {
-        for (std::size_t i = 0; i < N; ++i) {
-            records[ (*record_count)*N + i ] = record[i];
-        }
-        ++(*record_count);
-        page.make_dirty();
-        return true;
-    } else {
-        return false;
+void RandomAccessTableBlock<N>::append_record(const Record<N>& record) {
+    assert(*record_count < max_records);
+    for (std::size_t i = 0; i < N; ++i) {
+        records[ (*record_count)*N + i ] = record[i];
     }
+    ++(*record_count);
+    // page.make_dirty();
 }
 
 
 template <std::size_t N>
-std::unique_ptr<Record<N>> RandomAccessTableBlock<N>::operator[](uint_fast32_t pos) {
+Record<N>* RandomAccessTableBlock<N>::operator[](uint64_t pos) {
     if (pos < max_records) {
-        std::array<uint64_t, N> ids;
-        for (uint_fast32_t i = 0; i < N; i++) {
-            ids[i] = records[pos*N + i];
-        }
-        return std::make_unique<Record<N>>(std::move(ids));
+        return reinterpret_cast<Record<N>*>(&records[pos*N]);
     } else {
         return nullptr;
     }

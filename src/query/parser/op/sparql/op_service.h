@@ -69,19 +69,31 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpService(";
+        os << std::string(indent, ' ') << "OpService(";
         if (silent) os << "SILENT ";
         if (std::holds_alternative<VarId>(var_or_iri)) {
-            os << get_query_ctx().get_var_name(std::get<VarId>(var_or_iri)) << ' ';
+            os << get_query_ctx().get_var_name(std::get<VarId>(var_or_iri));
         } else {
-            os << '<' << std::get<std::string>(var_or_iri) << "> ";
+            os << '<' << std::get<std::string>(var_or_iri) << ">";
         }
+
+        os << ")\n" << std::string(indent + 2, ' ');
+
+        auto last_char_newline = false;
         for (auto& cha: query) {
             if (cha != '\r') os << cha;
-            if (cha == '\n') os << std::string(indent, ' ');
+            if (cha == '\n') {
+                os << std::string(indent - 2, ' ');
+                last_char_newline = true;
+            } else {
+                last_char_newline = false;
+            }
         }
-        os << ")\n";
+
+        if (!last_char_newline) {
+            os << '\n';
+        }
+
         return os;
     }
 };

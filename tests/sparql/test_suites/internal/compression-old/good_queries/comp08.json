@@ -1,0 +1,18 @@
+{
+    "head": {
+        "vars": [
+            "typed"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "typed": {
+                    "type": "literal",
+                    "value": "this should be compressed",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            }
+        ]
+    }
+}

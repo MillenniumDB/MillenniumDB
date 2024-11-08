@@ -43,23 +43,15 @@ public:
 
     RPQ_NFA get_rpq_base_automaton() const override {
         auto path_automaton = path->get_rpq_base_automaton();
-        // Heuristic for kleene star construction
-        if (path_automaton.get_total_states() == 2) {
-            // Automaton with 2 states have only one connection from 0 to 1
-            auto  new_automaton = RPQ_NFA();
-            auto& transition    = path_automaton.outer_transitions[0][0];
-            new_automaton.add_transition(RPQ_NFA::Transition(0, 0, transition.type, transition.inverse));
-            new_automaton.end_states.insert(new_automaton.get_start());
-            return new_automaton;
-        } else {
-            // Connects all end states to start state
-            for (const auto& end_state : path_automaton.end_states) {
-                path_automaton.add_epsilon_transition(end_state, path_automaton.get_start());
-            }
-            // Makes start state final
-            path_automaton.end_states.insert(path_automaton.get_start());
-            return path_automaton;
+
+        // Connects all end states to start state
+        for (const auto& end_state : path_automaton.end_states) {
+            path_automaton.add_epsilon_transition(end_state, path_automaton.get_start());
         }
+
+        // Makes start state final
+        path_automaton.end_states.insert(path_automaton.get_start());
+        return path_automaton;
     }
 
     RDPQAutomaton get_rdpq_base_automaton() const override {

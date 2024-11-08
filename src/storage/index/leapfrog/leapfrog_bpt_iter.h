@@ -32,6 +32,14 @@ public:
     // returns true if the terms and parent_binding were found
     bool open_terms(Binding& input_binding) override;
 
+    const BPlusTreeDir<N>& get_root() const {
+        return *directory_stack[0];
+    }
+
+    std::string get_iter_name() const override { return "LeapfrogBptIter"; }
+
+    bool try_estimate(std::vector<double>& initial_estimations, std::vector<double>& after_estimations) const override;
+
 private:
     Record<N> current_tuple;
 
@@ -41,7 +49,7 @@ private:
 
     uint32_t current_pos_in_leaf;
 
-    std::stack<std::unique_ptr<BPlusTreeDir<N>>> directory_stack;
+    std::vector<std::unique_ptr<BPlusTreeDir<N>>> directory_stack;
 
     // search a record in the interval [min, max]
     bool internal_search(const Record<N>& min, const Record<N>& max);

@@ -139,7 +139,8 @@ def skip_tests(tests: List[Test], stats: ExecutionStats) -> List[Test]:
             log(Level.SKIPPED, "ignored", str(test))
             continue
 
-        if key_word := query_has_not_supported_keyword(test.query):
+        key_word = query_has_not_supported_keyword(test.query)
+        if key_word:
             stats.skipped[f"kw: {key_word}"] += 1
             log(Level.SKIPPED, f"kw: {key_word}", str(test))
             continue
@@ -246,7 +247,14 @@ def execute_bad_test(server: Optional[Popen[bytes]], test: BadTest, stats: Execu
         stats.error += 1
 
 
-def execute_tests(test_suite: TestSuite, *, client_only: bool = False, progress_bar: tqdm[NoReturn] | None = None):
+def execute_tests(
+    test_suite: TestSuite,
+    *,
+    server_executable: Path,
+    create_db_executable: Path,
+    client_only: bool = False,
+    progress_bar: tqdm[NoReturn] | None = None,
+):
     """
     If client_only is True, then no database will be created and no server will be started.
     This can be used to manually start the server with a debugger, and then execute the test script.
@@ -273,10 +281,12 @@ def execute_tests(test_suite: TestSuite, *, client_only: bool = False, progress_
         log_file = None
 
         if not client_only:
-            data_path = create_db(data, prefixes)
-            server, log_file = start_server(data_path)
+            data_path = create_db(create_db_executable, data, prefixes)
+            server, log_file = start_server(server_executable, data_path)
 
         for test in tests_:
+            # if progress_bar:
+            #     progress_bar.set_description("/".join(test.query.parts[-3:]))
             try:
                 if isinstance(test, QueryTest):
                     if test.graph_output:
@@ -301,7 +311,7 @@ def execute_tests(test_suite: TestSuite, *, client_only: bool = False, progress_
                         log(Level.SERVER_LOG, "SERVER:", line.strip())
                     log_file.seek(0, SEEK_END)
 
-                    server, log_file = start_server(data_path)  # restart server
+                    server, log_file = start_server(server_executable, data_path)  # restart server
 
             except Exception as exc:
                 if not client_only:
@@ -433,7 +443,7 @@ def replace_nodes_in_triples(triples: List[Triple], mapping: Mapping):
                 value_copy.value = mapping.get(value.value, value.value)
 
             values.append(value_copy)
-        new_triples.append(tuple(values))
+        new_triples.append(tuple(values))  # type: ignore
 
     return new_triples
 

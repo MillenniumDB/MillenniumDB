@@ -18,12 +18,10 @@ from SPARQLWrapper.SPARQLExceptions import EndPointInternalError, QueryBadFormed
 
 from .logging import Level, log
 from .options import (
-    CREATE_DB_EXECUTABLE,
     CWD,
     EMPTY_DB_DATA,
     HOST,
     PORT,
-    SERVER_EXECUTABLE,
     SERVER_LOGS_DIR,
     SLEEP_DELAY,
     TEST_SUITE_DIR,
@@ -39,7 +37,7 @@ from .types import (
 )
 
 
-def create_db(rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
+def create_db(create_db_executable: Path, rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
     if rdf_file is None:
         rdf_file = EMPTY_DB_DATA
 
@@ -53,7 +51,7 @@ def create_db(rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
     if db_dir.exists():
         log(Level.WARNING, f'Database "{db_dir.relative_to(TESTING_DBS_DIR)}" already exists')
     else:
-        cmd: List[str] = [str(CREATE_DB_EXECUTABLE), str(rdf_file), str(db_dir)]
+        cmd: List[str] = [str(create_db_executable), str(rdf_file), str(db_dir)]
         if prefixes_file is not None:
             if not prefixes_file.is_file():
                 log(Level.ERROR, f"File not found {prefixes_file}")
@@ -72,7 +70,7 @@ def create_db(rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
 __log_file: TextIOWrapper | None = None
 
 
-def start_server(db_dir: Path):
+def start_server(server_executable: Path, db_dir: Path):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     address = (HOST, PORT)
 
@@ -93,11 +91,16 @@ def start_server(db_dir: Path):
 
     __log_file = log_path.open(mode="a+", encoding="utf-8")
 
-    cmd: List[str] = [str(SERVER_EXECUTABLE), str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
+    cmd: List[str] = [str(server_executable), str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
     server_process = subprocess.Popen(cmd, stdout=__log_file, stderr=__log_file)
 
     # Wait for server initialization
     while sock.connect_ex(address) != 0:
+        # We have to close and recreate the socket because it is not specified
+        # what happens if connect fails. On Linux the socket can continue to be
+        # used. On macOS, however, the socket is in an unusable state.
+        sock.close()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         time.sleep(SLEEP_DELAY)
 
     log(Level.BEGIN, f'SERVER STARTED: "{db_dir.relative_to(CWD)}"')

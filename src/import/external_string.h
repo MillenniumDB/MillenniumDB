@@ -1,19 +1,15 @@
 #pragma once
 
-#include <string>
-#include <fstream>
-#include <iostream>
+#include <cstring>
 
-#include "storage/page.h"
-#include "storage/string_manager.h"
+#include "system/string_manager.h"
 #include "third_party/hashes/hash_function_wrapper.h"
 
 namespace Import {
 
 class ExternalString {
 public:
-    // TODO: move constants to string manager?
-    static constexpr size_t MIN_PAGE_REMAINING_BYTES = 9;
+    // we suppose no string will need more than these bytes to encode its length
     static constexpr size_t MAX_LEN_BYTES = 5;
 
     static char* strings;
@@ -26,8 +22,8 @@ public:
         auto p1 = strings + offset;
         auto p2 = strings + other.offset;
 
-        size_t bytes_for_len1;
-        size_t bytes_for_len2;
+        uint64_t bytes_for_len1;
+        uint64_t bytes_for_len2;
 
         size_t len1 = StringManager::get_string_len(p1, &bytes_for_len1);
         size_t len2 = StringManager::get_string_len(p2, &bytes_for_len2);
@@ -46,7 +42,7 @@ public:
 template<>
 struct std::hash<Import::ExternalString> {
     size_t operator()(const Import::ExternalString& str) const {
-        size_t bytes_for_len;
+        uint64_t bytes_for_len;
         auto ptr = Import::ExternalString::strings + str.offset;
         size_t len = StringManager::get_string_len(ptr, &bytes_for_len);
         ptr += bytes_for_len;

@@ -83,13 +83,12 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ') << "OpConstruct(\n";
+        os << std::string(indent, ' ') << "OpConstruct()\n";
+
         for (auto& triple : triples) {
-            os << std::string(indent + 2, ' ');
-            os << triple;
+            triple.print_to_ostream(os, indent + 2);
         }
-        os << std::string(indent, ' ');
-        os << ")\n";
+
         return os;
     }
 };

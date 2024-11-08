@@ -1,0 +1,4 @@
+MATCH (?x)
+WHERE ?x.key IS NOT NULL
+ORDER BY ?x.key
+RETURN ?x, ?x.key

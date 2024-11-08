@@ -28,9 +28,8 @@ public:
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '(' << *lhs << '=' << *rhs << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace MQL

@@ -1,0 +1,22 @@
+{
+    "head": {
+        "vars": [
+            "pred",
+            "obj"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "pred": {
+                    "type": "uri",
+                    "value": "http://www.example.org/esc_backslash"
+                },
+                "obj": {
+                    "type": "literal",
+                    "value": "\\U0001F34E"
+                }
+            }
+        ]
+    }
+}

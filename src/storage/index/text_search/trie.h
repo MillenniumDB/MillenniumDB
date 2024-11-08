@@ -1,62 +1,60 @@
 #pragma once
 
 #include <cstdint>
-#include <cstring>
+#include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
-#include <queue>
 
-#include "storage/index/text_search/trie_iter.h"
-#include "storage/index/text_search/trie_error_iter.h"
-#include "storage/index/text_search/trie_node.h"
-#include "storage/index/text_search/trie_garbage.h"
 #include "storage/file_id.h"
-#include "storage/page.h"
+#include "storage/index/text_search/trie_garbage.h"
+#include "storage/index/text_search/trie_iter_list.h"
+#include "storage/index/text_search/trie_iter_search.h"
+#include "storage/index/text_search/trie_node.h"
 
+namespace TextSearch {
 
 class Trie {
-public:
+    friend class Node;
 
-    // File ids for FileManager
-    const FileId node_file_id;
-    const FileId info_file_id;
+public:
+    Trie(std::filesystem::path path);
+    ~Trie();
+
+    // Adds a new word to Trie
+    uint64_t insert_string(const std::string& str);
+
+    // Iterator over all the strings that have been inserted into the trie
+    TrieIterList get_iter_list();
+
+    // Search in the trie
+    template<SearchType type, bool allow_errors>
+    std::unique_ptr<TrieIter> search(const std::string& query);
+
+    // Prints the trie to os in DOT format (Graphviz)
+    void print_trie(std::ostream& os, std::vector<std::string>&& text_list);
+
+private:
+    // FileId of the file containing the trie.
+    // All the nodes are in one file.
+    const FileId file_id;
 
     // Garbage Collector
     TrieGarbage garbage;
 
     // Definition of constants
-    static constexpr uint64_t NODE_SIZE = TrieNode::TOTAL_NODE_SIZE; // Node size in node_page (11)
-    static constexpr uint64_t PAGE_SIZE = Page::MDB_PAGE_SIZE; // Page size (Normally 4096B)
-    static constexpr uint64_t CAPACITY = 16; /// Initial capacity for info_page
-    static constexpr uint64_t root_node_offset = 16; // First 16B are for last_offset_node_page and last_offset_info_page
+    static constexpr uint64_t CAPACITY = 16; // Initial capacity for nodes
+    static constexpr uint64_t PAGE_POINTER_SIZE = 5;
+    static constexpr uint64_t NEXT_ID_SIZE = 5;
+    static constexpr uint64_t HEADER_SIZE = 2 * PAGE_POINTER_SIZE + NEXT_ID_SIZE;
 
     // Pointers to offsets to write in files
-    uint64_t* last_offset_node_page;    // 8B
-    uint64_t* last_offset_info_page;    // 8B
-    // Total 16B => root_node_offset
+    unsigned char* end_page_pointer_ptr;  // ptr to the page pointer to the start of unused space, 5B
+    unsigned char* root_page_pointer_ptr; // ptr to the page pointer to the root node, 5B
+    unsigned char* next_id_ptr;           // ptr to the next id to use for nodes, 5B
 
-    Trie();
-
-    TrieNode root;
-
-    // Adds a new word to Trie
-    void add_new_word(const std::string& str, uint64_t id);
-
-    // Prefix search in Trie. Returns TrieIter.
-    TrieIter get_iter(const std::string& str);
-
-    // Exact search in Trie. Returns TrieIter.
-    TrieIter get_exact_iter(const std::string& str);
-
-    // Prefix search in Trie for word matches with up to max_errors errors
-    TrieErrorIter get_iter_error_search(const std::string& str, int max_errors = 3);
-
-    // Exact search in Trie for word matches with up to max_errors errors
-    TrieErrorIter get_exact_iter_error_search(const std::string& str, int max_errors = 3);
-
-    // Prints Trie to console (Debug)
-    void print_trie();
-
-    // Deletes a word from Trie
-    void delete_word(const std::string& str);
+    std::unique_ptr<Node> root_node;
+    UPage& root_page;
 };
+
+} // namespace TextSearch

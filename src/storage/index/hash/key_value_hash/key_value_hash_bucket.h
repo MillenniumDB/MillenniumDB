@@ -9,7 +9,7 @@
 #include "graph_models/object_id.h"
 #include "query/var_id.h"
 #include "storage/file_id.h"
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 template<class K, class V> class KeyValueHash;
 
@@ -41,7 +41,7 @@ public:
     inline void set_tuple_count(uint_fast32_t value) const noexcept { *tuple_count = value; }
 
 private:
-    Page& page;
+    PPage& page;
 
     uint32_t   const key_size;
     uint32_t   const value_size;

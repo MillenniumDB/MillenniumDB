@@ -15,13 +15,18 @@ public:
     std::size_t size;
 
     Binding() : object_ids(nullptr), size(0) { }
-    Binding(std::size_t size) : object_ids(new ObjectId[size]), size(size) { }
 
-    // to prevent using
-    // auto b = op.begin()
-    // instead of
-    // auto& b = op.begin()
+    Binding(std::size_t size) : object_ids(new ObjectId[size]), size(size) {
+        for (std::size_t i = 0; i < size; i++) {
+            object_ids[i] = ObjectId::get_null();
+        }
+    }
+
     Binding(const Binding& other) = delete;
+
+    ~Binding() {
+        delete[] object_ids;
+    }
 
     void operator=(Binding&& other) {
         assert(this->object_ids == nullptr);
@@ -29,7 +34,7 @@ public:
         this->object_ids = std::exchange(other.object_ids, nullptr);
     }
 
-    bool operator==(const Binding& other) const {
+    bool operator==(const Binding& other) const noexcept {
         if (size != other.size) {
             return false;
         }
@@ -38,10 +43,6 @@ public:
                 return false;
         }
         return true;
-    }
-
-    ~Binding() {
-        delete[] object_ids;
     }
 
     inline void add_all(const Binding& other) noexcept {

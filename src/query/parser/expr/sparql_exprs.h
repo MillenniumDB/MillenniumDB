@@ -1,88 +1,87 @@
 #pragma once
 
-#include "query/parser/expr/sparql/atom/expr_term.h"
-#include "query/parser/expr/sparql/atom/expr_object_id.h"
-#include "query/parser/expr/sparql/atom/expr_var.h"
+#include "query/parser/expr/sparql/atom/expr_term.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/atom/expr_var.h" // IWYU pragma: export
 
-#include "query/parser/expr/sparql/unary/expr_not.h"
-#include "query/parser/expr/sparql/unary/expr_unary_minus.h"
-#include "query/parser/expr/sparql/unary/expr_unary_plus.h"
-#include "query/parser/expr/sparql/binary/expr_multiplication.h"
-#include "query/parser/expr/sparql/binary/expr_division.h"
-#include "query/parser/expr/sparql/binary/expr_addition.h"
-#include "query/parser/expr/sparql/binary/expr_subtraction.h"
-#include "query/parser/expr/sparql/binary/expr_and.h"
-#include "query/parser/expr/sparql/binary/expr_or.h"
-#include "query/parser/expr/sparql/binary/expr_equal.h"
-#include "query/parser/expr/sparql/binary/expr_not_equal.h"
-#include "query/parser/expr/sparql/binary/expr_less.h"
-#include "query/parser/expr/sparql/binary/expr_greater.h"
-#include "query/parser/expr/sparql/binary/expr_less_or_equal.h"
-#include "query/parser/expr/sparql/binary/expr_greater_or_equal.h"
-#include "query/parser/expr/sparql/n_ary/expr_in.h"
-#include "query/parser/expr/sparql/n_ary/expr_not_in.h"
+#include "query/parser/expr/sparql/binary/expr_addition.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_and.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_division.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_equal.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_greater.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_greater_or_equal.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_less.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_less_or_equal.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_multiplication.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_not_equal.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_or.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/binary/expr_subtraction.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/n_ary/expr_in.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/n_ary/expr_not_in.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/unary/expr_not.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/unary/expr_unary_minus.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/unary/expr_unary_plus.h" // IWYU pragma: export
 
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_avg.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_count.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_count_all.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_group_concat.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_max.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_min.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_sample.h"
-#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_sum.h"
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_avg.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_count.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_count_all.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_group_concat.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_max.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_min.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_sample.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/aggregate/expr_agg_sum.h" // IWYU pragma: export
 
-#include "query/parser/expr/sparql/builtin_call/expr_abs.h"
-#include "query/parser/expr/sparql/builtin_call/expr_bnode.h"
-#include "query/parser/expr/sparql/builtin_call/expr_bound.h"
-#include "query/parser/expr/sparql/builtin_call/expr_ceil.h"
-#include "query/parser/expr/sparql/builtin_call/expr_coalesce.h"
-#include "query/parser/expr/sparql/builtin_call/expr_concat.h"
-#include "query/parser/expr/sparql/builtin_call/expr_contains.h"
-#include "query/parser/expr/sparql/builtin_call/expr_datatype.h"
-#include "query/parser/expr/sparql/builtin_call/expr_day.h"
-#include "query/parser/expr/sparql/builtin_call/expr_encode_for_uri.h"
-#include "query/parser/expr/sparql/builtin_call/expr_exists.h"
-#include "query/parser/expr/sparql/builtin_call/expr_floor.h"
-#include "query/parser/expr/sparql/builtin_call/expr_hours.h"
-#include "query/parser/expr/sparql/builtin_call/expr_if.h"
-#include "query/parser/expr/sparql/builtin_call/expr_iri.h"
-#include "query/parser/expr/sparql/builtin_call/expr_is_blank.h"
-#include "query/parser/expr/sparql/builtin_call/expr_is_iri.h"
-#include "query/parser/expr/sparql/builtin_call/expr_is_literal.h"
-#include "query/parser/expr/sparql/builtin_call/expr_is_numeric.h"
-#include "query/parser/expr/sparql/builtin_call/expr_is_uri.h"
-#include "query/parser/expr/sparql/builtin_call/expr_lang.h"
-#include "query/parser/expr/sparql/builtin_call/expr_langmatches.h"
-#include "query/parser/expr/sparql/builtin_call/expr_lcase.h"
-#include "query/parser/expr/sparql/builtin_call/expr_md5.h"
-#include "query/parser/expr/sparql/builtin_call/expr_minutes.h"
-#include "query/parser/expr/sparql/builtin_call/expr_month.h"
-#include "query/parser/expr/sparql/builtin_call/expr_not_exists.h"
-#include "query/parser/expr/sparql/builtin_call/expr_now.h"
-#include "query/parser/expr/sparql/builtin_call/expr_rand.h"
-#include "query/parser/expr/sparql/builtin_call/expr_regex.h"
-#include "query/parser/expr/sparql/builtin_call/expr_replace.h"
-#include "query/parser/expr/sparql/builtin_call/expr_round.h"
-#include "query/parser/expr/sparql/builtin_call/expr_same_term.h"
-#include "query/parser/expr/sparql/builtin_call/expr_seconds.h"
-#include "query/parser/expr/sparql/builtin_call/expr_sha1.h"
-#include "query/parser/expr/sparql/builtin_call/expr_sha256.h"
-#include "query/parser/expr/sparql/builtin_call/expr_sha384.h"
-#include "query/parser/expr/sparql/builtin_call/expr_sha512.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_after.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_before.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_dt.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_ends.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_lang.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_len.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_starts.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str_uuid.h"
-#include "query/parser/expr/sparql/builtin_call/expr_str.h"
-#include "query/parser/expr/sparql/builtin_call/expr_substr.h"
-#include "query/parser/expr/sparql/builtin_call/expr_timezone.h"
-#include "query/parser/expr/sparql/builtin_call/expr_tz.h"
-#include "query/parser/expr/sparql/builtin_call/expr_ucase.h"
-#include "query/parser/expr/sparql/builtin_call/expr_uri.h"
-#include "query/parser/expr/sparql/builtin_call/expr_uuid.h"
-#include "query/parser/expr/sparql/builtin_call/expr_year.h"
-#include "query/parser/expr/sparql/builtin_call/expr_cast.h"
+#include "query/parser/expr/sparql/builtin_call/expr_abs.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_bnode.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_bound.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_cast.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_ceil.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_coalesce.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_concat.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_contains.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_datatype.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_day.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_encode_for_uri.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_exists.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_floor.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_hours.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_if.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_iri.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_is_blank.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_is_iri.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_is_literal.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_is_numeric.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_is_uri.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_lang.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_langmatches.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_lcase.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_md5.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_minutes.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_month.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_not_exists.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_now.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_rand.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_regex.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_replace.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_round.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_same_term.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_seconds.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_sha1.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_sha256.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_sha384.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_sha512.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_after.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_before.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_dt.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_ends.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_lang.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_len.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_starts.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_str_uuid.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_substr.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_timezone.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_tz.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_ucase.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_uri.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_uuid.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/builtin_call/expr_year.h" // IWYU pragma: export

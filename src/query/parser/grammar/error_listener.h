@@ -1,3 +1,5 @@
+#pragma once
+
 #include "antlr4-runtime.h"
 
 #include <sstream>
@@ -15,9 +17,7 @@ public:
                      const std::string& msg,
                      std::exception_ptr /* e */) override
     {
-        std::stringstream ss;
-        ss << "line " << line << ":" << (charPositionInLine+1) << " " << msg;
-        throw QueryParsingException(ss.str());
+        throw QueryParsingException(msg, line, charPositionInLine);
     }
 };
 

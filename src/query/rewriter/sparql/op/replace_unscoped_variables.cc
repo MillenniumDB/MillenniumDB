@@ -66,9 +66,6 @@ void ReplaceUnscopedVariables::visit(OpFilter& op_filter) {
     }
 }
 
-void ReplaceUnscopedVariables::visit(OpWhere& op_where) {
-    op_where.op->accept_visitor(*this);
-}
 
 void ReplaceUnscopedVariables::visit(OpOptional& op_optional) {
     op_optional.lhs->accept_visitor(*this);
@@ -167,7 +164,7 @@ void ReplaceUnscopedVariables::visit(OpValues& op_values) {
 void ReplaceUnscopedVariablesExpr::visit_and_replace_if_necessary(std::unique_ptr<Expr>& expr) {
     if (auto expr_var = dynamic_cast<ExprVar*>(expr.get())) {
         if (vars_in_scope.find(expr_var->var) == vars_in_scope.end()) {
-            expr = std::make_unique<SPARQL::ExprObjectId>(ObjectId::get_null());
+            expr = std::make_unique<SPARQL::ExprTerm>(ObjectId::get_null());
         }
     } else if (auto expr_bound = dynamic_cast<ExprBound*>(expr.get())) {
         if (vars_in_scope.find(expr_bound->var) == vars_in_scope.end()) {
@@ -183,8 +180,6 @@ void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprVar&) {
     // This should have been handled in visit_and_replace_if_necessary()
     assert(false);
 }
-
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprObjectId&) { }
 
 void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprTerm&) { }
 

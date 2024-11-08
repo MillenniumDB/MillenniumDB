@@ -1,12 +1,13 @@
 #pragma once
 
+#include <bitset>
 #include <memory>
+#include <ostream>
 #include <utility>
 
-#include "storage/buffer_manager.h"
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page.h"
+#include "storage/page/versioned_page.h"
 
 // forward declarations
 template <std::size_t N> class BPlusTreeDir;
@@ -36,63 +37,82 @@ public:
         page         (nullptr),
         leaf_file_id (FileId::UNASSIGNED) { }
 
-    BPlusTreeLeaf(Page* page) noexcept :
-        records      ( reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) ) ),
-        value_count  ( reinterpret_cast<uint32_t*>(page->get_bytes()) ),
-        next_leaf    ( reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t)) ),
+    BPlusTreeLeaf(VPage* page) noexcept :
+        value_count  ( reinterpret_cast<uint32_t*>(page->get_bytes())),
+        next_leaf    ( reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t))),
+        bitset_ptr   ((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t)),
+        redundant_bytes((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N),
         page         (page),
-        leaf_file_id (page->page_id.file_id) { }
+        leaf_file_id (page->page_id.file_id) {
+        char* bitset_ptr = page->get_bytes() + 2 * sizeof(uint32_t);
 
-    ~BPlusTreeLeaf() {
-        if (page != nullptr)
-            buffer_manager.unpin(*page);
+        int pos_bitset = 0;
+        for (size_t i = 0; i < N; ++i) {
+            for (int bit = 0; bit < 8; bit++) {
+                redundant_bitset.set(pos_bitset++, (bitset_ptr[i] >> bit) & 1);
+            }
+        }
+        redundant_count = redundant_bitset.count();
+        records = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N + redundant_count;
     }
 
     BPlusTreeLeaf(BPlusTreeLeaf&& other) noexcept :
         records      (other.records),
         value_count  (other.value_count),
         next_leaf    (other.next_leaf),
+        bitset_ptr   (other.bitset_ptr),
+        redundant_bytes(other.redundant_bytes),
+        redundant_count(other.redundant_count),
+        redundant_bitset(other.redundant_bitset),
         page         (std::exchange(other.page, nullptr)),
         leaf_file_id (other.leaf_file_id) { }
+
+    ~BPlusTreeLeaf();
 
     void operator=(BPlusTreeLeaf&& other) noexcept {
         records      = other.records;
         value_count  = other.value_count;
         next_leaf    = other.next_leaf;
+        bitset_ptr   = other.bitset_ptr;
         leaf_file_id = other.leaf_file_id;
+        redundant_bytes = other.redundant_bytes;
+        redundant_count = other.redundant_count;
+        redundant_bitset = other.redundant_bitset;
 
         this->page = std::exchange(other.page, this->page);
     }
 
-    inline Page& get_page()           const { return *page; }
+    BPlusTreeLeaf<N> clone() const;
+
+    void update_to_next_leaf();
+
+    inline VPage& get_page()          const { return *page; }
     inline uint32_t get_value_count() const { return *value_count; }
     inline bool has_next()            const { return *next_leaf != 0; }
 
     // returns false if an error in this leaf is found
-    bool check() const;
+    bool check(std::ostream& os) const;
 
     // only for debugging
-    void print() const;
+    void print(std::ostream& os) const;
 
-    std::unique_ptr<BPlusTreeSplit<N>> insert(const Record<N>& record);
+    std::unique_ptr<BPlusTreeSplit<N>> insert(const Record<N>& record, bool& error);
 
-    BPlusTreeLeaf<N> clone() const {
-        buffer_manager.pin(*page);
-        return BPlusTreeLeaf<N>(page);
-    }
-
-    void update_to_next_leaf() {
-        buffer_manager.unpin(*page);
-
-        this->page        = &buffer_manager.get_page(leaf_file_id, *next_leaf);
-        this->records     = reinterpret_cast<uint64_t*>(page->get_bytes() + (2*sizeof(uint32_t)) );
-        this->value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
-        this->next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
-    }
+    // returns true if record was deleted, false if record did not exists
+    bool delete_record(const Record<N>& record);
 
     // Writes a record in a given space
     // assumes pos is valid
-    void get_record(uint_fast32_t pos, Record<N>* out) const;
+    void set_record(uint_fast32_t pos, Record<N>& out) const;
+
+    // Initializes a record and returns it
+    Record<N> get_record(uint_fast32_t pos) const;
+
+    // Sets the redundant bytes in out
+    void set_redundant_record(Record<N>& out) const;
+
+    // Updates out with the non redundant bytes
+    void update_record(uint_fast32_t pos, Record<N>& out) const;
 
     // Search for the first record that is equal or greater than the parameter received.
     // May give an invalid index, meaning there is no such record is on this page.
@@ -105,12 +125,25 @@ public:
     bool check_range(const Record<N>& r) const;
 
 private:
-    uint64_t* records;
+    unsigned char* records;
     uint32_t* value_count;
     uint32_t* next_leaf;
+    unsigned char* bitset_ptr;
+    unsigned char* redundant_bytes;
+    uint32_t redundant_count = 0;
 
-    Page* page;
+    // The bits set to true represent the byte position of the records that are redundant.
+    std::bitset<N * 8> redundant_bitset;
+
+    VPage* page;
     FileId leaf_file_id;
+
+    uint32_t get_page_size(std::bitset<N * 8> bitset, uint32_t n_records);
+    std::bitset<N * 8> create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to);
+
+    void update_leaf(BPlusTreeLeaf<N>& leaf, std::bitset<N * 8>& bitset, uint64_t n_records, unsigned char* buffer);
+    void compress_to_buffer(unsigned char* compression_buffer, std::bitset<N * 8> bitset, uint64_t from, uint64_t to);
+    void upgrade_to_editable();
 
     bool equal_record(const Record<N>& record, uint_fast32_t index);
     void shift_right_records(int_fast32_t from, int_fast32_t to);

@@ -49,18 +49,5 @@ public:
         }
         return false;
     }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ') << *lhs_expr << " IN(";
-        bool first = true;
-        for (auto& expr : exprs) {
-            if (!first) {
-                os << ", ";
-            }
-            os << *expr;
-            first = false;
-        }
-        return os << ')';
-    }
 };
 } // namespace SPARQL

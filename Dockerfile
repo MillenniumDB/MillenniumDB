@@ -1,17 +1,39 @@
-FROM alpine:3.18
+# Build stage
+FROM alpine:3.18 AS build
+WORKDIR /mdb
 
-RUN apk --no-cache add cmake make g++
-RUN apk --no-cache add openssl-dev
-RUN apk --no-cache add boost1.82-dev
-RUN apk --no-cache add musl-locales
+RUN apk --no-cache add cmake \
+                       make \
+                       g++ \
+                       openssl-dev \
+                       boost1.82-dev \
+                       ncurses-dev
 
-COPY ./src /MillenniumDB/src
-COPY ./third_party/antlr4-runtime-4.9.3 /MillenniumDB/third_party/antlr4-runtime-4.9.3
-COPY ./CMakeLists.txt /MillenniumDB/CMakeLists.txt
+COPY src                               src
+COPY CMakeLists.txt                    CMakeLists.txt
+COPY third_party/antlr4-runtime-4.13.1 third_party/antlr4-runtime-4.13.1
 
-WORKDIR /MillenniumDB
+RUN cmake -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=./ && \
+    cmake --build build -j $(($(getconf _NPROCESSORS_ONLN)-1)) --target install
 
-RUN cmake -Bbuild/Release -DCMAKE_BUILD_TYPE=Release
-RUN cmake --build build/Release/ -j $(($(getconf _NPROCESSORS_ONLN)-1))
+COPY browser browser
 
-VOLUME ["/data"]
+
+# Final minimal stage (to minimize image size)
+FROM alpine:3.18 AS final
+WORKDIR /data
+
+RUN apk --no-cache add libstdc++ \
+                       libgcc \
+                       openssl \
+                       musl-locales \
+                       libncursesw \
+                       less \
+                       bash
+
+COPY --from=build /mdb/build/bin /usr/bin
+COPY --from=build /mdb/browser /browser
+
+VOLUME /data
+ENV MDB_BROWSER=/browser
+CMD ["bash"]

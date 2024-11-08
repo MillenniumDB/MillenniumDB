@@ -41,11 +41,11 @@ double PropertyPlan::estimate_cost() const {
 
 
 double PropertyPlan::estimate_output_size() const {
-    const auto total_objects    = static_cast<double>(quad_model.catalog().identifiable_nodes_count
-                                                      + quad_model.catalog().anonymous_nodes_count
-                                                      + quad_model.catalog().connections_count);
+    const auto total_objects    = static_cast<double>(quad_model.catalog.identifiable_nodes_count
+                                                      + quad_model.catalog.anonymous_nodes_count
+                                                      + quad_model.catalog.edge_count);
 
-    const auto total_properties = static_cast<double>(quad_model.catalog().properties_count);
+    const auto total_properties = static_cast<double>(quad_model.catalog.properties_count);
 
     assert((key_assigned || !value_assigned) && "fixed values with open key is not supported");
 
@@ -54,24 +54,31 @@ double PropertyPlan::estimate_output_size() const {
     }
 
     if (key_assigned) {
-        double distinct_values;
-        double key_count;
+        double total_values = 0;
+        double key_count = 0;
         if (key.is_OID()) {
-            distinct_values = static_cast<double>(quad_model.catalog().key2distinct[key.get_OID().id]);
-            key_count       = static_cast<double>(quad_model.catalog().key2total_count[key.get_OID().id]);
+            auto it = quad_model.catalog.key2total_count.find(key.get_OID().id);
+            if (it != quad_model.catalog.key2total_count.end()) {
+                total_values = it->second;
+            }
+
+            it = quad_model.catalog.key2total_count.find(key.get_OID().id);
+            if (it != quad_model.catalog.key2total_count.end()) {
+                key_count = it->second;
+            }
         } else {
             // TODO: this case (key is an assigned variable) is not possible yet, but we may need to cover it in the future
             return 0;
         }
 
-        if (distinct_values == 0) { // To avoid division by 0
+        if (total_values == 0) { // To avoid division by 0
             return 0;
         }
         if (value_assigned) {
             if (object_assigned) {
-                return key_count / (distinct_values * total_objects);
+                return key_count / (total_values * total_objects);
             } else {
-                return key_count / distinct_values;
+                return key_count / total_values;
             }
         } else {
             if (object_assigned) {

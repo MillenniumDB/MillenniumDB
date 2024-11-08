@@ -1,0 +1,17 @@
+{
+    "head": {
+        "vars": [
+            "obj"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "obj": {
+                    "type": "literal",
+                    "value": "�"
+                }
+            }
+        ]
+    }
+}

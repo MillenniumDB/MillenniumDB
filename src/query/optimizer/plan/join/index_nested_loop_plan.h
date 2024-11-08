@@ -19,6 +19,9 @@ public:
         return std::make_unique<IndexNestedLoopPlan>(*this);
     }
 
+    // only meant to be used by base plans, not joins
+    int relation_size() const override { return 0; }
+
     double estimate_cost()        const override { return estimated_cost; }
     double estimate_output_size() const override { return estimated_output_size; }
 

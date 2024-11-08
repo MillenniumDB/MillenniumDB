@@ -11,20 +11,24 @@
 #include "query/parser/op/mql/graph_pattern/op_label.h"
 #include "query/parser/op/mql/graph_pattern/op_path.h"
 #include "query/parser/op/mql/graph_pattern/op_property.h"
+#include "query/parser/op/mql/graph_pattern/op_brute_similarity_search.h"
+#include "query/parser/op/mql/graph_pattern/op_similarity_search.h"
 #include "query/parser/op/op.h"
 
 namespace MQL {
 
 class OpBasicGraphPattern : public Op {
 public:
-    std::set<OpLabel>        labels;
-    std::set<OpProperty>     properties;
-    std::set<OpEdge>         edges;
-    std::set<OpPath>         paths;
-    std::set<OpDisjointVar>  disjoint_vars;
-    std::set<OpDisjointTerm> disjoint_terms;
+    std::set<OpLabel>                 labels;
+    std::set<OpProperty>              properties;
+    std::set<OpEdge>                  edges;
+    std::set<OpPath>                  paths;
+    std::set<OpDisjointVar>           disjoint_vars;
+    std::set<OpDisjointTerm>          disjoint_terms;
+    std::set<OpSimilaritySearch>      similarity_searches;
 
     std::set<VarId> vars; // contains declared variables and anonymous (auto-generated in the constructor)
+
 
     std::unique_ptr<Op> clone() const override {
         return std::make_unique<OpBasicGraphPattern>(*this);
@@ -68,6 +72,13 @@ public:
             vars.insert(var);
         }
         paths.insert(std::move(op_path));
+    }
+
+    void add_similarity_search(OpSimilaritySearch&& op_similarity_search) {
+        for (auto& var : op_similarity_search.get_all_vars()) {
+            vars.insert(var);
+        }
+        similarity_searches.insert(std::move(op_similarity_search));
     }
 
     void add_disjoint_var(OpDisjointVar&& op_disjoint_var) {
@@ -126,6 +137,9 @@ public:
         }
         for (auto& disjoint_term : disjoint_terms) {
             disjoint_term.print_to_ostream(os, indent + 2);
+        }
+        for (auto& similarity_search : similarity_searches) {
+            similarity_search.print_to_ostream(os, indent + 2);
         }
         return os;
     }

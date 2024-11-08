@@ -26,20 +26,17 @@ public:
 
 class TmpFileId {
 public:
-    uint32_t private_buffer_pos;
-    FileId file_id;
+    uint32_t id;
 
-    TmpFileId(uint32_t private_buffer_pos, FileId file_id):
-        private_buffer_pos (private_buffer_pos),
-        file_id            (file_id) { }
+    TmpFileId(uint32_t id) : id (id) { }
 
     bool operator<(const TmpFileId other) const {
-        // file_id works like a key so it shouldn't be necessary to compare private_buffer_pos
-        return this->file_id < other.file_id;
+        // it shouldn't be necessary to compare worker
+        return this->id < other.id;
     }
 
     bool operator==(const TmpFileId other) const {
-        // file_id works like a key so it shouldn't be necessary to compare private_buffer_pos
-        return this->file_id == other.file_id;
+        // it shouldn't be necessary to compare worker
+        return this->id == other.id;
     }
 };

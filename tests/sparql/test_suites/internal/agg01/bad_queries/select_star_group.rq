@@ -1,0 +1,6 @@
+# SELECT * not legal with GROUP BY
+SELECT *
+WHERE {
+    ?s ?p ?o.
+}
+GROUP BY ?o

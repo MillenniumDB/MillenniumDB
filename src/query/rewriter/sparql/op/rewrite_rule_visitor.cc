@@ -64,19 +64,6 @@ void RewriteRuleVisitor::visit(OpAsk& op_ask) {
     op_ask.op->accept_visitor(*this);
 }
 
-void RewriteRuleVisitor::visit(OpWhere& op_where) {
-    do {
-        has_rewritten = false;
-        for (auto& rule : rules) {
-            if (rule->is_possible_to_regroup(op_where.op)) {
-                op_where.op   = rule->regroup(std::move(op_where.op));
-                has_rewritten = true;
-            }
-        }
-        op_where.op->accept_visitor(*this);
-    } while (has_rewritten);
-}
-
 
 void RewriteRuleVisitor::visit(OpOrderBy& op_order_by) {
     for (auto& rule : rules) {
@@ -162,7 +149,7 @@ void RewriteRuleVisitor::visit(OpNotExists& op_not_exists) {
 
 
 void RewriteRuleVisitor::visit(OpSequence&) {
-    assert(false && "Rewrites should happen before opSequence is created");
+    assert(false && "Rewrites should happen before OpSequence is created");
 }
 
 void RewriteRuleVisitor::visit(OpUnion& op_union) {

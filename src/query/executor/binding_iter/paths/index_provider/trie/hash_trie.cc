@@ -1,7 +1,6 @@
-#include <iostream>
-#include <map>
-
 #include "hash_trie.h"
+
+#include <map>
 
 using namespace std;
 
@@ -49,53 +48,53 @@ pair<uint64_t*, uint64_t*> HashTrie::query(uint64_t prefix) {
 }
 
 
-void HashTrie::print() {
-    cout << "Hash Trie: \n" << endl;
+// void HashTrie::print(std::ostream& os) {
+//     os << "Hash Trie: \n" << endl;
 
-    // Generate ordered map for printing
-    auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
-    for (const auto& e : offsets) {
-        prefix_offsets.insert({e.first, e.second});
-    }
+//     // Generate ordered map for printing
+//     auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
+//     for (const auto& e : offsets) {
+//         prefix_offsets.insert({e.first, e.second});
+//     }
 
-    // Prefix level
-    cout << "L0: ";
-    for (const auto& prefix : prefix_offsets) {
-        if (prefix.first != invalid_object_id) {
-            cout << prefix.first << ",";
-        }
-    }
-    cout << endl;
+//     // Prefix level
+//     os << "L0: ";
+//     for (const auto& prefix : prefix_offsets) {
+//         if (prefix.first != invalid_object_id) {
+//             os << prefix.first << ",";
+//         }
+//     }
+//     os << endl;
 
-    // Data level
-    auto offset_data = prefix_offsets.begin();
-    cout << "L1: *";
-    for (size_t i = 0; i < data_lvl.size(); i++) {
-        cout << data_lvl[i];
-        if (i + 1 == offset_data->second.second) {
-            offset_data++;
-            cout << "*";
-        } else {
-            cout << ",";
-        }
-    }
-    cout << "\n" << endl;
-}
+//     // Data level
+//     auto offset_data = prefix_offsets.begin();
+//     os << "L1: *";
+//     for (size_t i = 0; i < data_lvl.size(); i++) {
+//         os << data_lvl[i];
+//         if (i + 1 == offset_data->second.second) {
+//             offset_data++;
+//             os << "*";
+//         } else {
+//             os << ",";
+//         }
+//     }
+//     os << "\n" << endl;
+// }
 
 
-void HashTrie::print_offsets() {
-    // Generate ordered map for printing
-    auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
-    for (const auto& e : offsets) {
-        prefix_offsets.insert({e.first, e.second});
-    }
+// void HashTrie::print_offsets(std::ostream& os) {
+//     // Generate ordered map for printing
+//     auto prefix_offsets = map<uint64_t, pair<uint32_t, uint32_t>>();
+//     for (const auto& e : offsets) {
+//         prefix_offsets.insert({e.first, e.second});
+//     }
 
-    // Offsets
-    cout << "Offsets: \n" << endl;
-    for (const auto& prefix : prefix_offsets) {
-        if (prefix.first != invalid_object_id) {
-            cout << prefix.first << ": (" << prefix.second.first << "," << prefix.second.second << ")" << endl;
-        }
-    }
-    cout << endl;
-}
+//     // Offsets
+//     os << "Offsets: \n" << endl;
+//     for (const auto& prefix : prefix_offsets) {
+//         if (prefix.first != invalid_object_id) {
+//             os << prefix.first << ": (" << prefix.second.first << "," << prefix.second.second << ")" << endl;
+//         }
+//     }
+//     os << endl;
+// }

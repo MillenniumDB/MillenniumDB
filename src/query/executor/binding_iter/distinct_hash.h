@@ -13,21 +13,23 @@ public:
     ) :
         child_iter       (std::move(child_iter)),
         projected_vars   (std::move(_projected_vars)),
-        extendable_table (DistinctBindingHash<ObjectId>( projected_vars.size() )) { }
+        extendable_table (projected_vars.size()) { }
 
-    void begin(Binding& parent_binding) override;
-    void reset() override;
-    bool next() override;
+    void _begin(Binding& parent_binding) override;
+    void _reset() override;
+    bool _next() override;
     void assign_nulls() override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
     bool current_tuple_distinct();
 
-private:
+    uint64_t processed  = 0;
     std::unique_ptr<BindingIter> child_iter;
+
+private:
     std::vector<VarId> projected_vars;
-    DistinctBindingHash<ObjectId> extendable_table;
+    DistinctBindingHash extendable_table;
 
     std::vector<ObjectId> current_tuple;
     Binding* parent_binding;

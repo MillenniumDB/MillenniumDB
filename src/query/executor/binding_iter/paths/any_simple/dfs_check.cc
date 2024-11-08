@@ -2,27 +2,29 @@
 
 #include <cassert>
 
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnySimple;
 
 template <bool CYCLIC>
-void DFSCheck<CYCLIC>::begin(Binding& _parent_binding) {
+void DFSCheck<CYCLIC>::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     first_next = true;
 
     // Add starting state to open
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), false, nullptr);
+    current_start = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), current_start, ObjectId(), false, nullptr);
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
+
+    current_state_nodes.insert(current_start.id);
 }
 
 
 template <bool CYCLIC>
-bool DFSCheck<CYCLIC>::next() {
+bool DFSCheck<CYCLIC>::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -31,6 +33,7 @@ bool DFSCheck<CYCLIC>::next() {
         // Return false if node does not exist in the database
         if (!provider->node_exists(current_state.node_id.id)) {
             open.pop();
+            current_state_nodes.clear();
             return false;
         }
 
@@ -39,11 +42,13 @@ bool DFSCheck<CYCLIC>::next() {
             if (automaton.is_final_state[automaton.start_state]) {
                 auto path_id = path_manager.set_path(&current_state, path_var);
                 parent_binding->add(path_var, path_id);
-                results_found++;
+                // We just want one solution, so we avoid expanding
+                current_state.transition = automaton.from_to_connections[current_state.automaton_state].size();
                 return true;
             } else if (!CYCLIC) {
                 // Acyclic can't have any more solutions when start node = end node
                 open.pop();
+                current_state_nodes.clear();
                 return false;
             }
         }
@@ -52,12 +57,17 @@ bool DFSCheck<CYCLIC>::next() {
     while (open.size() > 0) {
         auto& current_state = open.top();
 
-        // Discard states that contain the end node
-        // since we already returned it and there are not more viable simple paths
-        // We don't discard it immediately when its found because we need the reference to reconstruct the path
-        if (current_state.node_id == end_object_id) {
-            stack<SearchStateDFS> empty;
-            open.swap(empty);
+        // current_state.transition == automaton.from_to_connections[current_state.automaton_state].size()
+        // is used in expand_neighbors to mark a state that shouldn't be expanded
+        if (current_state.transition >= automaton.from_to_connections[current_state.automaton_state].size()) {
+            if (automaton.is_final_state[current_state.automaton_state]) {
+                current_state_nodes.clear();
+                stack<SearchStateDFS> empty;
+                open.swap(empty);
+            } else {
+                // no need to erase from current_state_nodes
+                open.pop();
+            }
             return false;
         }
 
@@ -72,11 +82,11 @@ bool DFSCheck<CYCLIC>::next() {
             {
                 auto path_id = path_manager.set_path(state_reached, path_var);
                 parent_binding->add(path_var, path_id);
-                results_found++;
                 return true;
             }
         } else {
             // Pop and visit next state
+            current_state_nodes.erase(current_state.node_id.id);
             open.pop();
         }
     }
@@ -102,16 +112,16 @@ SearchStateDFS* DFSCheck<CYCLIC>::expand_neighbors(SearchStateDFS& current_state
 
         // Iterate over records and return simple paths
         while (current_state.iter->next()) {
-            // Reconstruct path and check if it's simple, discard paths that are not simple
-            if (!is_simple_path(current_state, ObjectId(current_state.iter->get_reached_node()))) {
+            auto it = current_state_nodes.insert(current_state.iter->get_reached_node());
+            if (!it.second) { // it.second is false if element was present before insert
                 // If path can be cyclic, return solution only when the new node is the starting node and is also final
                 if (CYCLIC && automaton.is_final_state[transition.to]) {
-                    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
                     // This case only happens if the starting node and end node are the same
-                    if (start_object_id == end_object_id && ObjectId(current_state.iter->get_reached_node()) == start_object_id) {
+                    if (current_start == end_object_id && ObjectId(current_state.iter->get_reached_node()) == current_start) {
+                        // Return new state, but avoid expand later
                         return &open.emplace(
-                            transition.to, // new state
-                            0, // new current transition starts at the beginning
+                            transition.to,
+                            automaton.from_to_connections[transition.to].size(),
                             make_unique<NullIndexIterator>(),
                             ObjectId(current_state.iter->get_reached_node()),
                             transition.type_id,
@@ -122,15 +132,28 @@ SearchStateDFS* DFSCheck<CYCLIC>::expand_neighbors(SearchStateDFS& current_state
                 continue;
             }
 
-            // Return new state to expand later
-            return &open.emplace(
-                transition.to, // new state
-                0, // new current transition starts at the beginning
-                make_unique<NullIndexIterator>(),
-                ObjectId(current_state.iter->get_reached_node()),
-                transition.type_id,
-                transition.inverse,
-                &current_state);
+            if (current_state.iter->get_reached_node() == end_object_id.id) {
+                current_state_nodes.erase(current_state.iter->get_reached_node());
+                // Return new state, but avoid expand later
+                return &open.emplace(
+                    transition.to,
+                    automaton.from_to_connections[transition.to].size(),
+                    make_unique<NullIndexIterator>(),
+                    ObjectId(current_state.iter->get_reached_node()),
+                    transition.type_id,
+                    transition.inverse,
+                    &current_state);
+            } else {
+                // Return new state to expand later
+                return &open.emplace(
+                    transition.to,
+                    0,
+                    make_unique<NullIndexIterator>(),
+                    ObjectId(current_state.iter->get_reached_node()),
+                    transition.type_id,
+                    transition.inverse,
+                    &current_state);
+            }
         }
 
         // Construct new iter with the next transition (if there exists one)
@@ -144,29 +167,27 @@ SearchStateDFS* DFSCheck<CYCLIC>::expand_neighbors(SearchStateDFS& current_state
 
 
 template <bool CYCLIC>
-void DFSCheck<CYCLIC>::reset() {
+void DFSCheck<CYCLIC>::_reset() {
     // Empty open
     stack<SearchStateDFS> empty;
     open.swap(empty);
     first_next = true;
 
     // Add starting state to open
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), false, nullptr);
+    current_start = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), current_start, ObjectId(), false, nullptr);
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
+
+    current_state_nodes.clear();
+    current_state_nodes.insert(current_start.id);
 }
 
 
 template <bool CYCLIC>
-void DFSCheck<CYCLIC>::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    if (CYCLIC) {
-        os << "Paths::AnySimple::DFSCheck<SIMPLE>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    } else {
-        os << "Paths::AnySimple::DFSCheck<ACYCLIC>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    }
+void DFSCheck<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 

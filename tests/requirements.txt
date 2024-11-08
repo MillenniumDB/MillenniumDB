@@ -1,0 +1,4 @@
+colorama
+rdflib
+sparqlwrapper
+tqdm

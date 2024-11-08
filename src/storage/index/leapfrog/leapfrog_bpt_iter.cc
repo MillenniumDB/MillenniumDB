@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "query/exceptions.h"
-#include "storage/buffer_manager.h"
+#include "query/executor/binding_iter/scan_ranges/term.h"
 
 using std::array;
 using std::vector;
@@ -22,7 +22,7 @@ LeapfrogBptIter<N>::LeapfrogBptIter(bool*                           interruption
                   std::move(_enumeration_vars))
 {
     auto root = btree.get_root();
-    directory_stack.push( std::move(root) );
+    directory_stack.push_back( std::move(root) );
 
     // there is a border case when nothing is done, but enumeration, so we must
     // position at the first record
@@ -31,14 +31,13 @@ LeapfrogBptIter<N>::LeapfrogBptIter(bool*                           interruption
         min[i] = 0;
     }
 
-    auto leaf_and_pos = directory_stack.top()->search_leaf(directory_stack, min);
+    auto leaf_and_pos = directory_stack.back()->search_leaf(directory_stack, min);
     current_leaf = std::move(leaf_and_pos.leaf);
     current_pos_in_leaf = leaf_and_pos.result_index;
 
     // check border case when B+tree is empty
     if (current_pos_in_leaf < current_leaf.get_value_count()) {
-        // current_tuple = current_leaf.get_record(current_pos_in_leaf);
-        current_leaf.get_record(current_pos_in_leaf, &current_tuple);
+        current_leaf.set_record(current_pos_in_leaf, current_tuple);
     } else {
         for (size_t i = 0; i < N; i++) {
             current_tuple[i] = UINT64_MAX;
@@ -51,8 +50,8 @@ template <size_t N>
 void LeapfrogBptIter<N>::down() {
     level++;
 
-    array<uint64_t, N> min;
-    array<uint64_t, N> max;
+    Record<N> min;
+    Record<N> max;
 
     // before the level min and max must be equal to the current_record
     for (int_fast32_t i = 0; i < level; i++) {
@@ -66,14 +65,14 @@ void LeapfrogBptIter<N>::down() {
         max[i] = UINT64_MAX;
     }
 
-    internal_search(Record<N>(min), Record<N>(max));
+    internal_search(min, max);
 }
 
 
 template <size_t N>
 bool LeapfrogBptIter<N>::next() {
-    array<uint64_t, N> min;
-    array<uint64_t, N> max;
+    Record<N> min;
+    Record<N> max;
 
     // before level min and max are equal to the current_record
     for (int_fast32_t i = 0; i < level; i++) {
@@ -91,14 +90,14 @@ bool LeapfrogBptIter<N>::next() {
         max[i] = UINT64_MAX;
     }
 
-    return internal_search(Record<N>(min), Record<N>(max));
+    return internal_search(min, max);
 }
 
 
 template <size_t N>
 bool LeapfrogBptIter<N>::seek(uint64_t key) {
-    array<uint64_t, N> min;
-    array<uint64_t, N> max;
+    Record<N> min;
+    Record<N> max;
 
     // before level min and max are equal to the current_record
     for (int_fast32_t i = 0; i < level; i++) {
@@ -114,7 +113,7 @@ bool LeapfrogBptIter<N>::seek(uint64_t key) {
         min[i] = 0;
         max[i] = UINT64_MAX;
     }
-    return internal_search(Record<N>(min), Record<N>(max));
+    return internal_search(min, max);
 }
 
 
@@ -124,18 +123,12 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
     // if leaf.min <= min <= leaf.max, search inside the leaf and return
     if (current_leaf.check_range(min)) {
         auto new_current_pos_in_leaf = current_leaf.search_index(min);
-        // check new_current_pos_in_leaf is a valid position
-        if (new_current_pos_in_leaf < current_leaf.get_value_count()) {
-            Record<N> new_current_tuple;
-            current_leaf.get_record(new_current_pos_in_leaf, &new_current_tuple);
-            if (new_current_tuple <= max) {
-                // current_leaf stays the same
-                current_tuple       = new_current_tuple;
-                current_pos_in_leaf = new_current_pos_in_leaf;
-                return true;
-            } else {
-                return false;
-            }
+        Record<N> new_current_tuple = current_leaf.get_record(new_current_pos_in_leaf);
+        if (new_current_tuple <= max) {
+            // current_leaf stays the same
+            current_tuple       = new_current_tuple;
+            current_pos_in_leaf = new_current_pos_in_leaf;
+            return true;
         } else {
             return false;
         }
@@ -145,13 +138,13 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
         // and conditions will be false, so its ok
         // if we don't find it we stay with the root (lowest item in the stack)
         while (directory_stack.size() > 1
-               && !directory_stack.top()->check_range(min))
+               && !directory_stack.back()->check_range(min))
         {
-            directory_stack.pop();
+            directory_stack.pop_back();
         }
 
         // then search until reaching the leaf_number and index of the record.
-        auto leaf_and_pos = directory_stack.top()->search_leaf(directory_stack, min);
+        auto leaf_and_pos = directory_stack.back()->search_leaf(directory_stack, min);
         auto new_current_leaf = std::move(leaf_and_pos.leaf);
         auto new_current_pos_in_leaf = leaf_and_pos.result_index;
 
@@ -166,8 +159,7 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
             }
         }
 
-        Record<N> new_current_tuple;
-        new_current_leaf.get_record(new_current_pos_in_leaf, &new_current_tuple);
+        Record<N> new_current_tuple = new_current_leaf.get_record(new_current_pos_in_leaf);
         if (new_current_tuple <= max) {
             current_tuple       = new_current_tuple;
             current_leaf        = std::move(new_current_leaf);
@@ -182,18 +174,15 @@ bool LeapfrogBptIter<N>::internal_search(const Record<N>& min, const Record<N>& 
 
 template <size_t N>
 void LeapfrogBptIter<N>::begin_enumeration() {
-    array<uint64_t, N> max;
+    Record<N> max = current_tuple;
 
-    for (int_fast32_t i = 0; i <= level; i++) {
-        max[i] = current_tuple[i];
-    }
     for (size_t i = level+1; i < N; i++) {
         max[i] = UINT64_MAX;
     }
 
     enum_bpt_iter = BptIter<N>(interruption_requested,
                                SearchLeafResult<N>(current_leaf.clone(), current_pos_in_leaf),
-                               Record<N>(max));
+                               max);
 }
 
 
@@ -221,8 +210,8 @@ bool LeapfrogBptIter<N>::next_enumeration(Binding& binding) {
 
 template <size_t N>
 bool LeapfrogBptIter<N>::open_terms(Binding& input_binding) {
-    array<uint64_t, N> min;
-    array<uint64_t, N> max;
+    Record<N> min;
+    Record<N> max;
 
     // before level min and max are equal to the current_record
     size_t i = 0;
@@ -237,9 +226,50 @@ bool LeapfrogBptIter<N>::open_terms(Binding& input_binding) {
     }
 
     level = initial_ranges.size() - 1;
-    return internal_search(Record<N>(min), Record<N>(max));
+    return internal_search(min, max);
 }
 
+template <size_t N>
+bool LeapfrogBptIter<N>::try_estimate(std::vector<double>& initial_estimations, std::vector<double>& after_estimations) const {
+    Record<N> min;
+    Record<N> max;
+    Record<N> after;
+
+    // Will estimate ranges min-max, and min-after
+    for (size_t i = 0; i < initial_ranges.size(); i++) {
+        auto term = dynamic_cast<Term*>(initial_ranges[i].get());
+        if (term == nullptr) {
+            return false;
+        }
+
+        min[i]   = term->get_oid().id;
+        max[i]   = term->get_oid().id;
+        after[i] = term->get_oid().id;
+    }
+
+    min[initial_ranges.size()]   = 0;
+    max[initial_ranges.size()]   = UINT64_MAX;
+    after[initial_ranges.size()] = get_key();
+
+    for (size_t i = initial_ranges.size() + 1; i < N; i++) {
+        min[i] = 0;
+        max[i] = UINT64_MAX;
+        after[i] = UINT64_MAX;
+    }
+
+    auto& bpt_root = get_root();
+    initial_estimations.push_back(
+        BPlusTree<N>::estimate_records(bpt_root, min, max)
+    );
+    after_estimations.push_back(
+        BPlusTree<N>::estimate_records(bpt_root, min, after)
+    );
+
+    return true;
+}
+
+
+template class LeapfrogBptIter<1>;
 template class LeapfrogBptIter<2>;
 template class LeapfrogBptIter<3>;
 template class LeapfrogBptIter<4>;

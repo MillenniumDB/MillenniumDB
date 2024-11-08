@@ -3,6 +3,7 @@
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/datatypes/decimal.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 
 namespace SPARQL {
 class AggSum : public Agg {
@@ -80,7 +81,10 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "SUM(" << *expr << ")";
+        os << "SUM(";
+        BindingExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")";
         return os;
     }
 

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Usage: query <query_file> [format=CSV|TSV|JSON|XML]
+#
+# This script works for both sparql and mql.
+# because MQL server ignores the headers `Content-Type` and the url `/sparql`
+#
+# SPARQL supports the following outputs:
+# JSON : "Accept:application/json"
+# CSV : "Accept:text/csv"
+# TSV : "Accept:text/tab-separated-values"
+# XML : "Accept:application/sparql-results+xml"
+#
+# MQL supports the following outputs:
+# CSV: "Accept:text/csv"
+# TSV: "Accept:text/tab-separated-values"
+
+set -e; set -u; set -o pipefail
+
+[[ ! ${1-} ]] && echo "Missing query file" && exit 1
+
+OUT="text/csv"
+if [ ${2-} ]; then
+    if [[ ${2-} == "CSV" ]]; then
+        OUT="text/csv"
+    elif [[ ${2-} == "JSON" ]]; then
+        OUT="application/json"
+    elif [[ ${2-} == "TSV" ]]; then
+        OUT="text/tab-separated-values"
+    elif [[ ${2-} == "XML" ]]; then
+        OUT="application/sparql-results+xml"
+    fi
+fi
+
+curl -H "Content-Type:application/sparql-query" -H "Accept:$OUT" --data-binary "@$1" -X POST http://localhost:1234/sparql
+echo ""

@@ -3,14 +3,20 @@
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/datatypes/decimal.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace SPARQL {
 class AggSumDistinct : public Agg {
 public:
     using Agg::Agg;
+
+    AggSumDistinct(VarId var_id, std::unique_ptr<BindingExpr> expr) :
+        Agg (var_id, std::move(expr)),
+        hash_table (1) { }
+
     void begin() override {
-        hash_table = std::make_unique<DistinctBindingHash<ObjectId>>(1);
+        hash_table.reset();
 
         sum_integer = 0;
         sum_decimal = Decimal(0);
@@ -34,7 +40,7 @@ public:
         }
 
         oid_vec[0] = oid;
-        if (hash_table->is_in_or_insert(oid_vec)) {
+        if (hash_table.is_in_or_insert(oid_vec)) {
             return;
         }
 
@@ -88,7 +94,10 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "SUM( DISTINCT" << *expr << ")";
+        os << "SUM( DISTINCT";
+        BindingExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")";
         return os;
     }
 
@@ -100,7 +109,7 @@ private:
     float   sum_float;
     double  sum_double;
 
-    std::unique_ptr<DistinctBindingHash<ObjectId>> hash_table;
+    DistinctBindingHash hash_table;
 
     // Vector to pass oid to the hash table
     std::vector<ObjectId> oid_vec{1};

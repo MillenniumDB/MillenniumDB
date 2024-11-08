@@ -28,7 +28,7 @@ public:
     // returns how many results were obtained
     uint64_t execute(std::ostream&) override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 
 private:
     Binding binding = Binding(3);

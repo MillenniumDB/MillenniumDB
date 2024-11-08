@@ -2,19 +2,16 @@
 
 #include <ostream>
 
-#include "query/executor/binding.h"
 #include "graph_models/object_id.h"
+#include "query/executor/binding.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_visitor.h"
 
 // Abstract class
 class BindingExpr {
 public:
     virtual ~BindingExpr() = default;
 
+    virtual void accept_visitor(BindingExprVisitor&) = 0;
+
     virtual ObjectId eval(const Binding&) = 0;
-
-    virtual std::ostream& print_to_ostream(std::ostream& os) const = 0;
-
-    friend std::ostream& operator<<(std::ostream& os, const BindingExpr& e) {
-        return e.print_to_ostream(os);
-    }
 };

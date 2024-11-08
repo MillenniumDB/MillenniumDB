@@ -49,16 +49,15 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ');
-        os << "OpGraph(";
+        os << std::string(indent, ' ') << "OpGraph(";
+
         if (std::holds_alternative<VarId>(graph)) {
-            os << get_query_ctx().get_var_name(std::get<VarId>(graph)) << '\n';
+            os << get_query_ctx().get_var_name(std::get<VarId>(graph));
         } else {
-            os << '<' << std::get<std::string>(graph) << ">\n";
+            os << '<' << std::get<std::string>(graph);
         }
-        op->print_to_ostream(os, indent + 2);
-        os << std::string(indent, ' ');
         os << ")\n";
+        op->print_to_ostream(os, indent + 2);
         return os;
     }
 };

@@ -1,0 +1,37 @@
+PREFIX : <http://p.c/>
+SELECT *
+WHERE {
+    ?s1 ?p1 ?o1 .
+    ?s2 ?p2 ?o2 .
+    ?s3 ?p3 ?o3 .
+
+    FILTER(    EXISTS { ?s1 ?p1 ?o1 })
+    FILTER(NOT EXISTS { ?s2 ?p2 ?o2 })
+    FILTER(    EXISTS { ?s3 ?p3 ?o3 })
+    FILTER(NOT EXISTS { ?s4 ?p4 ?o4 })
+    FILTER(NOT EXISTS { ?s5 ?p5 ?o5 })
+    FILTER(NOT EXISTS { ?s6 ?p6 ?o6 })
+    FILTER(    EXISTS { ?s7 ?p7 ?o7 })
+    FILTER(    EXISTS { ?s8 ?p8 ?o8 })
+    FILTER(    EXISTS { ?s9 ?p9 ?o9 })
+}
+
+
+# JsonSelectExecutor(?s1, ?p1, ?o1, ?s2, ?p2, ?o2, ?s3, ?p3, ?o3)
+#   Filter(filtered: 0, passed: 0, (?s1=http://p.c/s), (?p1=http://p.c/p), (?o1=http://p.c/o), (?s2=http://p.c/s), (?p2=http://p.c/p), (?o2=http://p.c/o), (?s2=http://p.c/s), (?p2=http://p.c/p), (?o2=http://p.c/o))
+#     LeapfrogJoin(found: 0, seeks: 0)
+
+
+# JsonSelectExecutor(?s1, ?p1, ?o1, ?s2, ?p2, ?o2, ?s3, ?p3, ?o3)
+#   Filter(filtered: 0, passed: 0,
+#         ?s1=http://p.c/s
+#         ?p1=http://p.c/p
+#         ?o1=http://p.c/o
+#         ?s2=http://p.c/s
+#         ?p2=http://p.c/p
+#         ?o2=http://p.c/o
+#         ?s2=http://p.c/s
+#         ?p2=http://p.c/p
+#         ?o2=http://p.c/o
+#     )
+#     LeapfrogJoin(found: 0, seeks: 0)

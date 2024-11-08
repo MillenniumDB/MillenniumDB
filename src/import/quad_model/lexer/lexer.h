@@ -6,6 +6,7 @@
 namespace Import {
 enum Token {
   // must skip 0, it represents there are no more tokens
+  END_OF_FILE  = 0,
   COLON        = 1,
   L_ARROW      = 2,
   R_ARROW      = 3,
@@ -13,8 +14,8 @@ enum Token {
   TRUE         = 5,
   FALSE        = 6,
   STRING       = 7,
-  IDENTIFIER   = 8,
-  IRI          = 9,
+  TYPED_STRING = 8,
+  IDENTIFIER   = 9,
   ANON         = 10,
   INTEGER      = 11,
   FLOAT        = 12,

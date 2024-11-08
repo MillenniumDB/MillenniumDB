@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .logging import Level, log
 from .options import TEST_SUITE_DIR, TEST_SUITES
-from .types import Bindings, Result, Test, TestSuite
+from .types import BadTest, Bindings, QueryTest, Result, Test, TestSuite
 
 
 def get_test_suites() -> list[TestSuite]:
@@ -24,15 +24,27 @@ def get_test_suites() -> list[TestSuite]:
         test_suite = test_dir.name
         data = test_dir / f"{test_suite}.qm"
 
+        if not data.is_file():
+            print(f'Could not find database file "{data}"')
+            sys.exit(1)
+
         test_list: list[Test] = []
 
         for query in test_dir.glob("**/*.mql"):
             expected = query.with_suffix(".csv")
-            if not expected.is_file():
-                print(f"File not found: {expected}")
+            has_bad_suffix = len(query.suffixes) >= 2 and query.suffixes[-2] == ".bad"
+
+            if expected.is_file():
+                test = QueryTest(query=query, data=data, expected=expected)
+                if has_bad_suffix:
+                    print(f'Query should not have a ".bad.mql" suffix because "{expected}" exists')
+                    sys.exit(1)
+            elif has_bad_suffix:
+                test = BadTest(query=query, data=data)
+            else:
+                print(f'Query does not have a ".bad.mql" suffix and "{expected}" does not exist')
                 sys.exit(1)
 
-            test = Test(query=query, data=data, expected=expected)
             log(Level.DEBUG, str(test))
             test_list.append(test)
 

@@ -1,5 +1,5 @@
 
-// Generated from MQL_Lexer.g4 by ANTLR 4.9.3
+// Generated from MQL_Lexer.g4 by ANTLR 4.13.1
 
 #pragma once
 
@@ -12,21 +12,25 @@
 class  MQL_Lexer : public antlr4::Lexer {
 public:
   enum {
-    K_ANY = 1, K_AND = 2, K_AVG = 3, K_ALL = 4, K_ASC = 5, K_BY = 6, K_BOOL = 7, 
-    K_COUNT = 8, K_DESCRIBE = 9, K_DESC = 10, K_DISTINCT = 11, K_EDGE = 12, 
-    K_INCOMING = 13, K_INTEGER = 14, K_INSERT = 15, K_IS = 16, K_FALSE = 17, 
-    K_FLOAT = 18, K_GROUP = 19, K_LABEL = 20, K_LABELS = 21, K_LIMIT = 22, 
-    K_MAX = 23, K_MATCH = 24, K_MIN = 25, K_OPTIONAL = 26, K_ORDER = 27, 
-    K_OR = 28, K_OUTGOING = 29, K_PROPERTY = 30, K_PROPERTIES = 31, K_NOT = 32, 
-    K_NULL = 33, K_SET = 34, K_SUM = 35, K_STRING = 36, K_RETURN = 37, K_TRUE = 38, 
-    K_WHERE = 39, TRUE_PROP = 40, FALSE_PROP = 41, ANON_ID = 42, EDGE_ID = 43, 
-    KEY = 44, TYPE = 45, TYPE_VAR = 46, VARIABLE = 47, STRING = 48, UNSIGNED_INTEGER = 49, 
-    UNSIGNED_FLOAT = 50, NAME = 51, LEQ = 52, GEQ = 53, EQ = 54, NEQ = 55, 
-    LT = 56, GT = 57, SINGLE_EQ = 58, PATH_SEQUENCE = 59, PATH_ALTERNATIVE = 60, 
-    PATH_NEGATION = 61, STAR = 62, PERCENT = 63, QUESTION_MARK = 64, PLUS = 65, 
-    MINUS = 66, L_PAR = 67, R_PAR = 68, LCURLY_BRACKET = 69, RCURLY_BRACKET = 70, 
-    LSQUARE_BRACKET = 71, RSQUARE_BRACKET = 72, COMMA = 73, COLON = 74, 
-    WHITE_SPACE = 75, SINGLE_LINE_COMMENT = 76, UNRECOGNIZED = 77
+    K_ACYCLIC = 1, K_AND = 2, K_ANGULAR = 3, K_ANY = 4, K_AVG = 5, K_ALL = 6, 
+    K_ASC = 7, K_BRUTE_SIMILARITY_SEARCH = 8, K_BY = 9, K_BOOL = 10, K_COUNT = 11, 
+    K_DELETE = 12, K_DESCRIBE = 13, K_DESC = 14, K_DISTINCT = 15, K_EDGE = 16, 
+    K_EUCLIDEAN = 17, K_INCOMING = 18, K_INSERT = 19, K_INTEGER = 20, K_IS = 21, 
+    K_FALSE = 22, K_FLOAT = 23, K_GROUP = 24, K_LABELS = 25, K_LABEL = 26, 
+    K_LIMIT = 27, K_MANHATTAN = 28, K_MATCH = 29, K_MAX = 30, K_MIN = 31, 
+    K_OFFSET = 32, K_OPTIONAL = 33, K_ORDER = 34, K_OR = 35, K_OUTGOING = 36, 
+    K_PROJECT_SIMILARITY = 37, K_PROPERTIES = 38, K_PROPERTY = 39, K_NOT = 40, 
+    K_NULL = 41, K_SHORTEST = 42, K_SIMPLE = 43, K_REGEX = 44, K_RETURN = 45, 
+    K_SET = 46, K_SIMILARITY_SEARCH = 47, K_SUM = 48, K_STRING = 49, K_TRUE = 50, 
+    K_TRAILS = 51, K_WALKS = 52, K_WHERE = 53, TRUE_PROP = 54, FALSE_PROP = 55, 
+    ANON_ID = 56, EDGE_ID = 57, KEY = 58, TYPE = 59, TYPE_VAR = 60, VARIABLE = 61, 
+    STRING = 62, UNSIGNED_INTEGER = 63, UNSIGNED_FLOAT = 64, UNSIGNED_SCIENTIFIC_NOTATION = 65, 
+    NAME = 66, LEQ = 67, GEQ = 68, EQ = 69, NEQ = 70, LT = 71, GT = 72, 
+    SINGLE_EQ = 73, PATH_SEQUENCE = 74, PATH_ALTERNATIVE = 75, PATH_NEGATION = 76, 
+    STAR = 77, PERCENT = 78, QUESTION_MARK = 79, PLUS = 80, MINUS = 81, 
+    L_PAR = 82, R_PAR = 83, LCURLY_BRACKET = 84, RCURLY_BRACKET = 85, LSQUARE_BRACKET = 86, 
+    RSQUARE_BRACKET = 87, COMMA = 88, COLON = 89, WHITE_SPACE = 90, SINGLE_LINE_COMMENT = 91, 
+    UNRECOGNIZED = 92
   };
 
   enum {
@@ -34,41 +38,34 @@ public:
   };
 
   explicit MQL_Lexer(antlr4::CharStream *input);
-  ~MQL_Lexer();
 
-  virtual std::string getGrammarFileName() const override;
-  virtual const std::vector<std::string>& getRuleNames() const override;
+  ~MQL_Lexer() override;
 
-  virtual const std::vector<std::string>& getChannelNames() const override;
-  virtual const std::vector<std::string>& getModeNames() const override;
-  virtual const std::vector<std::string>& getTokenNames() const override; // deprecated, use vocabulary instead
-  virtual antlr4::dfa::Vocabulary& getVocabulary() const override;
 
-  virtual const std::vector<uint16_t> getSerializedATN() const override;
-  virtual const antlr4::atn::ATN& getATN() const override;
+  std::string getGrammarFileName() const override;
+
+  const std::vector<std::string>& getRuleNames() const override;
+
+  const std::vector<std::string>& getChannelNames() const override;
+
+  const std::vector<std::string>& getModeNames() const override;
+
+  const antlr4::dfa::Vocabulary& getVocabulary() const override;
+
+  antlr4::atn::SerializedATNView getSerializedATN() const override;
+
+  const antlr4::atn::ATN& getATN() const override;
+
+  // By default the static state used to implement the lexer is lazily initialized during the first
+  // call to the constructor. You can call this function if you wish to initialize the static state
+  // ahead of time.
+  static void initialize();
 
 private:
-  static std::vector<antlr4::dfa::DFA> _decisionToDFA;
-  static antlr4::atn::PredictionContextCache _sharedContextCache;
-  static std::vector<std::string> _ruleNames;
-  static std::vector<std::string> _tokenNames;
-  static std::vector<std::string> _channelNames;
-  static std::vector<std::string> _modeNames;
-
-  static std::vector<std::string> _literalNames;
-  static std::vector<std::string> _symbolicNames;
-  static antlr4::dfa::Vocabulary _vocabulary;
-  static antlr4::atn::ATN _atn;
-  static std::vector<uint16_t> _serializedATN;
-
 
   // Individual action functions triggered by action() above.
 
   // Individual semantic predicate functions triggered by sempred() above.
 
-  struct Initializer {
-    Initializer();
-  };
-  static Initializer _init;
 };
 

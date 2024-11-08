@@ -23,17 +23,8 @@ public:
         return ObjectId::get_null();
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "COALESCE(";
-
-        for (size_t i = 0; i < exprs.size(); i++) {
-            if (i != 0) {
-                os << ", ";
-            }
-            os << *exprs[i];
-        }
-        os << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

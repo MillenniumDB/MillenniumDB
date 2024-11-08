@@ -2,8 +2,6 @@
 
 #include <sstream>
 
-#include "query/exceptions.h"
-
 class CSVOstreamEscape : public std::stringbuf {
 public:
     CSVOstreamEscape(std::ostream& os) :

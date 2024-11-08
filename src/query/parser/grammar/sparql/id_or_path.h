@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "graph_models/object_id.h"
+#include "query/id.h"
 #include "query/var_id.h"
 #include "query/parser/paths/regular_path_expr.h"
 

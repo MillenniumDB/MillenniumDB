@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void NestedLoopLeftJoin::begin(Binding& _parent_binding) {
+void NestedLoopLeftJoin::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     lhs_binding = std::make_unique<Binding>(_parent_binding.size);
     rhs_binding = std::make_unique<Binding>(_parent_binding.size);
@@ -30,11 +30,10 @@ void NestedLoopLeftJoin::begin(Binding& _parent_binding) {
         rhs = &empty_iter;
     }
     original_rhs->begin(*rhs_binding);
-    executions++;
 }
 
 
-bool NestedLoopLeftJoin::next() {
+bool NestedLoopLeftJoin::_next() {
     while (true) {
         if (rhs->next()) {
             auto bindings_match = true;
@@ -75,7 +74,6 @@ bool NestedLoopLeftJoin::next() {
                     }
                     parent_binding->add(var, var_oid);
                 }
-                result_count++;
                 must_return_null = false;
                 return true;
             }
@@ -106,7 +104,6 @@ bool NestedLoopLeftJoin::next() {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
 
-                result_count++;;
                 must_return_null = false;
                 return true;
             } else {
@@ -126,7 +123,7 @@ bool NestedLoopLeftJoin::next() {
 }
 
 
-void NestedLoopLeftJoin::reset() {
+void NestedLoopLeftJoin::_reset() {
     // copy assigned_safe_vars from parent_binding into lhs_binding and rhs_binding
     for (const auto& var : parent_safe_vars) {
         lhs_binding->add(var, (*parent_binding)[var]);
@@ -145,7 +142,6 @@ void NestedLoopLeftJoin::reset() {
         must_return_null = false;
         rhs = &empty_iter;
     }
-    executions++;
 }
 
 
@@ -171,70 +167,8 @@ void NestedLoopLeftJoin::assign_nulls() {
 }
 
 
-void NestedLoopLeftJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ') << "NestedLoopLeftJoin(";
-
-    os << "executions:" << executions;
-    os << " found:" << result_count;
-
-    os << "; parent_safe_vars:";
-    auto first = true;
-    for (auto& var: parent_safe_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; lhs:";
-    first = true;
-    for (auto& var: lhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; safe_join_vars:";
-    first = true;
-    for (auto& var: safe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; unsafe_join_vars:";
-    first = true;
-    for (auto& var: unsafe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; rhs:";
-    first = true;
-    for (auto& var: rhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << ")\n";
-    lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void NestedLoopLeftJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 template class std::unique_ptr<NestedLoopLeftJoin>;

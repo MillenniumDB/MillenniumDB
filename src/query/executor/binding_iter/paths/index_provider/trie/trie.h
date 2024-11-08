@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <vector>
 
 #include "graph_models/object_id.h"
@@ -35,8 +36,8 @@ struct Trie {
     std::pair<uint64_t*, uint64_t*> query(uint64_t prefix);
 
     // Visualize the entire tree
-    void print();
+    void print(std::ostream& os);
 
     // Show offsets in the data level
-    void print_offsets();
+    void print_offsets(std::ostream& os);
 };

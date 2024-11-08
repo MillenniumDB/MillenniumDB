@@ -1,0 +1,9 @@
+PREFIX : <http://www.path.com/>
+SELECT ?t (COUNT(?o) AS ?c)
+WHERE {
+  ?t :cases ?o .
+}
+GROUP BY ?t
+HAVING (?c != 3)
+ORDER BY DESC (?c) ASC (?t)
+LIMIT 100

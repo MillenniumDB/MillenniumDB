@@ -1,4 +1,0 @@
-#!/usr/bin/bash
-
-diff --color=auto tests/sparql/test-status.txt tests/sparql/test-status-last.txt
-diff --color=auto tests/mql/test-status.txt tests/mql/test-status-last.txt

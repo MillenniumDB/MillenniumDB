@@ -1,6 +1,6 @@
 #include "anti_join.h"
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin::Generic;
@@ -9,9 +9,9 @@ using namespace HashJoin::Generic::InMemory;
 AntiJoin::AntiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     lhs           (std::move(_lhs)),
     rhs           (std::move(_rhs)),
@@ -22,7 +22,7 @@ AntiJoin::AntiJoin(
     pk_start      (new uint64_t[N]),
     probe_key     (Key(pk_start, N))
 {
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
     key_chunk_index = 0;
 }
@@ -37,7 +37,7 @@ AntiJoin::~AntiJoin() {
 }
 
 
-void AntiJoin::begin(Binding& _parent_binding) {
+void AntiJoin::_begin(Binding& _parent_binding) {
     // set hash join in start state, always must be non enumerating_row
     this->parent_binding = &_parent_binding;
     rhs_binding = make_unique<Binding>(parent_binding->size);
@@ -49,7 +49,7 @@ void AntiJoin::begin(Binding& _parent_binding) {
 }
 
 
-bool AntiJoin::next() {
+bool AntiJoin::_next() {
     while (lhs->next()) {
         for (size_t i = 0; i < N; i++) {
             probe_key.start[i] = (*lhs_binding)[join_vars[i]].id;
@@ -63,7 +63,6 @@ bool AntiJoin::next() {
             for (auto& var : lhs_vars) {
                 parent_binding->add(var, (*lhs_binding)[var]);
             }
-            found++;
             return true;
         }
     }
@@ -71,7 +70,7 @@ bool AntiJoin::next() {
 }
 
 
-void AntiJoin::reset() {
+void AntiJoin::_reset() {
     hash_table.clear();
 
     for (size_t i = 1; i < key_chunks_dir.size(); i++) {
@@ -111,11 +110,8 @@ void AntiJoin::assign_nulls() {
 }
 
 
-void AntiJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "AntiJoinMemory(Found: " << found << ")\n";
-    lhs->analyze(os, indent + 2);
-    rhs->analyze(os, indent + 2);
+void AntiJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -149,8 +145,8 @@ void AntiJoin::build_hash_table() {
             // If not are the same, update chunk index
             // and check if key chunk is full
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }

@@ -2,8 +2,9 @@
 
 #include <cstring>
 #include <cstdint>
+#include <cmath>
 #include <iomanip>
-#include <math.h>
+#include <sstream>
 
 class DecimalInlined {
 public:

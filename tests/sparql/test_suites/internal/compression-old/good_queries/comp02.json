@@ -1,0 +1,25 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "危ノユソケ作介さぞリ",
+                    "xml:lang": "en-US"
+                }
+            },
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "問カリロユ未親ぽでドフ",
+                    "xml:lang": "en-NZ"
+                }
+            }
+        ]
+    }
+}

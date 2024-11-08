@@ -1,5 +1,5 @@
 @prefix : <http://www.path.com/> .
 
-:bob :parent :alice
-:s :p :o, :o1, :o2
-:t :p :o1, :o2
+:bob :parent :alice .
+:s :p :o, :o1, :o2 .
+:t :p :o1, :o2 .

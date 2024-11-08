@@ -1,0 +1,23 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "王明：这是什么"
+                }
+            },
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "史密斯是律师。"
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,22 @@
+
+SELECT ?s
+{
+   VALUES ?s {
+        # Existent strings
+        "hello"
+        "ク"
+        "字"@ja-JP
+        "ی"^^xsd:string
+        "Pride and Prejudice"
+        "🧑‍🦱✌🏾🍎👨🏽‍⚕️"
+        "甲樹着說那讀土"@zh-CN
+        "∝∠∧ΘøçÞ±"^^xsd:string
+
+        # Non existent strings
+        "bye"
+        "カ"
+        "護多ウイヲ下本リヌス"@ja-JP
+        "生んろみや善都ウテ"@qw # non existent lang
+        "세계를 향한 대화"^^xsd:string
+    }
+}

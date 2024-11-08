@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "query/exceptions.h"
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -17,37 +15,43 @@ public:
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
 
-        if (!expr_oid.is_numeric()) {
-            return ObjectId::get_null();
+        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::INTEGER: {
+            auto i = Conversions::unpack_int(expr_oid);
+            if (i >= 0) {
+                return expr_oid;
+            } else {
+                return Conversions::pack_int(i*-1);
+            }
         }
-
-        switch (expr_oid.get_type()) {
-        case ObjectId::MASK_NEGATIVE_INT:
-            return ObjectId(((~expr_oid.id) & ObjectId::VALUE_MASK) | ObjectId::MASK_POSITIVE_INT);
-        case ObjectId::MASK_POSITIVE_INT:
-            return expr_oid;
-        case ObjectId::MASK_DECIMAL_INLINED:
-            return ObjectId(expr_oid.id & (~Conversions::DECIMAL_SIGN_MASK));
-        case ObjectId::MASK_DECIMAL_EXTERN:
-        case ObjectId::MASK_DECIMAL_TMP: {
+        case RDF_OID::GenericSubType::DECIMAL: {
             auto d = Conversions::unpack_decimal(expr_oid);
             d.sign = false;
             return Conversions::pack_decimal(d);
         }
-        case ObjectId::MASK_FLOAT:
-            return ObjectId(expr_oid.id & (~Conversions::FLOAT_SIGN_MASK));
-        case ObjectId::MASK_DOUBLE_EXTERN:
-        case ObjectId::MASK_DOUBLE_TMP:
-            return Conversions::pack_double(std::abs(Conversions::unpack_double(expr_oid)));
+        case RDF_OID::GenericSubType::FLOAT: {
+            auto f = Conversions::unpack_float(expr_oid);
+            if (f >= 0) {
+                return expr_oid;
+            } else {
+                return Conversions::pack_float(f*-1);
+            }
+        }
+        case RDF_OID::GenericSubType::DOUBLE: {
+            auto d = Conversions::unpack_double(expr_oid);
+            if (d >= 0) {
+                return expr_oid;
+            } else {
+                return Conversions::pack_double(d*-1);
+            }
+        }
         default:
-            // This should never happen.
-            throw LogicException("Incorrect type for Abs");
+            return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "ABS(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

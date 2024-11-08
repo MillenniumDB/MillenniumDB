@@ -2,12 +2,12 @@
 
 #include <cassert>
 
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnyTrails;
 
-void BFSCheck::begin(Binding& _parent_binding) {
+void BFSCheck::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -22,7 +22,7 @@ void BFSCheck::begin(Binding& _parent_binding) {
 }
 
 
-bool BFSCheck::next() {
+bool BFSCheck::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -40,7 +40,6 @@ bool BFSCheck::next() {
             parent_binding->add(path_var, path_id);
             queue<SearchState> empty;
             open.swap(empty);
-            results_found++;
             return true;
         }
     }
@@ -55,7 +54,6 @@ bool BFSCheck::next() {
             parent_binding->add(path_var, path_id);
             queue<SearchState> empty;
             open.swap(empty);
-            results_found++;
             return true;
         } else {
             // Pop and visit next state
@@ -127,7 +125,7 @@ void BFSCheck::set_iter(const SearchState& s) {
 }
 
 
-void BFSCheck::reset() {
+void BFSCheck::_reset() {
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -145,7 +143,6 @@ void BFSCheck::reset() {
 }
 
 
-void BFSCheck::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Paths::AnyTrails::BFSCheck(idx_searches: " << idx_searches << ", found: " << results_found << ")";
+void BFSCheck::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

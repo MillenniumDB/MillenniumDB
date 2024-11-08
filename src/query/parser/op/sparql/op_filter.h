@@ -55,18 +55,24 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        os << std::string(indent, ' ') << "OpFilter(\n";
+        os << std::string(indent, ' ') << "OpFilter(";
 
-        if (filters.size() > 0) {
-            filters[0]->print_to_ostream(os, indent + 2);
-            for (size_t i = 1; i < filters.size(); i++) {
-                os << ",\n";
-                filters[i]->print_to_ostream(os, indent + 2);
-            }
-        }
         os << "\n";
-        op->print_to_ostream(os, indent+2);
+        ExprPrinter printer(os);
+        for (auto& filter : filters) {
+            os << std::string(indent + 2, ' ');
+            filter->accept_visitor(printer);
+            os << "\n";
+        }
+
+        for (size_t i = 0; i < printer.ops.size(); i++) {
+            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
+            printer.ops[i]->print_to_ostream(os, indent + 4);
+        }
+
         os << std::string(indent, ' ') << ")\n";
+
+        op->print_to_ostream(os, indent + 2);
         return os;
     }
 };

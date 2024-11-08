@@ -1,15 +1,15 @@
 #include "bind.h"
 
-void Bind::begin(Binding& _parent_binding) {
+void Bind::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     child_iter->begin(*parent_binding);
 }
 
-void Bind::reset() {
+void Bind::_reset() {
     this->child_iter->reset();
 }
 
-bool Bind::next() {
+bool Bind::_next() {
     if (child_iter->next()) {
         parent_binding->add(var, expr->eval(*parent_binding));
         return true;
@@ -22,11 +22,6 @@ void Bind::assign_nulls() {
     this->child_iter->assign_nulls();
 }
 
-void Bind::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "Bind(";
-    os << '?' << get_query_ctx().get_var_name(var);
-    os << '=' << *expr;
-    os << ")\n";
-    child_iter->analyze(os, indent + 2);
+void Bind::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

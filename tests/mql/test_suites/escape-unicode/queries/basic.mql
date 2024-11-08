@@ -1,0 +1,2 @@
+MATCH (?p :basic)
+RETURN ?p, ?p.code

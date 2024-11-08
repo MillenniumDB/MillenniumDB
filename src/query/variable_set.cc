@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "macros/count_zeros.h"
 #include "query/query_context.h"
 
 // ----------------------------- VariableSet -----------------------------
@@ -105,7 +106,7 @@ VariableSetIterator::VariableSetIterator(const VariableSet& vs, start) : variabl
 
     current = vs.variables[0];
 
-    if (not present()) {
+    if (!present()) {
         advance();
     }
 }
@@ -131,7 +132,7 @@ void VariableSetIterator::advance() {
         current = variable_set.variables[vec_idx];
     }
 
-    auto tz = __builtin_ctzll(current);
+    auto tz = MDB_COUNT_TRAILING_ZEROS_64(current);
     current >>= tz;
     current_idx += tz;
 }
@@ -143,7 +144,7 @@ bool VariableSetIterator::present() {
 
 
 bool VariableSetIterator::operator!=(VariableSetIterator rhs) {
-    return current_idx != rhs.current_idx or vec_idx != rhs.vec_idx;
+    return current_idx != rhs.current_idx || vec_idx != rhs.vec_idx;
 }
 
 

@@ -23,7 +23,7 @@ public:
     }
 
     bool has_aggregation() const override {
-        return lhs->has_aggregation() or rhs->has_aggregation();
+        return lhs->has_aggregation() || rhs->has_aggregation();
     }
 
     std::set<VarId> get_all_vars() const override {
@@ -32,10 +32,6 @@ public:
             res.insert(var);
         }
         return res;
-    }
-
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << '(' <<*lhs << " >= " << *rhs <<  ')' ;
     }
 };
 } // namespace MQL

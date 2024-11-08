@@ -17,23 +17,27 @@ public:
     LeftJoin(
         std::unique_ptr<BindingIter> lhs_rel,
         std::unique_ptr<BindingIter> rhs_rel,
-        std::vector<VarId>&&           join_vars,
-        std::vector<VarId>&&           lhs_vars,
-        std::vector<VarId>&&           rhs_vars
+        std::vector<VarId>&&         join_vars,
+        std::vector<VarId>&&         lhs_vars,
+        std::vector<VarId>&&         rhs_vars
     );
 
     ~LeftJoin();
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
+    // Results counter: to statistics
+    uint64_t found_not_nulls = 0;
+    uint64_t found_nulls = 0;
+
     std::unique_ptr<BindingIter> lhs;
     std::unique_ptr<BindingIter> rhs;
 
+private:
     std::vector<VarId> join_vars;
     std::vector<VarId> lhs_vars;
     std::vector<VarId> rhs_vars;
@@ -62,9 +66,5 @@ private:
     // probe key: Avoid to ask for an uint64 array in each next call
     uint64_t* pk_start;
     Key probe_key;
-
-    // Results counter: to statistics
-    uint64_t found_not_nulls = 0;
-    uint64_t found_nulls = 0;
 };
 }}}

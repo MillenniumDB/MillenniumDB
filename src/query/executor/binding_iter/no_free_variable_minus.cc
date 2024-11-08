@@ -1,21 +1,24 @@
 #include "no_free_variable_minus.h"
 
-void NoFreeVariableMinus::begin(Binding& parent_binding) {
+void NoFreeVariableMinus::_begin(Binding& parent_binding) {
     rhs->begin(parent_binding);
     lhs->begin(parent_binding);
     has_result = rhs->next();
 }
 
 
-bool NoFreeVariableMinus::next() {
+bool NoFreeVariableMinus::_next() {
     if (!has_result) {
-        return lhs->next();
+        auto result = lhs->next();
+        if (result) {
+        }
+        return result;
     }
     return false;
 }
 
 
-void NoFreeVariableMinus::reset() {
+void NoFreeVariableMinus::_reset() {
     rhs->reset();
     if (rhs->next()) {
         has_result = true;
@@ -33,11 +36,6 @@ void NoFreeVariableMinus::assign_nulls() {
 }
 
 
-void NoFreeVariableMinus::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "NoFreeVariableMinus(";
-        os << "\n";
-        lhs->analyze(os, indent + 2);
-        rhs->analyze(os, indent + 2);
-    os << "\n" << std::string(indent, ' ') << ")";
+void NoFreeVariableMinus::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

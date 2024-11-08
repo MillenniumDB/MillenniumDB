@@ -19,7 +19,15 @@ from .options import IGNORED_TESTS
 from .options import OUTPUT_COLUMN_WIDTH as CW
 from .options import TEST_SUITE_DIR
 from .server_utils import create_db, execute_query, kill_server, start_server
-from .types import ExecutionStats, Result, ServerCrashedException, Test, TestSuite
+from .types import (
+    BadTest,
+    ExecutionStats,
+    QueryTest,
+    Result,
+    ServerCrashedException,
+    Test,
+    TestSuite,
+)
 
 
 def print_difference_between_outputs(received_result: Result, expected_result: Result):
@@ -74,12 +82,18 @@ def skip_tests(tests: list[Test], stats: ExecutionStats) -> list[Test]:
     return ret
 
 
-def execute_query_test(server: Popen[bytes] | None, test: Test, stats: ExecutionStats) -> None:
+def execute_query_test(server: Popen[bytes] | None, test: QueryTest, stats: ExecutionStats) -> None:
     log(Level.DEBUG, str(test))
 
-    csv_result = execute_query(server, test, stats)
+    csv_result = execute_query(
+        server,
+        test,
+        stats,
+    )
 
-    if csv_result is None:
+    if isinstance(csv_result, int):
+        stats.error += 1
+        log(Level.ERROR, str(test), f"Server returned error: {csv_result}")
         return
 
     assert isinstance(csv_result, str)
@@ -101,8 +115,30 @@ def execute_query_test(server: Popen[bytes] | None, test: Test, stats: Execution
     stats.error += 1
 
 
+def execute_bad_test(server: Popen[bytes] | None, test: BadTest, stats: ExecutionStats) -> None:
+    log(Level.DEBUG, str(test))
+
+    csv_result = execute_query(
+        server,
+        test,
+        stats,
+    )
+
+    if isinstance(csv_result, str):
+        stats.error += 1
+        log(Level.ERROR, str(test), "Expected error but server did not return error")
+        return
+
+    assert isinstance(csv_result, int)
+
+    log(Level.CORRECT, str(test))
+    stats.correct += 1
+
+
 def execute_tests(
     *,
+    server_executable: Path,
+    create_db_executable: Path,
     test_suite: TestSuite,
     client_only: bool = False,
     progress_bar: tqdm | None = None,  # type:ignore
@@ -128,12 +164,15 @@ def execute_tests(
         log_file = None
 
         if not client_only:
-            database = create_db(data)
-            server, log_file = start_server(database)
+            database = create_db(create_db_executable, data)
+            server, log_file = start_server(server_executable, database)
 
         for test in tests_:
             try:
-                execute_query_test(server, test, stats)
+                if isinstance(test, QueryTest):
+                    execute_query_test(server, test, stats)
+                elif isinstance(test, BadTest):
+                    execute_bad_test(server, test, stats)
             except ServerCrashedException:
                 if not client_only:
                     assert server is not None  # server has been started
@@ -147,7 +186,7 @@ def execute_tests(
                         log(Level.SERVER_LOG, "SERVER:", line.strip())
                     log_file.seek(0, SEEK_END)
 
-                    server, log_file = start_server(database)  # restart server
+                    server, log_file = start_server(server_executable, database)  # restart server
             except Exception as exc:
                 if not client_only:
                     assert server is not None  # server has been started

@@ -11,6 +11,7 @@ enum class PathType {
     PATH_ALTERNATIVES,
     PATH_SEQUENCE,
     PATH_KLEENE_STAR,
+    PATH_KLEENE_PLUS,
     PATH_ATOM,
     PATH_OPTIONAL,
     PATH_CHECK,
@@ -35,6 +36,7 @@ enum class PathSemantic {
     ANY_SHORTEST_SIMPLE,
     ANY_SHORTEST_TRAILS,
     ANY_SHORTEST_WALKS,
+    DEFAULT,
 };
 
 namespace Paths {
@@ -56,6 +58,7 @@ namespace Paths {
             case PathSemantic::ANY_SHORTEST_SIMPLE: return "ANY_SHORTEST_SIMPLE";
             case PathSemantic::ANY_SHORTEST_TRAILS: return "ANY_SHORTEST_TRAILS";
             case PathSemantic::ANY_SHORTEST_WALKS: return "ANY_SHORTEST_WALKS";
+            case PathSemantic::DEFAULT: return "DEFAULT";
             default: return "UNDECLARED PATH SEMANTIC";
         }
     }
@@ -79,14 +82,14 @@ public:
 
     virtual std::unique_ptr<RegularPathExpr> invert() const = 0;
 
-    RPQ_DFA get_rpq_automaton(std::function<ObjectId(const std::string&)> f) const {
+    RPQ_DFA get_rpq_automaton(ObjectId(*str_to_oid)(const std::string&)) const {
         auto automaton = get_rpq_base_automaton();
-        return automaton.transform_automaton(f);
+        return automaton.transform_automaton(str_to_oid);
     }
 
-    RDPQAutomaton get_rdpq_automaton(std::function<ObjectId(const std::string&)> f) const {
+    RDPQAutomaton get_rdpq_automaton(ObjectId(*str_to_oid)(const std::string&)) const {
         auto automaton = get_rdpq_base_automaton();
-        automaton.transform_automaton(f);
+        automaton.transform_automaton(str_to_oid);
         return automaton;
     }
 

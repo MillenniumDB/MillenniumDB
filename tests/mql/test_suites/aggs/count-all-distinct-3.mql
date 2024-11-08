@@ -1,0 +1,3 @@
+MATCH (?y)-[:t1]->(?x)
+GROUP BY ?x
+RETURN ?x, COUNT(DISTINCT *)

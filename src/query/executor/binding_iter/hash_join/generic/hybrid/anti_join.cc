@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "storage/page.h"
+#include "storage/page/private_page.h"
 
 using namespace std;
 using namespace HashJoin;
@@ -12,9 +12,9 @@ using namespace HashJoin::Generic::Hybrid;
 AntiJoin::AntiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&           _join_vars,
-    vector<VarId>&&           _lhs_vars,
-    vector<VarId>&&           _rhs_vars
+    vector<VarId>&&         _join_vars,
+    vector<VarId>&&         _lhs_vars,
+    vector<VarId>&&         _rhs_vars
 ) :
     original_lhs     (std::move(_lhs)),
     original_rhs     (std::move(_rhs)),
@@ -43,7 +43,7 @@ AntiJoin::~AntiJoin() {
 }
 
 
-void AntiJoin::begin(Binding& _parent_binding) {
+void AntiJoin::_begin(Binding& _parent_binding) {
     this->parent_binding = &_parent_binding;
 
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -81,7 +81,7 @@ void AntiJoin::begin(Binding& _parent_binding) {
 }
 
 
-bool AntiJoin::next() {
+bool AntiJoin::_next() {
     while (true) {
         if (lhs->next()) {
             // If enumerating rows is nullptr ask for the next probe relation row
@@ -103,7 +103,6 @@ bool AntiJoin::next() {
                 for (auto& var : lhs_vars) {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
-                found++;
                 return true;
 
             }
@@ -119,9 +118,8 @@ bool AntiJoin::next() {
 }
 
 
-void AntiJoin::reset() {
+void AntiJoin::_reset() {
     hash_table.clear();
-    found = 0;
 
     // Spread reset to children
     original_lhs->reset();
@@ -163,11 +161,8 @@ void AntiJoin::assign_nulls() {
 }
 
 
-void AntiJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    os << "AntiJoinHybrid(Found: " << found << ")\n";
-    original_lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void AntiJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 
@@ -186,8 +181,8 @@ bool AntiJoin::build_0_partition() {
         auto iterator = hash_table.emplace(&key_chunk[start_key_index], N);
         if (iterator.second) {
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }
@@ -214,8 +209,8 @@ void AntiJoin::build_hash_table() {
         auto iterator = hash_table.emplace(&key_chunk[start_key_index], N);
         if (iterator.second) {
             key_chunk_index++;
-            if (key_chunk_index == Page::MDB_PAGE_SIZE) {
-                key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+            if (key_chunk_index == PPage::SIZE) {
+                key_chunk = new uint64_t[N * PPage::SIZE];
                 key_chunks_dir.push_back(key_chunk);
                 key_chunk_index = 0;
             }
@@ -241,7 +236,7 @@ void AntiJoin::prepare_chunks_for_new_partition() {
     key_chunk_index = 0;
 
     // Size of key row: join var
-    key_chunk = new uint64_t[N * Page::MDB_PAGE_SIZE];
+    key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
 }
 

@@ -53,7 +53,10 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ');
-        os << "OpWhere" << *expr << "\n";
+        auto printer = ExprPrinter(os);
+        os << "OpWhere(";
+        expr->accept_visitor(printer);
+        os << ")\n";
         return op->print_to_ostream(os, indent);
     }
 };

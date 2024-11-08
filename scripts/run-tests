@@ -1,38 +1,63 @@
-#!/usr/bin/bash
-set -e
+#!/bin/bash
+set -e; set -u; set -o pipefail
+BLUE='\033[0;34m'; RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m';
+ERROR=
 
-# To enable debugging uncomment this line:
-#set -x
+VENV=tests/.venv
+TESTS=tests
 
-BLUE='\033[0;34m'
-NC='\033[0m'
+if ! diff -q $VENV/requirements.txt $TESTS/requirements.txt; then
+    python3 -m venv $VENV
+    source $VENV/bin/activate
+    python3 -m pip install -r $TESTS/requirements.txt
+    cp $TESTS/requirements.txt $VENV/requirements.txt
+else
+    source $VENV/bin/activate
+fi
 
-# Configure build
-cmake -Bbuild/Debug -DCMAKE_BUILD_TYPE=Debug
+COMMANDS=(all sparql mql unit)
 
-# Build
-cmake --build build/Debug/ -j $(($(getconf _NPROCESSORS_ONLN)-1))
+CMD=all
+if [[ ${1-} ]]; then
+    if [[ " ${COMMANDS[*]} " =~ " $1 " ]]; then
+        CMD=$1
+    else
+        echo "Unsupported command: \"$1\", supported commands are: ${COMMANDS[*]}"
+        exit 1
+    fi
+fi
+
+# Configure build and compile
+cmake -B build/Debug -D CMAKE_BUILD_TYPE=Debug
+cmake --build build/Debug
 
 # Remove SPARQL tmp dir
-[[ -d tests/sparql/tmp/ ]] && echo -e ${BLUE}Remove tests/sparql/tmp/${NC} && rm -r tests/sparql/tmp/
+[[ -d  $TESTS/sparql/tmp/ ]] && echo -e ${BLUE}Removing  $TESTS/sparql/tmp/${NC} && rm -r  $TESTS/sparql/tmp/
 
 # Remove MQL tmp dir
-[[ -d tests/mql/tmp/ ]] && echo -e ${BLUE}Remove tests/mql/tmp/${NC} && rm -r tests/mql/tmp/
+[[ -d  $TESTS/mql/tmp/ ]] && echo -e ${BLUE}Removing  $TESTS/mql/tmp/${NC} && rm -r  $TESTS/mql/tmp/
 
 
-# Run SPARQL integration tests
-printf "${BLUE}SPARQL INTEGRATION TESTS${NC}\n"
-python3 tests/sparql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' > tests/sparql/test-status-last.txt)
+if [[ $CMD = "all" || $CMD = "sparql" ]]; then
+    printf "${BLUE}RUNNING SPARQL INTEGRATION TESTS${NC}\n"
+    python3  $TESTS/sparql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' >  $TESTS/sparql/test-status-last.txt) || ERROR=true
+fi
 
-# Run MQL integration tests
-printf "${BLUE}MQL INTEGRATION TESTS${NC}\n"
-python3 tests/mql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' > tests/mql/test-status-last.txt)
+if [[ $CMD = "all" || $CMD = "mql" ]]; then
+    printf "${BLUE}RUNNING MQL INTEGRATION TESTS${NC}\n"
+    python3  $TESTS/mql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' >  $TESTS/mql/test-status-last.txt) || ERROR=true
+fi
 
-# Run unit tests
-cd build/Debug/
-printf "${BLUE}CTEST UNIT TESTS${NC}\n"
-ctest --output-on-failure
+if [[ $CMD = "all" || $CMD = "unit" ]]; then
+    cd build/Debug/
+    printf "${BLUE}RUNNING UNIT TESTS${NC}\n"
+    ctest --output-on-failure || ERROR=true
+fi
 
-# Run catch2 unit tests.
-# printf "${BLUE}CATCH2 UNIT TESTS\n"
-# ./bin/catch2_tests
+if [[ $ERROR ]]; then
+    echo -e "${RED}TESTS FAILED${NC}"
+    exit 1
+else
+    echo -e "${GREEN}ALL TESTS PASSED${NC}"
+    exit 0
+fi

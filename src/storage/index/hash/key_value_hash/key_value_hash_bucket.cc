@@ -2,8 +2,8 @@
 
 #include <cstring>
 
-#include "storage/buffer_manager.h"
 #include "graph_models/object_id.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
 
@@ -14,7 +14,7 @@ KeyValueHashBucket<K, V>::KeyValueHashBucket(TmpFileId     file_id,
                                              std::size_t   _value_size,
                                              uint32_t      _max_tuples) :
 
-    page        (buffer_manager.get_tmp_page(file_id, bucket_number)),
+    page        (buffer_manager.get_ppage(file_id, bucket_number)),
     key_size    (_key_size),
     value_size  (_value_size),
     max_tuples  (_max_tuples),

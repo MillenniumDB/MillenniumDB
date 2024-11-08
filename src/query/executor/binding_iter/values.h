@@ -1,41 +1,32 @@
 #pragma once
 
-#include <memory>
 #include <vector>
-#include <set>
 
 #include "query/executor/binding_iter.h"
 
 class Values : public BindingIter {
 public:
-    Values(
-        std::vector<std::pair<VarId, bool>>&& vars,
-        std::vector<ObjectId>&&               values
-    ) :
-        vars          (std::move(vars)),
-        values        (std::move(values)) { }
+    Values(std::vector<std::pair<VarId, bool>>&& vars, std::vector<ObjectId>&& values) :
+        vars(std::move(vars)),
+        values(std::move(values))
+    { }
 
-    ~Values() = default;
+    void _begin(Binding& parent_binding) override;
 
-    void begin(Binding& parent_binding) override;
+    void _reset() override;
 
-    void reset() override;
-
-    bool next() override;
+    bool _next() override;
 
     void assign_nulls() override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
 
-private:
     // true means value is fixed by parent
     std::vector<std::pair<VarId, bool>> vars;
+
     std::vector<ObjectId> values;
 
-    uint64_t current = 0;
+    uint64_t current;
 
     Binding* parent_binding;
-
-    uint64_t result_count = 0;
-    uint64_t executions = 0;
 };

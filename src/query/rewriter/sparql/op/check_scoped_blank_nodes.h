@@ -37,7 +37,6 @@ public:
     void visit(OpSelect&)               override;
     void visit(OpAsk&)                  override;
     void visit(OpService&)              override;
-    void visit(OpWhere&)                override;
     void visit(OpBind&)                 override;
     void visit(OpUnitTable&)            override;
     void visit(OpValues&)               override;

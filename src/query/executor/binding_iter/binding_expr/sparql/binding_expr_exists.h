@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
@@ -32,10 +31,10 @@ public:
         }
 
         if (has_a_match(*subset_binding)) {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return Conversions::pack_bool(true);
         }
         else {
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return Conversions::pack_bool(false);
         }
     }
 
@@ -72,15 +71,8 @@ private:
         return false;
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "EXISTS(vars:";
-        for (auto& var : op_vars) {
-            os << var.id << ",";
-        }
-        os << ')';
-
-        op_iter->analyze(os, 0);
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

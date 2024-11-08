@@ -2,27 +2,32 @@ MillenniumDB
 ================================================================================
 MillenniumDB is a graph oriented database management system developed by the [Millennium Institute for Foundational Research on Data (IMFD)](https://imfd.cl/).
 
-The main objective of this project is to create a fully functional and easy-to-extend DBMS that serves as the basis for testing new techniques and algorithms related to databases and graphs. We aim to support multiple graph models. RDF/SPARQL support is fairly complete and we are also working on a variation of property graphs.
+The main objective of this project is to create a fully functional and easy-to-extend DBMS that serves as the basis for testing new techniques and algorithms related to databases and graphs. We support multiple graph models, RDF/SPARQL support is fairly complete and we have a custom language to work with Property Graphs. We are working to add support for GQL in the near future.
 
 This project is still in active development and is not production ready yet, some functionality is missing and there may be bugs.
 
 
-
 Table of Contents
 ================================================================================
-- [SPARQL Support](#sparql-support)
+- [Graph Models](#graph-models)
+    - [RDF](#rdf-model)
+    - [Property Graphs](#property-graph-model)
 - [Project Build](#project-build)
 - [Using MillenniumDB](#using-millenniumdb)
 - [Example](#example)
 - [Docker](#docker)
 
 
+# [Graph Models](#millenniumdb)
+We support two different graph models, each graph model has its corresponding query language (i.e. once you import an RDF graph, you must use SPARQL to query it, our property graph query language will not work in that graph).
 
-[SPARQL Support](#millenniumdb)
-================================================================================
+## [RDF Model](#millenniumdb)
+
+We can import RDF graphs in `.ttl`, `.n3` or `.nt` formats and we support most of  [SPARQL](https://www.w3.org/TR/sparql11-query/), with exceptions explained below.
+
 Currently Unsupported SPARQL Features
 --------------------------------------------------------------------------------
-- Updates
+- Updates other that [INSERT DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#insertData) and [DELETE DATA](https://www.w3.org/TR/2013/REC-sparql11-update-20130321/#deleteData)
 - Named graphs
 - The `FROM` clause
 - The `GRAPH` keyword
@@ -33,10 +38,17 @@ Deviations from the SPARQL Specification
 --------------------------------------------------------------------------------
 - **Language tag** (`@`) handling is **case sensitive** for `JOIN`s and related operators, but in **expressions** it is **case insensitive**.
 - We do **not** store the exact **lexical representation** of numeric datatypes, only the **numeric value**. For example, `"01"^^xsd:integer` and `"1"^^xsd:integer` are identical in MillenniumDB.
-- Our implementation uses **ECMAScript** regular expressions, not **Perl** regular expressions.
+    - This implies that expressions that work with the lexical representation may result in a different value. For example `STR(1e0)` should be `"1e0"` according to the standard, but MillenniumDB will evaluate it as `"1.0E0"`.
 - We do not differentiate between `"0"^^xsd:boolean` and `false` / `"false"^^xsd:boolean` or between `"1"^^xsd:boolean` and `true` / `"true"^^xsd:boolean`.
+- Our implementation uses **ECMAScript** regular expressions, not **Perl** regular expressions.
+- The regular path expression `?s :P* ?o` won't return all the nodes in the database that appears as a subject or object in some triple as the standard says. Instead it will only return the nodes that appears as a subject in a triple with predicate `:P`.
 
 This is explained in more detail [here](doc/sparql/sparql_deviations.md).
+
+
+## [Property Graph Model](#millenniumdb)
+The definition of the graph model and how to create a graph file is explained [here](doc/quad_model/data_model.md).
+The query language is inspired on Cypher and its defined [here](doc/quad_model/query_language.md).
 
 
 
@@ -48,30 +60,41 @@ On windows, Windows Subsystem for Linux (WSL) can be used. On Mac or Windows wit
 
 Install Dependencies:
 --------------------------------------------------------------------------------
-MillenniumDB needs at least the following GCC and CMake versions:
-- GCC version 8.1 or newer
-- CMake version 3.12 or newer
+MillenniumDB needs the following dependencies:
+- GCC >= 8.1
+- CMake >= 3.12
+- Git
+- libssl
+- ncursesw and less for the CLI
+- Python >= 3.8 with venv to run tests
+- Boost 1.82
 
-Additionally `Git` and `libssl-dev` are needed.
-
-On distributions based on **Ubuntu 20.04 or newer** they can be installed by running:
+On current Debian and Ubuntu based distributions they can be installed by running:
+```bash
+sudo apt update && sudo apt install git g++ cmake libssl-dev libncurses-dev locales less python3 python3-venv
 ```
-sudo apt update && sudo apt install git g++ cmake libssl-dev
-```
 
-On other Linux distributions it may be necessary to install the dependencies differently. Some distributions might have repositories with older versions and the project won't compile, in that case the dependencies will have to be installed manually.
-
-The `en_US.UTF-8` locale also needs to be generated, which can be done as follow:
-```
+The `en_US.UTF-8` locale also needs to be generated.\
+On Ubuntu based distributions this can be done as follows:
+```bash
 sudo locale-gen en_US.UTF-8
-sudo update-locale
 ```
 
+On distributions without a patched locale-gen you can run:
+```bash
+sudo sed -i '/en_us.utf-8/Is/^# //g' /etc/locale.gen
+sudo locale-gen
+```
+
+Or manually uncomment `en_US.UTF-8` in `/etc/locale.gen` and run:
+```bash
+sudo locale-gen
+```
 
 Clone the repository
 --------------------------------------------------------------------------------
  Clone this repository, enter the repository root directory and set `MDB_HOME`:
-```
+```bash
 git clone git@github.com:MillenniumDB/MillenniumDB.git
 cd MillenniumDB
 export MDB_HOME=$(pwd)
@@ -80,32 +103,30 @@ export MDB_HOME=$(pwd)
 
 Install Boost
 --------------------------------------------------------------------------------
-Download `boost_1_81_0.tar.gz` from [https://www.boost.org/users/history/version_1_81_0.html](https://www.boost.org/users/history/version_1_81_0.html) and then extract it:
-```
-tar -xf boost_1_81_0.tar.gz
-```
-Enter the boost directory:
-```
-cd boost_1_81_0/
+Download [`boost_1_82_0.tar.gz`](https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz) using a browser or wget:
+```bash
+wget -q --show-progress https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz
 ```
 
-Run the following:
+and run the following in the directory where boost was downloaded:
+```bash
+tar -xf boost_1_82_0.tar.gz
+mkdir -p $MDB_HOME/third_party/boost_1_82/include
+mv boost_1_82_0/boost $MDB_HOME/third_party/boost_1_82/include
+rm -r boost_1_82_0.tar.gz boost_1_82_0
 ```
-./bootstrap.sh --prefix=$MDB_HOME/third_party/boost_1_81
-./b2 --prefix=$MDB_HOME/third_party/boost_1_81
-./b2 install
-```
+
 
 
 Build the Project:
 --------------------------------------------------------------------------------
 Go back into the repository root directory and configure and build MillenniumDB:
-```
-cmake -B build/Release -D CMAKE_BUILD_TYPE=Release && cmake --build build/Release/
+```bash
+cmake -Bbuild/Release -DCMAKE_BUILD_TYPE=Release && cmake --build build/Release/
 ```
 To use multiple cores during compilation (much faster) use the following command and replace `<n>` with the desired number of threads:
-```
-cmake -B build/Release -D CMAKE_BUILD_TYPE=Release && cmake --build build/Release/ -j <n>
+```bash
+cmake -Bbuild/Release -DCMAKE_BUILD_TYPE=Release && cmake --build build/Release/ -j <n>
 ```
 
 
@@ -117,23 +138,23 @@ MillenniumDB supports two database formats: RDF and QuadModel. A RDF database ca
 
 Creating a Database
 --------------------------------------------------------------------------------
+```bash
+build/Release/bin/mdb-import <data-file> <db-directory> [--prefixes <prefixes-file>]
 ```
-build/Release/bin/create_db_sparql <data-file> <db-directory> [--prefixes <prefixes-file>]
-```
-- `<data-file>` is the path to the file containing the data to import, in the [Turtle](https://www.w3.org/TR/turtle/) format.
+- `<data-file>` is the path to the file containing the data to import, using the [Turtle](https://www.w3.org/TR/turtle/) format for RDF, or [QuadModel Format](doc/quad_model/data_model.md#import-format) for Property Graphs.
 - `<db-directory>` is the path of the directory where the new database will be created.
-- `--prefixes <prefixes-file>` is an optional path to a prefixes file.
+- `--prefixes <prefixes-file>` is an optional path to a prefixes file (used only when using RDF).
 
 ### Prefix Definitions
 The optional prefixes file passed using the `--prefixes` option contains one prefix per line. Each line consists of a prefix alias and the prefix itself:
 
 ```
-prefix1: http://www.myprefix.com/
-prefix2: https://other.prefix.com/foo
-prefix3: https://other.prefix.com/bar
+http://www.myprefix.com/
+https://other.prefix.com/foo
+https://other.prefix.com/bar
 ```
 
-Using a prefix file is optional, but helps reduce the space occupied by IRIs in the database. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space.
+Using a prefix file is optional, but helps reduce the space occupied by IRIs in the database when using the RDF model. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space. The total number of user defined prefixes cannot exceed 255.
 
 
 Querying a Database
@@ -142,27 +163,34 @@ We implement the typical client/server model, so in order to query a database, y
 
 ### Run the Server
 To run the server use the following command, passing the `<db-directory>` where the database was created:
-```
-build/Release/bin/server_sparql <db-directory>
+```bash
+build/Release/bin/mdb-server <db-directory>
 ```
 
 ### Execute a Query
+The easiest way to run a query is to use the Web Browser at http://localhost:4321/ after starting the server.
+
+The other option is sending the query via HTTP request.
+
 The MillenniumDB SPARQL server supports all three query operations specified in the [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation):
 - `query via GET`
 - `query via URL-encoded POST`
 - `query via POST directly`
 
-We also provide a Python script that makes queries using the `SparqlWrapper` library.
-To use it you have to install `SparqlWrapper`:
+When using Property Graphs, we expect an HTTP POST where query is contained in the request body.
+
+We provide a script to make queries using curl.
+To use it you have to pass a file with the query as a parameter:
+```bash
+bash scripts/query <query-file>
 ```
-pip3 install sparqlwrapper
-```
-You can then use the script to make queries as follows:
-```
-python3 scripts/sparql_query.py <query-file>
-```
+
 where `<query-file>` is the path to a file containing a query in SPARQL format.
 
+For updates, we have an analogous script:
+```bash
+bash scripts/update <query-file>
+```
 
 
 [Example](#millenniumdb)
@@ -174,8 +202,8 @@ To run this example MillenniumDB has to be [built](#project-build) first.
 Create an Example Database
 --------------------------------------------------------------------------------
 From the repository root directory run the following command to create the example database:
-```
-build/Release/bin/create_db_sparql data/example-rdf-database.ttl data/example-rdf-database
+```bash
+build/Release/bin/mdb-import data/example-rdf-database.ttl data/example-rdf-database
 ```
 That should have created the directory `data/example-rdf-database` containing a database initialized with the data from `data/example-rdf-database.ttl`.
 
@@ -184,28 +212,18 @@ Launch the Server
 --------------------------------------------------------------------------------
 The server can now be launched with the previously created database:
 ```
-build/Release/bin/server_sparql data/example-rdf-database
+build/Release/bin/mdb-server data/example-rdf-database
 ```
 
 
 Execute a Query
 --------------------------------------------------------------------------------
-If not already done previously, install SparqlWrapper:
-```
-pip3 install sparqlwrapper
-```
-Open another terminal and enter the repository root directory.
-Then run the following command to execute an example query:
-```
-python3 scripts/sparql_query.py data/example-sparql-query.rq
-```
-The query result should be shown in the terminal.
-
+Go to http://localhost:4321/
 
 Remove the Database
 --------------------------------------------------------------------------------
 To remove the database that was created just delete the directory:
-```
+```bash
 rm -r data/example-rdf-database
 ```
 
@@ -219,17 +237,17 @@ We also supply a Dockerfile to build and run MillenniumDB using Docker.
 Build the Docker Image
 --------------------------------------------------------------------------------
 To build a Docker image of MillenniumDB run the following:
-```
-docker build -t mdb.backend .
+```bash
+docker build -t mdb .
 ```
 
 
 Creating a Database
 --------------------------------------------------------------------------------
 Put any `.ttl` files into the `data` directory and from the repository root directory run:
-```
-docker run --rm --volume "$PWD"/data:/data mdb.backend \
-    /MillenniumDB/build/Release/bin/create_db_sparql \
+```bash
+docker run --rm --volume "$PWD"/data:/data mdb \
+    mdb-import \
     /data/example-rdf-database.ttl \
     /data/example-rdf-database
 ```
@@ -237,36 +255,33 @@ docker run --rm --volume "$PWD"/data:/data mdb.backend \
 You can change `/data/example-rdf-database.ttl` to the path of of your `.ttl` and
 `/data/example-rdf-database` to the directory where you want the database to be
 created. The `.ttl` files and database directories have to be inside `data`. The `.ttl`
-file must not be a symbolic link to a `.ttl` file but a real one. Also the `.ttl` 
-file must exist or else the DB will be created empty. 
+file must not be a symbolic link to a `.ttl` file but a real one. Also the `.ttl` file must exist or else the DB will be created empty.
 
 Running a Server
 --------------------------------------------------------------------------------
 To run the server with the previously created database use:
-```
-docker run --rm --volume "$PWD"/data:/data --network="host" mdb.backend \
-    /MillenniumDB/build/Release/bin/server_sparql \
+```bash
+docker run --rm --volume "$PWD"/data:/data -p 1234:1234 -p 4321:4321 mdb \
+    mdb-server \
     /data/example-rdf-database
 ```
 
 
 Executing a Query
 --------------------------------------------------------------------------------
-If not already done previously, install SparqlWrapper:
-```
-pip3 install sparqlwrapper
-```
+Go to http://localhost:4321/ to see the web interface (available while running the server).
 
-A query can then be made as follow:
-```
-python3 scripts/sparql_query.py ./data/example-sparql-query.rq
+Also we provide a script to make queries using the console:
+
+```bash
+bash scripts/query <query-file>
 ```
 
 
 Remove the Database
 --------------------------------------------------------------------------------
 To remove the database that was created just delete the directory:
-```
-sudo rm -r data/example-rdf-database
+```bash
+rm -r data/example-rdf-database
 ```
 Depending on your Docker configuration you may have to use sudo.

@@ -1,0 +1,25 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "Лорем ипсум долор сит амет",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            },
+            {
+                "o": {
+                    "type": "literal",
+                    "value": "еи еам ферри путант 1",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#string"
+                }
+            }
+        ]
+    }
+}

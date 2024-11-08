@@ -1,6 +1,6 @@
 #include "rpq_automaton.h"
 
-#include <iostream>
+#include <cassert>
 #include <queue>
 #include <map>
 #include <stack>
@@ -8,40 +8,255 @@
 
 using namespace std;
 
+struct PartitionSet {
+    uint_fast32_t states;
 
-void RPQ_NFA::print() {
-     for (size_t i = 0; i < outer_transitions.size(); i++) {
-        for (auto& t : outer_transitions[i]) {
-            if (t.type == nullptr) {
-                cout << t.from << "=[ε]=>" << t.to << "\n";
-            } else {
-                cout << t.from << "=[" << (t.inverse ? "^" : "") << *t.type << "]=>" << t.to << "\n";
+    uint_fast32_t partitions_count;
+
+    // vector of size states, partition[i] gives the partition of the state i
+    // the value is between 0 and (partitions_count-1)
+    std::vector<uint_fast32_t> partition;
+
+    PartitionSet(const RPQ_DFA& automata) {
+        states = automata.total_states;
+
+        // border case where all states are final.
+        if (automata.total_final_states == automata.total_states) {
+            partitions_count = 1;
+            for (uint_fast32_t s = 0; s < states; s++) {
+                partition.push_back(0);
+            }
+            return;
+        }
+
+        partitions_count = 2;
+        for (uint_fast32_t s = 0; s < states; s++) {
+            partition.push_back(automata.is_final_state[s] ? 1 : 0);
+        }
+    }
+
+    std::vector<uint_fast32_t> get_partition_states(uint_fast32_t partition_number) const {
+        std::vector<uint_fast32_t> res;
+        for (uint_fast32_t s = 0; s < states; s++) {
+            if (partition[s] == partition_number) {
+                res.push_back(s);
+            }
+        }
+        return res;
+    }
+};
+
+
+struct AlphabetInfo {
+    ObjectId oid;
+    bool inverse;
+
+    AlphabetInfo() : oid(ObjectId::get_null()), inverse(false) {}
+
+    AlphabetInfo(ObjectId oid, bool inverse) :
+        oid(oid), inverse(inverse) { }
+
+    bool operator==(const AlphabetInfo& other) const {
+        return oid == other.oid && inverse == other.inverse;
+    }
+
+    bool operator<(const AlphabetInfo& other) const {
+        if (oid < other.oid) {
+            return true;
+        } else if (oid > other.oid) {
+            return false;
+        }
+        return inverse < other.inverse;
+    }
+};
+
+
+RPQ_DFA RPQ_DFA::optimize(const RPQ_DFA& automata) {
+    assert(automata.total_states == automata.from_to_connections.size());
+    assert(automata.total_states == automata.is_final_state.size());
+
+    std::set<AlphabetInfo> alphabet_set;
+
+    for (const auto& transitions : automata.from_to_connections) {
+        for (const auto& transition : transitions) {
+            // std::set will remove duplicates
+            alphabet_set.emplace(transition.type_id, transition.inverse);
+        }
+    }
+    std::vector<AlphabetInfo> alphabet;
+    for (auto& e : alphabet_set) {
+        alphabet.push_back(e);
+    }
+
+    uint_fast32_t* transition_table = new uint_fast32_t[automata.total_states * alphabet.size()];
+
+    auto result_transition = [&] (uint_fast32_t state, uint_fast32_t alphabet_idx) {
+        return &transition_table[state*alphabet.size() + alphabet_idx];
+    };
+
+    for (uint_fast32_t a_i = 0; a_i < alphabet.size(); a_i++) {
+        for (uint_fast32_t s = 0; s < automata.total_states; s++) {
+            uint_fast32_t reached_state = -1;
+            for (auto& transition : automata.from_to_connections[s]) {
+                if (transition.inverse == alphabet[a_i].inverse
+                    && transition.type_id == alphabet[a_i].oid)
+                {
+                    reached_state = transition.to;
+                }
+            }
+            *result_transition(s, a_i) = reached_state;
+        }
+    }
+
+    // create 2 initial partitions, finals and not finals
+    PartitionSet current_set(automata);
+    PartitionSet next_set(automata);
+    do {
+        current_set = next_set;
+        // we start reconstructing next_set
+
+        int_fast32_t current_result_partition = -1; // will start at zero when ++ is applied
+        // iterate over each partition
+        for (uint_fast32_t p = 0; p < current_set.partitions_count; p++) {
+            auto partition_states = current_set.get_partition_states(p);
+
+            assert(partition_states.size() > 0);
+
+            // first state always defines a new partition
+            next_set.partition[partition_states[0]] = ++current_result_partition;
+
+            // Iterate pair of states in partition_states (state_a, state_b)
+            // where state_a is before than state_b in partition_states
+            for (uint_fast32_t state_b_idx = 1; state_b_idx < partition_states.size(); state_b_idx++) {
+                auto state_b = partition_states[state_b_idx];
+                bool found_result_partition = false;
+
+                for (uint_fast32_t state_a_idx = 0; state_a_idx < state_b_idx; state_a_idx++) {
+                    // see if state_a and state_b are in the same partition in next equivalence
+                    bool same_partition = true;
+                    auto state_a = partition_states[state_a_idx];
+                    for (uint_fast32_t alp_idx = 0; alp_idx < alphabet.size(); alp_idx++) {
+                        int_fast32_t reached_a = *result_transition(state_a, alp_idx);
+                        int_fast32_t reached_b = *result_transition(state_b, alp_idx);
+
+                        if (reached_a == -1 && reached_b == -1) {
+                            continue;
+                        } else if (reached_a == -1 || reached_b == -1) {
+                            same_partition = false;
+                            break;
+                        }
+
+                        auto a_res_partition = current_set.partition[reached_a];
+                        auto b_res_partition = current_set.partition[reached_b];
+
+                        if (a_res_partition != b_res_partition) {
+                            same_partition = false;
+                            break;
+                        }
+                    }
+                    if (same_partition) {
+                        next_set.partition[state_b] = next_set.partition[state_a];
+                        found_result_partition = true;
+                        break;
+                    }
+                }
+                if (!found_result_partition) {
+                    next_set.partition[state_b] = ++current_result_partition;
+                }
+            }
+        }
+        next_set.partitions_count = current_result_partition + 1; // sum one because starts at 0
+    } while(current_set.partitions_count < next_set.partitions_count);
+
+    // construct res using current_set
+    RPQ_DFA res;
+
+    // each partition becomes a state
+    res.start_state = current_set.partition[automata.start_state];
+    res.total_states = current_set.partitions_count;
+    res.from_to_connections.resize(res.total_states);
+
+    for (uint_fast32_t s = 0; s < automata.total_states; s++) {
+        for (const auto& transition : automata.from_to_connections[s]) {
+            assert(s == transition.from);
+            auto new_from = current_set.partition[transition.from];
+            auto new_to   = current_set.partition[transition.to];
+            Transition new_transition(
+                new_from,
+                new_to,
+                transition.type_id,
+                transition.inverse
+            );
+
+            bool already_exists = false;
+            for (const auto& existing_transition : res.from_to_connections[new_from]) {
+                if (new_transition == existing_transition) {
+                    already_exists = true;
+                }
+            }
+            if (!already_exists) {
+                res.from_to_connections[new_from].push_back(new_transition);
             }
         }
     }
-    cout << "start state: " << start << "\n";
-    cout << "end states: { ";
-    for (auto& state : end_states) {
-        cout << state << " ";
+
+    // set res.total_final_states and res.is_final_state
+    res.is_final_state.resize(res.total_states, false);
+    res.total_final_states = 0;
+
+    for (uint_fast32_t s = 0; s < automata.total_states; s++) {
+        // consider only if s if final state
+        if (!automata.is_final_state[s]) continue;
+
+        auto res_state = current_set.partition[s];
+
+        // maybe a previous s modified res_state, so check
+        if (!res.is_final_state[res_state]) {
+            res.total_final_states++;
+            res.is_final_state[res_state] = true;
+        }
     }
-    cout << "}\n";
+
+    res.add_reverse_connections();
+
+    delete[] transition_table;
+    return res;
 }
 
 
-void RPQ_DFA::print() {
-     for (size_t i = 0; i < from_to_connections.size(); i++) {
-        for (auto& t : from_to_connections[i]) {
-            cout << t.from << "=[" << (t.inverse ? "^" : "") << t.type_id.id << "]=>" << t.to << "\n";
+void RPQ_NFA::print(std::ostream& os) {
+     for (size_t i = 0; i < outer_transitions.size(); i++) {
+        for (auto& t : outer_transitions[i]) {
+            if (t.type == nullptr) {
+                os << t.from << "=[ε]=>" << t.to << "\n";
+            } else {
+                os << t.from << "=[" << (t.inverse ? "^" : "") << *t.type << "]=>" << t.to << "\n";
+            }
         }
     }
-    cout << "start state: " << start_state << "\n";
-    cout << "end states: { ";
+    os << "start state: " << start << "\n";
+    os << "end states: { ";
+    for (auto& state : end_states) {
+        os << state << " ";
+    }
+    os << "}\n";
+}
+
+
+void RPQ_DFA::print(std::ostream& os) const {
+    for (size_t i = 0; i < from_to_connections.size(); i++) {
+        for (auto& t : from_to_connections[i]) {
+            os << t.from << "=[" << (t.inverse ? "^" : "") << t.type_id.id << "]=>" << t.to << "\n";
+        }
+    }
+    os << "start state: " << start_state << "\n";
+    os << "end states: { ";
     for (size_t i = 0; i < total_states; i++) {
         if (is_final_state[i]) {
-            cout << i << " ";
+            os << i << " ";
         }
     }
-    cout << "}\n";
+    os << "}\n";
 }
 
 
@@ -66,7 +281,7 @@ void RPQ_NFA::rename_and_merge(RPQ_NFA& other) {
     for (auto& end_state : other.end_states) {
         new_end.insert(initial_states + end_state);
     }
-    other.end_states = move(new_end);
+    other.end_states = std::move(new_end);
 
     // Rename start state
     other.start = initial_states;
@@ -112,9 +327,7 @@ void RPQ_NFA::add_epsilon_transition(uint32_t from, uint32_t to) {
 }
 
 
-RPQ_DFA RPQ_NFA::transform_automaton(std::function<ObjectId(const std::string&)> f) {
-    delete_mergeable_states();
-
+RPQ_DFA RPQ_NFA::transform_automaton(ObjectId(*f)(const std::string&)) {
     delete_epsilon_transitions();
 
     delete_unreachable_states();
@@ -198,46 +411,7 @@ RPQ_DFA RPQ_NFA::transform_automaton(std::function<ObjectId(const std::string&)>
     }
 
     // dfa.print();
-    return dfa;
-}
-
-
-void RPQ_NFA::delete_mergeable_states() {
-    // Repeat process until is certain that there are not mergeable states
-    bool repeat_while = true;
-    while (repeat_while) {
-        repeat_while = false;
-        for (size_t s = 0; s < outer_transitions.size(); s++) {
-            // If `s` only can by reached from `v` (v = inner_transitions[s][0].from) and the transition is epsilon, then v = s
-            // We also check `v != s` to avoid merging a state with itself
-            if (inner_transitions[s].size() == 1 &&
-                inner_transitions[s][0].type == nullptr &&
-                inner_transitions[s][0].from != s)
-            {
-                // If v is the start state, merge avoiding deleting the start state
-                if (inner_transitions[s][0].from == start) {
-                    merge_states(inner_transitions[s][0].from, s);
-                } else {
-                    merge_states(s, inner_transitions[s][0].from);
-                }
-
-                repeat_while = true;
-            }
-            // If `s` has only one transition to `v` (v = outer_transitions[s][0].to), and the transition is epsilon, then s = v
-            // We also check `v != s` to avoid merging a state with itself
-            if (outer_transitions[s].size() == 1 &&
-                outer_transitions[s][0].type == nullptr &&
-                outer_transitions[s][0].to != s)
-            {
-                if (outer_transitions[s][0].to == start) {
-                    merge_states(outer_transitions[s][0].to, s);
-                } else {
-                    merge_states(s, outer_transitions[s][0].to);
-                }
-                repeat_while = true;
-            }
-        }
-    }
+    return RPQ_DFA::optimize(dfa);
 }
 
 
@@ -412,4 +586,15 @@ void RPQ_NFA::merge_states(uint32_t destiny, uint32_t source) {
     }
     outer_transitions[source].clear();
     inner_transitions[source].clear();
+}
+
+
+void RPQ_DFA::add_reverse_connections() {
+    reverse_connections.insert(reverse_connections.end(), from_to_connections.size(), {});
+    for (size_t state = 0; state < from_to_connections.size(); state++) {
+        for (const auto& transition : from_to_connections[state]) {
+            // Invert origin/destiny and direction of transition
+            reverse_connections[transition.to].push_back(RPQ_DFA::Transition(transition.to, transition.from, transition.type_id, !transition.inverse));
+        }
+    }
 }

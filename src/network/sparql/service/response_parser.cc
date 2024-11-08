@@ -2,37 +2,15 @@
 
 #include <string>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
-#include "graph_models/rdf_model/datatypes/decimal_inlined.h"
-#include "graph_models/rdf_model/rdf_model.h"
-#include "network/sparql/service/consume_api.h"
+#include "network/sparql/service/request.h"
 #include "query/executor/query_executor/sparql/ttl_writer.h"
-#include "storage/string_manager.h"
-#include "storage/tmp_manager.h"
+#include "query/query_context.h"
 
 using namespace std;
-
-// Method to calculate an ObjectID when id fits inline (for any variable type).
-// Returns the inline ID.
-// The size parameter varies depending on the variable type.
-inline uint64_t get_inline_id(const string& value, uint8_t size) {
-    uint64_t inline_id  = 0;
-    int shift_size = 8 * (size - 1);
-    for (uint8_t byte : value) {
-        uint64_t byte64 = static_cast<uint64_t>(byte);
-        inline_id  |= byte64 << shift_size;
-        shift_size -= 8;
-    }
-    return inline_id;
-}
-
 
 ResponseParser::ResponseParser(
     std::string&&                    query,
@@ -68,13 +46,16 @@ void ResponseParser::begin(Binding& parent_binding) {
     string port = https ? "443" : "80";
     auto   start_request = chrono::system_clock::now();
 
-    response_status  = consume(https, host, port, target, body, response, format); // send request
+    response_status = SPARQL::send_service_request(https, host, port, target, body, response, format);
     request_duration += chrono::system_clock::now() - start_request;
     if (response.empty()) {
         throw runtime_error("Empty response");
     }
     if (response_status != 200) {
-        throw runtime_error("Bad Request to " + host + " with HTTP response status code: " + to_string(response_status));
+        throw runtime_error("Bad Request to "
+            + host
+            + " with HTTP response status code: "
+            + to_string(response_status));
     }
 
     auto start_parse = chrono::system_clock::now();
@@ -179,7 +160,7 @@ bool ResponseParser::parse_iri_and_body(string& host, string& target, string& bo
         current_iri = std::get<std::string>(var_or_iri);
     } else {
         auto oid = (*parent_binding)[std::get<VarId>(var_or_iri)];
-        if (oid.get_generic_type() != ObjectId::MASK_IRI) {
+        if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI) {
             throw runtime_error("SERVICE VAR is not a SPARQL endpoint");
         }
 
@@ -212,7 +193,7 @@ bool ResponseParser::parse_iri_and_body(string& host, string& target, string& bo
     values_body << ("{(");
     for (auto var_id : fixed_vars) {
         auto oid = (*parent_binding)[var_id];
-        if (not oid.is_null()) {
+        if (!oid.is_null()) {
             auto var_name = get_query_ctx().get_var_name(var_id);
             values_header += " ?" + var_name;
 
@@ -276,7 +257,7 @@ bool ResponseParser::extract_object_xml() {
         string attr_name = attr.second.get<string>("<xmlattr>.name");
         bool found;
         auto var_id = get_query_ctx().get_var(attr_name, &found);
-        if (found and scope_vars.find(var_id) != scope_vars.end()) {
+        if (found && scope_vars.find(var_id) != scope_vars.end()) {
             string attr_type, attr_value, extra_data = "";
             if (attr.second.count("literal")) { // checks if there is a literal child before extracting it
                 attr_type = "literal";
@@ -424,7 +405,7 @@ bool ResponseParser::response_automata() {
             }
             bool found;
             auto var_id = get_query_ctx().get_var(header[header_index], &found);
-            if (found and scope_vars.find(var_id) != scope_vars.end()) {
+            if (found && scope_vars.find(var_id) != scope_vars.end()) {
                 parent_binding->add(var_id, object_id); // update parent binding
             }
             attr_value.clear();
@@ -546,272 +527,35 @@ bool ResponseParser::response_automata() {
 }
 
 
+ObjectId get_ill_typed(const string& str, const string& datatype) {
+    return SPARQL::Conversions::pack_string_datatype(datatype, str);
+}
+
+
 // Method to get an ObjectId given the type of the attribute.
 // Returns the built ObjectId.
 // All variable types from the specification can be built.
 ObjectId ResponseParser::get_object_id(const string& attr_type,
                                        const string& attr_value,
-                                       const string& extra_data) {
+                                       const string& extra_data)
+{
     string new_type = "";
     if (attr_type == "datatype") {
-        const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
-
-        bool is_xml_schema = false;
-        if (extra_data.size() > xml_schema.size()) {
-            is_xml_schema = extra_data.substr(0, xml_schema.size()) == xml_schema;
-        }
-
-        if (!is_xml_schema) {
-            uint64_t datatype_id = get_datatype_id(extra_data);
-            if (attr_value.size() <= ObjectId::STR_DT_INLINE_BYTES) {
-                uint64_t inline_id = get_inline_id(attr_value, ObjectId::STR_DT_INLINE_BYTES);
-                return ObjectId(ObjectId::MASK_STRING_DATATYPE_INLINED | datatype_id | inline_id);
-            } else {
-                uint64_t external_id = string_manager.get_str_id(attr_value, false);
-                if (external_id != ObjectId::MASK_NOT_FOUND) {
-                    return ObjectId(ObjectId::MASK_STRING_DATATYPE_EXTERN | datatype_id | external_id);
-                } else {
-                    uint64_t temporal_id = tmp_manager.get_str_id(attr_value);
-                    return ObjectId(ObjectId::MASK_STRING_DATATYPE_TMP | datatype_id | temporal_id);
-                }
-            }
-        }
-
-        auto xsd_suffix = extra_data.substr(xml_schema.size());
-
-        if (xsd_suffix == "boolean") {
-            if (attr_value == "true" || attr_value == "1") {
-                return ObjectId(ObjectId::MASK_BOOL | 0x01);
-            } else if (attr_value == "false" || attr_value == "0") {
-                return ObjectId(ObjectId::MASK_BOOL | 0x00);
-            } else {
-                throw runtime_error("Unsupported boolean value: " + attr_value);
-            }
-
-        } else if (xsd_suffix == "date") {
-            uint64_t datetime_id = DateTime::from_date(attr_value.c_str());
-            if (datetime_id == ObjectId::NULL_ID) {
-                throw runtime_error("Invalid date value: " + attr_value);
-            }
-            return ObjectId(datetime_id);
-
-        } else if (xsd_suffix == "time") {
-            uint64_t datetime_id = DateTime::from_time(attr_value.c_str());
-            if (datetime_id == ObjectId::NULL_ID) {
-                throw runtime_error("Invalid time value: " + attr_value);
-            }
-            return ObjectId(datetime_id);
-
-        } else if (xsd_suffix == "dateTime") {
-            uint64_t datetime_id = DateTime::from_dateTime(attr_value.c_str());
-            if (datetime_id == ObjectId::NULL_ID) {
-                throw runtime_error("Invalid dateTime value: " + attr_value);
-            }
-            return ObjectId(datetime_id);
-
-        } else if (xsd_suffix == "dateTimeStamp") {
-            uint64_t datetime_id = DateTime::from_dateTime(attr_value.c_str());
-            if (datetime_id == ObjectId::NULL_ID) {
-                throw runtime_error("Invalid dateTimeStamp value: " + attr_value);
-            }
-            return ObjectId(datetime_id);
-
-        } else if (xsd_suffix == "float") {
-            auto f = stof(attr_value);
-            static_assert(sizeof(f) == 4);
-            unsigned char bytes[sizeof(f)];
-            memcpy(bytes, &f, sizeof(f));
-            uint64_t inline_id  = 0;
-            int shift_size      = 0;
-            for (uint64_t byte : bytes) {
-                inline_id |= byte << shift_size;
-                shift_size += 8;
-            }
-            return ObjectId(ObjectId::MASK_FLOAT | inline_id);
-
-        } else if (xsd_suffix == "double") {
-            try {
-                double d = std::stod(attr_value);
-                static_assert(sizeof(d) == 8);
-                return SPARQL::Conversions::pack_double(d);
-            } catch (const std::out_of_range& e) {
-                throw runtime_error("Invalid decimal value: " + attr_value);
-            } catch (const std::invalid_argument& e) {
-                throw runtime_error("Invalid decimal value: " + attr_value);
-            }
-
-        } else if (xsd_suffix == "decimal") {
-            uint64_t decimal_id = DecimalInlined::get_decimal_id(attr_value.c_str());
-            if (decimal_id != DecimalInlined::INVALID_ID) {
-                return ObjectId(ObjectId::MASK_DECIMAL_INLINED | decimal_id);
-            } else {
-                bool error;
-                Decimal decimal(attr_value, &error);
-                if (error) {
-                     throw runtime_error("Invalid decimal value: " + attr_value);
-                }
-                auto normalized_decimal = decimal.to_external();
-                uint64_t external_id    = string_manager.get_str_id(normalized_decimal, false);
-                if (external_id != ObjectId::MASK_NOT_FOUND) {
-                    return ObjectId(ObjectId::MASK_DECIMAL_EXTERN | external_id);
-                } else {
-                    uint64_t temporal_id = tmp_manager.get_str_id(normalized_decimal);
-                    return ObjectId(ObjectId::MASK_DECIMAL_TMP | temporal_id);
-                }
-            }
-
-        } else if (xsd_suffix == "integer"
-                || xsd_suffix == "long"
-                || xsd_suffix == "int"
-                || xsd_suffix == "short"
-                || xsd_suffix == "byte"
-                || xsd_suffix == "nonPositiveInteger"
-                || xsd_suffix == "negativeInteger"
-                || xsd_suffix == "nonNegativeInteger"
-                || xsd_suffix == "unsignedLong"
-                || xsd_suffix == "unsignedInt"
-                || xsd_suffix == "unsignedShort") {
-            auto i = stoll(attr_value);
-            // If the integer uses more than 56 bits, it must be converted into Decimal Extern or Temporal (overflow)
-            if (i < -0x00FF'FFFF'FFFF'FFFF || i > 0x00FF'FFFF'FFFF'FFFF) { // TODO: rewrite the conditions
-                bool error;
-                Decimal dec(attr_value, &error);
-                if (error) {
-                    throw runtime_error("Invalid integer value: " + attr_value);
-                }
-                return SPARQL::Conversions::pack_decimal(dec);
-            } else if (i < 0) {
-                i *= -1;
-                i = (~i) & ObjectId::VALUE_MASK;
-                return ObjectId(ObjectId::MASK_NEGATIVE_INT | i);
-            } else {
-                return ObjectId(ObjectId::MASK_POSITIVE_INT | i);
-            }
-
-        } else if (xsd_suffix == "string") { // datatype not added in any format
-            new_type = "literal";
-
-        } else {
-            uint64_t datatype_id = get_datatype_id(extra_data);
-            if (attr_value.size() <= ObjectId::STR_DT_INLINE_BYTES) {
-                uint64_t inline_id = get_inline_id(attr_value, ObjectId::STR_DT_INLINE_BYTES);
-                return ObjectId(ObjectId::MASK_STRING_DATATYPE_INLINED | datatype_id | inline_id);
-            } else {
-                uint64_t external_id = string_manager.get_str_id(attr_value, false);
-                if (external_id != ObjectId::MASK_NOT_FOUND) {
-                    return ObjectId(ObjectId::MASK_STRING_DATATYPE_EXTERN | datatype_id | external_id);
-                } else {
-                    uint64_t temporal_id = tmp_manager.get_str_id(attr_value);
-                    return ObjectId(ObjectId::MASK_STRING_DATATYPE_TMP | datatype_id | temporal_id);
-                }
-            }
-        }
+        return SPARQL::Conversions::try_pack_string_datatype(extra_data, attr_value);
     }
 
     if (attr_type == "uri") {
-        string sliced_attr = attr_value;
-        uint8_t prefix_id  = get_prefix_id(sliced_attr); // sliced_attr gets sliced
-        uint64_t shifted_prefix_id = static_cast<uint64_t>(prefix_id) << 48;
-        if (sliced_attr.size() <= ObjectId::IRI_INLINE_BYTES) {
-            uint64_t inline_id = get_inline_id(sliced_attr, ObjectId::IRI_INLINE_BYTES);
-            return ObjectId(ObjectId::MASK_IRI_INLINED | shifted_prefix_id | inline_id);
-        } else {
-            uint64_t external_id = string_manager.get_str_id(sliced_attr, false);
-            if (external_id != ObjectId::MASK_NOT_FOUND) {
-                return ObjectId(ObjectId::MASK_IRI_EXTERN | shifted_prefix_id | external_id);
-            } else {
-                uint64_t temporal_id = tmp_manager.get_str_id(sliced_attr);
-                return ObjectId(ObjectId::MASK_IRI_TMP | shifted_prefix_id | temporal_id);
-            }
-        }
-
+        return SPARQL::Conversions::pack_iri(attr_value);
     } else if (new_type == "literal" || attr_type == "literal") {
-        if (attr_value.size() <= ObjectId::STR_INLINE_BYTES) {
-            uint64_t inline_id = get_inline_id(attr_value, ObjectId::STR_INLINE_BYTES);
-            return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED | inline_id);
-        } else {
-            uint64_t external_id = string_manager.get_str_id(attr_value, false);
-            if (external_id != ObjectId::MASK_NOT_FOUND) {
-                return ObjectId(ObjectId::MASK_STRING_SIMPLE_EXTERN | external_id);
-            } else {
-                uint64_t temporal_id = tmp_manager.get_str_id(attr_value);
-                return ObjectId(ObjectId::MASK_STRING_SIMPLE_TMP | temporal_id);
-            }
-        }
-
+        return SPARQL::Conversions::pack_string_simple(attr_value);
     } else if (attr_type == "lang") {
-        uint64_t language_id = get_language_id(extra_data);
-        if (attr_value.size() <= ObjectId::STR_LANG_INLINE_BYTES) {
-            uint64_t inline_id = get_inline_id(attr_value, ObjectId::STR_LANG_INLINE_BYTES);
-            return ObjectId(ObjectId::MASK_STRING_LANG_INLINED | language_id | inline_id);
-        } else {
-            uint64_t external_id = string_manager.get_str_id(attr_value, false);
-            if (external_id != ObjectId::MASK_NOT_FOUND) {
-                return ObjectId(ObjectId::MASK_STRING_LANG_EXTERN | language_id | external_id);
-            } else {
-                uint64_t temporal_id = tmp_manager.get_str_id(attr_value);
-                return ObjectId(ObjectId::MASK_STRING_LANG_TMP | language_id | temporal_id);
-            }
-        }
-
-    } else /*if (attr_type == "bnode")*/ {
+        return SPARQL::Conversions::pack_string_lang(extra_data, attr_value);
+    } else if (attr_type == "bnode") {
         uint64_t bnode_id = get_bnode_id(attr_value);
-        return ObjectId(ObjectId::MASK_ANON_TMP | bnode_id);
+        return SPARQL::Conversions::pack_blank_tmp(bnode_id);
+    } else {
+        return ObjectId::get_null();
     }
-}
-
-
-// Method to get the catalog prefix_id for a given URI (value parameter).
-// Returns the prefix ID.
-// Value get its prefix sliced inside this method.
-uint8_t ResponseParser::get_prefix_id(string& value) {
-    uint8_t prefix_id = 0;
-    for (auto& prefix : rdf_model.catalog().prefixes) {
-        if (value.compare(0, prefix.size(), prefix) == 0) {
-            value = value.substr(prefix.size(), value.size() - prefix.size());
-            break;
-        }
-        ++prefix_id;
-    }
-    return prefix_id;
-}
-
-
-// Method to get the ID for a given datatype from the catalog or temporal manager.
-// Returns the datatype ID shifted.
-// The most significant bit indicates if it comes from the catalog (0) or temporal manager (1).
-uint64_t ResponseParser::get_datatype_id(const string& value) {
-    uint64_t datatype_id = 0;
-    bool found = false;
-    for (auto& datatype : rdf_model.catalog().datatypes) {
-        if (value == datatype) {
-            found = true;
-            break;
-        }
-        ++datatype_id;
-    }
-    if (found) return datatype_id << 40;
-    datatype_id = tmp_manager.get_dtt_id(value);
-    return (ObjectId::MASK_TAG_MANAGER | datatype_id) << 40;
-}
-
-
-// Method to get the ID for a given language from the catalog or temporal manager.
-// Returns the language ID shifted.
-// The most significant bit indicates if it comes from the catalog (0) or temporal manager (1).
-uint64_t ResponseParser::get_language_id(const string& value) {
-    uint64_t language_id = 0;
-    bool found = false;
-    for (auto& language : rdf_model.catalog().languages) {
-        if (value == language) {
-            found = true;
-            break;
-        }
-        ++language_id;
-    }
-    if (found) return language_id << 40;
-    language_id = tmp_manager.get_lan_id(value);
-    return (ObjectId::MASK_TAG_MANAGER | language_id) << 40;
 }
 
 

@@ -27,9 +27,5 @@ public:
     bool has_aggregation() const override {
         return expr->has_aggregation();
     }
-
-    virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
-        return os << std::string(indent, ' ') << "ENCODE_FOR_URI(" << *expr << ')';
-    }
 };
 } // namespace SPARQL

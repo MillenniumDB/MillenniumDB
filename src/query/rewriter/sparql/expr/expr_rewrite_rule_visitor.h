@@ -57,7 +57,6 @@ public:
     // {}
     void visit(ExprVar&)         override {}
     void visit(ExprAggCountAll&) override {}
-    void visit(ExprObjectId&)    override {}
     void visit(ExprTerm&)        override {}
     void visit(ExprBound&)       override {}
     void visit(ExprStrUUID&)     override {}

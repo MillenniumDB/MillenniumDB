@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstdint>
 
-#include "third_party/robin_hood/robin_hood.h"
+#include <boost/unordered_map.hpp>
 
 namespace Import {
 template<size_t N>
@@ -56,7 +56,7 @@ public:
     size_t count   = 0;
     size_t current = 0;
 
-    robin_hood::unordered_map<uint64_t, uint64_t> dict;
+    boost::unordered_map<uint64_t, uint64_t> dict;
 
     void process_tuple(const std::array<uint64_t, N>& tuple) override {
         all++;
@@ -87,8 +87,8 @@ public:
     uint64_t distinct_values = 0;
     uint64_t current_key     = 0;
 
-    robin_hood::unordered_map<uint64_t, uint64_t> map_key_count;
-    robin_hood::unordered_map<uint64_t, uint64_t> map_distinct_values;
+    boost::unordered_map<uint64_t, uint64_t> map_key_count;
+    boost::unordered_map<uint64_t, uint64_t> map_distinct_values;
 
     void process_tuple(const std::array<uint64_t, 3>& tuple) override {
         all++;
@@ -127,7 +127,7 @@ public:
     uint64_t                                      all = 0;
     uint64_t                                      current_label = 0;
     uint64_t                                      label_count   = 0;
-    robin_hood::unordered_map<uint64_t, uint64_t> map_label_count;
+    boost::unordered_map<uint64_t, uint64_t> map_label_count;
 
     void process_tuple(const std::array<uint64_t, 2>& tuple) override {
         all++;
@@ -153,12 +153,14 @@ public:
 
 class PredicateStat : public StatsProcessor<3> {
 public:
-    uint64_t                                      current_predicate = 0;
-    uint64_t                                      predicate_count   = 0;
-    uint64_t                                      distinct_values   = 0;
-    robin_hood::unordered_map<uint64_t, uint64_t> map_predicate_count;
+    uint64_t all_count = 0;
+    uint64_t current_predicate = 0;
+    uint64_t predicate_count   = 0;
+    // uint64_t distinct_values   = 0;
+    boost::unordered_map<uint64_t, uint64_t> map_predicate_count;
 
     void process_tuple(const std::array<uint64_t, 3>& tuple) override {
+        all_count++;
         if (tuple[0] == current_predicate) {
             ++predicate_count;
         } else {
@@ -168,7 +170,7 @@ public:
             }
             current_predicate = tuple[0];
             predicate_count   = 1;
-            ++distinct_values;
+            // ++distinct_values;
         }
     }
 

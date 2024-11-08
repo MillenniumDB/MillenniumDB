@@ -3,12 +3,25 @@
 #include <memory>
 #include <vector>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 
 namespace SPARQL {
+
+enum class ConcatStatus {
+    UNSET,
+    LANG,
+    XSD,
+    SIMPLE
+};
+
+// https://www.w3.org/TR/sparql11-query/#func-concat
+// If all input literals are typed literals of type xsd:string, then the returned
+// literal is also of type xsd:string, if all input literals are plain literals
+// with identical language tag, then the returned literal is a plain literal
+// with the same language tag, in all other cases, the returned literal is a
+// simple literal.
 class BindingExprConcat : public BindingExpr {
 public:
     std::vector<std::unique_ptr<BindingExpr>> exprs;
@@ -17,69 +30,62 @@ public:
         exprs(std::move(exprs)) { }
 
     ObjectId eval(const Binding& binding) override {
-        int32_t     type = -3; // -3 unset, -2 xsd:string, -1 simple, >=0 lang
         std::string res;
+        std::string res_lang;
+
+        ConcatStatus status = ConcatStatus::UNSET;
 
         for (auto& expr : exprs) {
             auto expr_oid = expr->eval(binding);
-            switch (expr_oid.get_sub_type()) {
-            case ObjectId::MASK_STRING_SIMPLE: {
-                auto str = Conversions::unpack_string_simple(expr_oid);
+            switch (RDF_OID::get_generic_sub_type(expr_oid)) {
+            case RDF_OID::GenericSubType::STRING_SIMPLE: {
+                auto str = Conversions::unpack_string(expr_oid);
                 res += str;
-                type = -1;
+                status = ConcatStatus::SIMPLE;
                 break;
             }
-            case ObjectId::MASK_STRING_XSD: {
-                auto str = Conversions::unpack_string_xsd(expr_oid);
+            case RDF_OID::GenericSubType::STRING_XSD: {
+                auto str = Conversions::unpack_string(expr_oid);
                 res += str;
-                if (type == -3) {
-                    type = -2;
-                } else if (type != -2) {
-                    type = -1;
+                if (status == ConcatStatus::UNSET || status == ConcatStatus::XSD) {
+                    status = ConcatStatus::XSD;
+                } else {
+                    status = ConcatStatus::SIMPLE;
                 }
                 break;
             }
-            case ObjectId::MASK_STRING_LANG: {
-                auto [lang, str] = Conversions::unpack_string_lang(expr_oid);
+            case RDF_OID::GenericSubType::STRING_LANG: {
+                auto&& [lang, str] = Conversions::unpack_string_lang(expr_oid);
                 res += str;
-                if (type == -3) {
-                    type = lang;
-                } else if (type != lang) {
-                    type = -1;
+                if (status == ConcatStatus::UNSET) {
+                    res_lang = lang;
+                    status = ConcatStatus::LANG;
+                } else if (status != ConcatStatus::LANG || lang != res_lang) {
+                    status = ConcatStatus::SIMPLE;
                 }
                 break;
             }
-            default: {
-            }
+            default:
                 return ObjectId::get_null();
             }
         }
 
-        if (exprs.size() == 0) {
-            type = -1;
-        }
-
-        assert(type >= -2);
-        if (type == -1) {
+        switch (status) {
+        case ConcatStatus::UNSET:
+        case ConcatStatus::SIMPLE:
             return Conversions::pack_string_simple(res);
-        } else if (type == -2) {
+        case ConcatStatus::XSD:
             return Conversions::pack_string_xsd(res);
-        } else {
-            return Conversions::pack_string_lang(type, res);
+        case ConcatStatus::LANG:
+            return Conversions::pack_string_lang(res_lang, res);
+        default:
+            assert(false);
+            return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "CONCAT(";
-
-        for (size_t i = 0; i < exprs.size(); i++) {
-            if (i != 0) {
-                os << ", ";
-            }
-            os << *exprs[i];
-        }
-        os << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

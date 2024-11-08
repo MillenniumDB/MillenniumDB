@@ -2,9 +2,7 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/datetime.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -17,20 +15,23 @@ public:
 
     ObjectId eval(const Binding& binding) override {
         auto expr_oid = expr->eval(binding);
-        if (expr_oid.get_generic_type() != ObjectId::MASK_DT) {
+
+        switch(RDF_OID::get_generic_sub_type(expr_oid)) {
+        case RDF_OID::GenericSubType::DATE: {
+            bool error;
+            auto res = DateTime(expr_oid).get_hour(&error);
+            if (error) {
+                return ObjectId::get_null();
+            }
+            return Conversions::pack_int(res);
+        }
+        default:
             return ObjectId::get_null();
         }
-        bool error;
-        auto res = DateTime(expr_oid).get_hour(&error);
-        if (error) {
-            return ObjectId::get_null();
-        }
-        return Conversions::pack_int(res);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "HOURS(" << *expr << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

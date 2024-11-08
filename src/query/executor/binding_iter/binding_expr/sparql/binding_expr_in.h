@@ -1,22 +1,23 @@
 #pragma once
 
 #include <memory>
-#include <ostream>
 #include <vector>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/comparisons.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprIn : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> lhs_expr;
+
     std::vector<std::unique_ptr<BindingExpr>> exprs;
 
-    BindingExprIn(std::unique_ptr<BindingExpr> lhs_expr, std::vector<std::unique_ptr<BindingExpr>> exprs) :
-        lhs_expr(std::move(lhs_expr)),
-        exprs(std::move(exprs)) { }
+    BindingExprIn(std::unique_ptr<BindingExpr> lhs_expr,
+                  std::vector<std::unique_ptr<BindingExpr>> exprs) :
+        lhs_expr (std::move(lhs_expr)),
+        exprs    (std::move(exprs)) { }
 
     ObjectId eval(const Binding& binding) override {
         bool error = false;
@@ -32,27 +33,18 @@ public:
             if (expr_oid.is_null()) {
                 error = true;
             } else if (SPARQL::Comparisons::compare(lhs_oid, expr_oid) == 0) {
-                return ObjectId(ObjectId::BOOL_TRUE);
+                return Conversions::pack_bool(true);
             }
         }
         if (error) {
             return ObjectId::get_null();
         } else {
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return Conversions::pack_bool(false);
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "IN(";
-
-        for (size_t i = 0; i < exprs.size(); i++) {
-            if (i != 0) {
-                os << ", ";
-            }
-            os << *exprs[i];
-        }
-        os << ")";
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

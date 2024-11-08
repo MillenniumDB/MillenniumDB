@@ -12,7 +12,7 @@
 
 // KeyValueHash is used to save two vectors, key is a vector of type K and value a vector of type V, keys and values
 // must have a constant size.
-// Sorting buckets is optional, but needed if you want to use find_first method, otherwise you must search in all the 
+// Sorting buckets is optional, but needed if you want to use find_first method, otherwise you must search in all the
 // bucket to check if a key is present (and could be more than once)
 template <class K, class V>
 class KeyValueHash {
@@ -42,7 +42,7 @@ public:
     void split();
 
     uint_fast32_t get_bucket(const std::vector<K>& key) const;
-    void check_order();
+    // void check_order();
     void sort_bucket(uint_fast32_t bucket_number);
 
 private:
@@ -61,6 +61,6 @@ private:
 
     std::queue<uint_fast32_t> available_pages;
 
-    inline uint_fast32_t get_split_treshold() const noexcept { return max_tuples * (1 << depth); }
+    inline uint_fast32_t get_split_threshold() const noexcept { return max_tuples * (1 << depth); }
     uint_fast32_t get_new_page_number();
 };

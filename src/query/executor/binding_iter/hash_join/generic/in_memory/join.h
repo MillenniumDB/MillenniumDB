@@ -16,24 +16,24 @@ public:
     Join(
         std::unique_ptr<BindingIter> lhs_rel,
         std::unique_ptr<BindingIter> rhs_rel,
-        std::vector<VarId>&&           join_vars,
-        std::vector<VarId>&&           lhs_vars,
-        std::vector<VarId>&&           rhs_vars
+        std::vector<VarId>&&         join_vars,
+        std::vector<VarId>&&         lhs_vars,
+        std::vector<VarId>&&         rhs_vars
     );
 
     ~Join();
 
-    void analyze(std::ostream& os, int indent = 0) const override;
-    void begin(Binding& parent_binding) override;
-    bool next() override;
-    void reset() override;
+    void accept_visitor(BindingIterVisitor& visitor) override;
+    void _begin(Binding& parent_binding) override;
+    bool _next() override;
+    void _reset() override;
     void assign_nulls() override;
 
-private:
     // Optimizer decide which relation is rhs and which is lhs
     std::unique_ptr<BindingIter> rhs;
     std::unique_ptr<BindingIter> lhs;
 
+private:
     std::vector<VarId> join_vars;
     std::vector<VarId> lhs_vars;
     std::vector<VarId> rhs_vars;
@@ -74,8 +74,5 @@ private:
     uint64_t* last_pk_start;
     Key rhs_key;
     Key last_rhs_key;
-
-    // Results counter: to statistics
-    uint64_t found = 0;
 };
 }}}

@@ -19,8 +19,8 @@ TEST_SUITE_DIR = ROOT_TEST_DIR / "test_suites"
 SERVER_LOGS_DIR = ROOT_TEST_DIR / "tmp/server-logs"
 
 # Executables
-CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/create_db_sparql"
-SERVER_EXECUTABLE = CWD / "build/Debug/bin/server_sparql"
+CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/mdb-import"
+SERVER_EXECUTABLE = CWD / "build/Debug/bin/mdb-server"
 
 # Empty database used for some tests
 EMPTY_DB_DATA = TEST_SUITE_DIR / "empty_db.ttl"
@@ -58,17 +58,21 @@ INTERNAL_TESTS: List[str] = [
     "agg-numeric2",
     "misc",
     "bind_official",
+    "compression-old",
     "construct",
     "datetime",
     "describe",
+    "escape-unicode",
     "example",
     "existence",
     "ill-typed",
     "minus",
-    "negation-set-data",
     "nested",
     "optional",
+    "paths",
     "union",
+    "print",
+    "schemes",
     # "service",
 ]
 
@@ -86,10 +90,11 @@ ONLY_SPECIFIC_TESTS: List[Dict[str, Path]] = [
 IGNORED_TESTS = {
     # Property paths
     "sparql11/property-path/pp10.rq",
-    "sparql11/property-path/pp11.rq",
+    # "sparql11/property-path/pp11.rq",  # We dont have a duplicated result
     "sparql11/property-path/pp14.rq",  # This ignores 2 tests, both of which fail
-    "sparql11/property-path/path-p2.rq",
-    "sparql11/property-path/values_and_path.rq",
+    # unfixed nullable has a different semantic
+    # (we don't return all the database)
+    # "sparql11/property-path/path-p2.rq",  # We dont have a duplicated result
     "sparql11/property-path/nps_inverse.rq",
     "sparql11/property-path/nps_direct_and_inverse.rq",
     # Exact lexical representation of numeric types

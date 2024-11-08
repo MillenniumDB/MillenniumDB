@@ -1,0 +1,15 @@
+N1 int:1
+N2 int:2
+N3 int:30
+N4 int:400
+
+N1->X :t1 int:1
+N2->X :t1 int:2
+N2->X :t1 int:3
+N3->X :t1 int:4
+N3->X :t1 int:5
+N3->X :t1 int:6
+N4->X :t1 int:7
+N4->X :t1 int:8
+N4->X :t1 int:9
+N4->X :t1 int:10

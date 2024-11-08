@@ -30,13 +30,15 @@ private:
 
 public:
     void visit(OpBasicGraphPattern&) override;
-    // void visit(OpGroupBy&) override;
+    void visit(OpGroupBy&) override;
     void visit(OpMatch&) override;
     void visit(OpOptional&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSet&) override;
     void visit(OpWhere&) override;
+    void visit(OpProjectSimilarity&) override;
+    void visit(OpBruteSimilaritySearch&) override;
 
     void visit(OpInsert&) override { }
     void visit(OpEdge&) override { }
@@ -46,5 +48,6 @@ public:
     void visit(OpLabel&) override { }
     void visit(OpPath&) override { }
     void visit(OpProperty&) override { }
+    void visit(OpSimilaritySearch&) override { }
 };
 } // namespace MQL

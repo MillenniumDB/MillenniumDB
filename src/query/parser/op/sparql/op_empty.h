@@ -53,12 +53,8 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
         os << std::string(indent, ' ');
         if (deleted_op.has_value()) {
-            os << "OpEmpty(\n";
-            os << std::string(indent + 2, ' ');
-            os << "(Deleted)\n";
-            deleted_op.value()->print_to_ostream(os, indent+2);
-            os << std::string(indent, ' ');
-            os << ")\n";
+            os << "OpEmpty(Deleted)\n";
+            deleted_op.value()->print_to_ostream(os, indent + 2);
         }
         else {
             os << "OpEmpty()\n";

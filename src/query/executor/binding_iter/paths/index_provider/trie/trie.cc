@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "trie.h"
 
 using namespace std;
@@ -52,37 +50,37 @@ pair<uint64_t*, uint64_t*> Trie::query(uint64_t prefix) {
 }
 
 
-void Trie::print() {
-    cout << "Trie: \n" << endl;
+// void Trie::print(std::ostream& os) {
+//     os << "Trie: \n" << endl;
 
-    // Prefix level
-    cout << "L0: ";
-    for (size_t i = 0; i < prefix_lvl.size(); i++) {
-        cout << prefix_lvl[i] << ",";
-    }
-    cout << endl;
+//     // Prefix level
+//     os << "L0: ";
+//     for (size_t i = 0; i < prefix_lvl.size(); i++) {
+//         os << prefix_lvl[i] << ",";
+//     }
+//     os << endl;
 
-    // Data level
-    auto offset_idx = 1;
-    cout << "L1: *";
-    for (size_t i = 0; i < data_lvl.size(); i++) {
-        cout << data_lvl[i];
-        if (i + 1 == offsets[offset_idx]) {
-            offset_idx++;
-            cout << "*";
-        } else {
-            cout << ",";
-        }
-    }
-    cout << "\n" << endl;
-}
+//     // Data level
+//     auto offset_idx = 1;
+//     os << "L1: *";
+//     for (size_t i = 0; i < data_lvl.size(); i++) {
+//         os << data_lvl[i];
+//         if (i + 1 == offsets[offset_idx]) {
+//             offset_idx++;
+//             os << "*";
+//         } else {
+//             os << ",";
+//         }
+//     }
+//     os << "\n" << endl;
+// }
 
 
-void Trie::print_offsets() {
-    // Offsets
-    cout << "Offsets: \n" << endl;
-    for (size_t i = 0; i < prefix_lvl.size(); i++) {
-        cout << prefix_lvl[i] << ": (" << offsets[i] << "," << offsets[i + 1] << ")" << endl;
-    }
-    cout << endl;
-}
+// void Trie::print_offsets(std::ostream& os) {
+//     // Offsets
+//     os << "Offsets: \n" << endl;
+//     for (size_t i = 0; i < prefix_lvl.size(); i++) {
+//         os << prefix_lvl[i] << ": (" << offsets[i] << "," << offsets[i + 1] << ")" << endl;
+//     }
+//     os << endl;
+// }

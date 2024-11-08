@@ -26,11 +26,14 @@ public:
         object_assigned    (other.object_assigned),
         path_semantic      (other.path_semantic),
         automaton          (other.automaton),
-        automaton_inverted (other.automaton_inverted) { }
+        automaton_inverted (other.automaton_inverted),
+        cached_output_estimation_is_valid (other.cached_output_estimation_is_valid) { }
 
     std::unique_ptr<Plan> clone() const override {
         return std::make_unique<PathPlan>(*this);
     }
+
+    int relation_size() const override { return 3; }
 
     double estimate_cost() const override;
     double estimate_output_size() const override;
@@ -68,9 +71,15 @@ private:
     RPQ_DFA automaton;
     RPQ_DFA automaton_inverted;
 
+    mutable double cached_output_estimation;
+
+    mutable bool cached_output_estimation_is_valid = false;
+
+    double _estimate_output_size() const;
+
     // When we can start the path in either way, we want to choose the cheapest one
     // This method returns `automaton` or `automaton_inverted` depending on cardinality of
     // the outer transitions of the starting state
-    bool left_is_better_start_direction() const;
+    bool subject_is_better_start_direction() const;
 };
 } // namespace SPARQL

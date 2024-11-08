@@ -139,11 +139,20 @@ void OptimizeOptionalTree::visit(OpWhere& op_where) {
 }
 
 
-// void OptimizeOptionalTree::visit(OpGroupBy& op_group_by) {
-//     op_group_by.op->accept_visitor(*this);
-// }
+void OptimizeOptionalTree::visit(OpGroupBy& op_group_by) {
+    op_group_by.op->accept_visitor(*this);
+}
 
 
 void OptimizeOptionalTree::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
+}
+
+
+void OptimizeOptionalTree::visit(OpProjectSimilarity& op_project_similarity) {
+    op_project_similarity.op->accept_visitor(*this);
+}
+
+void OptimizeOptionalTree::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
+    op_brute_similarity_search.op->accept_visitor(*this);
 }

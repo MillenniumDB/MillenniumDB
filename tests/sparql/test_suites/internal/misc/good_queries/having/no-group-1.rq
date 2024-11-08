@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+
+SELECT ?s ?o
+WHERE {
+    ?s :t2 ?o
+}
+HAVING (?o > 1)

@@ -2,13 +2,13 @@
 
 #include <cassert>
 
-#include "query/executor/binding_iter/paths/path_manager.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnySimple;
 
 template <bool CYCLIC>
-void BFSEnum<CYCLIC>::begin(Binding& _parent_binding) {
+void BFSEnum<CYCLIC>::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -21,7 +21,7 @@ void BFSEnum<CYCLIC>::begin(Binding& _parent_binding) {
 
 
 template <bool CYCLIC>
-bool BFSEnum<CYCLIC>::next() {
+bool BFSEnum<CYCLIC>::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -39,7 +39,6 @@ bool BFSEnum<CYCLIC>::next() {
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state.path_state->node_id);
-            results_found++;
             return true;
         }
     }
@@ -53,7 +52,6 @@ bool BFSEnum<CYCLIC>::next() {
             auto path_id = path_manager.set_path(reached_final_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, reached_final_state->node_id);
-            results_found++;
             return true;
         } else {
             // Pop and visit next state
@@ -132,7 +130,7 @@ const PathState* BFSEnum<CYCLIC>::expand_neighbors(const SearchState& current_st
 
 
 template <bool CYCLIC>
-void BFSEnum<CYCLIC>::reset() {
+void BFSEnum<CYCLIC>::_reset() {
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -149,13 +147,8 @@ void BFSEnum<CYCLIC>::reset() {
 
 
 template <bool CYCLIC>
-void BFSEnum<CYCLIC>::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ');
-    if (CYCLIC) {
-        os << "Paths::AnySimple::BFSEnum<SIMPLE>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    } else {
-        os << "Paths::AnySimple::BFSEnum<ACYCLIC>(idx_searches: " << idx_searches << ", found: " << results_found << ")";
-    }
+void BFSEnum<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }
 
 

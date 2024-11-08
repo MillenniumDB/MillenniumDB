@@ -1,0 +1,22 @@
+U0 :basic code:"\u231A"
+U1 :basic code:"\U0001F34E"
+U2 :basic code:"\U0000270C\U0001F3FC \U0000270C\U0001F3FF"
+
+U3 :bad code:"\\U0001F34E"
+U4 :bad code:"\u01"
+U5 :bad code:"\u00pq"
+U11 :bad code:"\U00110001"
+
+U6 :misc code:"\u0061\u0062\u0020\u0062\u0063"
+U7 :misc code:"\U00000061\U00000062"
+U8 :misc code:"\u00a51000"
+U9 :misc code:"\u0Ca0_\u0Ca0"
+U10 :misc code:"\U0001F0A0\U0001F0A1\U0001F0B1\U0001F0C1\U0001F0D1"
+U12 :misc code:"the replacement \U00110001 works"
+
+U13 :datatype other:dateTime("\u0032010-10-10T10:10:10\u005a")
+
+U0->U1 :edge edge:"0 \u279c 1"
+U0->U3 :edge edge:"0 \U0001F8A1 3"
+
+"U\u0030"->"U\u0032" :idstring code:"idstring"

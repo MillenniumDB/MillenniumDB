@@ -4,7 +4,7 @@
 
 #include "query/executor/binding_iter/empty_binding_iter.h"
 
-void NestedLoopSemiJoin::begin(Binding& _parent_binding) {
+void NestedLoopSemiJoin::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
 
     lhs_binding = std::make_unique<Binding>(parent_binding->size);
@@ -26,11 +26,10 @@ void NestedLoopSemiJoin::begin(Binding& _parent_binding) {
         rhs = &empty_iter;
     }
     original_rhs->begin(*rhs_binding);
-    executions++;
 }
 
 
-bool NestedLoopSemiJoin::next() {
+bool NestedLoopSemiJoin::_next() {
     while (true) {
         if (rhs->next()) {
             bool match = true;
@@ -63,7 +62,6 @@ bool NestedLoopSemiJoin::next() {
                 for (auto& var: unsafe_join_vars) {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
-                result_count++;
                 return true;
             }
         } else {
@@ -80,7 +78,7 @@ bool NestedLoopSemiJoin::next() {
     }
 }
 
-void NestedLoopSemiJoin::reset() {
+void NestedLoopSemiJoin::_reset() {
     // copy assigned_safe_vars from parent_binding into lhs_binding and rhs_binding
     for (const auto& var : parent_safe_vars) {
         lhs_binding->add(var, (*parent_binding)[var]);
@@ -97,7 +95,6 @@ void NestedLoopSemiJoin::reset() {
     } else {
         rhs = &empty_iter;
     }
-    executions++;
 }
 
 
@@ -107,68 +104,6 @@ void NestedLoopSemiJoin::assign_nulls() {
 }
 
 
-void NestedLoopSemiJoin::analyze(std::ostream& os, int indent) const {
-    os << std::string(indent, ' ') << "NestedLoopSemiJoin(";
-
-    os << "executions:" << executions;
-    os << " found:" << result_count;
-
-    os << "; parent_safe_vars:";
-    auto first = true;
-    for (auto& var: parent_safe_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; lhs:";
-    first = true;
-    for (auto& var: lhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; safe_join_vars:";
-    first = true;
-    for (auto& var: safe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; unsafe_join_vars:";
-    first = true;
-    for (auto& var: unsafe_join_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << "; rhs:";
-    first = true;
-    for (auto& var: rhs_only_vars) {
-        if (first) {
-            first = false;
-        } else {
-            os << ",";
-        }
-        os << "?" << get_query_ctx().get_var_name(var);
-    }
-
-    os << ")\n";
-    lhs->analyze(os, indent + 2);
-    original_rhs->analyze(os, indent + 2);
+void NestedLoopSemiJoin::accept_visitor(BindingIterVisitor& visitor) {
+    visitor.visit(*this);
 }

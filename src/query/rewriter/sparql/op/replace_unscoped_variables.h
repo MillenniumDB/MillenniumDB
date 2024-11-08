@@ -34,7 +34,6 @@ public:
     void visit(OpSequence&)             override;
     void visit(OpAsk&)                  override;
     void visit(OpService&)              override;
-    void visit(OpWhere&)                override;
     void visit(OpBind&)                 override;
     void visit(OpValues&)               override;
     void visit(OpUnitTable&)            override;
@@ -51,7 +50,6 @@ public:
     void visit_and_replace_if_necessary(std::unique_ptr<Expr>& expr);
 
     void visit(SPARQL::ExprVar&)            override;
-    void visit(SPARQL::ExprObjectId&)       override;
     void visit(SPARQL::ExprTerm&)           override;
     void visit(SPARQL::ExprEqual&)          override;
     void visit(SPARQL::ExprNotEqual&)       override;

@@ -10,9 +10,7 @@ namespace MQL {
 
 class OpReturn : public Op {
 public:
-    static constexpr uint64_t DEFAULT_LIMIT = UINT64_MAX;
-
-    const std::unique_ptr<Op> op;
+    std::unique_ptr<Op> op;
 
     // Expr is nullptr when a single var is being projected
     std::vector<std::pair<VarId, std::unique_ptr<Expr>>> projection;
@@ -21,16 +19,20 @@ public:
 
     const uint64_t limit;
 
+    const uint64_t offset;
+
     OpReturn(
         std::unique_ptr<Op>                                   op,
         std::vector<std::pair<VarId,std::unique_ptr<Expr>>>&& projection,
         bool                                                  distinct,
-        uint64_t                                              limit
+        uint64_t                                              limit,
+        uint64_t                                              offset
     ) :
         op         (std::move(op)),
         projection (std::move(projection)),
         distinct   (distinct),
-        limit      (limit) { }
+        limit      (limit),
+        offset     (offset) { }
 
     virtual std::unique_ptr<Op> clone() const override {
         std::vector<std::pair<VarId,std::unique_ptr<Expr>>> projection_clone;
@@ -46,7 +48,8 @@ public:
             op->clone(),
             std::move(projection_clone),
             distinct,
-            limit
+            limit,
+            offset
         );
     }
 
@@ -56,24 +59,15 @@ public:
 
     std::set<VarId> get_all_vars() const override {
         auto res = op->get_all_vars();
-        // for (auto& return_item : return_items) {
-        //     for (auto& var : return_item->get_vars()) {
-        //         res.insert(var);
-        //     }
-        // }
         return res;
     }
 
     std::set<VarId> get_scope_vars() const override {
-        // TODO: mdb
-        // std::set<VarId> res;
-        // for (auto& return_item : return_items) {
-        //     for (auto& var : return_item->get_vars()) {
-        //         res.insert(var);
-        //     }
-        // }
-        // return res;
-        return { };
+        std::set<VarId> res;
+        for (auto&& [var, _] : projection) {
+            res.insert(var);
+        }
+        return res;
     }
 
     std::set<VarId> get_safe_vars() const override {
@@ -90,16 +84,26 @@ public:
         if (distinct) {
             os << "DISTINCT ";
         }
-        // bool first = true;
-        // for (const auto& return_item : return_items) {
-        //     if (!first)
-        //         os << ", ";
-        //     first = false;
-        //     os << *return_item;
-        // }
+        bool first = true;
+        for (auto&& [var, expr] : projection) {
+            if (!first) {
+                os << ", ";
+            }
+            first = false;
+
+            if (expr != nullptr) {
+                ExprPrinter printer(os);
+                expr->accept_visitor(printer);
+            } else {
+                os << var;
+            }
+        }
 
         if (limit != DEFAULT_LIMIT) {
             os << "; LIMIT " << limit;
+        }
+        if (offset != DEFAULT_OFFSET) {
+            os << "; OFFSET " << offset;
         }
         os << ")";
         os << "\n";

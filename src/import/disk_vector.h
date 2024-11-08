@@ -2,20 +2,20 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <queue>
 #include <stdexcept>
 #include <vector>
-#include <thread>
 
 #include "import/stats_processor.h"
-#include "storage/page.h"
+#include "macros/aligned_alloc.h"
+#include "storage/page/versioned_page.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
 
 namespace Import {
@@ -33,16 +33,21 @@ class DiskVector {
 public:
     DiskVector(const std::string& filename) :
         filename (filename),
-        buffer_size  (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t)),
-        buffer (reinterpret_cast<char*>(std::aligned_alloc(Page::MDB_PAGE_SIZE, buffer_size)))
+        buffer_size (VPage::SIZE*N*sizeof(uint64_t)),
+        buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size)))
     {
-        // TODO: throw exception if we can't order with 1 merge
         file.open(filename, std::ios::out|std::ios::app);
         if (file.fail()) {
             throw std::runtime_error("Could not open file " + filename);
         }
         file.close();
         file.open(filename, std::ios::in|std::ios::out|std::ios::binary);
+
+        compression_buffer = new char[VPage::SIZE*2];
+    }
+
+    ~DiskVector() {
+        delete[] compression_buffer;
     }
 
     // returns the tuple count
@@ -50,7 +55,7 @@ public:
                     std::array<uint64_t, N>&& new_permutation,
                     StatsProcessor<N>& stat_processor)
     {
-        reorder_cols(move(new_permutation));
+        reorder_cols(std::move(new_permutation));
         merge_sort(base_name, stat_processor);
     }
 
@@ -65,11 +70,11 @@ public:
                         std::array<uint64_t, N> original_permutation)
     {
         // free append buffer
-        free(buffer);
+        MDB_ALIGNED_FREE(buffer);
         current_permutation = original_permutation;
-        // buffer_size must be divisible by (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t)
-        auto max_blocks_per_run = max_buffer_size / (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
-        auto new_buffer_size = max_blocks_per_run * (Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
+        // buffer_size must be divisible by (VPage::SIZE*N*sizeof(uint64_t)
+        auto max_blocks_per_run = max_buffer_size / (VPage::SIZE*N*sizeof(uint64_t));
+        auto new_buffer_size = max_blocks_per_run * (VPage::SIZE*N*sizeof(uint64_t));
         this->buffer_size = new_buffer_size;
         buffer = new_buffer;
     }
@@ -91,7 +96,7 @@ public:
                     &record[0],
                     N * sizeof(uint64_t));
         buffer_append_current_pos++;
-        if (buffer_append_current_pos == Page::MDB_PAGE_SIZE) {
+        if (buffer_append_current_pos == VPage::SIZE) {
             file.write(buffer, buffer_size);
             buffer_append_current_pos = 0;
         }
@@ -105,7 +110,7 @@ public:
         file.seekg(0, file.beg);
         iter_current_tuple = 0;
         // set iter_buffer_offset so its 0 when next_tuple() is called the first time
-        iter_buffer_offset = Page::MDB_PAGE_SIZE - 1;
+        iter_buffer_offset = VPage::SIZE - 1;
     }
 
     bool has_next_tuple() {
@@ -113,13 +118,13 @@ public:
     }
 
     std::array<uint64_t, N>& next_tuple() {
-        // max tuples in buffer is Page::MDB_PAGE_SIZE
-        iter_buffer_offset = (iter_buffer_offset+1) % Page::MDB_PAGE_SIZE;
+        // max tuples in buffer is VPage::SIZE
+        iter_buffer_offset = (iter_buffer_offset+1) % VPage::SIZE;
         iter_current_tuple++;
 
         if (iter_buffer_offset == 0) {
             // leer del disco a buffer
-            file.read(buffer, Page::MDB_PAGE_SIZE*N*sizeof(uint64_t));
+            file.read(buffer, VPage::SIZE*N*sizeof(uint64_t));
             file.clear();
         }
         auto ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer) + iter_buffer_offset;
@@ -129,6 +134,10 @@ public:
 private:
     constexpr uint64_t division_round_up(uint64_t a, uint64_t b) {
         return (a / b) + (a % b != 0);
+    }
+
+    uint32_t get_page_size(std::bitset<N * 8> bitset, uint64_t leaf_records) {
+        return 2 * sizeof(uint32_t) + N + bitset.count() + leaf_records * (sizeof(uint64_t) * N - bitset.count());
     }
 
     void merge_sort(const std::string& base_name, StatsProcessor<N>& stat_processor) {
@@ -150,46 +159,80 @@ private:
             uint32_t leaf_current_block = 0;
             uint64_t current_tuple = 0;
             uint64_t valid_tuples = total_tuples - repeated_tuples;
+
+            std::bitset<N * 8> bitset_tmp;
+            std::bitset<N * 8> bitset;
+            uint32_t leaf_tuples = 0;
+
             while (current_tuple < valid_tuples) {
                 // skip first leaf from going into B+tree directory
                 if (current_tuple != 0) {
                     dir_writer.bulk_insert(ptr, 0, leaf_current_block);
                 }
 
+                char* first_record_ptr = (char*) ptr;
+                bitset_tmp.set();
+                bitset.set();
+
+                while (current_tuple + leaf_tuples < valid_tuples) {
+                    char* record_ptr = (char*) (ptr + leaf_tuples);
+
+                    for (size_t i = 0; i < sizeof(uint64_t) * N; ++i) {
+                        if (bitset_tmp[i] && record_ptr[i] != first_record_ptr[i]) {
+                            bitset_tmp.set(i, 0);
+                        }
+                    }
+
+                    if (get_page_size(bitset_tmp, leaf_tuples + 1) > VPage::SIZE) {
+                        break;
+                    }
+
+                    bitset = bitset_tmp;
+                    leaf_tuples++;
+                }
+
+                write_to_buffer(ptr, bitset, leaf_tuples);
+
                 uint64_t tuples_written;
-                if (current_tuple + leaf_writer.max_records < valid_tuples) {
+                if (current_tuple + leaf_tuples < valid_tuples) {
                     // this leaf is full and there are more leaves
-                    tuples_written = leaf_writer.max_records;
-                    leaf_writer.process_block(reinterpret_cast<char*>(ptr),
-                                              leaf_writer.max_records,
+                    tuples_written = leaf_tuples;
+                    leaf_writer.process_block(compression_buffer,
+                                              tuples_written,
+                                              bitset,
                                               ++leaf_current_block);
                 } else {
                     // last leaf
-                    tuples_written = valid_tuples - current_tuple;
-                    leaf_writer.process_block(reinterpret_cast<char*>(ptr),
+                    tuples_written = leaf_tuples;
+                    leaf_writer.process_block(compression_buffer,
                                               tuples_written,
+                                              bitset,
                                               0);
                 }
+
+
                 for (uint64_t i = 0; i < tuples_written; i++) {
                     stat_processor.process_tuple(*(ptr + i));
                 }
                 // Its better to sum a compile-time constant than a variable (tuples_written)
                 // doesn't matter when we overflow
-                current_tuple += leaf_writer.max_records;
-                ptr += leaf_writer.max_records;
+                leaf_tuples = 0;
+                current_tuple += tuples_written;
+                ptr += tuples_written;
             }
+
             return;
         }
 
         // A run is a set of ordered tuples (ordered when method reorder_cols was called)
         // A run is divided in blocks. Tuples from disk are read 1 block at a time
         // buffer_size was chosen to be a multiple of block_size
-        const uint64_t block_size = Page::MDB_PAGE_SIZE*N*sizeof(uint64_t);
+        constexpr uint64_t block_size = VPage::SIZE*N*sizeof(uint64_t);
 
         const uint64_t total_runs = division_round_up(file_length, buffer_size);
         const uint64_t total_blocks = division_round_up(file_length, block_size);
 
-        const uint64_t max_tuples_per_block = Page::MDB_PAGE_SIZE;
+        const uint64_t max_tuples_per_block = VPage::SIZE;
         const uint64_t max_blocks_per_run = buffer_size / block_size;
 
         const uint64_t tuples_in_last_block = (total_tuples % max_tuples_per_block == 0)
@@ -200,18 +243,13 @@ private:
                                             ? max_blocks_per_run
                                             : (total_blocks % max_blocks_per_run);
 
-        assert(total_runs*block_size + (BPTLeafWriter<N>::max_records*N*sizeof(uint64_t)) <= buffer_size);
+
+        // throw exception if we can't order with 1 merge
+        if (total_runs*block_size + (BPTLeafWriter<N>::max_records*N*sizeof(uint64_t)) > buffer_size) {
+            throw std::logic_error("Can't order tuples with one merge, need a bigger buffer size.");
+        }
 
         // When we have only one run we skip the merge
-        // std::cout << base_name << ":\n";
-        // std::cout << "  total_tuples: " << total_tuples << "\n";
-        // std::cout << "  block_size: " << block_size << "\n";
-        // std::cout << "  total_runs: " << total_runs << "\n";
-        // std::cout << "  total_blocks: " << total_blocks << "\n";
-        // std::cout << "  max_tuples_per_block: " << max_tuples_per_block << "\n";
-        // std::cout << "  tuples_in_last_block: " << tuples_in_last_block << "\n";
-        // std::cout << "  blocks_in_last_run: " << blocks_in_last_run << "\n";
-
         std::priority_queue<std::pair<std::array<uint64_t, N>, uint64_t>,               // tuple: (record, run_number)
                             std::vector< std::pair<std::array<uint64_t, N>, uint64_t>>, // container
                             RunRecordComparator<N>                                      // comparator
@@ -268,31 +306,61 @@ private:
         std::array<uint64_t, N> last_seen_record; // used to remove duplicates
         for (uint64_t i = 0; i < N; i++) { last_seen_record[i] = UINT64_MAX; }
 
+        std::bitset<N * 8> bitset_tmp;
+        std::bitset<N * 8> bitset;
+        bitset_tmp.set();
+        bitset.set();
+
+        std::array<uint64_t, N> first_record = queue.top().first;
+        char* first_record_ptr = (char*) &first_record;
+
         // Merge runs
         while (!queue.empty()) {
             const auto queue_top_pair = queue.top();
             queue.pop();
 
-            if (output_block_curr == BPTLeafWriter<N>::max_records) {
+            // add tuple to output only if distinct
+            if (queue_top_pair.first != last_seen_record) {
+                last_seen_record = queue_top_pair.first;
+                stat_processor.process_tuple(last_seen_record);
+                char* record_ptr = (char*) &last_seen_record;
+
+                // update the bitset
+                for (size_t i = 0; i < sizeof(uint64_t) * N; ++i) {
+                    if (bitset_tmp[i] && record_ptr[i] != first_record_ptr[i]) {
+                        bitset_tmp.set(i, 0);
+                    }
+                }
+
+                output_block[output_block_curr] = queue_top_pair.first;
+                output_block_curr++;
+            }
+
+            if (get_page_size(bitset_tmp, output_block_curr) > VPage::SIZE) {
                 // skip first leaf
                 if (leaf_current_block > 0) {
                     dir_writer.bulk_insert(output_block, 0, leaf_current_block);
                 }
+
+                write_to_buffer(output_block, bitset, output_block_curr - 1);
+
                 ++leaf_current_block;
                 uint32_t next_bpt_block = leaf_current_block < leaf_last_block ? leaf_current_block : 0;
-                leaf_writer.process_block((char*)output_block,
-                                          leaf_writer.max_records,
+                leaf_writer.process_block(compression_buffer,
+                                          output_block_curr - 1,
+                                          bitset,
                                           next_bpt_block);
-                output_block_curr = 0;
+
+
+                output_block[0] = last_seen_record;
+                output_block_curr = 1;
+                first_record = last_seen_record;
+                first_record_ptr = (char*) &first_record;
+                bitset_tmp.set();
+                bitset.set();
             }
 
-            // add tuple to output only if distinct
-            if (queue_top_pair.first != last_seen_record) {
-                last_seen_record = queue_top_pair.first;
-                stat_processor.process_tuple(queue_top_pair.first);
-                output_block[output_block_curr] = queue_top_pair.first;
-                output_block_curr++;
-            }
+            bitset = bitset_tmp;
 
             const auto min_run = queue_top_pair.second;
             current_pos[min_run]++;
@@ -326,7 +394,8 @@ private:
             if (leaf_current_block > 0) {
                 dir_writer.bulk_insert(output_block, 0, leaf_current_block);
             }
-            leaf_writer.process_block((char*)output_block, output_block_curr, 0);
+            write_to_buffer(output_block, bitset, output_block_curr);
+            leaf_writer.process_block(compression_buffer, output_block_curr, bitset, 0);
         }
 
         // delete aux arrays
@@ -337,6 +406,37 @@ private:
         delete[](end_block);
 
         return;
+    }
+
+
+    void write_to_buffer(std::array<uint64_t, N>* records_buffer, std::bitset<N * 8> bitset, uint32_t n_records) {
+        uint64_t buffer_pos = 0;
+
+        // bitset
+        unsigned long bits_ul = bitset.to_ulong();
+        memcpy(compression_buffer, &bits_ul, N);
+        buffer_pos += N;
+
+        char* first_record_ptr = (char*) records_buffer;
+
+        // redundant bytes
+        for (size_t i = 0; i < N * 8; ++i) {
+            if (bitset[i]) {
+                compression_buffer[buffer_pos] = first_record_ptr[i];
+                buffer_pos++;
+            }
+        }
+
+        // non redundant bytes of each record
+        for (uint32_t i = 0; i < n_records; ++i) {
+            char* record_ptr = (char*) (records_buffer + i);
+            for (size_t j = 0; j < N * 8; ++j) {
+                if (!bitset[j]) {
+                    compression_buffer[buffer_pos] = record_ptr[j];
+                    buffer_pos++;
+                }
+            }
+        }
     }
 
 
@@ -355,17 +455,6 @@ private:
             file.read(buffer, std::min(buffer_size, remaining));
             uint64_t read_size = file.gcount();
             auto write_size = read_size;
-
-            // if (!file.good()) {
-            //     std::cout << "WARNING: file not good after read\n";
-            //     if (file.eof()) {
-            //         std::cout << "  file EOF\n";
-            //     }
-            //     if (file.fail()) {
-            //         std::cout << "  file FAIL\n";
-            //     }
-            //     std::cout << "read_size: " << read_size << "\n";
-            // }
 
             reorder_chunk(read_size, new_permutation);
             auto beg_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
@@ -389,32 +478,14 @@ private:
                     }
                     write_ptr++;
                 }
-                // if (write_size > read_size) {
-                //     std::cout << "ERROR write_size overflow \n";
-                // }
             }
 
             file.seekg(write_pos, file.beg);
             file.write(buffer, write_size);
 
-            // if (!file.good()) {
-            //     std::cout << "WARNING: file not good after write\n";
-            //     if (file.eof()) {
-            //         std::cout << "  file EOF\n";
-            //     }
-            //     if (file.fail()) {
-            //         std::cout << "  file FAIL\n";
-            //     }
-            //     std::cout << "write_size: " << write_size << "\n";
-            // }
-
             remaining -= read_size;
             read_pos += read_size;
             write_pos += write_size;
-            // if (write_pos > read_pos) {
-            //     std::cout << "ERROR: write_pos > read_pos\n";
-            // }
-
         }
         current_permutation = std::move(new_permutation);
     }
@@ -556,6 +627,7 @@ private:
     uint64_t iter_buffer_offset;
 
     char* buffer;
+    char* compression_buffer;
 
     // will be set and used only when total_runs = 1
     uint64_t repeated_tuples = 0;

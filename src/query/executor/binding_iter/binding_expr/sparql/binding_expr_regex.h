@@ -3,11 +3,8 @@
 #include <cstddef>
 #include <memory>
 #include <regex>
-#include <sstream>
-#include <string>
 
 #include "query/exceptions.h"
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -18,8 +15,14 @@ public:
     std::unique_ptr<BindingExpr> expr2;
     std::unique_ptr<BindingExpr> expr3;
 
-    BindingExprRegex(std::unique_ptr<BindingExpr> expr1, std::unique_ptr<BindingExpr> expr2, std::unique_ptr<BindingExpr> expr3) :
-        expr1(std::move(expr1)), expr2(std::move(expr2)), expr3(std::move(expr3)) { }
+    BindingExprRegex(
+        std::unique_ptr<BindingExpr> expr1,
+        std::unique_ptr<BindingExpr> expr2,
+        std::unique_ptr<BindingExpr> expr3
+    ) :
+        expr1(std::move(expr1)),
+        expr2(std::move(expr2)),
+        expr3(std::move(expr3)) { }
 
     ObjectId eval(const Binding& binding) override {
         auto expr1_oid = expr1->eval(binding);
@@ -34,37 +37,36 @@ public:
         std::string expr2_str;
         std::string expr3_str;
 
-        switch (expr1_oid.get_sub_type()) {
-        case ObjectId::MASK_STRING_SIMPLE: {
-            expr1_str = Conversions::unpack_string_simple(expr1_oid);
+        switch (RDF_OID::get_generic_sub_type(expr1_oid)) {
+        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        case RDF_OID::GenericSubType::STRING_XSD:
+            expr1_str = Conversions::unpack_string(expr1_oid);
             break;
         }
-        case ObjectId::MASK_STRING_XSD: {
-            expr1_str = Conversions::unpack_string_xsd(expr1_oid);
-            break;
-        }
-        case ObjectId::MASK_STRING_LANG: {
-            auto [lid, str] = Conversions::unpack_string_lang(expr1_oid);
-            expr1_str       = str;
+        case RDF_OID::GenericSubType::STRING_LANG: {
+            auto&& [lang, str] = Conversions::unpack_string_lang(expr1_oid);
+            expr1_str = str;
             break;
         }
         default:
             return ObjectId::get_null();
         }
 
-        if (expr2_oid.get_sub_type() != ObjectId::MASK_STRING_SIMPLE) {
+        if (RDF_OID::get_generic_sub_type(expr2_oid) != RDF_OID::GenericSubType::STRING_SIMPLE) {
             return ObjectId::get_null();
         }
-        if (expr3 && expr3_oid.get_sub_type() != ObjectId::MASK_STRING_SIMPLE) {
+        if (expr3 != nullptr &&
+            RDF_OID::get_generic_sub_type(expr3_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
+        {
             return ObjectId::get_null();
         }
 
-        expr2_str = Conversions::unpack_string_simple(expr2_oid);
+        expr2_str = Conversions::unpack_string(expr2_oid);
 
         auto flags = std::regex::ECMAScript;
         if (expr3) {
-            expr3_str = Conversions::unpack_string_simple(expr3_oid);
-            for (auto& f :  expr3_str) {
+            expr3_str = Conversions::unpack_string(expr3_oid);
+            for (auto& f : expr3_str) {
                 // TODO: implement all flags
                 switch (f) {
                 case 'i': { flags |= std::regex::icase; break; }
@@ -88,16 +90,11 @@ public:
         // An external regex library may be necessary.
         auto res = std::regex_search(expr1_str, reg);
 
-        return ObjectId(ObjectId::MASK_BOOL | (res));
+        return Conversions::pack_bool(res);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "REGEX(" << *expr1 << ", " << *expr2;
-        if (expr3 != NULL) {
-            os << ", " << *expr3;
-        }
-        os << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "query/executor/binding_iter/aggregation/agg.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 
 namespace SPARQL {
 class AggSample : public Agg {
@@ -29,7 +30,10 @@ public:
     }
 
     std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << "SAMPLE(" << *expr << ")";
+        os << "SAMPLE(";
+        BindingExprPrinter printer(os);
+        expr->accept_visitor(printer);
+        os << ")";
         return os;
     }
 

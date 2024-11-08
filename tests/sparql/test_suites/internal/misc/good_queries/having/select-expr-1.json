@@ -1,0 +1,19 @@
+{
+  "head": { "vars": [ "t", "c" ] },
+  "results": {
+    "bindings": [
+      {
+        "t": { "type": "uri", "value": "http://www.path.com/t1" },
+        "c": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "t": { "type": "uri", "value": "http://www.path.com/t9" },
+        "c": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "t": { "type": "uri", "value": "http://www.path.com/t4" },
+        "c": { "type": "literal", "value": "2", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      }
+    ]
+  }
+}

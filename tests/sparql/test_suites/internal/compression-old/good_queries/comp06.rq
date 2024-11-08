@@ -1,0 +1,6 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?after WHERE {
+  ?s :p6 ?o .
+  BIND(strafter(?o, " + ") AS ?after)
+}

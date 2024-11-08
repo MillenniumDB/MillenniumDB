@@ -12,19 +12,19 @@ class XMLSelectExecutor : public QueryExecutor {
 public:
     XMLSelectExecutor(
         std::unique_ptr<BindingIter> root,
-        std::vector<VarId>             projection_vars
+        std::vector<VarId>           projection_vars
     ) :
         root            (std::move(root)),
         projection_vars (std::move(projection_vars)) { }
 
     uint64_t execute(std::ostream&) override;
 
-    void analyze(std::ostream&, int indent = 0) const override;
+    void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 
 private:
     std::unique_ptr<BindingIter> root;
     std::unique_ptr<Binding>     binding;
-    std::vector<VarId>             projection_vars;
+    std::vector<VarId>           projection_vars;
 
     uint64_t execute_empty_binding(std::ostream&);
 

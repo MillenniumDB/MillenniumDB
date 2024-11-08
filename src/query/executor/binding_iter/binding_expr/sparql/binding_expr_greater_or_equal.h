@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/comparisons.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -21,16 +21,15 @@ public:
         auto rhs_oid = rhs->eval(binding);
 
         bool error;
-        auto res = SPARQL::Comparisons::strict_compare(lhs_oid, rhs_oid, &error) >= 0;
+        bool res = SPARQL::Comparisons::strict_compare(lhs_oid, rhs_oid, &error) >= 0;
         if (error) {
             return ObjectId::get_null();
         }
-        return ObjectId(ObjectId::MASK_BOOL | res);
+        return Conversions::pack_bool(res);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
-        os << '(' << *lhs << ">=" << *rhs << ')';
-        return os;
+    void accept_visitor(BindingExprVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 } // namespace SPARQL

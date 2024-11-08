@@ -1,4 +1,4 @@
-#include "graph_models/rdf_model/datatypes/datetime.h"
+#include "graph_models/common/datatypes/datetime.h"
 
 #include <algorithm>
 #include <iostream>
@@ -145,8 +145,8 @@ int compare_date_time() {
         auto lhs_dt = DateTime(DateTime::from_dateTime(lhs));
         auto rhs_dt = DateTime(DateTime::from_dateTime(rhs));
         bool error;
-        auto result = lhs_dt.compare<DateTimeComparisonMode::Strict>(rhs_dt, &error);
-        result = std::min(std::max(-1L, result), 1L); // Turn into -1,0,1;
+        int64_t result = lhs_dt.compare<DateTimeComparisonMode::Strict>(rhs_dt, &error);
+        result = std::min(std::max(static_cast<int64_t>(-1), result), static_cast<int64_t>(1)); // Turn into -1,0,1;
         if (expected_error && !error) {
             std::cerr << lhs << " compare " << rhs << ": expected error\n";
             return 1;
