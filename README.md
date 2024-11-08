@@ -141,9 +141,9 @@ Creating a Database
 ```bash
 build/Release/bin/mdb-import <data-file> <db-directory> [--prefixes <prefixes-file>]
 ```
-- `<data-file>` is the path to the file containing the data to import, in the [Turtle](https://www.w3.org/TR/turtle/) format.
+- `<data-file>` is the path to the file containing the data to import, using the [Turtle](https://www.w3.org/TR/turtle/) format for RDF, or [QuadModel Format](doc/quad_model/data_model.md#import-format) for Property Graphs.
 - `<db-directory>` is the path of the directory where the new database will be created.
-- `--prefixes <prefixes-file>` is an optional path to a prefixes file.
+- `--prefixes <prefixes-file>` is an optional path to a prefixes file (used only when using RDF).
 
 ### Prefix Definitions
 The optional prefixes file passed using the `--prefixes` option contains one prefix per line. Each line consists of a prefix alias and the prefix itself:
@@ -154,7 +154,7 @@ https://other.prefix.com/foo
 https://other.prefix.com/bar
 ```
 
-Using a prefix file is optional (and only considered when working with RDF), but helps reduce the space occupied by IRIs in the database. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space. The total number of user defined prefixes cannot exceed 255.
+Using a prefix file is optional, but helps reduce the space occupied by IRIs in the database when using the RDF model. MillenniumDB generates IDs for each prefix, and when importing IRIs into the database replaces any prefixes with IDs. For large databases this can safe a significant amount of space. The total number of user defined prefixes cannot exceed 255.
 
 
 Querying a Database
@@ -170,7 +170,16 @@ build/Release/bin/mdb-server <db-directory>
 ### Execute a Query
 The easiest way to run a query is to use the Web Browser at http://localhost:4321/ after starting the server.
 
-If you prefer to work in a terminal, we also provide a script to make queries using curl.
+The other option is sending the query via HTTP request.
+
+The MillenniumDB SPARQL server supports all three query operations specified in the [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation):
+- `query via GET`
+- `query via URL-encoded POST`
+- `query via POST directly`
+
+When using Property Graphs, we expect an HTTP POST where query is contained in the request body.
+
+We provide a script to make queries using curl.
 To use it you have to pass a file with the query as a parameter:
 ```bash
 bash scripts/query <query-file>
@@ -183,10 +192,6 @@ For updates, we have an analogous script:
 bash scripts/update <query-file>
 ```
 
-The MillenniumDB SPARQL server supports all three query operations specified in the [SPARQL 1.1 Protocol](https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation):
-- `query via GET`
-- `query via URL-encoded POST`
-- `query via POST directly`
 
 [Example](#millenniumdb)
 ================================================================================

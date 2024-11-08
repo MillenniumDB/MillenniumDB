@@ -1,0 +1,8 @@
+N1 :Person name:"Alice"
+N2 :Person name:"Bob"
+IMFD :Organization name:"Instituto Milenio Fundamentos de los Datos"
+N1->Chile :LivesIn
+N2->Chile :LivesIn
+N1->N2 :Knows
+N2->N1 :Knows
+N1->IMFD :WorksAt since:date("2019-08-30")
