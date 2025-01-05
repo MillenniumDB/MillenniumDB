@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "*.ipp": "cpp",
+        "bitset": "cpp",
+        "coroutine": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "memory": "cpp",
+        "optional": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "typeindex": "cpp",
+        "variant": "cpp",
+        "cstdint": "cpp"
+    }
+}

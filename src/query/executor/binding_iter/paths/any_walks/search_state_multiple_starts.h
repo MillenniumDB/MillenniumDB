@@ -1,0 +1,79 @@
+#pragma once
+
+#include <memory>
+
+#include "query/id.h"
+#include "query/executor/binding_iter/paths/index_provider/path_index.h"
+
+namespace Paths { namespace Any {
+struct MultiSourceSearchState {
+    // The ID of the node the algorithm has reached
+    const ObjectId node_id;
+
+    const Id bfs_id;
+
+    // Pointer to the previous SearchState that leads to the current one
+    // (used to reconstruct paths)
+    const MultiSourceSearchState* previous;
+
+    // The type of the traversed edge
+    // (used to reconstruct paths)
+    const ObjectId type_id;
+
+    // State of the automaton defining the path query
+    const uint32_t automaton_state;
+
+    // Indicates in which direction the edge was traversed
+    // (the language allows traversing in both directions)
+    const bool inverse_direction;
+
+    MultiSourceSearchState(uint32_t           automaton_state,
+                ObjectId           node_id,
+                const MultiSourceSearchState* previous,
+                bool               inverse_direction,
+                ObjectId           type_id,
+                Id                bfs_id) :
+        node_id           (node_id),
+        previous          (previous),
+        type_id           (type_id),
+        automaton_state   (automaton_state),
+        inverse_direction (inverse_direction),
+        bfs_id(bfs_id) {}
+
+    // For ordered set
+    bool operator<(const MultiSourceSearchState& other) const {
+        if (automaton_state < other.automaton_state) {
+            return true;
+        } else if (other.automaton_state < automaton_state) {
+            return false;
+        } else {
+            return node_id < other.node_id;
+        }
+    }
+
+    // For unordered set
+    bool operator==(const MultiSourceSearchState& other) const {
+        return automaton_state == other.automaton_state && node_id == other.node_id && bfs_id == other.bfs_id;
+    }
+
+    // TODO analyze
+    MultiSourceSearchState clone() const {
+        return MultiSourceSearchState(automaton_state, node_id, previous, inverse_direction, type_id, bfs_id);
+    }
+
+    void print(std::ostream& os,
+               std::function<void(std::ostream& os, ObjectId)> print_node,
+               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+               bool begin_at_left) const;
+
+};
+}} // namespace Paths::Any
+
+// For unordered set
+template<>
+struct std::hash<Paths::Any::MultiSourceSearchState> {
+    std::size_t operator() (const Paths::Any::MultiSourceSearchState& lhs) const {
+        return lhs.automaton_state ^ lhs.node_id.id;
+    }
+};
+
