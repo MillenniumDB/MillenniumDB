@@ -11,6 +11,12 @@
         "system_error": "cpp",
         "typeindex": "cpp",
         "variant": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "any": "cpp",
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp"
     }
 }

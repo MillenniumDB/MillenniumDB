@@ -1,4 +1,4 @@
-#include "bfs_enum.h"
+#include "bfs_multiple_starts.h"
 
 #include "system/path_manager.h"
 
@@ -6,47 +6,43 @@ using namespace std;
 using namespace Paths::Any;
 
 template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
+void BFSMultipleStarts<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     // first_next = true;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(automaton.start_state,
-                                          start_object_id,
-                                          nullptr,
-                                          true,
-                                          ObjectId::get_null());
-    open.push(state_inserted.first.operator->());
+    
+    for(auto node : start_nodes) {
+        ObjectId start_object_id = node.is_var() ? (*parent_binding)[node.get_var()] : node.get_OID();
+        SearchNodeId start_node_id{automaton.start_state, start_object_id};
+        bfses_to_be_visited.emplace[start_node_id] = {start_object_id};
+    }
     iter = make_unique<NullIndexIterator>();
 }
 
 
 template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_reset() {
+void BFSMultipleStarts<MULTIPLE_FINAL>::_reset() {
     // Empty open and visited
-    queue<const SearchState*> empty;
-    open.swap(empty);
-    visited.clear();
+    bfses_to_be_visited.clear();
+    bfses_to_be_visited_next.clear();
+    seen.clear();
+    bfss_that_reached_given_node.clear();  
+    
     if (MULTIPLE_FINAL) {
         reached_final.clear();
     }
     first_next = true;
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(automaton.start_state,
-                                          start_object_id,
-                                          nullptr,
-                                          true,
-                                          ObjectId::get_null());
-    open.push(state_inserted.first.operator->());
+    for(auto node : start_nodes) {
+        ObjectId start_object_id = node.is_var() ? (*parent_binding)[node.get_var()] : node.get_OID();
+        SearchNodeId start_node_id{automaton.start_state, start_object_id};
+        bfses_to_be_visited.emplace[start_node_id] = {start_object_id};
+    }
     iter = make_unique<NullIndexIterator>();
 }
 
 
 template <bool MULTIPLE_FINAL>
-bool BFSEnum<MULTIPLE_FINAL>::_next() {
+bool BFSMultipleStarts<MULTIPLE_FINAL>::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -95,7 +91,7 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
 
 
 template <bool MULTIPLE_FINAL>
-const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& current_state) {
+const SearchState* BFSMultipleStarts<MULTIPLE_FINAL>::expand_neighbors(const SearchState& current_state) {
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -151,11 +147,11 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
 
 
 template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::accept_visitor(BindingIterVisitor& visitor) {
+void BFSMultipleStarts<MULTIPLE_FINAL>::accept_visitor(BindingIterVisitor& visitor) {
     visitor.visit(*this);
 }
 
 
-template class Paths::Any::BFSEnum<true>;
-template class Paths::Any::BFSEnum<false>;
+template class Paths::Any::BFSMultipleStarts<true>;
+template class Paths::Any::BFSMultipleStarts<false>;
 

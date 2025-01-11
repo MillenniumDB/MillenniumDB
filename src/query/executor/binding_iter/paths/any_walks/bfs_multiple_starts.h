@@ -15,7 +15,7 @@
 namespace Paths { namespace Any {
 
 /*
-BFSEnum returns a single path to all
+BFSMultipleStarts returns a single path to all
 reachable nodes from a starting node, using BFS.
 */
 template <bool MULTIPLE_FINAL>
@@ -25,7 +25,7 @@ private:
     // Attributes determined in the constructor
     VarId         path_var;
     boost::unordered_node_set<Id>            start_nodes;
-    VarId         end;
+    boost::unordered_node_set<VarId>         end_nodes;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
@@ -33,15 +33,15 @@ private:
     Binding* parent_binding;
 
     boost::unordered_node_map<Id, boost::unordered_node_set<MultipleStartsSearchState>> seen;
-    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<Id>> bfss_that_reached_given_node;
+    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfss_that_reached_given_node;
 
     // visit and visit_next. Maybe we can use set instead of map and the values (bfs ids) can be taken from `bfss_that_reached_given_node`.
-    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<Id>> bfses_to_be_visited;
-    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<Id>> bfses_to_be_visited_next;
+    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfses_to_be_visited;
+    boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfses_to_be_visited_next;
     
     
     // Queue for BFS. Pointers point to the states in visited
-    std::queue<const SearchState*> open;
+    // std::queue<const SearchState*> open;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;
@@ -61,16 +61,16 @@ public:
     // Statistics
     uint_fast32_t idx_searches = 0;
 
-    BFSEnum(
+    BFSMultipleStarts(
         VarId                          path_var,
-        Id                             start,
-        VarId                          end,
+        boost::unordered_node_set<Id>                             start_nodes,
+        boost::unordered_node_set<VarId>                          end_nodes,
         RPQ_DFA                        automaton,
         std::unique_ptr<IndexProvider> provider
     ) :
         path_var      (path_var),
-        start         (start),
-        end           (end),
+        start_nodes         (start_nodes),
+        end_nodes           (end_nodes),
         automaton     (automaton),
         provider      (std::move(provider)) { }
 
