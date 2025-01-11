@@ -11,6 +11,8 @@
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
+#include "search_state_multiple_starts.h"
+
 
 namespace Paths { namespace Any {
 
@@ -32,7 +34,7 @@ private:
     // where the results will be written, determined in begin()
     Binding* parent_binding;
 
-    boost::unordered_node_map<Id, boost::unordered_node_set<MultipleStartsSearchState>> seen;
+    boost::unordered_node_map<ObjectId, boost::unordered_node_set<MultipleStartsSearchState>> seen;
     boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfss_that_reached_given_node;
 
     // visit and visit_next. Maybe we can use set instead of map and the values (bfs ids) can be taken from `bfss_that_reached_given_node`.

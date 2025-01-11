@@ -10,7 +10,7 @@ struct MultiSourceSearchState {
     // The ID of the node the algorithm has reached
     const ObjectId node_id;
 
-    const Id bfs_id;
+    const ObjectId bfs_id;
 
     // Pointer to the previous SearchState that leads to the current one
     // (used to reconstruct paths)
@@ -32,7 +32,7 @@ struct MultiSourceSearchState {
                 const MultiSourceSearchState* previous,
                 bool               inverse_direction,
                 ObjectId           type_id,
-                Id                bfs_id) :
+                ObjectId                bfs_id) :
         node_id           (node_id),
         previous          (previous),
         type_id           (type_id),

@@ -14,6 +14,15 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
         ObjectId start_object_id = node.is_var() ? (*parent_binding)[node.get_var()] : node.get_OID();
         SearchNodeId start_node_id{automaton.start_state, start_object_id};
         bfses_to_be_visited.emplace[start_node_id] = {start_object_id};
+
+        seen[start_object_id] = MultiSourceSearchState(
+            automaton.start_state,
+            start_object_id,
+            nullptr,
+            true,
+            ObjectId::get_null(),
+            start_object_id
+        );
     }
     iter = make_unique<NullIndexIterator>();
 }
@@ -36,6 +45,15 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset() {
         ObjectId start_object_id = node.is_var() ? (*parent_binding)[node.get_var()] : node.get_OID();
         SearchNodeId start_node_id{automaton.start_state, start_object_id};
         bfses_to_be_visited.emplace[start_node_id] = {start_object_id};
+
+        seen[start_object_id] = MultiSourceSearchState(
+            automaton.start_state,
+            start_object_id,
+            nullptr,
+            true,
+            ObjectId::get_null(),
+            start_object_id
+        );
     }
     iter = make_unique<NullIndexIterator>();
 }
