@@ -41,9 +41,7 @@ private:
     boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfses_to_be_visited;
     boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfses_to_be_visited_next;
     
-    
-    // Queue for BFS. Pointers point to the states in visited
-    // std::queue<const SearchState*> open;
+    std::queue<SearchNodeId> visit_q;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;

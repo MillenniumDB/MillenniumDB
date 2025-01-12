@@ -23,6 +23,10 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
             ObjectId::get_null(),
             start_object_id
         );
+        bfss_that_reached_given_node[start_node_id] = {
+            start_object_id
+        }
+        visit_q.push(start_node_id);
     }
     iter = make_unique<NullIndexIterator>();
 }
@@ -35,7 +39,8 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset() {
     bfses_to_be_visited_next.clear();
     seen.clear();
     bfss_that_reached_given_node.clear();  
-    
+    visit_q.clear();
+
     if (MULTIPLE_FINAL) {
         reached_final.clear();
     }
@@ -54,6 +59,10 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset() {
             ObjectId::get_null(),
             start_object_id
         );
+        bfss_that_reached_given_node[start_node_id] = {
+            start_object_id
+        }
+        visit_q.push(start_node_id);
     }
     iter = make_unique<NullIndexIterator>();
 }
