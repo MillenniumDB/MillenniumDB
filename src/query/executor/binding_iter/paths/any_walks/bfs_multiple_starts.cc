@@ -73,13 +73,15 @@ bool BFSMultipleStarts<MULTIPLE_FINAL>::_next() {
     // Check if first state is final
     if (first_next) {
         first_next = false;
-        auto current_state = open.front();
+        auto current_node_id = visit_q.front();
 
         // Return false if node does not exist in the database
-        if (!provider->node_exists(current_state->node_id.id)) {
-            open.pop();
+        if (!provider->node_exists(current_node_id.second.id)) {
+            visit_q.pop();
             return false;
         }
+
+        // MATI FINISHED HERE.
 
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state]) {
