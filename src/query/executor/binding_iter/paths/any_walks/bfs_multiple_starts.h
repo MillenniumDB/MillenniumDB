@@ -6,7 +6,7 @@
 
 #include <boost/unordered/unordered_node_set.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
-
+#include <boost/unordered/unordered_node_map.hpp>
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
@@ -26,7 +26,7 @@ class BFSMultipleStarts : public BindingIter {
 private:
     // Attributes determined in the constructor
     VarId         path_var;
-    boost::unordered_node_set<Id>            start_nodes;
+    std::vector<Id>            start_nodes;
     boost::unordered_node_set<VarId>         end_nodes;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
@@ -34,7 +34,7 @@ private:
     // where the results will be written, determined in begin()
     Binding* parent_binding;
 
-    boost::unordered_node_map<ObjectId, boost::unordered_node_set<MultipleStartsSearchState>> seen;
+    boost::unordered_node_map<ObjectId, boost::unordered_node_map<SearchNodeId, MultiSourceSearchState>> seen;
     boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfss_that_reached_given_node;
 
     // visit and visit_next. Maybe we can use set instead of map and the values (bfs ids) can be taken from `bfss_that_reached_given_node`.
@@ -48,6 +48,9 @@ private:
 
     // The index of the transition being currently explored
     uint_fast32_t current_transition;
+    
+    std::queue<ObjectId> start_nodes_for_current_iteration;
+    SearchNodeId node_for_current_iteration;
 
     // true in the first call of next() and after a reset()
     bool first_next = true;
@@ -63,7 +66,7 @@ public:
 
     BFSMultipleStarts(
         VarId                          path_var,
-        boost::unordered_node_set<Id>                             start_nodes,
+        std::vector<Id>                             start_nodes,
         boost::unordered_node_set<VarId>                          end_nodes,
         RPQ_DFA                        automaton,
         std::unique_ptr<IndexProvider> provider
@@ -81,20 +84,20 @@ public:
     bool _next() override;
 
     // Expand neighbors from current state
-    const SearchState* expand_neighbors(const SearchState& current_state);
+    const MultiSourceSearchState* expand_neighbors(const SearchNodeId& current_state);
 
-    void assign_nulls() override {
-        parent_binding->add(end, ObjectId::get_null());
-        parent_binding->add(path_var, ObjectId::get_null());
-    }
+    // void assign_nulls() override {
+    //     parent_binding->add(end, ObjectId::get_null());
+    //     parent_binding->add(path_var, ObjectId::get_null());
+    // }
 
     // Set iterator for current node + transition
-    inline void set_iter(const SearchState& s) {
+    inline void set_iter(const SearchNodeId& s) {
         // Get current transition object from automaton
-        auto& transition = automaton.from_to_connections[s.automaton_state][current_transition];
+        auto& transition = automaton.from_to_connections[s.first][current_transition];
 
         // Get iterator from custom index
-        iter = provider->get_iter(transition.type_id.id, transition.inverse, s.node_id.id);
+        iter = provider->get_iter(transition.type_id.id, transition.inverse, s.second.id);
         idx_searches++;
     }
 };
