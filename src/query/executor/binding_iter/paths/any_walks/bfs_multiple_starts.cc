@@ -63,7 +63,7 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset()
                                                      start_object_id)}};
         bfss_that_reached_given_node[start_node_id] = {
             start_object_id};
-        first_visit_q.push(start_node_id)
+        first_visit_q.push(start_node_id);
     }
     iter = make_unique<NullIndexIterator>();
 }

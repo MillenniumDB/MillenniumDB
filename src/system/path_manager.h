@@ -43,7 +43,7 @@ public:
     static constexpr uint64_t ALL_SHORTEST_SIMPLE_MASK     = 0x00'10'000000000000UL;
     static constexpr uint64_t ALL_SHORTEST_TRAILS_MASK     = 0x00'11'000000000000UL;
     static constexpr uint64_t ANY_SHORTEST_WALKS_DIR_MASK  = 0x00'13'000000000000UL;
-    static constexpr uint64_t ANY_SHORTEST_WALKS_MULTIPLE_STARTS_MASK = 0x00'14'000000000000UL;;
+    static constexpr uint64_t ANY_SHORTEST_WALKS_MULTIPLE_STARTS_MASK = 0x00'14'000000000000UL;
     // static constexpr uint64_t ANY_TRAILS_DIR_MASK          = 0x00'14'000000000000UL;
 
     // experimental
