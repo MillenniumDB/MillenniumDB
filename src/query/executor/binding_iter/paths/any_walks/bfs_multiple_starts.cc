@@ -163,7 +163,7 @@ const MultiSourceSearchState *BFSMultipleStarts<MULTIPLE_FINAL>::expand_neighbor
             SearchNodeId new_node_id = {transition.to, ObjectId(iter->get_reached_node())};
             auto bfses_that_reached_the_new_state = bfss_that_reached_given_node[new_node_id];
 
-            boost::unordered_node_set<ObjectId> difference;
+            boost::unordered_node_set<ObjectId, objectid_hash> difference;
             boost::set_difference(bfses_to_be_visited_by_current_state, bfses_that_reached_the_new_state, std::inserter(difference, difference.end()));
 
             if (!difference.empty())
@@ -174,7 +174,7 @@ const MultiSourceSearchState *BFSMultipleStarts<MULTIPLE_FINAL>::expand_neighbor
                     MultiSourceSearchState s(
                         new_node_id.first,
                         new_node_id.second,
-                        &(seen[bfs_to_visit_new_state_next][current_state_id]),
+                        &(seen[bfs_to_visit_new_state_next].find(current_state_id)->second),
                         transition.inverse,
                         transition.type_id,
                         bfs_to_visit_new_state_next);

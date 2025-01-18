@@ -40,6 +40,7 @@ namespace Paths
         */
         template <bool MULTIPLE_FINAL>
         class BFSMultipleStarts : public BindingIter
+        
         {
             using SearchNodeId = std::pair<uint32_t, ObjectId>;
 
@@ -55,11 +56,11 @@ namespace Paths
             Binding *parent_binding;
 
             boost::unordered_node_map<ObjectId, boost::unordered_node_map<SearchNodeId, MultiSourceSearchState, searchnodeid_hash>, objectid_hash> seen;
-            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>, searchnodeid_hash> bfss_that_reached_given_node;
+            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId, objectid_hash>, searchnodeid_hash> bfss_that_reached_given_node;
 
             // visit and visit_next. Maybe we can use set instead of map and the values (bfs ids) can be taken from `bfss_that_reached_given_node`.
-            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>, searchnodeid_hash> bfses_to_be_visited;
-            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>, searchnodeid_hash> bfses_to_be_visited_next;
+            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId, objectid_hash>, searchnodeid_hash> bfses_to_be_visited;
+            boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId, objectid_hash>, searchnodeid_hash> bfses_to_be_visited_next;
 
             std::queue<SearchNodeId> visit_q;
             std::queue<SearchNodeId> first_visit_q;
