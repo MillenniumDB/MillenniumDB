@@ -27,7 +27,7 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_begin(Binding &_parent_binding)
                                                      start_object_id)}};
         bfss_that_reached_given_node[start_node_id] = {
             start_object_id};
-        visit_q.push(start_node_id);
+        first_visit_q.push(start_node_id);
     }
     iter = make_unique<NullIndexIterator>();
 }
@@ -63,7 +63,7 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset()
                                                      start_object_id)}};
         bfss_that_reached_given_node[start_node_id] = {
             start_object_id};
-        visit_q.push(start_node_id);
+        first_visit_q.push(start_node_id)
     }
     iter = make_unique<NullIndexIterator>();
 }
@@ -72,36 +72,26 @@ template <bool MULTIPLE_FINAL>
 bool BFSMultipleStarts<MULTIPLE_FINAL>::_next()
 {
     // Check if first state is final
-    if (first_next)
+    while (!first_visit_q.empty())
     {
-        first_next = false;
-        auto current_node_id = visit_q.front();
+        SearchNodeId curr_first_node = first_visit_q.front();
+        first_visit_q.pop();
 
-        // Return false if node does not exist in the database
-        if (!provider->node_exists(current_node_id.second.id))
+        if (provider->node_exists(curr_first_node.second.id))
         {
-            visit_q.pop();
-            return false;
-        }
-
-        // MATI FINISHED HERE.
-
-        // Starting state is solution
-        if (automaton.is_final_state[automaton.start_state])
-        {
-            auto reached_state = SearchState(automaton.start_state,
-                                             current_state->node_id,
-                                             nullptr,
-                                             true,
-                                             ObjectId::get_null());
-            if (MULTIPLE_FINAL)
+            visit_q.push(curr_first_node);
+            if (automaton.is_final_state[automaton.start_state])
             {
-                reached_final.insert(current_state->node_id.id);
+                if (MULTIPLE_FINAL)
+                {
+                    reached_final.insert(curr_first_node.second.id);
+                }
+                auto pointer_to_reached_state = &seen[curr_first_node.second].find(curr_first_node)->second;
+                auto path_id = path_manager.set_path(pointer_to_reached_state, path_var);
+                parent_binding->add(path_var, path_id);
+                parent_binding->add(end, curr_first_node.second);
+                return true;
             }
-            auto path_id = path_manager.set_path(visited.insert(reached_state).first.operator->(), path_var);
-            parent_binding->add(path_var, path_id);
-            parent_binding->add(end, current_state->node_id);
-            return true;
         }
     }
 
@@ -109,7 +99,7 @@ bool BFSMultipleStarts<MULTIPLE_FINAL>::_next()
     {
         while (visit_q.size() > 0)
         {
-            current_node_id = visit_q.front();
+            auto current_node_id = visit_q.front();
             auto reached_final_state = expand_neighbors(current_node_id);
             // Enumerate reached solutions
             if (reached_final_state != nullptr)
@@ -121,8 +111,7 @@ bool BFSMultipleStarts<MULTIPLE_FINAL>::_next()
             }
             else
             {
-                // Pop and visit next state
-                open.pop();
+                visit_q.pop();
             }
         }
         for (const auto &it : bfses_to_be_visited_next)

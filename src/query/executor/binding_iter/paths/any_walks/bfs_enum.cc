@@ -71,6 +71,7 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
             if (MULTIPLE_FINAL) {
                 reached_final.insert(current_state->node_id.id);
             }
+            // MATI: why we add to visited?
             auto path_id = path_manager.set_path(visited.insert(reached_state).first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state->node_id);

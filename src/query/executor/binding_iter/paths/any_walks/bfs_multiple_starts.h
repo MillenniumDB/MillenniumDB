@@ -27,7 +27,7 @@ private:
     // Attributes determined in the constructor
     VarId         path_var;
     std::vector<Id>            start_nodes;
-    boost::unordered_node_set<VarId>         end_nodes;
+    VarId        end; 
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
@@ -42,6 +42,7 @@ private:
     boost::unordered_node_map<SearchNodeId, boost::unordered_node_set<ObjectId>> bfses_to_be_visited_next;
     
     std::queue<SearchNodeId> visit_q;
+    std::queue<SearchNodeId> first_visit_q;
 
     // Iterator for current node expansion
     std::unique_ptr<EdgeIter> iter;
@@ -67,13 +68,13 @@ public:
     BFSMultipleStarts(
         VarId                          path_var,
         std::vector<Id>                             start_nodes,
-        boost::unordered_node_set<VarId>                          end_nodes,
+        VarId                          end_nodes,
         RPQ_DFA                        automaton,
         std::unique_ptr<IndexProvider> provider
     ) :
         path_var      (path_var),
         start_nodes         (start_nodes),
-        end_nodes           (end_nodes),
+        end           (end_nodes),
         automaton     (automaton),
         provider      (std::move(provider)) { }
 
