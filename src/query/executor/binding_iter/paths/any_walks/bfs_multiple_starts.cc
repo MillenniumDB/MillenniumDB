@@ -41,12 +41,12 @@ void BFSMultipleStarts<MULTIPLE_FINAL>::_reset()
     seen.clear();
     bfss_that_reached_given_node.clear();
     visit_q = {};
+    first_visit_q = {};
 
     if (MULTIPLE_FINAL)
     {
         reached_final.clear();
     }
-    first_next = true;
 
     for (auto node : start_nodes)
     {
@@ -86,7 +86,7 @@ bool BFSMultipleStarts<MULTIPLE_FINAL>::_next()
                 {
                     reached_final.insert(curr_first_node.second.id);
                 }
-                auto pointer_to_reached_state = &seen[curr_first_node.second].find(curr_first_node)->second;
+                auto pointer_to_reached_state = &seen[curr_first_node.second].find(curr_first_node)->secod;
                 auto path_id = path_manager.set_path(pointer_to_reached_state, path_var);
                 parent_binding->add(path_var, path_id);
                 parent_binding->add(end, curr_first_node.second);

@@ -74,8 +74,6 @@ namespace Paths
             std::queue<ObjectId> start_nodes_for_current_iteration;
             SearchNodeId node_for_current_iteration;
 
-            // true in the first call of next() and after a reset()
-            bool first_next = true;
 
             // Template type for storing nodes reached with a final state
             typename std::conditional<MULTIPLE_FINAL,
