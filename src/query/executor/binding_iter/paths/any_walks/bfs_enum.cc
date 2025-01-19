@@ -11,9 +11,6 @@ void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
     // first_next = true;
 
     // Add starting states to open and visited
-
-
-    // MATI TODO What is this: parent_biding[start.get_var]? Why do we need to get objectId from starting vertex?
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
     auto state_inserted = visited.emplace(automaton.start_state,
                                           start_object_id,
@@ -71,7 +68,6 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
             if (MULTIPLE_FINAL) {
                 reached_final.insert(current_state->node_id.id);
             }
-            // MATI: why we add to visited?
             auto path_id = path_manager.set_path(visited.insert(reached_state).first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state->node_id);
@@ -123,15 +119,10 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
                                    transition.inverse,
                                    transition.type_id);
             auto visited_state = visited.insert(next_state);
-            // next state = current_state tak naprawdę.
-            // visited_state = next_state = current_state tak naprawdę.
 
             // If next state was visited for the first time
             if (visited_state.second) {
                 auto reached_state = visited_state.first;
-                // reached state = visited_state
-
-                // dodajemy current_state do open
                 open.push(reached_state.operator->());
 
                 // Check if new path is solution
