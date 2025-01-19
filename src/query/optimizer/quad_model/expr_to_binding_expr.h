@@ -13,17 +13,20 @@ class BindingIterConstructor;
 
 // This visitor returns nullptr if condition is pushed outside
 class ExprToBindingExpr : public ExprVisitor {
-private:
-    BindingIterConstructor* bic;
+public:
+    BindingIterConstructor* bic = nullptr;
     std::vector<PropertyTypeConstraint> fixed_types_properties;
 
-    const std::optional<VarId> var;
+    // In expressions like "<expressions> AS <var>", as_var is <var>
+    const std::optional<VarId> as_var;
+
+    // Where result will be stored
+    std::unique_ptr<BindingExpr> tmp;
 
     // Has to be true while visiting something inside of an aggregation
     // and be false otherwise
     bool inside_aggregation = false;
 
-public:
     ExprToBindingExpr(std::vector<PropertyTypeConstraint>& fixed_types_properties) :
         bic(nullptr),
         fixed_types_properties(fixed_types_properties)
@@ -31,13 +34,11 @@ public:
 
     // For Aggregations in RETURN, ORDER BY
     // (for now the language only permits Agg Functions in them)
-    ExprToBindingExpr(BindingIterConstructor* _bic, VarId var) :
+    ExprToBindingExpr(BindingIterConstructor* _bic, std::optional<VarId> as_var) :
         bic(_bic),
         fixed_types_properties(_bic->fixed_types_properties),
-        var(var)
+        as_var(as_var)
     { }
-
-    std::unique_ptr<BindingExpr> tmp;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;
@@ -67,5 +68,12 @@ public:
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
     void visit(ExprRegex&) override;
+    void visit(ExprTensorDistance&) override;
+    void visit(ExprTextSearch&) override;
+
+private:
+
+    template<typename AggType, class ... Args>
+    void check_and_make_aggregate(Expr*, Args&&... args);
 };
 } // namespace MQL

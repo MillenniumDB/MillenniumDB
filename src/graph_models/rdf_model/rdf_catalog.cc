@@ -3,11 +3,15 @@
 #include <cassert>
 
 #include "graph_models/exceptions.h"
+#include "storage/index/text_search/rdf.h"
+#include "storage/index/text_search/text_search_index_manager.h"
 
 using namespace std;
 
 // Constructor for existing catalog
-RdfCatalog::RdfCatalog(const std::string& filename) : Catalog(filename) {
+RdfCatalog::RdfCatalog(const std::string& filename) :
+    Catalog(filename)
+{
     assert(!is_empty());
 
     start_io();
@@ -27,54 +31,64 @@ RdfCatalog::RdfCatalog(const std::string& filename) : Catalog(filename) {
         error_msg += std::to_string(version_id);
         throw WrongCatalogVersionException(error_msg);
     }
-    permutations     = read_uint64();
+    permutations = read_uint64();
     blank_node_count = read_uint64();
-    triples_count    = read_uint64();
+    triples_count = read_uint64();
 
     equal_spo_count = read_uint64();
-    equal_sp_count  = read_uint64();
-    equal_so_count  = read_uint64();
-    equal_po_count  = read_uint64();
+    equal_sp_count = read_uint64();
+    equal_so_count = read_uint64();
+    equal_po_count = read_uint64();
 
     prefixes.init(read_strvec());
     datatypes = read_strvec();
     languages = read_strvec();
 
+    predicate2total_count = read_map();
 
-    auto distinct_predicates = read_uint64();
-    for (uint_fast32_t i = 0; i < distinct_predicates; i++) {
-        auto predicate_id          = read_uint64();
-        auto predicate_total_count = read_uint64();
-        predicate2total_count.insert({ predicate_id, predicate_total_count });
+    text_search_index_manager.init(
+        TextSearch::RDF::index_predicate,
+        TextSearch::RDF::index_single,
+        TextSearch::RDF::remove_single,
+        TextSearch::RDF::oid_to_string
+    );
+    const auto name2metadata = read_uint64();
+    for (uint_fast32_t i = 0; i < name2metadata; i++) {
+        const auto name = read_string();
+        TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
+        metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
+        metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+        metadata.predicate = read_string();
+        text_search_index_manager.load_text_search_index(name, metadata);
     }
 }
 
-
 // Constructor for new empty catalog
 RdfCatalog::RdfCatalog(const std::string& filename, size_t permutations) :
-    Catalog(filename), permutations(permutations)
+    Catalog(filename),
+    permutations(permutations)
 {
     assert(is_empty());
     blank_node_count = 0;
-    triples_count    = 0;
+    triples_count = 0;
 
     equal_spo_count = 0;
-    equal_sp_count  = 0;
-    equal_so_count  = 0;
-    equal_po_count  = 0;
+    equal_sp_count = 0;
+    equal_so_count = 0;
+    equal_po_count = 0;
 
     has_changes = true;
 }
 
-
-RdfCatalog::~RdfCatalog() {
-    if (has_changes) {
+RdfCatalog::~RdfCatalog()
+{
+    if (has_changes || text_search_index_manager.has_changes()) {
         save();
     }
 }
 
-
-void RdfCatalog::save() {
+void RdfCatalog::save()
+{
     start_io();
 
     write_uint64(MODEL_ID);
@@ -93,15 +107,20 @@ void RdfCatalog::save() {
     write_strvec(datatypes);
     write_strvec(languages);
 
-    write_uint64(predicate2total_count.size());
-    for (auto&&[k, v] : predicate2total_count) {
-        write_uint64(k);
-        write_uint64(v);
+    write_map(predicate2total_count);
+
+    const auto& name2metadata = text_search_index_manager.get_name2metadata();
+    write_uint64(name2metadata.size());
+    for (const auto& [name, metadata] : name2metadata) {
+        write_string(name);
+        write_uint8(static_cast<uint8_t>(metadata.normalization_type));
+        write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
+        write_string(metadata.predicate);
     }
 }
 
-
-void RdfCatalog::print(std::ostream& os) {
+void RdfCatalog::print(std::ostream& os)
+{
     os << "-------------------------------------\n";
     os << "Catalog:\n";
     os << "  triples:                " << triples_count << "\n";
@@ -132,8 +151,8 @@ void RdfCatalog::print(std::ostream& os) {
     os << "-------------------------------------\n";
 }
 
-
-void RdfCatalog::insert_triple(uint64_t s, uint64_t p, uint64_t o) {
+void RdfCatalog::insert_triple(uint64_t s, uint64_t p, uint64_t o)
+{
     triples_count++;
 
     if (s == p) {
@@ -153,8 +172,8 @@ void RdfCatalog::insert_triple(uint64_t s, uint64_t p, uint64_t o) {
     has_changes = true;
 }
 
-
-void RdfCatalog::delete_triple(uint64_t s, uint64_t p,uint64_t o) {
+void RdfCatalog::delete_triple(uint64_t s, uint64_t p, uint64_t o)
+{
     triples_count--;
 
     if (s == p) {

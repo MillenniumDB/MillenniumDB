@@ -72,7 +72,12 @@ public:
         return std::holds_alternative<std::unique_ptr<RegularPathExpr>>(value);
     }
 
-    Id get_ID() {
+    bool is_OID() const
+    {
+        return std::holds_alternative<ObjectId>(value);
+    }
+
+    Id get_ID() const {
         assert(!is_path());
         if (is_var()) {
             return Id(get_var());
@@ -81,11 +86,11 @@ public:
         }
     }
 
-    ObjectId get_OID() {
+    ObjectId get_OID() const {
         return std::get<ObjectId>(value);
     }
 
-    VarId get_var() {
+    VarId get_var() const {
         return std::get<VarId>(value);
     }
 

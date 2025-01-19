@@ -1,0 +1,6 @@
+PREFIX wiki: <https://www.wikidata.org/wiki/>
+PREFIX : <http://www.example.org/>
+
+SELECT (STR(?uuid) as ?str) WHERE {
+    BIND(:4d37087e-16b7-49dc-8e3e-166b1038c9ff as ?uuid)
+}

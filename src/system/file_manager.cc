@@ -79,8 +79,7 @@ void FileManager::read_tmp_page(int fd, uint64_t page_number, char* bytes) const
 
 
 void FileManager::read_existing_page(PageId page_id, char* bytes) const {
-    static_assert((VPage::SIZE == UPage::SIZE) && (VPage::SIZE == TensorPage::SIZE),
-                  "read_existing_page used for VPage, UPage and TensorPage");
+    static_assert((VPage::SIZE == UPage::SIZE), "read_existing_page used for VPage and UPage");
 
     auto fd = page_id.file_id.id;
 
@@ -99,8 +98,7 @@ void FileManager::read_existing_page(PageId page_id, char* bytes) const {
 
 
 uint32_t FileManager::append_page(FileId file_id, char* bytes) const {
-    static_assert((VPage::SIZE == UPage::SIZE) && (VPage::SIZE == TensorPage::SIZE),
-                "append_page used for both VPage, UPage and TensorPage");
+    static_assert((VPage::SIZE == UPage::SIZE), "append_page used for both VPage and UPage");
 
     auto fd = file_id.id;
     auto page_number = lseek(fd, 0, SEEK_END) / VPage::SIZE;
@@ -132,4 +130,25 @@ FileId FileManager::get_file_id(const string& filename) {
         filename2file_id.insert({ filename, res });
         return res;
     }
+}
+
+void FileManager::init_file(const string& filename) const {
+    const auto file_path = get_file_path(filename);
+
+    auto fd = open(file_path.c_str(), O_RDWR/*|O_DIRECT*/|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    if (fd == -1) {
+        throw std::runtime_error("Could not open file " + file_path);
+    }
+
+    // fill the new page with zeros
+    char *buf = new char[VPage::SIZE];
+    memset(buf, 0, VPage::SIZE);
+    auto write_res = write(fd, buf, VPage::SIZE);
+    delete[] buf;
+
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write into file");
+    }
+
+    close(fd);
 }

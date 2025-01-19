@@ -41,11 +41,6 @@ void CheckWellDesigned::visit(OpSet& op_set) {
 }
 
 
-void CheckWellDesigned::visit(OpMatch& op_match) {
-    op_match.op->accept_visitor(*this);
-}
-
-
 void CheckWellDesigned::visit(OpReturn& op_return) {
     op_return.op->accept_visitor(*this);
 }
@@ -65,10 +60,3 @@ void CheckWellDesigned::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
-void CheckWellDesigned::visit(OpProjectSimilarity& op_project_similarity) {
-    op_project_similarity.op->accept_visitor(*this);
-}
-
-void CheckWellDesigned::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
-    op_brute_similarity_search.op->accept_visitor(*this);
-}

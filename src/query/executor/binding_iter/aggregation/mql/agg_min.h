@@ -8,8 +8,7 @@
 namespace MQL {
 class AggMin : public Agg {
 public:
-    AggMin(VarId var_id, std::unique_ptr<BindingExpr> expr) :
-        Agg (var_id, std::move(expr)) { }
+    using Agg::Agg;
 
     void begin() override {
         min = Conversions::pack_int(Conversions::INTEGER_MAX);

@@ -1,5 +1,8 @@
+#pragma once
+
 #include "streaming_response_writer.h"
 
+#include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "graph_models/rdf_model/rdf_object_id.h"

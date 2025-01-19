@@ -4,21 +4,21 @@
 #include "network/exceptions.h"
 #include "network/server/protocol.h"
 #include "network/server/server.h"
+#include "network/server/session/streaming/request/streaming_gql_request_handler.h"
 #include "network/server/session/streaming/request/streaming_quad_request_handler.h"
 #include "network/server/session/streaming/request/streaming_rdf_request_handler.h"
 
 using namespace MDBServer;
 using namespace boost;
-namespace beast     = boost::beast;
+namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 
-
 StreamingWebSocketSession::StreamingWebSocketSession(
-    Server&                 server_,
+    Server& server_,
     websocket_stream_type&& stream_,
-    std::chrono::seconds    query_timeout_
+    std::chrono::seconds query_timeout_
 ) :
-    server(server_),
+    StreamingSession(server_),
     query_timeout(query_timeout_),
     stream(std::move(stream_))
 {
@@ -27,8 +27,10 @@ StreamingWebSocketSession::StreamingWebSocketSession(
         request_handler = std::make_unique<StreamingQuadRequestHandler>(*this);
     } else if (server.model_id == Protocol::RDF_MODEL_ID) {
         request_handler = std::make_unique<StreamingRdfRequestHandler>(*this);
+    } else if (server.model_id == Protocol::GQL_MODEL_ID) {
+        request_handler = std::make_unique<StreamingGQLRequestHandler>(*this);
     } else {
-        throw std::runtime_error("Unhandled ModelId" + std::to_string(server.model_id));
+        throw std::runtime_error("Unhandled ModelId: " + std::to_string(server.model_id));
     }
 
     // Set WebSocket stream flags/options
@@ -36,8 +38,8 @@ StreamingWebSocketSession::StreamingWebSocketSession(
     stream.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
 }
 
-
-StreamingWebSocketSession::~StreamingWebSocketSession() {
+StreamingWebSocketSession::~StreamingWebSocketSession()
+{
     if (stream.is_open()) {
         stream.close(websocket::close_code::normal, ec);
         logger(Category::Debug) << "StreamingWebSocketSession: connection closed by destructor";
@@ -47,12 +49,12 @@ StreamingWebSocketSession::~StreamingWebSocketSession() {
     }
 }
 
-
-void StreamingWebSocketSession::run(std::unique_ptr<StreamingWebSocketSession> obj) {
+void StreamingWebSocketSession::run(std::unique_ptr<StreamingWebSocketSession> obj)
+{
     if (obj->stream.is_open()) {
-
         auto& request_buffer = obj->request_buffer;
-        obj->stream.async_read(request_buffer,
+        obj->stream.async_read(
+            request_buffer,
             [obj = std::move(obj)](boost::beast::error_code ec, size_t /*length*/) mutable {
                 if (ec) {
                     if (ec != websocket::error::closed) {
@@ -65,8 +67,7 @@ void StreamingWebSocketSession::run(std::unique_ptr<StreamingWebSocketSession> o
                     const auto request_bytes = boost::asio::buffer_cast<uint8_t*>(obj->request_buffer.data());
                     obj->request_handler->handle(request_bytes, obj->request_buffer.size());
                     obj->request_buffer.consume(obj->request_buffer.size());
-                }
-                catch (const InterruptedException& e) {
+                } catch (const InterruptedException& e) {
                     auto& response_writer = obj->request_handler->response_writer;
                     response_writer->write_error("Interruption exception: Query timed out");
                     response_writer->flush();
@@ -76,17 +77,13 @@ void StreamingWebSocketSession::run(std::unique_ptr<StreamingWebSocketSession> o
                     if (ec) {
                         logger(Category::Debug) << "Close failed:" << ec.what();
                     }
-                }
-                catch (const ProtocolException& e) {
+                } catch (const ProtocolException& e) {
                     logger(Category::Error) << "Protocol exception: " << e.what();
-                }
-                catch (const ConnectionException& e) {
+                } catch (const ConnectionException& e) {
                     logger(Category::Error) << "Connection exception: " << e.what();
-                }
-                catch (const std::exception& e) {
+                } catch (const std::exception& e) {
                     logger(Category::Error) << "Uncaught exception: " << e.what();
-                }
-                catch (...) {
+                } catch (...) {
                     logger(Category::Error) << "Unexpected exception!";
                 }
 
@@ -96,8 +93,8 @@ void StreamingWebSocketSession::run(std::unique_ptr<StreamingWebSocketSession> o
     }
 }
 
-
-void StreamingWebSocketSession::write(const uint8_t* bytes, std::size_t num_bytes) {
+void StreamingWebSocketSession::write(const uint8_t* bytes, std::size_t num_bytes)
+{
     stream.write(boost::asio::buffer(bytes, num_bytes), ec);
 
     if (ec) {
@@ -106,17 +103,17 @@ void StreamingWebSocketSession::write(const uint8_t* bytes, std::size_t num_byte
     }
 }
 
-
-std::mutex& StreamingWebSocketSession::get_thread_info_vec_mutex() {
+std::mutex& StreamingWebSocketSession::get_thread_info_vec_mutex()
+{
     return server.thread_info_vec_mutex;
 }
 
-
-std::chrono::seconds StreamingWebSocketSession::get_timeout() {
+std::chrono::seconds StreamingWebSocketSession::get_timeout()
+{
     return query_timeout;
 }
 
-
-bool StreamingWebSocketSession::try_cancel(uint_fast32_t worker_idx, const std::string& cancel_token) {
+bool StreamingWebSocketSession::try_cancel(uint_fast32_t worker_idx, const std::string& cancel_token)
+{
     return server.try_cancel(worker_idx, cancel_token);
 }

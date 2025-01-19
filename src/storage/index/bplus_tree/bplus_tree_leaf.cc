@@ -491,7 +491,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
             unsigned char* current_record = buffer + (n_records_left + i) * (N * 8);
             for (size_t j = 0; j < N * 8; ++j) {
                 if (middle_bitset[j] && current_record[j] != middle_reference[j]) {
-                    middle_bitset.set(i, 0);
+                    middle_bitset.set(j, 0);
                 }
             }
         }

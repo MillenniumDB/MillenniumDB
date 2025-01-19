@@ -1,5 +1,5 @@
 # Build stage
-FROM alpine:3.18 AS build
+FROM alpine:3.20 AS build
 WORKDIR /mdb
 
 RUN apk --no-cache add cmake \
@@ -7,6 +7,7 @@ RUN apk --no-cache add cmake \
                        g++ \
                        openssl-dev \
                        boost1.82-dev \
+                       icu-dev \
                        ncurses-dev
 
 COPY src                               src
@@ -20,7 +21,7 @@ COPY browser browser
 
 
 # Final minimal stage (to minimize image size)
-FROM alpine:3.18 AS final
+FROM alpine:3.20 AS final
 WORKDIR /data
 
 RUN apk --no-cache add libstdc++ \
@@ -29,6 +30,7 @@ RUN apk --no-cache add libstdc++ \
                        musl-locales \
                        libncursesw \
                        less \
+                       icu \
                        bash
 
 COPY --from=build /mdb/build/bin /usr/bin

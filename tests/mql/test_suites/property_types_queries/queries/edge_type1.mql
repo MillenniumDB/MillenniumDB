@@ -1,0 +1,1 @@
+MATCH (?x)-[:Type {value IS INTEGER}]->(?y) RETURN ?x,?y

@@ -78,9 +78,7 @@ void EdgeTableLookup::_reset() {
 
 
 void EdgeTableLookup::assign_nulls() {
-    if (edge.is_var()) {
-        parent_binding->add(edge.get_var(), ObjectId::get_null());
-    }
+    // Not assigning edge to null, since the edge is supposed to be assigned
     if (!from_assigned) {
         assert(from.is_var());
         parent_binding->add(from.get_var(), ObjectId::get_null());

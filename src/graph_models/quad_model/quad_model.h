@@ -43,7 +43,7 @@ public:
     uint64_t MAX_LIMIT = UINT64_MAX;
 
     // Path mode to use
-    PathMode path_mode = PathMode::BFS;
+    PathSearchMode path_mode = PathSearchMode::BFS;
 
     // necessary to be called before first usage
     static std::unique_ptr<ModelDestroyer> init();

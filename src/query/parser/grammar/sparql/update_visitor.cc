@@ -2,24 +2,25 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
+#include "misc/unicode_escape.h"
 #include "query/parser/op/sparql/ops.h"
 
 using namespace SPARQL;
 using antlrcpp::Any;
 using SUP = SparqlUpdateParser;
 
-UpdateVisitor::UpdateVisitor() {
+UpdateVisitor::UpdateVisitor()
+{
     op_update = std::make_unique<OpUpdate>();
 }
 
-
-std::string UpdateVisitor::iriCtxToString(SUP::IriContext* ctx) {
+std::string UpdateVisitor::iriCtxToString(SUP::IriContext* ctx)
+{
     std::string iri;
     if (ctx->IRIREF()) {
         iri = ctx->IRIREF()->getText();
         iri = iri.substr(1, iri.size() - 2);
-    }
-    else {
+    } else {
         std::string prefixedName = ctx->prefixedName()->getText();
         auto pos = prefixedName.find(':');
         auto prefix = prefixedName.substr(0, pos);
@@ -32,18 +33,20 @@ std::string UpdateVisitor::iriCtxToString(SUP::IriContext* ctx) {
     }
     // Check if the IRI is absolute or not
     // If it is not absolute, it needs to be expanded with the base IRI
-    auto pos = iri.find("://");
+    auto pos = iri.find(":");
     if (pos == std::string::npos) {
         if (base_iri.empty()) {
-            throw QuerySemanticException("The IRI '" + iri + "' is not absolute and the base IRI is not defined");
+            throw QuerySemanticException(
+                "The IRI '" + iri + "' is not absolute and the base IRI is not defined"
+            );
         }
         iri = base_iri + iri;
     }
     return iri;
 }
 
-
-std::string UpdateVisitor::stringCtxToString(SUP::StringContext* ctx) {
+std::string UpdateVisitor::stringCtxToString(SUP::StringContext* ctx)
+{
     std::string str = ctx->getText();
     if (ctx->STRING_LITERAL1() || ctx->STRING_LITERAL2()) {
         // One quote per side
@@ -52,46 +55,10 @@ std::string UpdateVisitor::stringCtxToString(SUP::StringContext* ctx) {
         // Three quotes per side
         str = str.substr(3, str.size() - 6);
     }
-    std::string res;
-    res.reserve(str.size());
-
-    auto chars = str.data();
-    auto end = chars + str.size();
-
-    while (chars < end - 1) {
-        if (*chars != '\\') {
-            res += *chars;
-            chars++;
-        } else {
-            switch (*(chars + 1)) {
-            case 't':  { res += '\t'; break; }
-            case 'b':  { res += '\b'; break; }
-            case 'n':  { res += '\n'; break; }
-            case 'r':  { res += '\r'; break; }
-            case 'f':  { res += '\f'; break; }
-            case '\\': { res += '\\'; break; }
-            case '"':  { res += '"';  break; }
-            case '\'': { res += '\''; break; }
-            default: {
-                std::stringstream ss;
-                ss << "Invalid escape sequence: \"\\" << *(chars+1) << '"';
-                throw QuerySemanticException(ss.str());
-            }
-            }
-            chars += 2;
-        }
-    }
-
-    if (chars < end) {
-        res += *chars;
-    }
-
-    return res;
+    return UnicodeEscape::normalize_string(str);
 }
 
-
-ObjectId UpdateVisitor::handleIntegerString(const std::string& str,
-                                            const std::string& iri)
+ObjectId UpdateVisitor::handleIntegerString(const std::string& str, const std::string& iri)
 {
     try {
         size_t pos;
@@ -114,15 +81,15 @@ ObjectId UpdateVisitor::handleIntegerString(const std::string& str,
     }
 }
 
-
-ObjectId UpdateVisitor::get_new_blank_node() {
+ObjectId UpdateVisitor::get_new_blank_node()
+{
     auto new_blank_id = rdf_model.catalog.get_new_blank_node();
 
     return Conversions::pack_blank_inline(new_blank_id);
 }
 
-
-Any UpdateVisitor::visitQuery(SUP::QueryContext* ctx) {
+Any UpdateVisitor::visitQuery(SUP::QueryContext* ctx)
+{
     visitChildren(ctx);
     if (op_update == nullptr) {
         throw QueryParsingException("Empty query", 0, 0);
@@ -130,26 +97,26 @@ Any UpdateVisitor::visitQuery(SUP::QueryContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitPrologue(SUP::PrologueContext* ctx) {
+Any UpdateVisitor::visitPrologue(SUP::PrologueContext* ctx)
+{
     visitChildren(ctx);
     for (auto&& [alias, iri_prefix] : rdf_model.default_query_prefixes) {
         if (iri_prefix_map.find(alias) == iri_prefix_map.end()) {
-            iri_prefix_map.insert({alias, iri_prefix});
+            iri_prefix_map.insert({ alias, iri_prefix });
         }
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitBaseDecl(SUP::BaseDeclContext* ctx) {
+Any UpdateVisitor::visitBaseDecl(SUP::BaseDeclContext* ctx)
+{
     std::string base_iri = ctx->IRIREF()->getText();
     base_iri = base_iri.substr(1, base_iri.size() - 2); // remove '<' ... '>'
     return 0;
 }
 
-
-Any UpdateVisitor::visitPrefixDecl(SUP::PrefixDeclContext* ctx) {
+Any UpdateVisitor::visitPrefixDecl(SUP::PrefixDeclContext* ctx)
+{
     std::string alias = ctx->PNAME_NS()->getText();
     alias = alias.substr(0, alias.size() - 1); // remove ':'
 
@@ -160,34 +127,30 @@ Any UpdateVisitor::visitPrefixDecl(SUP::PrefixDeclContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitInsertData(SparqlUpdateParser::InsertDataContext* ctx) {
+Any UpdateVisitor::visitInsertData(SparqlUpdateParser::InsertDataContext* ctx)
+{
     visitChildren(ctx);
-    op_update->updates.push_back(
-        std::make_unique<OpInsertData>(std::move(current_triples))
-    );
+    op_update->updates.push_back(std::make_unique<OpInsertData>(std::move(current_triples)));
     return 0;
 }
 
-
-Any UpdateVisitor::visitDeleteData(SparqlUpdateParser::DeleteDataContext* ctx) {
+Any UpdateVisitor::visitDeleteData(SparqlUpdateParser::DeleteDataContext* ctx)
+{
     visitChildren(ctx);
-    op_update->updates.push_back(
-        std::make_unique<OpDeleteData>(std::move(current_triples))
-    );
+    op_update->updates.push_back(std::make_unique<OpDeleteData>(std::move(current_triples)));
     return 0;
 }
 
-
-Any UpdateVisitor::visitTriplesTemplate(SUP::TriplesTemplateContext* ctx) {
+Any UpdateVisitor::visitTriplesTemplate(SUP::TriplesTemplateContext* ctx)
+{
     for (auto& triples_same_subject : ctx->triplesSameSubject()) {
         visit(triples_same_subject);
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitTriplesSameSubject(SUP::TriplesSameSubjectContext* ctx) {
+Any UpdateVisitor::visitTriplesSameSubject(SUP::TriplesSameSubjectContext* ctx)
+{
     if (ctx->graphTerm()) { // graphTerm propertyListNotEmpty
         // 1. Visit the subject
         visit(ctx->graphTerm());
@@ -195,8 +158,7 @@ Any UpdateVisitor::visitTriplesSameSubject(SUP::TriplesSameSubjectContext* ctx) 
         // 2. Visit the predicate object list
         visit(ctx->propertyListNotEmpty());
         subject_stack.pop();
-    }
-    else { // triplesNode propertyList
+    } else { // triplesNode propertyList
         // Create new blank node
         subject_stack.push(get_new_blank_node());
         // Visit the inner predicates/object lists
@@ -208,8 +170,8 @@ Any UpdateVisitor::visitTriplesSameSubject(SUP::TriplesSameSubjectContext* ctx) 
     return 0;
 }
 
-
-Any UpdateVisitor::visitPropertyListNotEmpty(SUP::PropertyListNotEmptyContext* ctx) {
+Any UpdateVisitor::visitPropertyListNotEmpty(SUP::PropertyListNotEmptyContext* ctx)
+{
     for (size_t i = 0; i < ctx->verb().size(); i++) {
         // Visit the predicate
         visit(ctx->verb(i));
@@ -223,15 +185,15 @@ Any UpdateVisitor::visitPropertyListNotEmpty(SUP::PropertyListNotEmptyContext* c
     return 0;
 }
 
-
-Any UpdateVisitor::visitPropertyListPathNotEmpty(SUP::PropertyListPathNotEmptyContext* ctx) {
+Any UpdateVisitor::visitPropertyListPathNotEmpty(SUP::PropertyListPathNotEmptyContext* ctx)
+{
     // 1. Visit the predicate
     visit(ctx->verb());
 
     predicate_stack.push(current_sparql_element);
     // 2. Visit the object list
     auto olp = ctx->objectListPath();
-    auto op  = olp->objectPath();
+    auto op = olp->objectPath();
     for (auto& op_item : op) {
         visit(op_item);
     }
@@ -251,64 +213,46 @@ Any UpdateVisitor::visitPropertyListPathNotEmpty(SUP::PropertyListPathNotEmptyCo
     return 0;
 }
 
-
-Any UpdateVisitor::visitObject(SUP::ObjectContext* ctx) {
+Any UpdateVisitor::visitObject(SUP::ObjectContext* ctx)
+{
     auto gn = ctx->graphNode();
     if (gn->graphTerm()) {
         visit(gn->graphTerm());
 
-        current_triples.emplace_back(
-            subject_stack.top(),
-            predicate_stack.top(),
-            current_sparql_element
-        );
-    }
-    else {
+        current_triples.emplace_back(subject_stack.top(), predicate_stack.top(), current_sparql_element);
+    } else {
         auto new_blank_node = get_new_blank_node();
 
         subject_stack.push(new_blank_node);
         visit(gn->triplesNode());
         subject_stack.pop();
 
-        current_triples.emplace_back(
-            subject_stack.top(),
-            predicate_stack.top(),
-            new_blank_node
-        );
+        current_triples.emplace_back(subject_stack.top(), predicate_stack.top(), new_blank_node);
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitObjectPath(SUP::ObjectPathContext* ctx) {
+Any UpdateVisitor::visitObjectPath(SUP::ObjectPathContext* ctx)
+{
     auto gnp = ctx->graphNodePath();
     if (gnp->graphTerm()) {
         visit(gnp->graphTerm());
 
-        current_triples.emplace_back(
-            subject_stack.top(),
-            predicate_stack.top(),
-            current_sparql_element
-        );
-    }
-    else {
+        current_triples.emplace_back(subject_stack.top(), predicate_stack.top(), current_sparql_element);
+    } else {
         auto new_blank_node = get_new_blank_node();
 
         subject_stack.push(new_blank_node);
         visit(gnp->triplesNodePath());
         subject_stack.pop();
 
-        current_triples.emplace_back(
-            subject_stack.top(),
-            predicate_stack.top(),
-            new_blank_node
-        );
+        current_triples.emplace_back(subject_stack.top(), predicate_stack.top(), new_blank_node);
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitCollection(SUP::CollectionContext* ctx) {
+Any UpdateVisitor::visitCollection(SUP::CollectionContext* ctx)
+{
     Id representative_bnode = subject_stack.top();
     // I assume this prev_bnode is the blank node that will be added, the
     // reason for this is because in the ObjectPath visitation the blank node
@@ -327,22 +271,14 @@ Any UpdateVisitor::visitCollection(SUP::CollectionContext* ctx) {
         Id rdf_node = current_sparql_element;
 
         Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
-        current_triples.emplace_back(
-            prev_bnode,
-            predicate,
-            rdf_node
-        );
+        current_triples.emplace_back(prev_bnode, predicate, rdf_node);
 
         if (i < ctx->graphNode().size() - 1) {
             Id next_bnode = subject_stack.top();
 
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
-            current_triples.emplace_back(
-                prev_bnode,
-                predicate,
-                next_bnode
-            );
+            current_triples.emplace_back(prev_bnode, predicate, next_bnode);
             prev_bnode = std::move(next_bnode);
         } else {
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
@@ -360,8 +296,8 @@ Any UpdateVisitor::visitCollection(SUP::CollectionContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitCollectionPath(SUP::CollectionPathContext* ctx) {
+Any UpdateVisitor::visitCollectionPath(SUP::CollectionPathContext* ctx)
+{
     Id representative_bnode = subject_stack.top();
 
     // prev_bnode will be the subject of the first triple that will be created.
@@ -378,22 +314,14 @@ Any UpdateVisitor::visitCollectionPath(SUP::CollectionPathContext* ctx) {
         auto rdf_node = current_sparql_element;
 
         Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
-        current_triples.emplace_back(
-            prev_bnode,
-            predicate,
-            rdf_node
-        );
+        current_triples.emplace_back(prev_bnode, predicate, rdf_node);
 
         if (i < ctx->graphNodePath().size() - 1) {
             Id next_bnode = subject_stack.top();
 
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
-            current_triples.emplace_back(
-                prev_bnode,
-                predicate,
-                next_bnode
-            );
+            current_triples.emplace_back(prev_bnode, predicate, next_bnode);
             prev_bnode = std::move(next_bnode);
         } else {
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
@@ -410,8 +338,8 @@ Any UpdateVisitor::visitCollectionPath(SUP::CollectionPathContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitVerb(SUP::VerbContext* ctx) {
+Any UpdateVisitor::visitVerb(SUP::VerbContext* ctx)
+{
     if (ctx->A()) {
         current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
     } else {
@@ -420,20 +348,19 @@ Any UpdateVisitor::visitVerb(SUP::VerbContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitIri(SUP::IriContext* ctx) {
+Any UpdateVisitor::visitIri(SUP::IriContext* ctx)
+{
     current_sparql_element = Conversions::pack_iri(iriCtxToString(ctx));
     return 0;
 }
 
-
-Any UpdateVisitor::visitRdfLiteral(SUP::RdfLiteralContext* ctx) {
+Any UpdateVisitor::visitRdfLiteral(SUP::RdfLiteralContext* ctx)
+{
     std::string str = stringCtxToString(ctx->string());
     if (ctx->iri()) {
         std::string iri = iriCtxToString(ctx->iri());
         current_sparql_element = Conversions::try_pack_string_datatype(iri, str);
-    }
-    else if (ctx->LANGTAG()) {
+    } else if (ctx->LANGTAG()) {
         current_sparql_element = Conversions::pack_string_lang(ctx->LANGTAG()->getText().substr(1), str);
     } else {
         current_sparql_element = Conversions::pack_string_simple(str);
@@ -441,9 +368,13 @@ Any UpdateVisitor::visitRdfLiteral(SUP::RdfLiteralContext* ctx) {
     return 0;
 }
 
-Any UpdateVisitor::visitNumericLiteralUnsigned(SUP::NumericLiteralUnsignedContext* ctx) {
+Any UpdateVisitor::visitNumericLiteralUnsigned(SUP::NumericLiteralUnsignedContext* ctx)
+{
     if (ctx->INTEGER()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#integer");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#integer"
+        );
     } else if (ctx->DECIMAL()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -453,25 +384,30 @@ Any UpdateVisitor::visitNumericLiteralUnsigned(SUP::NumericLiteralUnsignedContex
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
         // Double
-         try {
+        try {
             current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
         } catch (const std::out_of_range& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         } catch (const std::invalid_argument& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         }
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitNumericLiteralPositive(SUP::NumericLiteralPositiveContext* ctx) {
+Any UpdateVisitor::visitNumericLiteralPositive(SUP::NumericLiteralPositiveContext* ctx)
+{
     if (ctx->INTEGER_POSITIVE()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#positiveInteger");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#positiveInteger"
+        );
     } else if (ctx->DECIMAL_POSITIVE()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -486,20 +422,25 @@ Any UpdateVisitor::visitNumericLiteralPositive(SUP::NumericLiteralPositiveContex
         } catch (const std::out_of_range& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         } catch (const std::invalid_argument& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         }
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContext* ctx) {
+Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContext* ctx)
+{
     if (ctx->INTEGER_NEGATIVE()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#negativeInteger");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#negativeInteger"
+        );
     } else if (ctx->DECIMAL_NEGATIVE()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -514,24 +455,26 @@ Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContex
         } catch (const std::out_of_range& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         } catch (const std::invalid_argument& e) {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                ctx->getText()
+            );
         }
     }
     return 0;
 }
 
-
-Any UpdateVisitor::visitBooleanLiteral(SUP::BooleanLiteralContext* ctx) {
+Any UpdateVisitor::visitBooleanLiteral(SUP::BooleanLiteralContext* ctx)
+{
     current_sparql_element = Conversions::pack_bool(ctx->TRUE() != nullptr);
     return 0;
 }
 
-
-Any UpdateVisitor::visitBlankNode(SUP::BlankNodeContext* ctx) {
+Any UpdateVisitor::visitBlankNode(SUP::BlankNodeContext* ctx)
+{
     if (ctx->BLANK_NODE_LABEL()) {
         auto var_name = ctx->getText();
         // TODO: what is the correct scope for the blank node names? for now is the entire update
@@ -549,8 +492,49 @@ Any UpdateVisitor::visitBlankNode(SUP::BlankNodeContext* ctx) {
     return 0;
 }
 
-
-Any UpdateVisitor::visitNil(SUP::NilContext*) {
+Any UpdateVisitor::visitNil(SUP::NilContext*)
+{
     current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil");
+    return 0;
+}
+
+Any UpdateVisitor::visitCreateTextIndex(SUP::CreateTextIndexContext* ctx)
+{
+    auto text_search_index_name = stringCtxToString(ctx->string());
+    auto iri_str = iriCtxToString(ctx->iri());
+
+    // Default values
+    TextSearch::NORMALIZE_TYPE normalize_type = TextSearch::DEFAULT_NORMALIZE_TYPE;
+    TextSearch::TOKENIZE_TYPE tokenize_type = TextSearch::DEFAULT_TOKENIZE_TYPE;
+
+    if (ctx->normalizeTextIndex()) {
+        const auto normalizeType = ctx->normalizeTextIndex()->normalizeType();
+        if (normalizeType->IDENTITY()) {
+            normalize_type = TextSearch::NORMALIZE_TYPE::IDENTITY;
+        } else if (normalizeType->NFKD_CASEFOLD()) {
+            normalize_type = TextSearch::NORMALIZE_TYPE::NFKD_CASEFOLD;
+        } else {
+            throw QueryException("Unknown normalize type");
+        }
+    }
+    if (ctx->tokenizeTextIndex()) {
+        const auto tokenizeType = ctx->tokenizeTextIndex()->tokenizeType();
+        if (tokenizeType->IDENTITY()) {
+            tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
+        } else if (tokenizeType->WS_RM_PUNCT()) {
+            tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_REMOVE_PUNCTUATION;
+        } else if (tokenizeType->WS_SPLIT_PUNCT()) {
+            tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_SPLIT_PUNCTUATION;
+        } else if (tokenizeType->WS_KEEP_PUNCT()) {
+            tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_KEEP_PUNCTUATION;
+        } else {
+            throw QueryException("Unknown tokenize type");
+        }
+    }
+
+    op_update->updates.emplace_back(
+        std::make_unique<OpCreateTextSearchIndex>(std::move(text_search_index_name), std::move(iri_str), normalize_type, tokenize_type)
+    );
+
     return 0;
 }

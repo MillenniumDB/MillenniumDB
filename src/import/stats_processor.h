@@ -39,7 +39,6 @@ public:
 
 template<size_t N>
 class AllStat : public StatsProcessor<N> {
-    // computes how many different elements are in the first column, assuming it is ordered
 public:
     size_t all = 0;
 

@@ -3,6 +3,8 @@
 #include <chrono>
 #include <mutex>
 
+#include "network/server/server.h"
+
 namespace MDBServer {
 
 /**
@@ -12,6 +14,12 @@ namespace MDBServer {
  */
 class StreamingSession {
 public:
+    StreamingSession(Server& server) :
+        server(server)
+    { }
+
+    Server& server;
+
     virtual ~StreamingSession() = default;
 
     // Write bytes to the stream

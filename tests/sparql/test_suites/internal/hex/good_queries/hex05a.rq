@@ -1,0 +1,6 @@
+PREFIX wiki: <https://www.wikidata.org/wiki/>
+PREFIX : <http://www.example.org/>
+
+SELECT ?s WHERE {
+    BIND(:BINDaaaa1111dddd as ?s) .
+}

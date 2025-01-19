@@ -1,0 +1,35 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "https://www.wikidata.org/wiki/Q87439#$9ec9427b-da1d-4cb2-941d-b63002388175"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "https://www.wikidata.org/wiki/Q87439#$9EC9427B-DA1D-4CB2-941D-B63002388175"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "https://www.wikidata.org/wiki/Q87439#$8FC9427B-2A17-4CB2-941D-B63002388175"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "https://www.wikidata.org/wiki/Q87439#$00001111-2222-3333-4444-555566667777"
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,1 @@
+MATCH (?x {value IS INTEGER OR FLOAT, value IS INTEGER, value is FLOAT})->(?y {value IS FLOAT, value is FLOAT OR INTEGER, value is INTEGER}) return ?x, ?x.value, ?y, ?y.value

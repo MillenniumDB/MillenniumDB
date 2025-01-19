@@ -148,49 +148,49 @@ std::unique_ptr<BindingIter> PathPlan::get_check(const RPQ_DFA& automaton, Id st
 
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllSimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllSimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_TRAILS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllTrails::DFSCheck>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllTrails::BFSCheck>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnySimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnySimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_TRAILS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnyTrails::DFSCheck>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnyTrails::BFSCheck>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::Any::DFSCheck>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
@@ -230,49 +230,49 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
 
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllSimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllSimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_TRAILS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AllTrails::DFSEnum>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AllTrails::BFSEnum>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnySimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnySimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_TRAILS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             return make_unique<Paths::AnyTrails::DFSEnum>(path_var, start, end, automaton, std::move(provider));
         } else {
             return make_unique<Paths::AnyTrails::BFSEnum>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
-        if (quad_model.path_mode == PathMode::DFS) {
+        if (quad_model.path_mode == PathSearchMode::DFS) {
             if (automaton.total_final_states > 1) {
                 return make_unique<Paths::Any::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
             } else {

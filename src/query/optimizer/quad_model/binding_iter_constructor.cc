@@ -11,6 +11,7 @@
 #include "query/executor/binding_iter/cross_product.h"
 #include "query/executor/binding_iter/distinct_hash.h"
 #include "query/executor/binding_iter/empty_binding_iter.h"
+#include "query/executor/binding_iter/expr_evaluator.h"
 #include "query/executor/binding_iter/filter.h"
 #include "query/executor/binding_iter/hash_join/bgp/in_memory/join_1_var.h"
 #include "query/executor/binding_iter/index_left_outer_join.h"
@@ -19,6 +20,7 @@
 #include "query/executor/binding_iter/order_by.h"
 #include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "query/executor/binding_iter/single_result_binding_iter.h"
+#include "query/executor/binding_iter/text_search_index_scan.h"
 #include "query/executor/binding_iters.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
 #include "query/optimizer/plan/join_order/leapfrog_optimizer.h"
@@ -31,16 +33,34 @@
 #include "query/optimizer/quad_model/plan/path_plan.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/optimizer/quad_model/plan/property_type_plan.h"
-#include "query/optimizer/quad_model/plan/similarity_search_plan.h"
 #include "query/parser/op/mql/op_where.h"
 #include "query/parser/op/mql/ops.h"
 #include "query/parser/op/op_visitor.h"
-#include "storage/index/tensor_store/lsh/binding_iters/brute_similarity_search.h"
-#include "storage/index/tensor_store/lsh/binding_iters/project_tensor_similarity.h"
 
 using namespace MQL;
 
 constexpr auto MAX_SELINGER_PLANS = 0;
+namespace MQL {
+std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
+    get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>&& exprs)
+{
+    std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> res;
+
+    for (auto&& [var, e] : exprs) {
+        auto casted_expr_var = dynamic_cast<BindingExprVar*>(e.get());
+        if (casted_expr_var) {
+            if (casted_expr_var->var == var) {
+                // avoid redundant assignation
+                continue;
+            }
+        }
+
+        res.emplace_back(var, std::move(e));
+    }
+    exprs.clear(); // vectors are not guaranteed to be empty after the move, so we make sure of that
+    return res;
+}
+}
 
 BindingIterConstructor::BindingIterConstructor(std::map<VarId, ObjectId>& setted_vars) :
     setted_vars(setted_vars)
@@ -50,8 +70,45 @@ BindingIterConstructor::BindingIterConstructor(std::map<VarId, ObjectId>& setted
 
 void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
-    if (op_basic_graph_pattern.similarity_searches.size() > 1) {
-        throw NotSupportedException("Multiple similarity searches are not supported yet");
+    // Handle Text Searches
+    std::vector<std::unique_ptr<TextSearchIndexScan>> text_search_binding_iters;
+    if (op_basic_graph_pattern.expr_text_searches.size() > 1) {
+        // TODO: Multiple text searches
+        throw QueryException("Multiple Text Searches not supported yet");
+    }
+    for (const auto& expr_text_search : op_basic_graph_pattern.expr_text_searches) {
+        safe_assigned_vars.insert(expr_text_search.object_var);
+        text_search_binding_iters.emplace_back(std::make_unique<TextSearchIndexScan>(
+            *expr_text_search.text_search_index_ptr,
+            expr_text_search.query,
+            expr_text_search.search_type,
+            expr_text_search.object_var,
+            expr_text_search.match_var
+        ));
+    }
+
+    std::vector<PropertyTypeConstraint> pattern_fixed_types_properties;
+    for (const auto& property : properties_types_queries) {
+        if (property.type_bitmap == 0) {
+            throw QueryException("Impossible type query");
+        }
+        if (!(property.type_bitmap & static_cast<uint64_t>(PropertyType::TYPE_NULL))
+            && boost::core::popcount(property.type_bitmap) == 1)
+        {
+            for (auto i = op_basic_graph_pattern.optional_properties.begin();
+                 i != op_basic_graph_pattern.optional_properties.end();)
+            {
+                if (i->value.is_var() && i->value.get_var().id == property.var_with_property.id) {
+                    fixed_types_properties.push_back(property);
+                    pattern_fixed_types_properties.push_back(property);
+                    op_basic_graph_pattern.optional_properties.erase(i);
+                    break;
+                } else {
+                    i++;
+                    assert(i != op_basic_graph_pattern.optional_properties.end());
+                }
+            }
+        }
     }
 
     // Process disjoint Terms
@@ -65,31 +122,6 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
     std::vector<std::unique_ptr<Plan>> base_plans;
 
-    std::vector<std::unique_ptr<SimilaritySearchPlan>> similarity_search_plans;
-
-    // Process disjoint Vars
-    for (auto& disjoint_var : op_basic_graph_pattern.disjoint_vars) {
-        auto setted_var_found = setted_vars.find(disjoint_var.var);
-        if (setted_var_found != setted_vars.end()) {
-            if (!term_exists(setted_var_found->second)) {
-                tmp = std::make_unique<EmptyBindingIter>();
-                return;
-            }
-        } else {
-            // we could have something like: MATCH (?x) WHERE ?x.age == 1.
-            // ?x is not really an disjoint var
-            bool join_with_where_property_equality = false;
-            for (auto&& [var, key, value, value_var] : fixed_properties) {
-                if (var == disjoint_var.var) {
-                    join_with_where_property_equality = true;
-                    break;
-                }
-            }
-            if (!join_with_where_property_equality) {
-                base_plans.push_back(std::make_unique<DisjointObjectPlan>(disjoint_var.var));
-            }
-        }
-    }
 
     // Process Labels
     for (auto& op_label : op_basic_graph_pattern.labels) {
@@ -108,7 +140,7 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     }
 
     // Process properties (type is fixed)
-    for (auto& property : fixed_types_properties) {
+    for (auto& property : pattern_fixed_types_properties) {
         base_plans.push_back(std::make_unique<PropertyTypePlan>(
             property.var_without_property, // TODO: replace_setted_var
             property.key,
@@ -118,13 +150,14 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     };
 
     // Push equalities from where into the basic graph pattern
+    /*
     if (!pushed_fixed_properties) {
         pushed_fixed_properties = true;
         for (auto&& [var, key, value, value_var] : fixed_properties) {
             base_plans.push_back(std::make_unique<PropertyPlan>(replace_setted_var(var), key, value));
             setted_vars.insert({ value_var, value });
         }
-    }
+    }*/
 
     // Process connections
     for (auto& op_edge : op_basic_graph_pattern.edges) {
@@ -149,26 +182,42 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         ));
     }
 
-    // Process similarity searches
-    for (auto& similarity_search : op_basic_graph_pattern.similarity_searches) {
-        similarity_search_plans.push_back(std::make_unique<SimilaritySearchPlan>(
-            similarity_search.object_var,
-            similarity_search.similarity_var,
-            similarity_search.tensor_store_name,
-            similarity_search.k,
-            similarity_search.search_k,
-            similarity_search.query_tensor,
-            similarity_search.query_object
-        ));
+    std::set<VarId> join_vars;
+
+    for (auto& plan: base_plans) {
+        auto plan_vars = plan->get_vars();
+        join_vars.insert(plan_vars.begin(), plan_vars.end());
     }
 
-    if (base_plans.size() == 0) {
-        if (similarity_search_plans.empty()) {
-            tmp = std::make_unique<SingleResultBindingIter>();
-        } else {
-            tmp = similarity_search_plans[0]->get_binding_iter();
+    // Process disjoint Vars
+    for (auto& disjoint_var : op_basic_graph_pattern.disjoint_vars) {
+        if (join_vars.find(disjoint_var.var) != join_vars.end()) {
+            continue;
         }
-        return;
+        if (safe_assigned_vars.find(disjoint_var.var) != safe_assigned_vars.end()) {
+            continue;
+        }
+        auto setted_var_found = setted_vars.find(disjoint_var.var);
+        if (setted_var_found != setted_vars.end()) {
+            if (!term_exists(setted_var_found->second)) {
+                tmp = std::make_unique<EmptyBindingIter>();
+                return;
+            }
+        } else {
+            // we could have something like: MATCH (?x) WHERE ?x.age == 1.
+            // ?x is not really an disjoint var
+            bool join_with_where_property_equality = false;
+            /*
+            for (auto&& [var, key, value, value_var] : fixed_properties) {
+                if (var == disjoint_var.var) {
+                    join_with_where_property_equality = true;
+                    break;
+                }
+            }*/
+            if (!join_with_where_property_equality) {
+                base_plans.push_back(std::make_unique<DisjointObjectPlan>(disjoint_var.var));
+            }
+        }
     }
 
     assert(tmp == nullptr);
@@ -183,13 +232,9 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         // try to use leapfrog if there is a join
         if (base_plans.size() > 1) {
             if (safe_assigned_vars.size() > 0) {
-                tmp = LeapfrogOptimizer::try_get_iter_with_assigned(
-                    base_plans
-                );
+                tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans);
             } else {
-                tmp = LeapfrogOptimizer::try_get_iter_without_assigned(
-                    base_plans
-                );
+                tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans);
             }
         }
 
@@ -206,99 +251,19 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         }
     };
 
-    // Set an OrderBy for the current binding iter (tmp) by order_var (ascending)
-    // auto set_order_by_var = [&](VarId order_var) {
-    //     std::set<VarId>    similarity_saved_vars = get_query_ctx().get_all_vars();
-    //     std::vector<VarId> similarity_order_vars = { order_var };
-    //     std::vector<bool>  similarity_ascending  = { true };
-    //     tmp = std::make_unique<OrderBy>(
-    //         std::move(tmp),
-    //         std::move(similarity_saved_vars),
-    //         std::move(similarity_order_vars),
-    //         std::move(similarity_ascending),
-    //         &MQL::Comparisons::compare
-    //     );
-    // };
-
-    if (op_basic_graph_pattern.similarity_searches.size() > 0) {
-        // Handle similarity search
-        auto sim_iter = similarity_search_plans[0]->get_binding_iter();
-
-        // Check if there is a join between the base plans and the similarity search
-        std::set<VarId> base_plan_vars;
-        for (auto& plan : base_plans) {
-            auto vars = plan->get_vars();
-            base_plan_vars.insert(vars.begin(), vars.end());
-        }
-        auto object_var = similarity_search_plans[0]->get_object_var();
-
-        if (base_plan_vars.find(object_var) != base_plan_vars.end()) {
-            // Handle join
-
-            // 1. HashJoin(build=bgp, probe=sim)
-            build_bgp_iter();
-            std::vector<VarId> build_vars;
-            std::vector<VarId> probe_vars = { similarity_search_plans[0]->get_similarity_var() };
-            for (auto& var : base_plan_vars) {
-                if (var != object_var)
-                    build_vars.push_back(var);
-            }
-            tmp = std::make_unique<HashJoin::BGP::InMemory::Join1Var>(
-                std::move(tmp),
-                std::move(sim_iter),
-                object_var,
-                std::move(build_vars),
-                std::move(probe_vars)
-            );
-
-
-            // 2. OrderBy(HashJoin(build=sim, probe=bgp), sim.similarity_var)
-            /*
-            build_bgp_iter();
-            std::vector<VarId> build_vars = { similarity_search_plans[0]->get_similarity_var() };
-            std::vector<VarId> probe_vars;
-            for (auto& var : base_plan_vars) {
-                if (var != object_var)
-                    probe_vars.push_back(var);
-            }
-            tmp = std::make_unique<HashJoin::BGP::InMemory::Join1Var>(
-                std::move(sim_iter),
-                std::move(tmp),
-                object_var,
-                std::move(build_vars),
-                std::move(probe_vars)
-            );
-            auto similarity_var = similarity_search_plans[0]->get_similarity_var();
-            set_order_by_var(similarity_var);
-            */
-
-
-            // 3. IndexNestedLoopJoin(lhs=sim, rhs=bgp)
-            /*
-            safe_assigned_vars.insert(similarity_search_plans[0]->get_object_var());
-            build_bgp_iter();
-            tmp = std::make_unique<IndexNestedLoopJoin>(
-                std::move(sim_iter),
-                std::move(tmp)
-            );
-            */
-
-
-            // 4. OrderBy(LeapfrogJoin({ ...base_plans, similarity_search_plan }), similarity)
-            /*
-            auto similarity_var = similarity_search_plans[0]->get_similarity();
-            base_plans.push_back(std::move(similarity_search_plans[0]));
-            build_bgp_iter();
-            set_order_by_var(similarity_var);
-            */
-        } else {
-            // Handle cross product
-            build_bgp_iter();
-            tmp = std::make_unique<CrossProduct>(std::move(tmp), std::move(sim_iter));
-        }
-    } else {
-        // No similarity search
+    if (base_plans.size() > 0) {
         build_bgp_iter();
+    }
+
+    if (!text_search_binding_iters.empty()) {
+        // TODO: Multiple text searches
+        if (base_plans.size() > 0) {
+            tmp = std::make_unique<IndexNestedLoopJoin>(
+                std::move(text_search_binding_iters[0]),
+                std::move(tmp));
+        } else {
+            tmp = std::move(text_search_binding_iters[0]);
+        }
     }
 
     // insert new safe_assigned_vars
@@ -307,44 +272,19 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
             safe_assigned_vars.insert(var);
         }
     }
-}
 
-void BindingIterConstructor::visit(OpMatch& op_match)
-{
-    fixed_properties = std::move(op_match.fixed_properties);
-
-    // properties_types_queries contains final bitmaps of each property
-    for (const auto& property : properties_types_queries) {
-        if (property.type_bitmap == 0) {
-            throw QueryException("Impossible type query");
-        }
-        if (!(property.type_bitmap & static_cast<uint64_t>(PropertyType::TYPE_NULL))
-            && boost::core::popcount(property.type_bitmap) == 1)
-        {
-            for (auto i = op_match.optional_properties.begin(); i != op_match.optional_properties.end();) {
-                if (i->value.is_var() && i->value.get_var().id == property.var_with_property.id) {
-                    fixed_types_properties.push_back(property);
-                    op_match.optional_properties.erase(i);
-                    break;
-                } else {
-                    i++;
-                    assert(i != op_match.optional_properties.end());
-                }
-            }
-        }
-    }
-
-    op_match.op->accept_visitor(*this);
-
-    for (auto& property : op_match.optional_properties) {
+    // TODO: Optimize when property variable is already in the text serach
+    for (auto& property : op_basic_graph_pattern.optional_properties)
+    {
         // ignore if it is in mandatory_properties
         bool skip = false;
+        /*
         for (auto&& [fp_var, fp_key, fp_value, fp_value_var] : fixed_properties) {
             if (property.node.is_var() && property.node.get_var() == fp_var && property.key == fp_key) {
                 skip = true;
                 break;
             }
-        }
+        }*/
         if (skip) {
             continue;
         }
@@ -354,7 +294,7 @@ void BindingIterConstructor::visit(OpMatch& op_match)
                                                            ScanRange::get(property.value, false) };
         auto index_scan = std::make_unique<IndexScan<3>>(*quad_model.object_key_value, std::move(ranges));
         std::vector<VarId> rhs_only_vars = { property.value.get_var() };
-        tmp = std::make_unique<IndexLeftOuterJoin>(
+        tmp = std::make_unique<IndexLeftOuterJoin>( // Mover
             std::move(tmp),
             std::move(index_scan),
             std::move(rhs_only_vars)
@@ -364,10 +304,10 @@ void BindingIterConstructor::visit(OpMatch& op_match)
 
 void BindingIterConstructor::visit(OpWhere& op_where)
 {
+    properties_types_queries.clear();
     ExprPropertyTypes expr_property_types(this);
     // visitor collect final types bitmaps of properties in propId_and_bitmap dict
     op_where.expr->accept_visitor(expr_property_types);
-
     for (auto& p_type : properties_types_queries) {
         auto key = p_type.var_with_property.id;
         auto it = expr_property_types.propId_and_bitmap->find(key);
@@ -424,135 +364,35 @@ void BindingIterConstructor::visit(OpOptional& op_optional)
 
 void BindingIterConstructor::visit(OpGroupBy& op_group_by)
 {
-    grouping = true;
     op_group_by.op->accept_visitor(*this);
+    grouping = true;
+
+    this->op_group_by = &op_group_by;
 
     for (auto& var : op_group_by.vars) {
         group_vars.insert(var);
         group_saved_vars.insert(var);
-        group_vars_vector.push_back(var);
     }
 }
 
 
 void BindingIterConstructor::visit(OpOrderBy& op_order_by)
 {
-    int i = 0;
-    for (auto&& [var, expr] : op_order_by.items) {
-        if (expr != nullptr) {
+    for (const auto& item : op_order_by.items) {
+        if (std::holds_alternative<std::unique_ptr<Expr>>(item)) {
+            auto& expr = std::get<std::unique_ptr<Expr>>(item);
             if (expr->has_aggregation()) {
                 grouping = true;
+                break;
             }
-
-            ExprToBindingExpr expr_to_binding_expr(this, var);
-            expr->accept_visitor(expr_to_binding_expr);
         }
-        order_by_vars.push_back(var);
-        order_by_saved_vars.insert(var);
-        order_by_ascending.push_back(op_order_by.ascending_order[i]);
-        i++;
-    }
-
-    for (auto& var : projected_vars) {
-        order_by_saved_vars.insert(var);
     }
 
     op_order_by.op->accept_visitor(*this);
-}
 
+    assert(op_order_by.items.size() > 0);
 
-void BindingIterConstructor::visit(OpProjectSimilarity& op_project_similarity)
-{
-    op_project_similarity.op->accept_visitor(*this);
-
-    assert(
-        (op_project_similarity.query_tensor.empty()
-         ^ (op_project_similarity.query_object.id == ObjectId::NULL_ID))
-        && "Exactly one of the following must be non-null: query_tensor, query_object"
-    );
-
-    if (!quad_model.catalog.name2tensor_store.contains(op_project_similarity.tensor_store_name))
-        throw QueryException(
-            "Tensor store \"" + op_project_similarity.tensor_store_name + "\" does not exist"
-        );
-
-    TensorStore& tensor_store =
-        *quad_model.catalog.name2tensor_store.at(op_project_similarity.tensor_store_name);
-
-    // Like SimilaritySearchPlan constructor
-    std::vector<float> query_tensor;
-    if (op_project_similarity.query_tensor.empty()) {
-        // It is necessary to read from the tensor store
-        query_tensor.resize(tensor_store.tensors_dim);
-        bool found = tensor_store.get(op_project_similarity.query_object.id, query_tensor);
-        if (!found)
-            throw QueryException(
-                "ObjectId for " + MQL::Conversions::to_lexical_str(op_project_similarity.query_object)
-                + " not found in tensor store"
-            );
-    } else {
-        query_tensor = std::move(op_project_similarity.query_tensor);
-    }
-
-    if (tensor_store.tensors_dim != query_tensor.size())
-        throw QueryException("Input tensor must have dimension " + std::to_string(tensor_store.tensors_dim));
-
-    tmp = std::make_unique<LSH::ProjectTensorSimilarity>(
-        std::move(tmp),
-        op_project_similarity.object_var,
-        op_project_similarity.similarity_var,
-        std::move(query_tensor),
-        tensor_store,
-        op_project_similarity.metric_type
-    );
-}
-
-
-void BindingIterConstructor::visit(OpBruteSimilaritySearch& op_brute_similarity_search)
-{
-    op_brute_similarity_search.op->accept_visitor(*this);
-
-    assert(
-        (op_brute_similarity_search.query_tensor.empty()
-         ^ (op_brute_similarity_search.query_object.id == ObjectId::NULL_ID))
-        && "Exactly one of the following must be non-null: query_tensor, query_object"
-    );
-
-    if (!quad_model.catalog.name2tensor_store.contains(op_brute_similarity_search.tensor_store_name))
-        throw QueryException(
-            "Tensor store \"" + op_brute_similarity_search.tensor_store_name + "\" does not exist"
-        );
-
-    TensorStore& tensor_store =
-        *quad_model.catalog.name2tensor_store.at(op_brute_similarity_search.tensor_store_name);
-
-    // Like SimilaritySearchPlan constructor
-    std::vector<float> query_tensor;
-    if (op_brute_similarity_search.query_tensor.empty()) {
-        // It is necessary to read from the tensor store
-        query_tensor.resize(tensor_store.tensors_dim);
-        bool found = tensor_store.get(op_brute_similarity_search.query_object.id, query_tensor);
-        if (!found)
-            throw QueryException(
-                "ObjectId for " + MQL::Conversions::to_lexical_str(op_brute_similarity_search.query_object)
-                + " not found in tensor store"
-            );
-    } else {
-        query_tensor = std::move(op_brute_similarity_search.query_tensor);
-    }
-
-    if (tensor_store.tensors_dim != query_tensor.size())
-        throw QueryException("Input tensor must have dimension " + std::to_string(tensor_store.tensors_dim));
-
-    tmp = std::make_unique<LSH::BruteSimilaritySearch>(
-        std::move(tmp),
-        op_brute_similarity_search.object_var,
-        op_brute_similarity_search.similarity_var,
-        std::move(query_tensor),
-        tensor_store,
-        op_brute_similarity_search.metric_type,
-        op_brute_similarity_search.k
-    );
+    this->op_order_by = &op_order_by;
 }
 
 
@@ -566,10 +406,14 @@ void BindingIterConstructor::visit(OpReturn& op_return)
     }
     op_return.op->accept_visitor(*this);
 
-    for (auto&& [var, expr] : op_return.projection) {
+    for (auto& [var, expr] : op_return.projection) {
+        projected_vars.emplace_back(var);
+
         if (expr != nullptr) {
             ExprToBindingExpr expr_to_binding_expr(this, var);
             expr->accept_visitor(expr_to_binding_expr);
+
+            projection_order_exprs.emplace_back(var, std::move(expr_to_binding_expr.tmp));
         } else {
             if (grouping && group_vars.find(var) == group_vars.end()) {
                 throw QuerySemanticException(
@@ -577,12 +421,35 @@ void BindingIterConstructor::visit(OpReturn& op_return)
                 );
             }
         }
-        order_by_saved_vars.insert(var); // may be unused if there is no ORDER BY
-        projected_vars.push_back(var);
     }
 
-    if (group_vars.size() > 0) {
+    if (op_order_by) {
+        for (uint_fast32_t i = 0; i < op_order_by->items.size(); i++) {
+            if (std::holds_alternative<VarId>(op_order_by->items[i])) {
+                auto& var = std::get<VarId>(op_order_by->items[i]);
+                order_by_vars.emplace_back(var);
+                order_by_saved_vars.insert(var);
+                group_saved_vars.insert(var);
+            } else {
+                auto& expr = std::get<std::unique_ptr<Expr>>(op_order_by->items[i]);
+                auto var = get_query_ctx().get_internal_var();
+
+                order_by_vars.emplace_back(var);
+                order_by_saved_vars.insert(var);
+
+                ExprToBindingExpr expr_to_binding_expr(this, {});
+
+                expr->accept_visitor(expr_to_binding_expr);
+
+                projection_order_exprs.emplace_back(var, std::move(expr_to_binding_expr.tmp));
+            }
+        }
+    }
+
+    if (op_group_by) {
         std::vector<bool> ascending(group_vars.size(), true);
+
+        std::vector<VarId> group_vars_vector(group_vars.begin(), group_vars.end());
 
         tmp = std::make_unique<OrderBy>(
             std::move(tmp),
@@ -593,16 +460,39 @@ void BindingIterConstructor::visit(OpReturn& op_return)
         );
     }
 
-    if (aggregations.size() > 0) {
+    if (aggregations.size() > 0 || group_vars.size() > 0) {
+        tmp = std::make_unique<Aggregation>(
+            std::move(tmp),
+            std::move(aggregations),
+            std::move(group_vars)
+        );
+    }if (aggregations.size() > 0 || group_vars.size() > 0) {
+        tmp = std::make_unique<Aggregation>(
+            std::move(tmp),
+            std::move(aggregations),
+            std::move(group_vars)
+        );
+    }
+    if (aggregations.size() > 0 || group_vars.size() > 0) {
         tmp = std::make_unique<Aggregation>(std::move(tmp), std::move(aggregations), std::move(group_vars));
     }
 
-    if (order_by_vars.size() > 0) {
+    assert(tmp != nullptr);
+    auto non_redundant_expr_eval = get_non_redundant_exprs(std::move(projection_order_exprs));
+    if (non_redundant_expr_eval.size() > 0) {
+        tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(non_redundant_expr_eval));
+    }
+
+    if (op_order_by) {
+        for (const auto& var : projected_vars) {
+            order_by_saved_vars.insert(var);
+        }
+
         tmp = std::make_unique<OrderBy>(
             std::move(tmp),
             std::move(order_by_saved_vars),
             std::move(order_by_vars),
-            std::move(order_by_ascending),
+            std::move(op_order_by->ascending_order),
             &MQL::Comparisons::compare
         );
     }

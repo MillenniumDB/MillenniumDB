@@ -13,7 +13,9 @@
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
 #include "query/executor/query_executor/json_ostream_escape.h"
 #include "query/executor/query_executor/mql/return_executor.h"
+#include "query/executor/query_executor/mql/return_type.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
+#include "storage/index/tensor_store/tensor_store_manager.h"
 #include "system/buffer_manager.h"
 #include "system/system.h"
 #include "third_party/cli11/CLI11.hpp"
@@ -341,6 +343,7 @@ int main(int argc, char* argv[]) {
         BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE,
         BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE,
         BufferManager::DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE,
+        TensorStoreManager::DEFAULT_TENSOR_BUFFER_SIZE,
         1
     );
     auto model_destroyer = QuadModel::init();

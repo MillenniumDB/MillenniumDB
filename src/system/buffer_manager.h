@@ -147,6 +147,11 @@ public:
 
     void upgrade_to_editable(VersionScope&);
 
+    // Returns true if version_number is being used
+    bool version_not_being_used(uint64_t version_number);
+
+    bool is_editable(VPage& page) const;
+
 private:
     ////////////////////// VERSIONED PAGES BUFFER //////////////////////
 

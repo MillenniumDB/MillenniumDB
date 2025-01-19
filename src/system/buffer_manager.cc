@@ -170,6 +170,7 @@ VPage& BufferManager::get_vpage_available() {
 
             if (page.next_version != nullptr) {
                 page.next_version->prev_version = page.prev_version;
+                page.dirty = false;
             } else { // page is the last in the linked list
                 // flush when dirty and there is no next version
                 if (page.dirty) {
@@ -187,7 +188,7 @@ VPage& BufferManager::get_vpage_available() {
                             // (we know this is the last version and there is no previous version)
                         }
 
-                        p = page.prev_version;
+                        p = p->prev_version;
                     } while (p != nullptr);
                 }
             }
@@ -276,12 +277,11 @@ VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) no
     auto it = vp_map.find(page_id);
 
     if (it == vp_map.end()) {
-        auto& old_page = get_vpage_available();
         auto& new_page = get_vpage_available();
+        new_page.reassign(page_id); // this will pin the page
 
+        auto& old_page = get_vpage_available();
         old_page.reassign_page_id(page_id);
-        new_page.reassign(page_id);
-
         old_page.version_number = start_version;
         old_page.prev_version = nullptr;
         old_page.next_version = &new_page;
@@ -301,31 +301,41 @@ VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) no
         return new_page;
     } else {
         // page is in the buffer, search the corresponding version
-        VPage* page = it->second;
+        VPage* vpage_head = it->second;
 
-        while (page->next_version != nullptr && page->next_version->version_number <= result_version) {
-            page = page->next_version;
+        VPage* vpage_tail = vpage_head;
+        while (vpage_tail->next_version != nullptr) {
+            vpage_tail = vpage_tail->next_version;
         }
 
-        if (page->version_number != result_version) {
+        assert(vpage_tail->version_number <= result_version);
+
+        vpage_head->pin();
+        vpage_tail->pin();
+
+        if (vpage_tail->version_number != result_version) {
             auto& new_page = get_vpage_available();
+
+            vpage_head->unpin();
+            vpage_tail->unpin();
 
             new_page.reassign(page_id);
 
-            page->next_version = &new_page;
+            vpage_tail->next_version = &new_page;
 
             new_page.version_number = result_version;
-            new_page.prev_version = page;
+            new_page.prev_version = vpage_tail;
             new_page.next_version = nullptr;
             new_page.dirty = true;
 
             current_modifications.push_back(page_id);
 
-            std::memcpy(new_page.bytes, page->bytes, VPage::SIZE);
+            std::memcpy(new_page.bytes, vpage_tail->bytes, VPage::SIZE);
             return new_page;
         } else {
-            page->pin();
-            return *page;
+            // vpage_tail is already pinned
+            vpage_head->unpin();
+            return *vpage_tail;
         }
     }
 }
@@ -549,6 +559,21 @@ void BufferManager::upgrade_to_editable(VersionScope& version_scope) {
     version_scope.is_editable = true;
 }
 
+
+bool BufferManager::version_not_being_used(uint64_t version_number) {
+    running_version_count_mutex.lock();
+    const auto it = running_version_count.find(version_number);
+    const bool version_not_used = it == running_version_count.end();
+    running_version_count_mutex.unlock();
+    return version_not_used;
+}
+
+bool BufferManager::is_editable(VPage& page) const
+{
+    const uint64_t start_version = get_query_ctx().start_version;
+    const uint64_t result_version = get_query_ctx().result_version;
+    return page.version_number == result_version && result_version > start_version;
+}
 
 void BufferManager::terminate(const VersionScope& version_scope) {
     std::lock_guard<std::mutex> lck(running_version_count_mutex);

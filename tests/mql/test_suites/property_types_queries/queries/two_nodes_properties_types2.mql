@@ -1,0 +1,1 @@
+MATCH (?x)->(?y {value IS STRING}) RETURN ?x,?y,?y.value

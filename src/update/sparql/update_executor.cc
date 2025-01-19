@@ -7,22 +7,24 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
+#include "storage/index/text_search/text_search_index.h"
+#include "storage/index/text_search/text_search_index_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
 using namespace SPARQL;
 
-UpdateExecutor::~UpdateExecutor() {
+UpdateExecutor::~UpdateExecutor()
+{
     // TODO: force string file WAL flush?
 }
-
 
 constexpr uint64_t CLEAR_TMP_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
 constexpr uint64_t CLEAR_TAG_MASK = ~(ObjectId::MASK_LITERAL_TAG);
 
-
 // helper to generalize inline langs and inline datatypes
-bool UpdateExecutor::try_transform_inline(ObjectId& oid, std::vector<std::string>& catalog_list, char split) {
+bool UpdateExecutor::try_transform_inline(ObjectId& oid, std::vector<std::string>& catalog_list, char split)
+{
     auto old_tag_id = oid.get_value() >> Conversions::TMP_SHIFT;
 
     // if catalog doesn't have space left
@@ -43,10 +45,13 @@ bool UpdateExecutor::try_transform_inline(ObjectId& oid, std::vector<std::string
 
     auto found = tmp_str.find_last_of(split);
     if (found == std::string::npos) {
-        throw LogicException("try_transform_inline: string with LAST_TMP_ID `" + tmp_str + "` must have " + split + " as separator");
+        throw LogicException(
+            "try_transform_inline: string with LAST_TMP_ID `" + tmp_str + "` must have " + split
+            + " as separator"
+        );
     }
-    std::string new_str = tmp_str.substr(0,found);
-    std::string suffix = tmp_str.substr(found+1);
+    std::string new_str = tmp_str.substr(0, found);
+    std::string suffix = tmp_str.substr(found + 1);
 
     // search in catalog. maybe was inserted by previous operation
     uint64_t new_tag_id = 0;
@@ -73,8 +78,8 @@ bool UpdateExecutor::try_transform_inline(ObjectId& oid, std::vector<std::string
     return true;
 }
 
-
-bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& catalog_list, char split) {
+bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& catalog_list, char split)
+{
     auto tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
     auto& tmp_str = tmp_manager.get_str(tmp_id);
     auto old_tag_id = oid.get_value() >> Conversions::TMP_SHIFT;
@@ -93,10 +98,13 @@ bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& 
 
     auto found = tmp_str.find_last_of(split);
     if (found == std::string::npos) {
-        throw LogicException("try_transform_tmp: string with LAST_TMP_ID `" + tmp_str + "` must have " + split + " as separator");
+        throw LogicException(
+            "try_transform_tmp: string with LAST_TMP_ID `" + tmp_str + "` must have " + split
+            + " as separator"
+        );
     }
-    std::string new_str = tmp_str.substr(0,found);
-    std::string suffix = tmp_str.substr(found+1);
+    std::string new_str = tmp_str.substr(0, found);
+    std::string suffix = tmp_str.substr(found + 1);
 
     // search in catalog. maybe was inserted by previous operation
     uint64_t new_tag_id = 0;
@@ -123,8 +131,8 @@ bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& 
     return true;
 }
 
-
-bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string>& catalog_list, char split) {
+bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string>& catalog_list, char split)
+{
     auto old_tag_id = oid.get_value() >> Conversions::TMP_SHIFT;
 
     // if catalog doesn't have space left
@@ -142,10 +150,13 @@ bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string
 
     auto found = old_str.find_last_of(split);
     if (found == std::string::npos) {
-        throw LogicException("try_transform_extern string with LAST_TMP_ID `" + old_str + "` must have " + split + " as separator");
+        throw LogicException(
+            "try_transform_extern string with LAST_TMP_ID `" + old_str + "` must have " + split
+            + " as separator"
+        );
     }
-    std::string new_str = old_str.substr(0,found);
-    std::string suffix = old_str.substr(found+1);
+    std::string new_str = old_str.substr(0, found);
+    std::string suffix = old_str.substr(found + 1);
 
     // search in catalog. maybe was inserted by previous operation
     uint64_t new_tag_id = 0;
@@ -171,11 +182,11 @@ bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string
     return true;
 }
 
-
 // If the language or datatype is tmp and can be put into the catalog the
 // oid is modified and the catalog is updated.
 // If the tmp_manager is in use, move to the external manager
-bool UpdateExecutor::transform_if_tmp(ObjectId& oid) {
+bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
+{
     auto oid_type = RDF_OID::get_type(oid);
 
     switch (oid_type) {
@@ -211,8 +222,13 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid) {
     }
 }
 
+void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
+{
+    // Store all the inserts that will be necessary for the text search index
+    const auto& predicate2names = rdf_model.catalog.text_search_index_manager.get_predicate2names();
+    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
+        text_search_index_name2inserts;
 
-void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data) {
     // to receive the data
     for (auto& triple : op_insert_data.triples) {
         assert(triple.subject.is_OID());
@@ -228,13 +244,13 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data) {
         auto originalO = O;
 
         if (transform_if_tmp(S)) {
-            created_ids.insert({originalS, S});
+            created_ids.insert({ originalS, S });
         }
         if (transform_if_tmp(P)) {
-            created_ids.insert({originalP, P});
+            created_ids.insert({ originalP, P });
         }
         if (transform_if_tmp(O)) {
-            created_ids.insert({originalO, O});
+            created_ids.insert({ originalO, O });
         }
 
         assert(!S.is_tmp());
@@ -245,6 +261,16 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data) {
         bool is_new_record = rdf_model.spo->insert(record_spo);
 
         if (is_new_record) {
+            if (!predicate2names.empty()) {
+                const auto predicate_str = SPARQL::Conversions::unpack_iri(P);
+                auto it = predicate2names.find(predicate_str);
+                if (it != predicate2names.end()) {
+                    for (const auto& name : it->second) {
+                        text_search_index_name2inserts[name].emplace_back(S, O);
+                    }
+                }
+            }
+
             rdf_model.catalog.insert_triple(S.id, P.id, O.id);
             triples_inserted++;
 
@@ -297,10 +323,41 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data) {
             }
         }
     }
+
+    // Execute text search index updates
+    TextSearch::TextSearchIndex* text_search_index;
+    for (const auto& [name, inserts] : text_search_index_name2inserts) {
+        [[maybe_unused]] const auto found = rdf_model.catalog.text_search_index_manager.get_text_search_index(
+            name,
+            &text_search_index
+        );
+        assert(found && "Text search index not found");
+
+        uint_fast32_t inserted_elements { 0 };
+        uint_fast32_t inserted_tokens { 0 };
+        for (const auto& [S, O] : inserts) {
+            const auto current_inserted_tokens = text_search_index->index_single(S, O);
+            if (current_inserted_tokens > 0) {
+                ++inserted_elements;
+                inserted_tokens += current_inserted_tokens;
+            }
+        }
+
+        TextSearchIndexUpdateData tsi_update;
+        tsi_update.text_search_index_name = name;
+        tsi_update.inserted_elements = inserted_elements;
+        tsi_update.inserted_tokens = inserted_tokens;
+        text_search_index_updates.emplace_back(std::move(tsi_update));
+    }
 }
 
+void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
+{
+    // Store all the deletes that will be necessary for the text search index
+    const auto& predicate2names = rdf_model.catalog.text_search_index_manager.get_predicate2names();
+    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
+        text_search_index_name2deletes;
 
-void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
     for (auto& triple : op_delete_data.triples) {
         assert(triple.subject.is_OID());
         assert(triple.predicate.is_OID());
@@ -335,6 +392,17 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
         bool exists = rdf_model.spo->delete_record(record_spo);
 
         if (exists) {
+            // Retrieve all the updates that will be necessary for the text search index
+            if (!predicate2names.empty()) {
+                const auto predicate_str = SPARQL::Conversions::unpack_iri(P);
+                auto it = predicate2names.find(predicate_str);
+                if (it != predicate2names.end()) {
+                    for (const auto& name : it->second) {
+                        text_search_index_name2deletes[name].emplace_back(S, O);
+                    }
+                }
+            }
+
             rdf_model.catalog.delete_triple(S.id, P.id, O.id);
             triples_deleted++;
 
@@ -359,7 +427,6 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
                 rdf_model.ops->delete_record(record_ops);
             }
 
-
             if (S == P) {
                 Record<2> record_eq_sp = { S.id, O.id };
                 rdf_model.equal_sp->delete_record(record_eq_sp);
@@ -378,7 +445,6 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
 
                 Record<2> record_eq_so_inv = { P.id, S.id };
                 rdf_model.equal_sp_inverted->delete_record(record_eq_so_inv);
-
             }
             if (P == O) {
                 Record<2> record_eq_po = { P.id, S.id };
@@ -388,5 +454,79 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data) {
                 rdf_model.equal_sp_inverted->delete_record(record_eq_po_inv);
             }
         }
+    }
+
+    // Execute text search index updates
+    TextSearch::TextSearchIndex* text_search_index;
+    for (const auto& [name, deletes] : text_search_index_name2deletes) {
+        [[maybe_unused]] const auto found = rdf_model.catalog.text_search_index_manager.get_text_search_index(
+            name,
+            &text_search_index
+        );
+        assert(found && "Text search index not found");
+
+        uint_fast32_t removed_elements { 0 };
+        uint_fast32_t removed_tokens { 0 };
+        for (const auto& [S, O] : deletes) {
+            const auto current_removed_tokens = text_search_index->remove_single(S, O);
+            if (current_removed_tokens > 0) {
+                ++removed_elements;
+                removed_tokens += current_removed_tokens;
+            }
+        }
+
+        TextSearchIndexUpdateData tsi_update;
+        tsi_update.text_search_index_name = name;
+        tsi_update.removed_elements = removed_elements;
+        tsi_update.removed_tokens = removed_tokens;
+        text_search_index_updates.emplace_back(std::move(tsi_update));
+    }
+}
+
+void UpdateExecutor::visit(SPARQL::OpCreateTextSearchIndex& op_create_text_search_index)
+{
+    try {
+        auto& text_search_index_manager = rdf_model.catalog.text_search_index_manager;
+        const auto& [inserted_elements, inserted_tokens] = text_search_index_manager.create_text_search_index(
+            op_create_text_search_index.text_search_index_name,
+            op_create_text_search_index.predicate,
+            op_create_text_search_index.normalize_type,
+            op_create_text_search_index.tokenize_type
+        );
+
+        TextSearchIndexUpdateData tsi_update;
+        tsi_update.text_search_index_name = op_create_text_search_index.text_search_index_name;
+        tsi_update.inserted_elements = inserted_elements;
+        tsi_update.inserted_tokens = inserted_tokens;
+        text_search_index_updates.emplace_back(std::move(tsi_update));
+    } catch (const std::exception& e) {
+        // Rethrow any exception wrapped by a QueryExecutionException
+        throw QueryExecutionException(e.what());
+    }
+}
+
+void UpdateExecutor::print_stats(std::ostream& os)
+{
+    bool has_changes = false;
+
+    if (triples_inserted != 0) {
+        os << "Triples inserted: " << triples_inserted << '\n';
+    }
+
+    if (triples_deleted != 0) {
+        os << "Triples deleted: " << triples_deleted << '\n';
+    }
+
+    if (!text_search_index_updates.empty()) {
+        os << "TextSearchIndex updates:\n";
+        for (const auto& text_search_update_data : text_search_index_updates) {
+            os << text_search_update_data;
+            os << '\n';
+        }
+    }
+
+    if (!has_changes) {
+        os << "No modifications were performed\n";
+        return;
     }
 }

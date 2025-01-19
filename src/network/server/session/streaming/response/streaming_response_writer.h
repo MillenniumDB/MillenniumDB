@@ -11,7 +11,7 @@
 #include "network/server/session/streaming/response/streaming_response_buffer.h"
 #include "query/executor/binding.h"
 #include "query/var_id.h"
-
+#include "update/mql/update_executor.h"
 
 namespace MDBServer {
 
@@ -58,6 +58,13 @@ public:
                                uint64_t parser_duration_ms,
                                uint64_t optimizer_duration_ms,
                                uint64_t execution_duration);
+    void write_update_success(
+        uint64_t parser_duration_ms,
+        uint64_t optimizer_duration_ms,
+        uint64_t execution_duration_ms,
+        const MQL::UpdateExecutor::GraphUpdateData& graph_update_data,
+        const MQL::UpdateExecutor::TensorUpdateData& tensor_update_data
+    );
     void write_catalog_success();
     void write_cancel_success();
     void write_record(const std::vector<VarId>& projection_vars, const Binding& binding);

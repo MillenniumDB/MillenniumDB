@@ -4,7 +4,9 @@
 
 namespace TextSearch { namespace Quad {
 
-IndexPredicate index_predicate;
-OidToString oid_to_string;
+IndexPredicateFuncType index_predicate;
+IndexSingleFuncType index_single;
+RemoveSingleFuncType remove_single;
+ObjectIdToStringFuncType oid_to_string;
 
-}} // namespace TextSearch::RDF
+}} // namespace TextSearch::Quad

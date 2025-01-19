@@ -84,6 +84,15 @@ void CheckScopedBlankNodes::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
+void CheckScopedBlankNodes::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
+void CheckScopedBlankNodes::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
 
 void CheckScopedBlankNodes::visit(OpGroupBy& op_group_by) {
     op_group_by.op->accept_visitor(*this);
@@ -144,3 +153,5 @@ void CheckScopedBlankNodes::visit(OpUnitTable&) { }
 
 
 void CheckScopedBlankNodes::visit(OpValues&) { }
+
+void CheckScopedBlankNodes::visit(OpShow&) { }

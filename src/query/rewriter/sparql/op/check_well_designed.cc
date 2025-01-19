@@ -51,6 +51,12 @@ void CheckWellDesigned::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
             seen_vars.insert(op_path.object.get_var());
         }
     }
+
+    for (auto& op_text_search_index : op_basic_graph_pattern.text_searches) {
+        for (auto& var : op_text_search_index.get_all_vars()) {
+            seen_vars.insert(var);
+        }
+    }
 }
 
 
@@ -91,6 +97,15 @@ void CheckWellDesigned::visit(OpAsk& op_ask) {
     op_ask.op->accept_visitor(*this);
 }
 
+void CheckWellDesigned::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
+void CheckWellDesigned::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
 
 void CheckWellDesigned::visit(OpGroupBy& op_group_by) {
     op_group_by.op->accept_visitor(*this);
@@ -152,3 +167,4 @@ void CheckWellDesigned::visit(OpSequence& op_sequence) {
 
 void CheckWellDesigned::visit(OpUnitTable&) { }
 void CheckWellDesigned::visit(OpEmpty&) { }
+void CheckWellDesigned::visit(OpShow&) { }

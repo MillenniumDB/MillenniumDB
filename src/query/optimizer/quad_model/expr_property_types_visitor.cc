@@ -42,14 +42,17 @@ void ExprPropertyTypes::visit(ExprAnd& expr)
         auto potential_is_expr = dynamic_cast<ExprIs*>(e.get());
         if (potential_or_expr != nullptr || potential_is_expr != nullptr) {
             e->accept_visitor(*this);
-            for (const auto& pair : *propId_and_bitmap) {
-                auto key = pair.first;
-                auto it = new_propId.find(key);
 
-                if (it != new_propId.end()) { // ya existe
-                    it->second &= pair.second;
-                } else {
-                    new_propId.insert({ key, pair.second });
+            if (propId_and_bitmap != nullptr) {
+                for (const auto& pair : *propId_and_bitmap) {
+                    auto key = pair.first;
+                    auto it = new_propId.find(key);
+
+                    if (it != new_propId.end()) { // ya existe
+                        it->second &= pair.second;
+                    } else {
+                        new_propId.insert({ key, pair.second });
+                    }
                 }
             }
         }
@@ -65,14 +68,17 @@ void ExprPropertyTypes::visit(ExprOr& expr)
         auto potential_is_expr = dynamic_cast<ExprIs*>(e.get());
         if (potential_and_expr != nullptr || potential_is_expr != nullptr) {
             e->accept_visitor(*this);
-            for (const auto& pair : *propId_and_bitmap) {
-                auto key = pair.first;
-                auto it = new_propId.find(key);
 
-                if (it != new_propId.end()) {
-                    it->second |= pair.second;
-                } else {
-                    new_propId.insert({ key, pair.second });
+            if (propId_and_bitmap != nullptr) {
+                for (const auto& pair : *propId_and_bitmap) {
+                    auto key = pair.first;
+                    auto it = new_propId.find(key);
+
+                    if (it != new_propId.end()) {
+                        it->second |= pair.second;
+                    } else {
+                        new_propId.insert({ key, pair.second });
+                    }
                 }
             }
         }

@@ -18,8 +18,6 @@ class HttpQuadSession : public std::enable_shared_from_this<HttpQuadSession> {
     using stream_type = boost::beast::tcp_stream;
 
 public:
-    static inline std::mutex update_mutex;
-
     using DurationMS = std::chrono::duration<float, std::milli>;
 
     DurationMS parser_duration;

@@ -1,0 +1,1 @@
+MATCH (?x) WHERE ?x.value == 6.6/2 RETURN ?x,?x.value

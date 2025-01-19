@@ -32,34 +32,39 @@ public:
     COUNT = 104, SUM = 105, MIN = 106, MAX = 107, AVG = 108, SAMPLE = 109, 
     GROUP_CONCAT = 110, NOT = 111, IN = 112, EXISTS = 113, SEPARATOR = 114, 
     ANY = 115, SHORTEST = 116, SIMPLE = 117, ACYCLIC = 118, WALKS = 119, 
-    IRIREF = 120, PNAME_NS = 121, PNAME_LN = 122, BLANK_NODE_LABEL = 123, 
-    VAR1 = 124, VAR2 = 125, LANGTAG = 126, INTEGER = 127, DECIMAL = 128, 
-    DOUBLE = 129, INTEGER_POSITIVE = 130, DECIMAL_POSITIVE = 131, DOUBLE_POSITIVE = 132, 
-    INTEGER_NEGATIVE = 133, DECIMAL_NEGATIVE = 134, DOUBLE_NEGATIVE = 135, 
-    STRING_LITERAL1 = 136, STRING_LITERAL2 = 137, STRING_LITERAL_LONG1 = 138, 
-    STRING_LITERAL_LONG2 = 139, COMMENT = 140, REFERENCE = 141, LESS_EQUAL = 142, 
-    GREATER_EQUAL = 143, NOT_EQUAL = 144, AND = 145, OR = 146, INVERSE = 147, 
-    OPEN_BRACE = 148, CLOSE_BRACE = 149, OPEN_CURLY_BRACE = 150, CLOSE_CURLY_BRACE = 151, 
-    OPEN_SQUARE_BRACKET = 152, CLOSE_SQUARE_BRACKET = 153, SEMICOLON = 154, 
-    DOT = 155, PLUS_SIGN = 156, MINUS_SIGN = 157, ASTERISK = 158, QUESTION_MARK = 159, 
-    COMMA = 160, NEGATION = 161, DIVIDE = 162, EQUAL = 163, LESS = 164, 
-    GREATER = 165, PIPE = 166, ANY_OTHER = 167
+    IDENTITY = 120, INDEX = 121, NFKD_CASEFOLD = 122, NORMALIZE = 123, ON = 124, 
+    TEXT = 125, TOKENIZE = 126, WHITESPACE = 127, WS_KEEP_PUNCT = 128, WS_RM_PUNCT = 129, 
+    WS_SPLIT_PUNCT = 130, WS_SYMBOLS = 131, IRIREF = 132, PNAME_NS = 133, 
+    PNAME_LN = 134, BLANK_NODE_LABEL = 135, VAR1 = 136, VAR2 = 137, LANGTAG = 138, 
+    INTEGER = 139, DECIMAL = 140, DOUBLE = 141, INTEGER_POSITIVE = 142, 
+    DECIMAL_POSITIVE = 143, DOUBLE_POSITIVE = 144, INTEGER_NEGATIVE = 145, 
+    DECIMAL_NEGATIVE = 146, DOUBLE_NEGATIVE = 147, STRING_LITERAL1 = 148, 
+    STRING_LITERAL2 = 149, STRING_LITERAL_LONG1 = 150, STRING_LITERAL_LONG2 = 151, 
+    COMMENT = 152, REFERENCE = 153, LESS_EQUAL = 154, GREATER_EQUAL = 155, 
+    NOT_EQUAL = 156, AND = 157, OR = 158, INVERSE = 159, OPEN_BRACE = 160, 
+    CLOSE_BRACE = 161, OPEN_CURLY_BRACE = 162, CLOSE_CURLY_BRACE = 163, 
+    OPEN_SQUARE_BRACKET = 164, CLOSE_SQUARE_BRACKET = 165, SEMICOLON = 166, 
+    DOT = 167, PLUS_SIGN = 168, MINUS_SIGN = 169, ASTERISK = 170, QUESTION_MARK = 171, 
+    COMMA = 172, NEGATION = 173, DIVIDE = 174, EQUAL = 175, LESS = 176, 
+    GREATER = 177, PIPE = 178, ANY_OTHER = 179
   };
 
   enum {
     RuleQuery = 0, RulePrologue = 1, RuleBaseDecl = 2, RulePrefixDecl = 3, 
-    RuleUpdate = 4, RuleInsertData = 5, RuleDeleteData = 6, RuleQuadData = 7, 
-    RuleTriplesTemplate = 8, RuleConstructTemplate = 9, RuleConstructTriples = 10, 
-    RuleTriplesSameSubject = 11, RulePropertyList = 12, RulePropertyListNotEmpty = 13, 
-    RuleVerb = 14, RuleObjectList = 15, RuleObject = 16, RulePropertyListPathNotEmpty = 17, 
-    RulePropertyListPathNotEmptyList = 18, RuleObjectListPath = 19, RuleObjectPath = 20, 
-    RuleInteger = 21, RuleTriplesNode = 22, RuleBlankNodePropertyList = 23, 
-    RuleTriplesNodePath = 24, RuleBlankNodePropertyListPath = 25, RuleCollection = 26, 
-    RuleCollectionPath = 27, RuleGraphNode = 28, RuleGraphNodePath = 29, 
-    RuleGraphTerm = 30, RuleNil = 31, RuleRdfLiteral = 32, RuleNumericLiteral = 33, 
-    RuleNumericLiteralUnsigned = 34, RuleNumericLiteralPositive = 35, RuleNumericLiteralNegative = 36, 
-    RuleBooleanLiteral = 37, RuleString = 38, RuleIri = 39, RulePrefixedName = 40, 
-    RuleBlankNode = 41, RuleAnon = 42
+    RuleUpdate = 4, RuleInsertData = 5, RuleDeleteData = 6, RuleCreateTextIndex = 7, 
+    RuleNormalizeTextIndex = 8, RuleNormalizeType = 9, RuleTokenizeTextIndex = 10, 
+    RuleTokenizeType = 11, RuleQuadData = 12, RuleTriplesTemplate = 13, 
+    RuleConstructTemplate = 14, RuleConstructTriples = 15, RuleTriplesSameSubject = 16, 
+    RulePropertyList = 17, RulePropertyListNotEmpty = 18, RuleVerb = 19, 
+    RuleObjectList = 20, RuleObject = 21, RulePropertyListPathNotEmpty = 22, 
+    RulePropertyListPathNotEmptyList = 23, RuleObjectListPath = 24, RuleObjectPath = 25, 
+    RuleInteger = 26, RuleTriplesNode = 27, RuleBlankNodePropertyList = 28, 
+    RuleTriplesNodePath = 29, RuleBlankNodePropertyListPath = 30, RuleCollection = 31, 
+    RuleCollectionPath = 32, RuleGraphNode = 33, RuleGraphNodePath = 34, 
+    RuleGraphTerm = 35, RuleNil = 36, RuleRdfLiteral = 37, RuleNumericLiteral = 38, 
+    RuleNumericLiteralUnsigned = 39, RuleNumericLiteralPositive = 40, RuleNumericLiteralNegative = 41, 
+    RuleBooleanLiteral = 42, RuleString = 43, RuleIri = 44, RulePrefixedName = 45, 
+    RuleBlankNode = 46, RuleAnon = 47
   };
 
   explicit SparqlUpdateParser(antlr4::TokenStream *input);
@@ -86,6 +91,11 @@ public:
   class UpdateContext;
   class InsertDataContext;
   class DeleteDataContext;
+  class CreateTextIndexContext;
+  class NormalizeTextIndexContext;
+  class NormalizeTypeContext;
+  class TokenizeTextIndexContext;
+  class TokenizeTypeContext;
   class QuadDataContext;
   class TriplesTemplateContext;
   class ConstructTemplateContext;
@@ -193,6 +203,7 @@ public:
     virtual size_t getRuleIndex() const override;
     InsertDataContext *insertData();
     DeleteDataContext *deleteData();
+    CreateTextIndexContext *createTextIndex();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -230,6 +241,85 @@ public:
   };
 
   DeleteDataContext* deleteData();
+
+  class  CreateTextIndexContext : public antlr4::ParserRuleContext {
+  public:
+    CreateTextIndexContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *CREATE();
+    antlr4::tree::TerminalNode *TEXT();
+    antlr4::tree::TerminalNode *INDEX();
+    StringContext *string();
+    antlr4::tree::TerminalNode *ON();
+    IriContext *iri();
+    antlr4::tree::TerminalNode *WITH();
+    TokenizeTextIndexContext *tokenizeTextIndex();
+    NormalizeTextIndexContext *normalizeTextIndex();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  CreateTextIndexContext* createTextIndex();
+
+  class  NormalizeTextIndexContext : public antlr4::ParserRuleContext {
+  public:
+    NormalizeTextIndexContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NORMALIZE();
+    NormalizeTypeContext *normalizeType();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NormalizeTextIndexContext* normalizeTextIndex();
+
+  class  NormalizeTypeContext : public antlr4::ParserRuleContext {
+  public:
+    NormalizeTypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENTITY();
+    antlr4::tree::TerminalNode *NFKD_CASEFOLD();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NormalizeTypeContext* normalizeType();
+
+  class  TokenizeTextIndexContext : public antlr4::ParserRuleContext {
+  public:
+    TokenizeTextIndexContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *TOKENIZE();
+    TokenizeTypeContext *tokenizeType();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TokenizeTextIndexContext* tokenizeTextIndex();
+
+  class  TokenizeTypeContext : public antlr4::ParserRuleContext {
+  public:
+    TokenizeTypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENTITY();
+    antlr4::tree::TerminalNode *WS_SPLIT_PUNCT();
+    antlr4::tree::TerminalNode *WS_RM_PUNCT();
+    antlr4::tree::TerminalNode *WS_KEEP_PUNCT();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TokenizeTypeContext* tokenizeType();
 
   class  QuadDataContext : public antlr4::ParserRuleContext {
   public:

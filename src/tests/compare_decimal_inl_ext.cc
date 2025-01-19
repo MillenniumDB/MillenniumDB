@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
-#include "graph_models/rdf_model/datatypes/decimal_inlined.h"
+#include "graph_models/common/datatypes/decimal.h"
+#include "graph_models/common/datatypes/decimal_inlined.h"
 
 int main() {
     // On this tests the left hand side is always lower than the right hand side

@@ -41,6 +41,7 @@ public:
     void visit(OpDescribe&)          override;
     void visit(OpEmpty&)             override;
     void visit(OpFilter&)            override;
+    void visit(OpFrom&)              override;
     void visit(OpGraph&)             override;
     void visit(OpGroupBy&)           override;
     void visit(OpHaving&)            override;
@@ -59,6 +60,7 @@ public:
     void visit(OpTriple&)    override { }
     void visit(OpUnitTable&) override { }
     void visit(OpValues&)    override { }
+    void visit(OpShow&)      override { }
 
 private:
     // Apply translation rules to the OpPath, that could lead into creating new triples and paths

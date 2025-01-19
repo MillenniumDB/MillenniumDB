@@ -304,7 +304,7 @@ std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity) {
 
     // First check garbage for available free space
     uint64_t page_pointer;
-    if (trie.garbage.search_and_pop_capacity(capacity, page_pointer)) {
+    if (trie.garbage->search_and_pop_capacity(capacity, page_pointer)) {
         // Found free space in garbage
         return { page_pointer / UPage::SIZE, page_pointer % UPage::SIZE };
     }
@@ -316,7 +316,7 @@ std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity) {
         // Not enough space in the remainder of page.
         // Add it to the garbage if it is useful.
         if (available_space >= trie.CAPACITY) {
-            trie.garbage.add_capacity(available_space, page_pointer);
+            trie.garbage->add_capacity(available_space, page_pointer);
         }
 
         page_pointer += available_space;

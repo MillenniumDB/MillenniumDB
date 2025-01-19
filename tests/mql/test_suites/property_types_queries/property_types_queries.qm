@@ -1,0 +1,18 @@
+N1           value:1               other:10                    maybenull:2
+N2           value:1.1             other:0.1                   maybenull:3
+N3           value:"value1"        other:"other value 1"
+N4           value:"value2"        other:"other value 2"
+N5           value:-2              other:-20
+N6           value:true            other:false
+N7           value:-2.2            other:-0.2                  maybenull:true
+N8           value:false           other:true
+N9           value:1               other:1.2
+N10          value:1.1             other:"other value 3"
+N0->N1 :Type value:3               other:30
+N0->N2 :Type value:3.3             other:33.3
+N0->N3 :Type value:"edge-value-3"  other:"other edge value 3"  maybenull:2
+N0->N4 :Type value:false           other:true
+N0->N5 :Type value:true            other:false
+N0->N6 :Type value:-4              other:-40                   maybenull:false
+N0->N7 :Type value:-4.4            other:-4.44
+N3->N1 :Type value:3.5             other:-5

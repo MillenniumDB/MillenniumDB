@@ -1,0 +1,12 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?p (MIN(?p_name_int) AS ?p_name) (SAMPLE(?count_int) AS ?count) ?percent WHERE {
+  { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+    ?m ?tmp ?p . ?m rdfs:label ?p_name_int FILTER(LANG(?p_name_int) = "en") }
+  UNION
+  { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+    BIND(?p AS ?p_name_int) }
+  { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND (100 * ?count_int / SUM(?count_int) AS ?percent) }
+}
+GROUP BY ?p ?percent
+ORDER BY DESC(?count)

@@ -190,6 +190,11 @@ void ReplaceSingleValues::visit(OpService& op)
     op.op->accept_visitor(*this);
 }
 
+void ReplaceSingleValues::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
 void ReplaceSingleValues::visit(OpGraph& op)
 {
     op.op->accept_visitor(*this);

@@ -201,35 +201,35 @@ std::unique_ptr<BindingIter> PathPlan::get_check(const RPQ_DFA& automaton, Id st
 
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AllSimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AllSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AllSimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AllSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AnySimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AnySimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::Any::DFSCheck>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
@@ -265,35 +265,35 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
 
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AllSimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AllSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AllSimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AllSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AnySimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             return std::make_unique<Paths::AnySimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
             return std::make_unique<Paths::AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
-        if (rdf_model.path_mode == PathMode::DFS) {
+        if (rdf_model.path_mode == PathSearchMode::DFS) {
             if (automaton.total_final_states > 1) {
                 return std::make_unique<Paths::Any::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
             } else {

@@ -29,25 +29,26 @@ private:
 
 public:
     void visit(OpGroupBy&) override;
-    void visit(OpMatch&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSet&) override;
     void visit(OpWhere&) override;
-    void visit(OpProjectSimilarity&) override;
-    void visit(OpBruteSimilaritySearch&) override;
 
     void visit(OpBasicGraphPattern&) override { }
-    void visit(OpOptional&) override { }
-    void visit(OpInsert&) override { }
-    void visit(OpEdge&) override { }
+    void visit(OpCreateTensorStore&) override { }
+    void visit(OpCreateTextSearchIndex&) override { }
+    void visit(OpDeleteTensors&) override { }
     void visit(OpDescribe&) override { }
     void visit(OpDisjointTerm&) override { }
     void visit(OpDisjointVar&) override { }
+    void visit(OpEdge&) override { }
+    void visit(OpInsert&) override { }
+    void visit(OpInsertTensors&) override { }
     void visit(OpLabel&) override { }
+    void visit(OpOptional&) override { }
     void visit(OpPath&) override { }
     void visit(OpProperty&) override { }
-    void visit(OpSimilaritySearch&) override { }
+    void visit(OpShow&) override { }
 };
 
 class PushWhereExpr : public ExprVisitor {
@@ -59,10 +60,9 @@ public:
 
     std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>>& fixed_properties;
 
-    PushWhereExpr(
-        std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>>& fixed_properties
-    ) :
-        fixed_properties(fixed_properties) { }
+    PushWhereExpr(std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>>& fixed_properties) :
+        fixed_properties(fixed_properties)
+    { }
 
     void visit(ExprConstant&) override { }
     void visit(ExprVar&) override { }
@@ -86,5 +86,7 @@ public:
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
     void visit(ExprRegex&) override;
+    void visit(ExprTensorDistance&) override;
+    void visit(ExprTextSearch&) override;
 };
 } // namespace MQL

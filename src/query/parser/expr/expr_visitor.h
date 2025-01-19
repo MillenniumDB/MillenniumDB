@@ -32,6 +32,8 @@ class ExprAggMin;
 class ExprAggSum;
 
 class ExprRegex;
+class ExprTensorDistance;
+class ExprTextSearch;
 }
 
 namespace SPARQL {
@@ -124,6 +126,33 @@ class ExprYear;
 class ExprCast;
 } // namespace SPARQL
 
+
+namespace GQL {
+class OpFilter;
+class ExprAnd;
+class ExprOr;
+class ExprNot;
+class ExprHasNodeLabel;
+class ExprHasEdgeLabel;
+class ExprEquals;
+class ExprVar;
+class ExprProperty;
+class ExprConcat;
+class ExprGreaterOrEquals;
+class ExprGreater;
+class ExprIs;
+class ExprLessOrEquals;
+class ExprNotEquals;
+class ExprLess;
+class ExprLess;
+class ExprXor;
+class ExprTerm;
+class ExprAddition;
+class ExprSubtraction;
+class ExprMultiplication;
+class ExprDivision;
+} // namespace GQL
+
 class ExprVisitor {
 public:
     virtual ~ExprVisitor() = default;
@@ -156,7 +185,9 @@ public:
     virtual void visit(MQL::ExprAggMin&)      { throw LogicException("visit MQL::ExprAggMin not implemented"); }
     virtual void visit(MQL::ExprAggSum&)      { throw LogicException("visit MQL::ExprAggSum not implemented"); }
 
-    virtual void visit(MQL::ExprRegex&)      { throw LogicException("visit MQL::ExprRegex not implemented"); }
+    virtual void visit(MQL::ExprRegex&)          { throw LogicException("visit MQL::ExprRegex not implemented"); }
+    virtual void visit(MQL::ExprTensorDistance&) { throw LogicException("visit MQL::ExprTensorDistance not implemented"); }
+    virtual void visit(MQL::ExprTextSearch&)     { throw LogicException("visit MQL::ExprTextSearch not implemented"); }
 
     // SPARQL exprs
     virtual void visit(SPARQL::ExprVar&)            { throw LogicException("visit SPARQL::ExprVar not implemented"); }
@@ -242,4 +273,28 @@ public:
     virtual void visit(SPARQL::ExprUUID&)           { throw LogicException("visit SPARQL::ExprUUID not implemented"); }
     virtual void visit(SPARQL::ExprYear&)           { throw LogicException("visit SPARQL::ExprYear not implemented"); }
     virtual void visit(SPARQL::ExprCast&)           { throw LogicException("visit SPARQL::ExprCast not implemented"); }
+
+
+    // GQL
+    virtual void visit(GQL::ExprAnd&) { throw LogicException("visit GQL::ExprAnd not implemented"); }
+    virtual void visit(GQL::ExprOr&) { throw LogicException("visit GQL::ExprOr not implemented"); }
+    virtual void visit(GQL::ExprNot&) { throw LogicException("visit GQL::ExprNot not implemented"); }
+    virtual void visit(GQL::ExprHasNodeLabel&) { throw LogicException("visit GQL::ExprHasNodeLabel not implemented"); }
+    virtual void visit(GQL::ExprHasEdgeLabel&) { throw LogicException("visit GQL::ExprHasEdgeLabel not implemented"); }
+    virtual void visit(GQL::ExprEquals&) { throw LogicException("visit GQL::ExprEquals not implemented"); }
+    virtual void visit(GQL::ExprVar&) { throw LogicException("visit GQL::ExprEquals not implemented"); }
+    virtual void visit(GQL::ExprProperty&) { throw LogicException("visit GQL::ExprEquals not implemented"); }
+    virtual void visit(GQL::ExprXor&) { throw LogicException("visit GQL::NotXor not implemented"); }
+    virtual void visit(GQL::ExprConcat&) { throw LogicException("visit GQL::ExprConcat not implemented"); }
+    virtual void visit(GQL::ExprGreaterOrEquals&) { throw LogicException("visit GQL::ExprGreaterOrEquals not implemented"); }
+    virtual void visit(GQL::ExprGreater&) { throw LogicException("visit GQL::ExprGreater not implemented"); }
+    virtual void visit(GQL::ExprIs&) { throw LogicException("visit GQL::ExprIs not implemented"); }
+    virtual void visit(GQL::ExprLessOrEquals&) { throw LogicException("visit GQL::ExprLessOrEquals not implemented"); }
+    virtual void visit(GQL::ExprLess&) { throw LogicException("visit GQL::ExprLess not implemented"); }
+    virtual void visit(GQL::ExprNotEquals&) { throw LogicException("visit GQL::ExprNotEquals not implemented"); }
+    virtual void visit(GQL::ExprTerm&) { throw LogicException("visit GQL::ExprTerm not implemented"); }
+    virtual void visit(GQL::ExprAddition&) { throw LogicException("visit GQL::ExprAddition not implemented"); }
+    virtual void visit(GQL::ExprSubtraction&) { throw LogicException("visit GQL::ExprSubtraction not implemented"); }
+    virtual void visit(GQL::ExprMultiplication&) { throw LogicException("visit GQL::ExprMultiplication not implemented"); }
+    virtual void visit(GQL::ExprDivision&) { throw LogicException("visit GQL::ExprDivision not implemented"); }
 };

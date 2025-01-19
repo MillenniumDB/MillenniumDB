@@ -15,7 +15,6 @@
 #include "query/parser/sparql_update_parser.h"
 #include "query/query_context.h"
 #include "system/buffer_manager.h"
-#include "system/tmp_manager.h"
 #include "update/sparql/update_executor.h"
 
 
@@ -63,10 +62,10 @@ void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj) {
         } else {
             auto valid_until_t = std::chrono::system_clock::to_time_t(valid_until);
             response_ostream << "HTTP/1.1 200 OK\r\n"
-                << "Content-Type: application/json; charset=utf-8\r\n"
-                << "{\"token\":\"" << auth_token << "\",\"valid_until\":\""
-                << std::put_time(std::localtime(&valid_until_t), "%Y-%m-%d %T")
-                << "\"}";
+                                "Content-Type: application/json; charset=utf-8\r\n"
+                                "{\"token\":\""
+                             << auth_token << "\",\"valid_until\":\""
+                             << std::put_time(std::localtime(&valid_until_t), "%Y-%m-%d %T") << "\"}";
         }
         return;
     }
@@ -128,8 +127,8 @@ void HttpRdfSession::execute_readonly_query(const std::string&   query,
                                 << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }
@@ -137,16 +136,16 @@ void HttpRdfSession::execute_readonly_query(const std::string&   query,
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
     }
     catch (const LogicException& e) {
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
     }
 
@@ -216,9 +215,9 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             throw LogicException("Response type not implemented: " + SPARQL::response_type_to_string(response_type));
         }
         os << "Access-Control-Allow-Origin: *\r\n"
-           << "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization\r\n"
-           << "Access-Control-Allow-Methods: GET, POST\r\n"
-           << "\r\n";
+              "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization\r\n"
+              "Access-Control-Allow-Methods: GET, POST\r\n"
+              "\r\n";
 
         logger.log(Category::PhysicalPlan, [&physical_plan](std::ostream& os) {
             physical_plan.analyze(os, false);
@@ -233,10 +232,10 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             os << '\n';
         });
 
-        logger(Category::Info) << "Results            : " << result_count << '\n'
-                               << "Parser duration    : " << parser_duration.count() << " ms\n"
-                               << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
-                               << "Execution duration : " << execution_duration.count() << " ms";
+        logger(Category::Info) << "Results            : " << result_count << "\n"
+                                  "Parser duration    : " << parser_duration.count() << " ms\n"
+                                  "Optimizer duration : " << optimizer_duration.count() << " ms\n"
+                                  "Execution duration : " << execution_duration.count() << " ms";
     }
     catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
@@ -255,7 +254,7 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
 
 void HttpRdfSession::execute_update_query(const std::string& query, std::ostream& os) {
     // Mutex to allow only one write query at a time
-    std::lock_guard<std::mutex> lock(update_mutex);
+    std::lock_guard<std::mutex> lock(server.update_execution_mutex);
 
     auto version_scope = buffer_manager.init_version_editable();
 
@@ -272,8 +271,8 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         logger(Category::Error) << "Query Parsing Error. Line " << e.line << ", col: " << e.column << ": " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }
@@ -281,8 +280,8 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }
@@ -290,8 +289,8 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }
@@ -307,15 +306,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
             os << "Update Stats\n";
-            if (update_executor.triples_inserted != 0) {
-                os << "Triples inserted: " << update_executor.triples_inserted << '\n';
-            }
-            if (update_executor.triples_deleted != 0) {
-                os << "Triples deleted: " << update_executor.triples_deleted << '\n';
-            }
-            if (update_executor.triples_inserted == 0 && update_executor.triples_deleted == 0) {
-                os << "No modifications were performed\n";
-            }
+            update_executor.print_stats(os);
         });
     }
     catch (const ConnectionException& e) {
@@ -337,8 +328,8 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         logger(Category::Error) << "Query Execution Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }

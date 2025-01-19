@@ -5,9 +5,6 @@
 #include <cstring>
 #include <ostream>
 
-#include "query/exceptions.h"
-#include "graph_models/object_id.h"
-
 class Inliner {
 public:
     // assumes null-terminated string
@@ -43,7 +40,7 @@ public:
     static uint64_t inline_iri(const char* str) {
         uint64_t res = 0;
         int shift_size = 8*5;
-        for (const char* i = str; *i != '\0'; i++) {
+        for (const char* i = str; *i != '\0'; i++) { // TODO: possible overflow
             // MUST convert to uint8_t and then to uint64_t.
             // Shift with shift_size >=32 is undefined behaviour.
             uint8_t byte = *i;
@@ -56,7 +53,7 @@ public:
 
     template <uint_fast32_t N>
     static uint64_t decode(uint64_t val) {
-        static_assert(N > 0 && N <= ObjectId::MAX_INLINED_BYTES);
+        static_assert(N > 0 && N <= 7); // max inlined bytes is 7
         uint64_t res = 0; // Ensure null-termination.
         uint8_t* c = reinterpret_cast<uint8_t*>(&res);
         int shift_size = (N - 1) * 8;

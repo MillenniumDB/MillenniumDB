@@ -4,17 +4,16 @@
 #include <ostream>
 #include <string>
 
-#include <boost/unordered_map.hpp>
-
 #include "graph_models/rdf_model/iri_prefixes.h"
 #include "storage/catalog/catalog.h"
+#include "storage/index/text_search/text_search_index_manager.h"
 
 
 class RdfCatalog : public Catalog {
 public:
     static constexpr uint64_t MODEL_ID = 1;
 
-    static constexpr uint64_t VERSION  = 5;
+    static constexpr uint64_t VERSION  = 6;
 
     // The database can handle more than MAX_LANG_AND_DTT languages and datatypes,
     // but the catalog can save up to this this many
@@ -92,6 +91,7 @@ public:
     // 6: SPO, POS, OSP, PSO, SOP, OPS
     uint64_t permutations;
 
+    TextSearch::TextSearchIndexManager text_search_index_manager;
 private:
     bool has_changes = false;
 

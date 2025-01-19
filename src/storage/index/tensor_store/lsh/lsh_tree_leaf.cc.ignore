@@ -1,0 +1,111 @@
+#include "lsh_tree_leaf.h"
+
+#include "system/buffer_manager.h"
+
+
+LSHTreeLeaf::LSHTreeLeaf() noexcept :
+    page { nullptr },
+    leaf_file_id { FileId::UNASSIGNED } { }
+
+
+LSHTreeLeaf::LSHTreeLeaf(VPage* page) noexcept :
+    num_object_ids { reinterpret_cast<uint64_t*>(page->get_bytes()) },
+    parent_id { reinterpret_cast<uint64_t*>(page->get_bytes() + sizeof(uint64_t)) },
+    next_leaf_id { reinterpret_cast<uint64_t*>(page->get_bytes() + 2 * sizeof(uint64_t)) },
+    object_ids { reinterpret_cast<ObjectId*>(page->get_bytes() + 3 * sizeof(uint64_t)) },
+    page { page },
+    leaf_file_id { page->page_id.file_id } { }
+
+
+LSHTreeLeaf::LSHTreeLeaf(LSHTreeLeaf&& other) noexcept :
+    num_object_ids { other.num_object_ids },
+    parent_id { other.parent_id },
+    next_leaf_id { other.next_leaf_id },
+    object_ids { other.object_ids },
+    page { std::exchange(other.page, nullptr) },
+    leaf_file_id { other.leaf_file_id } { }
+
+
+LSHTreeLeaf& LSHTreeLeaf::operator=(LSHTreeLeaf&& other) noexcept {
+    if (this != &other) {
+        num_object_ids = other.num_object_ids;
+        parent_id = other.parent_id;
+        next_leaf_id = other.next_leaf_id;
+        object_ids = other.object_ids;
+        page = std::exchange(other.page, this->page);
+        leaf_file_id = other.leaf_file_id;
+    }
+
+    return *this;
+}
+
+
+LSHTreeLeaf::~LSHTreeLeaf() {
+    if (page != nullptr) {
+        buffer_manager.unpin(*page);
+    }
+}
+
+
+int_fast32_t LSHTreeLeaf::find(ObjectId object_id) const {
+    int_fast32_t lo { 0 };
+    int_fast32_t hi { static_cast<int_fast32_t>(*num_object_ids) };
+
+    while (lo < hi) {
+        const auto mid = (lo + hi) / 2;
+        if (object_ids[mid] < object_id) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+
+    if (lo >= *num_object_ids || object_ids[lo] != object_id) {
+        // Object was ot found
+        return -1;
+    }
+
+    return lo;
+}
+
+
+void LSHTreeLeaf::add(ObjectId object_id) {
+    assert(!full() && "LSHTreeLeaf is full");
+
+    // Search the right place
+    auto ptr = std::lower_bound(object_ids, object_ids + *num_object_ids, object_id);
+    // Shift right
+    memmove(ptr + 1, ptr, sizeof(ObjectId) * (*num_object_ids - (ptr - object_ids)));
+    // Insert item and increment counter
+    *ptr = object_id;
+    ++(*num_object_ids);
+}
+
+
+void LSHTreeLeaf::erase(std::size_t index) {
+    assert(index < *num_object_ids && "Index out of bounds");
+
+    // Shift left
+    memmove(&object_ids[index], &object_ids[index + 1], sizeof(ObjectId) * (*num_object_ids - index - 1));
+    // Update counter
+    --(*num_object_ids);
+}
+
+
+bool LSHTreeLeaf::full() const {
+    return *num_object_ids == MAX_OBJECT_IDS;
+}
+
+
+void LSHTreeLeaf::upgrade_to_editable() {
+    if (buffer_manager.need_edit_version(*page)) {
+        auto new_page = &buffer_manager.get_page_editable(leaf_file_id, page->get_page_number());
+        buffer_manager.unpin(*page);
+        page = new_page;
+
+        num_object_ids = reinterpret_cast<uint64_t*>(page->get_bytes());
+        parent_id = reinterpret_cast<uint64_t*>(page->get_bytes() + sizeof(uint64_t));
+        next_leaf_id = reinterpret_cast<uint64_t*>(page->get_bytes() + 2 * sizeof(uint64_t));
+        object_ids = reinterpret_cast<ObjectId*>(page->get_bytes() + 3 * sizeof(uint64_t));
+    }
+}

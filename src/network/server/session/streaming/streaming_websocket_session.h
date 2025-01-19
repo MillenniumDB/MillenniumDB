@@ -34,8 +34,6 @@ public:
 private:
     boost::beast::error_code ec;
 
-    Server& server;
-
     std::chrono::seconds query_timeout;
 
     websocket_stream_type stream;

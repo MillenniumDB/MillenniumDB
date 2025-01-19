@@ -6,8 +6,7 @@
 namespace MQL {
 class AggCountAll : public Agg {
 public:
-    AggCountAll(VarId var_id) :
-        Agg (var_id, nullptr) { }
+    using Agg::Agg;
 
     void begin() override {
         count = 0;

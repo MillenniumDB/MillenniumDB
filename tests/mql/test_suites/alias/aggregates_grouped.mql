@@ -1,0 +1,3 @@
+MATCH (?x)
+GROUP BY ?x
+RETURN ?x as ?node, COUNT(?x) AS ?count, COUNT(*) AS ?countall, MAX(?x.int) AS ?max, MIN(?x.int) AS ?min, SUM(?x.int) AS ?sum, AVG(?x.int) AS ?avg

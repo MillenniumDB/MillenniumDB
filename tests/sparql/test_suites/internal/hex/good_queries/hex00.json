@@ -1,0 +1,29 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "aabbcc112233"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/5678d5678d5678d5678d5678d"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF11FF"
+                }
+            }
+        ]
+    }
+}

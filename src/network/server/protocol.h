@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+#include "graph_models/gql/gql_catalog.h"
 #include "graph_models/quad_model/quad_catalog.h"
 #include "graph_models/rdf_model/rdf_catalog.h"
 
@@ -43,6 +44,8 @@ static constexpr std::chrono::seconds DEFAULT_CONNECTION_TIMEOUT_SECONDS = std::
 static constexpr uint64_t QUAD_MODEL_ID = QuadCatalog::MODEL_ID;
 
 static constexpr uint64_t RDF_MODEL_ID = RdfCatalog::MODEL_ID;
+
+static constexpr uint64_t GQL_MODEL_ID = GQLCatalog::MODEL_ID;
 
 enum class DataType : uint8_t {
     NULL_,

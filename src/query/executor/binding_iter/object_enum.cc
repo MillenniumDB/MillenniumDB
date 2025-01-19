@@ -5,7 +5,6 @@
 
 void ObjectEnum::_begin(Binding& parent_binding) {
     this->parent_binding = &parent_binding;
-    current_node = 0;
 }
 
 
@@ -14,8 +13,8 @@ bool ObjectEnum::_next() {
         if (MDB_unlikely(get_query_ctx().thread_info.interruption_requested)) {
             throw InterruptedException();
         }
-        current_node++;
         parent_binding->add(var, ObjectId(mask | current_node));
+        current_node++;
         return true;
     } else {
         return false;
@@ -24,7 +23,7 @@ bool ObjectEnum::_next() {
 
 
 void ObjectEnum::_reset() {
-    current_node = 0;
+    current_node = default_start;
 }
 
 

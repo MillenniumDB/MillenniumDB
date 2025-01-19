@@ -7,7 +7,6 @@
 
 #include "graph_models/object_id.h"
 #include "graph_models/common/datatypes/datetime.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
 #include "query/exceptions.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"

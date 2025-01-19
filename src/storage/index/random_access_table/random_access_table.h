@@ -6,7 +6,8 @@
 #include "storage/index/record.h"
 
 // N is the columns of the table
-template <std::size_t N> class RandomAccessTable {
+template<std::size_t N>
+class RandomAccessTable {
 public:
     RandomAccessTable(const std::string& filename);
     ~RandomAccessTable() = default;

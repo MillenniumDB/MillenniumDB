@@ -38,8 +38,7 @@ double LabelPlan::estimate_cost() const {
 
 
 double LabelPlan::estimate_output_size() const {
-    const auto total_nodes = static_cast<double>(quad_model.catalog.identifiable_nodes_count
-                                                 + quad_model.catalog.anonymous_nodes_count);
+    const auto total_nodes = static_cast<double>(quad_model.catalog.identifiable_nodes_count);
 
     auto total_labels = static_cast<double>(quad_model.catalog.label_count);
 

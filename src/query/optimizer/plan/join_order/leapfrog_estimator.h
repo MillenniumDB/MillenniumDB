@@ -6,7 +6,6 @@
 #include "query/executor/binding_iter/scan_ranges/term.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 #include "storage/index/leapfrog/leapfrog_iter.h"
-#include "storage/index/leapfrog/leapfrog_similarity_search_iter.h"
 
 class LeapfrogEstimator {
 private:

@@ -22,6 +22,8 @@ public:
     void visit(OpUnion&)                override;
     void visit(OpOptional&)             override;
     void visit(OpOrderBy&)              override;
+    void visit(OpFrom&)                 override;
+    void visit(OpGraph&)                override;
     void visit(OpGroupBy&)              override;
     void visit(OpHaving&)               override;
     void visit(OpSelect&)               override;
@@ -31,6 +33,7 @@ public:
     void visit(OpBind&)                 override;
     void visit(OpUnitTable&)            override;
     void visit(OpValues&)               override;
+    void visit(OpShow&)                 override;
 
     bool is_well_designed = true;
 

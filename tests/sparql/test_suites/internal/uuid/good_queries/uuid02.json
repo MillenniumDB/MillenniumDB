@@ -1,0 +1,22 @@
+{
+    "head": {
+        "vars": [
+            "p",
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "p": {
+                    "type": "uri",
+                    "value": "http://www.example.org/aaaabbbb-0000-1111-2222-333344445555"
+                },
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/aaaabbbb-aaaa-bbbb-cccc-ddddeeeeffff"
+                }
+            }
+        ]
+    }
+}

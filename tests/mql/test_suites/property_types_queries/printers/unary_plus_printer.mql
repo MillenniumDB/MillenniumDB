@@ -1,0 +1,1 @@
+MATCH (?x) WHERE ?x.value == +3 RETURN ?x,?x.value

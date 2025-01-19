@@ -326,31 +326,44 @@ void BindingIterConstructor::visit(OpSelect& op_select) {
     }
 }
 
-
-void BindingIterConstructor::visit(OpGroupBy& op_group_by) {
+void BindingIterConstructor::visit(OpGroupBy& op_group_by)
+{
     op_group_by.op->accept_visitor(*this);
     grouping = true;
     this->op_group_by = &op_group_by;
 
-    for (size_t i = 0; i < op_group_by.items.size(); i ++) {
-        auto& [op_var, op_expr] = op_group_by.items[i];
+    for (auto&& [expr, alias] : op_group_by.items) {
+        ExprVar* casted = dynamic_cast<ExprVar*>(expr.get());
+        if (casted != nullptr && !alias.has_value()) {
+            if (alias) {
+                ExprToBindingExpr expr_to_binding_expr;
+                expr->accept_visitor(expr_to_binding_expr);
 
-        VarId var = op_var ? *op_var : get_query_ctx().get_internal_var();
-
-        if (op_expr) {
+                group_vars.insert(*alias);
+                group_saved_vars.insert(*alias);
+                group_exprs.push_back({ *alias, std::move(expr_to_binding_expr.tmp) });
+            } else {
+                VarId var = casted->var;
+                group_vars.insert(var);
+                group_saved_vars.insert(var);
+            }
+        } else {
             ExprToBindingExpr expr_to_binding_expr;
-            op_expr->accept_visitor(expr_to_binding_expr);
-            group_exprs.push_back({
-                var,
-                std::move(expr_to_binding_expr.tmp)
-            });
-        }
+            expr->accept_visitor(expr_to_binding_expr);
 
-        group_vars.insert(var);
-        group_saved_vars.insert(var);
+            if (alias) {
+                group_vars.insert(*alias);
+                group_saved_vars.insert(*alias);
+                group_exprs.push_back({ *alias, std::move(expr_to_binding_expr.tmp) });
+            } else {
+                VarId var = get_query_ctx().get_internal_var();
+                group_vars.insert(var);
+                group_saved_vars.insert(var);
+                group_exprs.push_back({ var, std::move(expr_to_binding_expr.tmp) });
+            }
+        }
     }
 }
-
 
 void BindingIterConstructor::visit(OpHaving& op_having) {
     op_having.op->accept_visitor(*this);
@@ -376,6 +389,23 @@ void BindingIterConstructor::visit(OpOrderBy& op_order_by) {
 
 
 void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
+    // Handle Text Searches
+    std::vector<std::unique_ptr<TextSearchIndexScan>> text_search_binding_iters;
+    if (op_basic_graph_pattern.text_searches.size() > 1) {
+        // TODO: Multiple text searches
+        throw QueryException("Multiple Text Searches not supported yet");
+    }
+    for (const auto& op_text_search_index : op_basic_graph_pattern.text_searches) {
+        safe_assigned_vars.insert(op_text_search_index.object_var);
+        text_search_binding_iters.emplace_back(std::make_unique<TextSearchIndexScan>(
+            *op_text_search_index.text_search_index_ptr,
+            op_text_search_index.query,
+            op_text_search_index.search_type,
+            op_text_search_index.object_var,
+            op_text_search_index.match_var
+        ));
+    }
+
     std::vector<std::unique_ptr<Plan>> base_plans;
 
     for (auto& op_triple : op_basic_graph_pattern.triples) {
@@ -399,25 +429,41 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern) 
 
     assert(tmp == nullptr);
 
-    // Set input vars
-    for (auto& plan : base_plans) {
-        plan->set_input_vars(safe_assigned_vars);
-        // plan->print(std::cout, 0);
-    }
-
-    // try to use leapfrog if there is a join
-    if (base_plans.size() > 1) {
-        if (safe_assigned_vars.size() > 0) {
-            tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans);
-        } else {
-            tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans);
+    auto build_bgp_iter = [&]() {
+        for (auto& plan : base_plans) {
+            plan->set_input_vars(safe_assigned_vars);
         }
+
+        // try to use leapfrog if there is a join
+        if (base_plans.size() > 1) {
+            if (safe_assigned_vars.size() > 0) {
+                tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans);
+            } else {
+                tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans);
+            }
+        }
+
+        if (tmp == nullptr) {
+            std::unique_ptr<Plan> root_plan = nullptr;
+            root_plan = GreedyOptimizer::get_plan(base_plans);
+            tmp = root_plan->get_binding_iter();
+        }
+    };
+
+    if (base_plans.size() > 0) {
+        build_bgp_iter();
     }
 
-    if (tmp == nullptr) {
-        std::unique_ptr<Plan> root_plan = nullptr;
-        root_plan = GreedyOptimizer::get_plan(base_plans);
-        tmp = root_plan->get_binding_iter();
+    if (!text_search_binding_iters.empty()) {
+        // TODO: Multiple text searches
+        if (base_plans.size() > 0) {
+            tmp = std::make_unique<IndexNestedLoopJoin>(
+                std::move(text_search_binding_iters[0]),
+                std::move(tmp)
+            );
+        } else {
+            tmp = std::move(text_search_binding_iters[0]);
+        }
     }
 
     // Insert new assigned_vars

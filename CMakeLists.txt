@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Set project name and version
-project(MillenniumDB VERSION 0.3.1)
+project(MillenniumDB VERSION 0.3.2)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,15 +24,21 @@ if(APPLE)
         if(EXISTS ${BREW_DIR})
             include_directories("${BREW_DIR}/openssl/include")
             include_directories("${BREW_DIR}/ncurses/include")
-            link_directories("${BREW_DIR}/openssl@3/lib")
+                include_directories("${BREW_DIR}/icu4c/include")
+                link_directories("${BREW_DIR}/openssl@3/lib")
+                link_directories("${BREW_DIR}/icu4c/lib")
         endif(EXISTS ${BREW_DIR})
     endforeach(BREW_DIR)
 
     set(NCURSES ncurses)
     set(FS "")
+    set(ICU_LIBRARIES icuuc icui18n)
 else()
     set(NCURSES ncursesw)
     set(FS "stdc++fs")
+
+    # Find ICU and its required components
+    find_package(ICU COMPONENTS uc i18n REQUIRED)
 endif(APPLE)
 
 # Define the compiler flags
@@ -80,8 +86,8 @@ add_library(millenniumdb STATIC ${SRCS})
 target_compile_definitions(millenniumdb PUBLIC SERD_STATIC)
 set(BUILD_TARGETS
     mdb-server
-    mdb-import
     mdb-cli
+    mdb-import
 )
 
 # Build targets
@@ -93,6 +99,7 @@ foreach(target ${BUILD_TARGETS})
         ${FS}
         ssl
         crypto
+        ${ICU_LIBRARIES}
         ${NCURSES}
     )
 endforeach(target)

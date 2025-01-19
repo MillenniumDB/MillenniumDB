@@ -1,0 +1,6 @@
+PREFIX wiki: <https://www.wikidata.org/wiki/>
+PREFIX : <http://www.example.org/>
+
+SELECT ?p ?o WHERE {
+    :00001111-2222-3333-4444-555566667777 ?p ?o .
+}

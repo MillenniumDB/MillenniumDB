@@ -1,11 +1,14 @@
 #include "quad_catalog.h"
 
+#include "storage/index/text_search/quad.h"
+
 #include <cassert>
 
 using namespace std;
 
 QuadCatalog::QuadCatalog(const std::string& filename) :
-    Catalog(filename) {
+    Catalog(filename)
+{
     if (is_empty()) {
         identifiable_nodes_count = 0;
         anonymous_nodes_count = 0;
@@ -88,18 +91,34 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             auto count = read_uint64();
             type2equal_to_type_count.insert({ type, count });
         }
+
+        text_search_index_manager.init(
+            TextSearch::Quad::index_predicate,
+            TextSearch::Quad::index_single,
+            TextSearch::Quad::remove_single,
+            TextSearch::Quad::oid_to_string
+        );
+        const auto name2metadata = read_uint64();
+        for (uint_fast32_t i = 0; i < name2metadata; i++) {
+            const auto name = read_string();
+            TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
+            metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
+            metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+            metadata.predicate = read_string();
+            text_search_index_manager.load_text_search_index(name, metadata);
+        }
     }
 }
 
-
-QuadCatalog::~QuadCatalog() {
-    if (has_changes) {
+QuadCatalog::~QuadCatalog()
+{
+    if (has_changes || text_search_index_manager.has_changes()) {
         save();
     }
 }
 
-
-void QuadCatalog::save() {
+void QuadCatalog::save()
+{
     start_io();
 
     write_uint64(MODEL_ID);
@@ -158,14 +177,23 @@ void QuadCatalog::save() {
         write_uint64(k);
         write_uint64(v);
     }
+
+    const auto& name2metadata = text_search_index_manager.get_name2metadata();
+    write_uint64(name2metadata.size());
+    for (const auto& [name, metadata] : name2metadata) {
+        write_string(name);
+        write_uint8(static_cast<uint8_t>(metadata.normalization_type));
+        write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
+        write_string(metadata.predicate);
+    }
 }
 
-
-void QuadCatalog::print(std::ostream& os) {
+void QuadCatalog::print(std::ostream& os)
+{
     os << "-------------------------------------\n";
     os << "Catalog:\n";
     os << "  identifiable nodes count: " << identifiable_nodes_count << "\n";
-    os << "  anonymous nodes count:    " << anonymous_nodes_count << "\n";
+    // os << "  anonymous nodes count:    " << anonymous_nodes_count << "\n";
     os << "  edges count:              " << edge_count << "\n";
 
     os << "  label count:              " << label_count << "\n";
@@ -182,8 +210,8 @@ void QuadCatalog::print(std::ostream& os) {
     os << "-------------------------------------\n";
 }
 
-
-uint64_t QuadCatalog::connections_with_type(uint64_t type_id) const {
+uint64_t QuadCatalog::connections_with_type(uint64_t type_id) const
+{
     auto search = type2total_count.find(type_id);
     if (search == type2total_count.end()) {
         return 0;
@@ -192,8 +220,8 @@ uint64_t QuadCatalog::connections_with_type(uint64_t type_id) const {
     }
 }
 
-
-uint64_t QuadCatalog::equal_from_to_type_with_type(uint64_t type_id) const {
+uint64_t QuadCatalog::equal_from_to_type_with_type(uint64_t type_id) const
+{
     auto search = type2equal_from_to_type_count.find(type_id);
     if (search == type2equal_from_to_type_count.end()) {
         return 0;
@@ -202,8 +230,8 @@ uint64_t QuadCatalog::equal_from_to_type_with_type(uint64_t type_id) const {
     }
 }
 
-
-uint64_t QuadCatalog::equal_from_to_with_type(uint64_t type_id) const {
+uint64_t QuadCatalog::equal_from_to_with_type(uint64_t type_id) const
+{
     auto search = type2equal_from_to_count.find(type_id);
     if (search == type2equal_from_to_count.end()) {
         return 0;
@@ -212,8 +240,8 @@ uint64_t QuadCatalog::equal_from_to_with_type(uint64_t type_id) const {
     }
 }
 
-
-uint64_t QuadCatalog::equal_from_type_with_type(uint64_t type_id) const {
+uint64_t QuadCatalog::equal_from_type_with_type(uint64_t type_id) const
+{
     auto search = type2equal_from_type_count.find(type_id);
     if (search == type2equal_from_type_count.end()) {
         return 0;
@@ -222,8 +250,8 @@ uint64_t QuadCatalog::equal_from_type_with_type(uint64_t type_id) const {
     }
 }
 
-
-uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const {
+uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const
+{
     auto search = type2equal_to_type_count.find(type_id);
     if (search == type2equal_to_type_count.end()) {
         return 0;
@@ -232,8 +260,8 @@ uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const {
     }
 }
 
-
-uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type) {
+uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type)
+{
     auto new_edge_id = ++edge_count;
 
     type2total_count[type]++;
@@ -258,15 +286,15 @@ uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type)
     return new_edge_id;
 }
 
-
-void QuadCatalog::insert_property(uint64_t key) {
+void QuadCatalog::insert_property(uint64_t key)
+{
     has_changes = true;
     properties_count++;
     key2total_count[key]++;
 }
 
-
-void QuadCatalog::insert_label(uint64_t label) {
+void QuadCatalog::insert_label(uint64_t label)
+{
     has_changes = true;
     label_count++;
     label2total_count[label]++;

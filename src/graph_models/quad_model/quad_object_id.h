@@ -24,4 +24,4 @@ namespace QuadObjectId {
     inline ObjectId get_value(const std::string& v) {
         return get_fixed_node_inside(v);
     }
-};
+}

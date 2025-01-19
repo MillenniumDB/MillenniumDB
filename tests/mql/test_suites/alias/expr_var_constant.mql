@@ -1,0 +1,2 @@
+MATCH (?x)
+RETURN ?x, 2024 + ?x.int AS ?alias

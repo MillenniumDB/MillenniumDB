@@ -1,4 +1,4 @@
-#include "graph_models/rdf_model/datatypes/decimal.h"
+#include "graph_models/common/datatypes/decimal.h"
 
 #include <cassert>
 #include <cmath>

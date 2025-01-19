@@ -1,0 +1,1 @@
+MATCH (?x) WHERE ?x.value <= 4-0.7 RETURN ?x,?x.value

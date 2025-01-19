@@ -3,15 +3,19 @@
 #include <sstream>
 #include <variant>
 
-#include "graph_models/object_id.h"
 #include "graph_models/common/datatypes/datetime.h"
+#include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
+#include "misc/unicode_escape.h"
 #include "query/exceptions.h"
 #include "query/id.h"
 #include "query/parser/expr/sparql_exprs.h"
+#include "query/parser/grammar/sparql/mdb_function.h"
+#include "query/parser/grammar/sparql/sparql_parser_context_traits.h"
 #include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_show.h"
 #include "query/parser/op/sparql/ops.h"
 #include "query/parser/paths/path_alternatives.h"
 #include "query/parser/paths/path_atom.h"
@@ -127,6 +131,13 @@ Any QueryVisitor::visitAskQuery(SparqlParser::AskQueryContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
     current_op = std::make_unique<OpAsk>(std::move(current_op));
+    return 0;
+}
+
+Any QueryVisitor::visitShowQuery(SparqlParser::ShowQueryContext* ctx) {
+    LOG_VISITOR
+    visitChildren(ctx);
+    current_op = std::make_unique<OpShow>(OpShow::Type::TEXT_SEARCH_INDEX);
     return 0;
 }
 
@@ -256,6 +267,22 @@ Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx) {
     visit(ctx->solutionModifier());
     visit(ctx->selectClause());
 
+
+    if (!ctx->datasetClause().empty()){
+        std::vector<std::string> from_graphs;
+        std::vector<std::string> from_named_graphs;
+
+        for (std::size_t i = 0; i < ctx->datasetClause().size(); i++) {
+            auto current_dataset = ctx->datasetClause()[i];
+            if (current_dataset->NAMED()) {
+                from_named_graphs.push_back(iriCtxToString(current_dataset->iri()));
+            } else {
+                from_graphs.push_back(iriCtxToString(current_dataset->iri()));
+            }
+        }
+        current_op = std::make_unique<OpFrom>(from_graphs, from_named_graphs, std::move(current_op));
+    }
+
     current_op = std::make_unique<OpSelect>(
         std::move(current_op),
         std::move(select_variables),
@@ -266,10 +293,10 @@ Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx) {
         offset,
         false // is not sub select
     );
+
     // TODO: consider datasetClause
     return 0;
 }
-
 
 Any QueryVisitor::visitSubSelect(SparqlParser::SubSelectContext* ctx) {
     LOG_VISITOR
@@ -466,13 +493,13 @@ Any QueryVisitor::visitGraphGraphPattern(SparqlParser::GraphGraphPatternContext*
     std::unique_ptr<Op> lhs_op = std::move(current_op);
 
     visit(ctx->groupGraphPattern());
-    if (ctx->varOrIRI()) {
+    if (ctx->varOrIRI()->iri()) {
         // It's an IRI
         current_op = std::make_unique<OpGraph>(
             iriCtxToString(ctx->varOrIRI()->iri()),
             std::move(current_op)
         );
-    } else {
+    } else if (ctx->varOrIRI()->var()){
         // It's a variable
         auto var_name = ctx->varOrIRI()->var()->getText().substr(1);
         auto var = get_query_ctx().get_or_create_var(var_name);
@@ -1311,7 +1338,8 @@ Any QueryVisitor::visitTriplesBlock(SparqlParser::TriplesBlockContext* ctx) {
     }
     current_op = std::make_unique<OpBasicGraphPattern>(
         std::move(current_triples),
-        std::move(current_paths)
+        std::move(current_paths),
+        std::move(current_text_searches)
     );
     return 0;
 }
@@ -1378,46 +1406,91 @@ Any QueryVisitor::visitBlankNodePropertyListPath(SparqlParser::BlankNodeProperty
     return 0;
 }
 
-
-Any QueryVisitor::visitPropertyListPathNotEmpty(SparqlParser::PropertyListPathNotEmptyContext* ctx) {
+Any QueryVisitor::visitPropertyListPathNotEmpty(SparqlParser::PropertyListPathNotEmptyContext* ctx)
+{
     LOG_VISITOR
-    // 1. Visit the predicate
+
+    // 1. Visit the first predicate
     if (ctx->verbPath()) {
         visit(ctx->verbPath());
-    }
-    else {
+    } else {
         visit(ctx->verbSimple());
     }
-
     predicate_stack.push(std::move(current_sparql_element));
-    // 2. Visit the object list
-    auto olp = ctx->objectListPath();
-    auto op  = olp->objectPath();
-    for (auto& op_item : op) {
-        visit(op_item);
+
+    // 2. Visit the first object list
+    check_mdb_function(predicate_stack.top());
+    if (current_function_type != MDBFunction::MDBFunctionType::NONE) {
+        // Handle a MillenniumDB Function
+        if (!subject_stack.top().is_var() || get_query_ctx().is_internal(subject_stack.top().get_var())) {
+            throw QuerySemanticException("MillenniumDB functions must have a variable as subject");
+        }
+        switch (current_function_type) {
+        case MDBFunction::MDBFunctionType::TEXT_SEARCH: {
+            for (auto& objectPath : ctx->objectListPath()->objectPath()) {
+                const auto args = parse_context_as_function_args<ObjectPathContextTraits>(objectPath);
+                current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+            }
+            break;
+        }
+        default:
+            throw QuerySemanticException(
+                "Unhandled MillenniumDB function: "
+                + std::to_string(static_cast<uint8_t>(current_function_type))
+            );
+        }
+    } else {
+        // Handle a regular triple
+        for (auto& objectPath : ctx->objectListPath()->objectPath()) {
+            visit(objectPath);
+        }
     }
     predicate_stack.pop();
 
-    for (auto& property_list_path_not_empty_list : ctx->propertyListPathNotEmptyList()) {
+    // Handle the rest of the predicate and object list pairs
+    for (auto& propertyListPathNotEmptyList : ctx->propertyListPathNotEmptyList()) {
         // 1. Visit the predicate
-        if (property_list_path_not_empty_list->verbPath()) {
-            visit(property_list_path_not_empty_list->verbPath());
-        }
-        else {
-            visit(property_list_path_not_empty_list->verbSimple());
+        if (propertyListPathNotEmptyList->verbPath()) {
+            visit(propertyListPathNotEmptyList->verbPath());
+        } else {
+            visit(propertyListPathNotEmptyList->verbSimple());
         }
         predicate_stack.push(std::move(current_sparql_element));
 
         // 2. Visit the object list
-        for (auto& object : property_list_path_not_empty_list->objectList()->object()) {
-            visit(object);
+        check_mdb_function(predicate_stack.top());
+        if (current_function_type != MDBFunction::MDBFunctionType::NONE) {
+            // Handle a MillenniumDB Function
+            if (!subject_stack.top().is_var() || get_query_ctx().is_internal(subject_stack.top().get_var())) {
+                throw QuerySemanticException("MillenniumDB functions must have a variable as subject");
+            }
+
+            switch (current_function_type) {
+            case MDBFunction::MDBFunctionType::TEXT_SEARCH: {
+                for (auto& object : propertyListPathNotEmptyList->objectList()->object()) {
+                    const auto args = parse_context_as_function_args<ObjectContextTraits>(object);
+                    current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+                }
+                break;
+            }
+            default:
+                throw QuerySemanticException(
+                    "Unhandled MillenniumDB function: "
+                    + std::to_string(static_cast<uint8_t>(current_function_type))
+                );
+            }
+
+        } else {
+            // Handle a regular triple
+            for (auto& object : propertyListPathNotEmptyList->objectList()->object()) {
+                visit(object);
+            }
         }
         predicate_stack.pop();
     }
 
     return 0;
 }
-
 
 Any QueryVisitor::visitPropertyListNotEmpty(SparqlParser::PropertyListNotEmptyContext* ctx) {
     LOG_VISITOR
@@ -1675,8 +1748,8 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx) {
+Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
 
@@ -1685,19 +1758,23 @@ Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx) 
 
     if (ctx->var()) {
         auto var_name = ctx->var()->getText().substr(1);
-        var = get_query_ctx().get_or_create_var(var_name);
+        if (ctx->AS()) {
+            var = get_query_ctx().get_or_create_var(var_name);
+        } else {
+            auto expr_var = get_query_ctx().get_or_create_var(var_name);
+            expr = std::make_unique<ExprVar>(expr_var);
+        }
     }
+
     if (ctx->expression()) {
         expr = std::move(current_expr);
-    }
-    if (ctx->builtInCall()) {
+    } else if (ctx->builtInCall()) {
         expr = std::move(current_expr);
-    }
-    if (ctx->functionCall()) {
+    } else if (ctx->functionCall()) {
         expr = std::move(current_expr);
     }
 
-    group_by_items.push_back({ var, std::move(expr) });
+    group_by_items.push_back({ std::move(expr), var });
     return 0;
 }
 
@@ -2109,41 +2186,7 @@ std::string QueryVisitor::stringCtxToString(SparqlParser::StringContext* ctx) {
         // Three quotes per side
         str = str.substr(3, str.size() - 6);
     }
-    std::string res;
-    res.reserve(str.size());
-
-    auto chars = str.data();
-    auto end = chars + str.size();
-
-    while (chars < end - 1) {
-        if (*chars != '\\') {
-            res += *chars;
-            chars++;
-        } else {
-            switch (*(chars + 1)) {
-            case 't':  { res += '\t'; break; }
-            case 'b':  { res += '\b'; break; }
-            case 'n':  { res += '\n'; break; }
-            case 'r':  { res += '\r'; break; }
-            case 'f':  { res += '\f'; break; }
-            case '\\': { res += '\\'; break; }
-            case '"':  { res += '"';  break; }
-            case '\'': { res += '\''; break; }
-            default: {
-                std::stringstream ss;
-                ss << "Invalid escape sequence: \"\\" << *(chars+1) << '"';
-                throw QuerySemanticException(ss.str());
-            }
-            }
-            chars += 2;
-        }
-    }
-
-    if (chars < end) {
-        res += *chars;
-    }
-
-    return res;
+    return UnicodeEscape::normalize_string(str);
 }
 
 /**
@@ -2171,4 +2214,91 @@ ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::st
         // The string is not a valid integer
         return Conversions::pack_string_datatype(iri, str);
     }
+}
+
+void QueryVisitor::check_mdb_function(const IdOrPath& id_or_path)
+{
+    if (!id_or_path.is_OID()) {
+        // id_or_path is not even an ObjectId, so it cannot be a function
+        current_function_type = MDBFunction::MDBFunctionType::NONE;
+        return;
+    }
+
+    const auto oid = id_or_path.get_OID();
+    if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI) {
+        current_function_type = MDBFunction::MDBFunctionType::NONE;
+        return;
+    }
+
+    const auto iri_str = Conversions::unpack_iri(oid);
+    current_function_type = MDBFunction::get_mdb_function_type(iri_str);
+}
+
+template<typename ContextTraits>
+std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTraits::ContextType* ctx)
+{
+    std::vector<Id> res;
+
+    const auto graphNode = ContextTraits::get_graph_node(ctx);
+    const auto varOrTerm = ContextTraits::get_var_or_term(graphNode);
+    if (varOrTerm != nullptr) {
+        // Single argument
+        visit(varOrTerm);
+        assert(!current_sparql_element.is_path() && "This should never hapen");
+        if (current_sparql_element.is_var()) {
+            const auto var = current_sparql_element.get_var();
+            if (get_query_ctx().is_internal(var)) {
+                throw QuerySemanticException(
+                    "Unexpected anonymous node as function argument: " + varOrTerm->getText()
+                );
+            }
+            res.emplace_back(current_sparql_element.get_var());
+        } else {
+            res.emplace_back(current_sparql_element.get_OID());
+        }
+    } else {
+        // Multiple arguments
+        const auto triplesNode = ContextTraits::get_triples_node(graphNode);
+        const auto blankNodePropertyList = ContextTraits::get_blank_node_property_list(triplesNode);
+        if (blankNodePropertyList != nullptr) {
+            throw QuerySemanticException(
+                "Unexpected blank node property list as function argument: "
+                + blankNodePropertyList->getText()
+            );
+        }
+        const auto collection = ContextTraits::get_collection(triplesNode);
+        const auto graph_node_vector = ContextTraits::get_graph_node_vector(collection);
+        for (auto& graphNode : graph_node_vector) {
+            const auto varOrTerm = ContextTraits::get_var_or_term(graphNode);
+            if (varOrTerm != nullptr) {
+                visit(varOrTerm);
+                if (current_sparql_element.is_var()) {
+                    const auto var = current_sparql_element.get_var();
+                    if (get_query_ctx().is_internal(var)) {
+                        throw QuerySemanticException(
+                            "Unexpected anonymous node as function argument: " + varOrTerm->getText()
+                        );
+                    }
+                    res.emplace_back(current_sparql_element.get_var());
+                } else {
+                    res.emplace_back(current_sparql_element.get_OID());
+                }
+            } else {
+                const auto triplesNode = ContextTraits::get_triples_node(graphNode);
+                const auto blankNodePropertyList = ContextTraits::get_blank_node_property_list(triplesNode);
+                if (blankNodePropertyList != nullptr) {
+                    throw QuerySemanticException(
+                        "Unexpected blank node property list as function argument: "
+                        + blankNodePropertyList->getText()
+                    );
+                }
+                const auto collection = ContextTraits::get_collection(triplesNode);
+                throw QuerySemanticException(
+                    "Unexpected collection as function argument: " + collection->getText()
+                );
+            }
+        }
+    }
+
+    return res;
 }

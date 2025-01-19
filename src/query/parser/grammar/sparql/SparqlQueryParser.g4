@@ -32,7 +32,11 @@ language=Cpp;
 query
     : prologue (selectQuery | constructQuery | describeQuery | askQuery) valuesClause EOF
     // | updateCommand EOF
+    | showQuery
     ;
+
+// MDB extension
+showQuery: SHOW TEXT INDEX;
 
 prologue
     : (baseDecl | prefixDecl)*

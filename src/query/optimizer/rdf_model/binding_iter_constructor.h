@@ -129,5 +129,13 @@ public:
     void visit(OpBind&)              override;
     void visit(OpUnitTable&)         override;
     void visit(OpValues&)            override;
+
+    void visit(OpFrom&) override {
+        throw NotSupportedException("FROM");
+    }
+
+    void visit(OpGraph&) override {
+        throw NotSupportedException("GRAPH");
+    }
 };
 } // namespace SPARQL

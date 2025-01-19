@@ -1,0 +1,51 @@
+#include "lsh_tree_dir.h"
+
+#include "storage/page/versioned_page.h"
+#include "system/buffer_manager.h"
+
+
+LSHTreeDir::LSHTreeDir() noexcept :
+    page { nullptr },
+    split_file_id { FileId::UNASSIGNED } { }
+
+
+LSHTreeDir::LSHTreeDir(VPage* page) noexcept :
+    num_split_data { reinterpret_cast<uint64_t*>(page->get_bytes()) },
+    split_data { reinterpret_cast<Split*>(page->get_bytes() + sizeof(uint64_t)) },
+    page { page },
+    split_file_id { page->page_id.file_id } { }
+
+
+LSHTreeDir& LSHTreeDir::operator=(LSHTreeDir&& other) noexcept {
+    if (this != &other) {
+        num_split_data = other.num_split_data;
+        split_data = other.split_data;
+        page = std::exchange(other.page, this->page);
+        split_file_id = other.split_file_id;
+    }
+    return *this;
+}
+
+
+LSHTreeDir::~LSHTreeDir() {
+    if (page != nullptr) {
+        buffer_manager.unpin(*page);
+    }
+}
+
+
+bool LSHTreeDir::full() const {
+    return *num_split_data == MAX_SPLIT_DATA;
+}
+
+
+void LSHTreeDir::upgrade_to_editable() {
+    if (buffer_manager.need_edit_version(*page)) {
+        auto new_page = &buffer_manager.get_page_editable(split_file_id, page->get_page_number());
+        buffer_manager.unpin(*page);
+        page = new_page;
+
+        num_split_data = reinterpret_cast<uint64_t*>(page->get_bytes());
+        split_data = reinterpret_cast<Split*>(page->get_bytes() + sizeof(uint64_t));
+    }
+}

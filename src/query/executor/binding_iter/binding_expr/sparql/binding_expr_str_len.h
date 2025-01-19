@@ -1,10 +1,10 @@
 #pragma once
 
-#include <codecvt>
 #include <memory>
 
+#include <unicode/unistr.h>
+
 #include "graph_models/rdf_model/conversions.h"
-#include "misc/locale.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -44,10 +44,8 @@ public:
 
 private:
     int get_string_length(const std::string& str) {
-        auto locale = misc::get_locale();
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> str_conv;
-        auto wstr = str_conv.from_bytes(str);
-        return wstr.length();
+        const icu::UnicodeString icu_str(str.c_str(), "UTF-8");
+        return icu_str.countChar32();
     }
 };
 } // namespace SPARQL

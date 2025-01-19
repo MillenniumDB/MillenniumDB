@@ -7,8 +7,7 @@
 namespace MQL {
 class AggMax : public Agg {
 public:
-    AggMax(VarId var_id, std::unique_ptr<BindingExpr> expr) :
-        Agg (var_id, std::move(expr)) { }
+    using Agg::Agg;
 
     void begin() override {
         max = ObjectId::get_null();

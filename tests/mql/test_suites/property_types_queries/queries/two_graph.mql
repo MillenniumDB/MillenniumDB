@@ -1,0 +1,1 @@
+MATCH (?x)->(?y {value IS INTEGER}), (?x)->(?z {value IS STRING}) RETURN ?x,?y,?z

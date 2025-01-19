@@ -8,6 +8,7 @@ class Bind;
 class CrossProduct;
 class DistinctHash;
 class EdgeTableLookup;
+class EdgeTableLookupGQL;
 class EmptyBindingIter;
 class Filter;
 class IndexLeftOuterJoin;
@@ -26,8 +27,11 @@ class SingleResultBindingIter;
 class Slice;
 class SparqlService;
 class SubSelect;
+class TextSearchIndexScan;
 class Union;
 class Values;
+class SetConstants;
+class SetLabels;
 
 
 class CrossProduct;
@@ -35,14 +39,6 @@ class HashJoinGrace;
 class HashJoinInBuffer;
 class HashJoinInMemory;
 class LeftCrossProduct;
-
-namespace LSH {
-class ForestIndexTopK;
-class ForestIndexTopAll;
-class ProjectTensorSimilarity;
-class BruteSimilaritySearch;
-}
-
 
 namespace HashJoin {
     class MaterializeIter;
@@ -135,6 +131,7 @@ public:
     virtual void visit(CrossProduct&)              = 0;
     virtual void visit(DistinctHash&)              = 0;
     virtual void visit(EdgeTableLookup&)           = 0;
+    virtual void visit(EdgeTableLookupGQL&)        = 0;
     virtual void visit(EmptyBindingIter&)          = 0;
     virtual void visit(Filter&)                    = 0;
     virtual void visit(ExprEvaluator&)             = 0;
@@ -157,8 +154,11 @@ public:
     virtual void visit(Slice&)                     = 0;
     virtual void visit(SparqlService&)             = 0;
     virtual void visit(SubSelect&)                 = 0;
+    virtual void visit(TextSearchIndexScan&)       = 0;
     virtual void visit(Union&)                     = 0;
     virtual void visit(Values&)                    = 0;
+    virtual void visit(SetConstants&)              = 0;
+    virtual void visit(SetLabels&)                 = 0;
 
 
     virtual void visit(HashJoin::BGP::Hybrid::Join1Var&)       = 0;
@@ -226,9 +226,4 @@ public:
     virtual void visit(Paths::AnyTrails::BFSEnum&)                 = 0;
     virtual void visit(Paths::AnyTrails::DFSCheck&)                = 0;
     virtual void visit(Paths::AnyTrails::DFSEnum&)                 = 0;
-
-    virtual void visit(LSH::ForestIndexTopK&) = 0;
-    virtual void visit(LSH::ForestIndexTopAll&) = 0;
-    virtual void visit(LSH::ProjectTensorSimilarity&) = 0;
-    virtual void visit(LSH::BruteSimilaritySearch&) = 0;
 };
