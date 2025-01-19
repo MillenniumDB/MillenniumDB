@@ -62,6 +62,7 @@
 #include "query/executor/binding_iter/paths/any_trails/dfs_enum.h"
 #include "query/executor/binding_iter/paths/any_walks/bfs_check.h"
 #include "query/executor/binding_iter/paths/any_walks/bfs_enum.h"
+#include "query/executor/binding_iter/paths/any_walks//bfs_multiple_starts.h"
 #include "query/executor/binding_iter/paths/any_walks/dfs_check.h"
 #include "query/executor/binding_iter/paths/any_walks/dfs_enum.h"
 #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_check.h"
