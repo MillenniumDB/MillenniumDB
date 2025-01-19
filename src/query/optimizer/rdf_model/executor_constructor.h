@@ -25,6 +25,7 @@ public:
     void visit(OpAsk&) override;
     void visit(OpDescribe&) override;
     void visit(OpConstruct&) override;
+    void visit(OpShow&) override;
 
 private:
     SPARQL::ResponseType response_type;

@@ -7,8 +7,8 @@
 namespace MQL {
 class AggCountAllDistinct : public Agg {
 public:
-    AggCountAllDistinct(VarId var_id, std::vector<VarId>&& _vars) :
-        Agg        (var_id, nullptr),
+    AggCountAllDistinct(VarId var_id, std::unique_ptr<BindingExpr> expr, std::vector<VarId>&& _vars) :
+        Agg        (var_id, std::move(expr)),
         hash_table (_vars.size()),
         vars       (std::move(_vars))
     {

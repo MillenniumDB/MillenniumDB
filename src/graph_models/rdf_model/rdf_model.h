@@ -36,7 +36,7 @@ public:
     uint64_t MAX_LIMIT = Op::DEFAULT_LIMIT;
 
     // Path mode to use
-    PathMode path_mode = PathMode::BFS;
+    PathSearchMode path_mode = PathSearchMode::BFS;
 
     // list of {alias, prefix}
     // These are common prefixes used for queries, in case the user has not defined them in the query.
@@ -74,6 +74,7 @@ public:
         { "wdtn", "http://www.wikidata.org/prop/direct-normalized/" },
         { "wdv", "http://www.wikidata.org/value/" },
         { "wikibase", "http://wikiba.se/ontology#" },
+        { "mdbfn", "http://millenniumdb.com/function/" },
     };
 
     // Default compression IRI prefixes.

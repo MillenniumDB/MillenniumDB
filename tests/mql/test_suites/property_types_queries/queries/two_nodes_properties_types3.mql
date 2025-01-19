@@ -1,0 +1,1 @@
+MATCH (?x)->(?y {value IS BOOL}) RETURN ?x,?y,?y.value

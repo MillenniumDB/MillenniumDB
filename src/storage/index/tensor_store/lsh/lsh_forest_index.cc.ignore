@@ -1,0 +1,160 @@
+#include "lsh_forest_index.h"
+
+#include <algorithm>
+
+#include "storage/index/tensor_store/lsh/forest_index_query_iter.h"
+#include "storage/index/tensor_store/lsh/lsh_tree.h"
+#include "storage/index/tensor_store/tensor_store.h"
+#include "graph_models/object_id.h"
+#include "system/file_manager.h"
+
+// ForestIndex::ForestIndex(std::size_t num_trees_, Metric::MetricType metric_type_, const TensorStore& tensor_store_) :
+//     num_trees    { num_trees_ },
+//     metric_type  { metric_type_ },
+//     tensor_store { tensor_store_ }
+// {
+//     assert((num_trees > 0) && "Number of trees must be greater than 0");
+
+//     // Bind metric functions
+//     switch (metric_type) {
+//     case Metric::MetricType::ANGULAR: {
+//         similarity_func = &Metric::cosine_distance;
+//         break;
+//     }
+//     case Metric::MetricType::EUCLIDEAN: {
+//         similarity_func = &Metric::euclidean_distance;
+//         break;
+//     }
+//     default: { // MetricType::MANHATTAN:
+//         similarity_func = &Metric::manhattan_distance;
+//         break;
+//     }
+//     }
+
+//     // Initialize the trees
+//     for (uint64_t i = 0; i < num_trees; ++i) {
+//         trees.push_back(std::make_unique<Tree>(tensor_store, *this));
+//     }
+// }
+
+LSHForestIndex::LSHForestIndex(const std::string& name) :
+    split_file_id {file_manager.get_file_id(name + ".split")},
+    leaf_file_id  {file_manager.get_file_id(name + ".leaf")} { }
+
+
+void LSHForestIndex::bulk_build() {
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
+    for (uint64_t i = 0; i < trees.size(); ++i) {
+        trees[i].bulk_build();
+    }
+}
+
+
+std::vector<std::pair<float, ObjectId>> LSHForestIndex::query_top_k(
+    const std::vector<float>& query_tensor,
+    uint64_t                  k,
+    int64_t                   search_k) const
+{
+    // assert(k > 0 && "k must be greater than 0");
+    // assert(query_tensor.size() == tensor_store.tensors_dim && "Invalid query tensor size");
+
+    // // If search_k is negative, the user did not specify a search_k so we set it to the default value
+    // const uint64_t min_candidates = search_k < 0 ? std::max(2 * k, num_trees * k) : search_k;
+
+    // std::vector<int64_t>     current_node_ids;
+    // std::vector<std::size_t> current_depths;
+    // std::vector<ObjectId>    candidate_nearest_neighbors;
+
+    // current_node_ids.reserve(num_trees);
+    // current_depths.reserve(num_trees);
+    // candidate_nearest_neighbors.reserve(min_candidates);
+
+    // // Descend on each tree and collect the initial candidates
+    // for (auto tree_idx = 0u; tree_idx < num_trees; ++tree_idx) {
+    //     auto [leaf, depth] = trees[tree_idx]->descend(query_tensor);
+    //     current_node_ids.emplace_back(leaf);
+    //     current_depths.emplace_back(depth);
+    // }
+
+    // std::vector<bool> initial_leaf_visited(num_trees, false);
+
+    // std::size_t current_maximum_depth = *std::max_element(current_depths.begin(), current_depths.end());
+
+    // // Continue traversing the trees until we have enough candidates or we reach the root
+    // while (current_maximum_depth > 0 && candidate_nearest_neighbors.size() < min_candidates) {
+    //     for (auto tree_idx = 0u; tree_idx < num_trees; ++tree_idx) {
+    //         if (current_depths[tree_idx] != current_maximum_depth) {
+    //             continue;
+    //         }
+
+    //         if (!initial_leaf_visited[tree_idx]) {
+    //             // Add the descendants of the current node as it is the initial leaf
+    //             const auto& leaf_node = get_leaf(current_node_ids[tree_idx]);
+    //             candidate_nearest_neighbors.insert(candidate_nearest_neighbors.end(),
+    //                                                leaf_node.object_ids.cbegin(),
+    //                                                leaf_node.object_ids.cend());
+    //             initial_leaf_visited[tree_idx] = true;
+    //             --current_depths[tree_idx];
+    //         } else {
+    //             // Add the descendants of the sibling
+    //             const auto& current_node = get_node(current_node_ids[tree_idx]);
+    //             const auto& sibling_node = sibling(current_node);
+
+    //             const auto sibling_descendant_leaf_ids = trees[tree_idx]->descendant_leaf_ids(sibling_node.id);
+
+    //             for (const auto& sibling_descendant_leaf_id : sibling_descendant_leaf_ids) {
+    //                 const auto& sibling_descendant_leaf_node = get_leaf(sibling_descendant_leaf_id);
+    //                 candidate_nearest_neighbors.insert(candidate_nearest_neighbors.end(),
+    //                                                    sibling_descendant_leaf_node.object_ids.cbegin(),
+    //                                                    sibling_descendant_leaf_node.object_ids.cend());
+    //             }
+
+    //             current_node_ids[tree_idx] = current_node.parent_id;
+    //             --current_depths[tree_idx];
+    //         }
+    //     }
+    //     --current_maximum_depth;
+    // }
+
+    // // Sort the candidates to remove duplicates
+    // std::sort(candidate_nearest_neighbors.begin(), candidate_nearest_neighbors.end());
+
+    // // Compute similarities
+    // std::vector<std::pair<float, ObjectId>> nearest_neighbors;
+    // nearest_neighbors.reserve(candidate_nearest_neighbors.size());
+
+    // std::vector<float> tensor_buffer(tensor_store.tensors_dim);
+    // ObjectId previous_object_id = ObjectId::get_null();
+    // for (const auto& candidate_object_id : candidate_nearest_neighbors) {
+    //     if (candidate_object_id == previous_object_id) {
+    //         continue;
+    //     }
+
+    //     tensor_store.get(candidate_object_id, tensor_buffer);
+    //     nearest_neighbors.emplace_back(candidate_object_id, similarity_func(query_tensor, tensor_buffer));
+    //     previous_object_id = candidate_object_id;
+    // }
+
+    // // Sort by similarity
+    // const std::size_t result_size = std::min(k, static_cast<uint64_t>(nearest_neighbors.size())); // in MAC .size() is u32, and min cannot infer
+    // std::partial_sort(nearest_neighbors.begin(),
+    //                   nearest_neighbors.begin() + result_size,
+    //                   nearest_neighbors.end());
+    // nearest_neighbors.resize(result_size);
+
+    // return nearest_neighbors;
+}
+
+
+std::unique_ptr<ForestIndexQueryIter> LSHForestIndex::query_iter(const std::vector<float>& query_tensor) const {
+    // assert(query_tensor.size() == tensor_store.tensors_dim);
+    // return std::make_unique<ForestIndexQueryIter>(query_tensor, *this);
+}
+
+
+// SplitNode& ForestIndex::get_split_node(uint64_t id) const {
+//     return *split_nodes[id - 1];
+// }
+

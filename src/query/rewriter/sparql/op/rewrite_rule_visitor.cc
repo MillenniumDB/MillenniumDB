@@ -75,6 +75,15 @@ void RewriteRuleVisitor::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
+void RewriteRuleVisitor::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
+void RewriteRuleVisitor::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
 
 void RewriteRuleVisitor::visit(OpGroupBy& op_group_by) {
     for (auto& rule : rules) {
@@ -176,3 +185,6 @@ void RewriteRuleVisitor::visit(OpUnitTable&) { }
 
 
 void RewriteRuleVisitor::visit(OpValues&) { }
+
+
+void RewriteRuleVisitor::visit(OpShow&) { }

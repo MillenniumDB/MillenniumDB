@@ -1,0 +1,1 @@
+MATCH (?x {value is FLOAT, other IS STRING}) RETURN ?x,?x.value

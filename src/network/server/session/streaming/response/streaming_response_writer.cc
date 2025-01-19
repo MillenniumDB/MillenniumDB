@@ -45,7 +45,9 @@ void StreamingResponseWriter::write_records_success(uint64_t result_count,
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
     write_string("payload", Protocol::DataType::STRING);
-    write_map_header(4UL);
+    write_map_header(5UL);
+    write_string("update", Protocol::DataType::STRING);
+    write_bool(false);
     write_string("resultCount", Protocol::DataType::STRING);
     write_uint64(result_count);
     write_string("parserDurationMs", Protocol::DataType::STRING);
@@ -58,6 +60,62 @@ void StreamingResponseWriter::write_records_success(uint64_t result_count,
     seal();
 }
 
+void StreamingResponseWriter::write_update_success(
+    uint64_t parser_duration_ms,
+    uint64_t optimizer_duration_ms,
+    uint64_t execution_duration_ms,
+    const MQL::UpdateExecutor::GraphUpdateData& graph_update_data,
+    const MQL::UpdateExecutor::TensorUpdateData& tensor_update_data
+)
+{
+    write_map_header(2UL);
+    write_string("type", Protocol::DataType::STRING);
+    write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
+
+    write_string("payload", Protocol::DataType::STRING);
+    write_map_header(6UL);
+
+    write_string("update", Protocol::DataType::STRING);
+    write_bool(true);
+    write_string("parserDurationMs", Protocol::DataType::STRING);
+    write_uint64(parser_duration_ms);
+    write_string("optimizerDurationMs", Protocol::DataType::STRING);
+    write_uint64(optimizer_duration_ms);
+    write_string("executionDurationMs", Protocol::DataType::STRING);
+    write_uint64(execution_duration_ms);
+
+    write_string("graphUpdateData", Protocol::DataType::STRING);
+    if (graph_update_data.empty()) {
+        write_null();
+    } else {
+        write_map_header(3UL);
+        write_string("newEdges", Protocol::DataType::STRING);
+        write_uint64(graph_update_data.new_edges);
+        write_string("newLabels", Protocol::DataType::STRING);
+        write_uint64(graph_update_data.new_labels);
+        write_string("newProperties", Protocol::DataType::STRING);
+        write_uint64(graph_update_data.new_properties);
+    }
+
+    write_string("tensorUpdateData", Protocol::DataType::STRING);
+    if (tensor_update_data.empty()) {
+        write_null();
+    } else {
+        write_map_header(5UL);
+        write_string("tensorStoreName", Protocol::DataType::STRING);
+        write_string(tensor_update_data.tensor_store_name, Protocol::DataType::STRING);
+        write_string("created", Protocol::DataType::STRING);
+        write_bool(tensor_update_data.created);
+        write_string("newEntries", Protocol::DataType::STRING);
+        write_uint64(tensor_update_data.new_entries);
+        write_string("overwrittenEntries", Protocol::DataType::STRING);
+        write_uint64(tensor_update_data.overwritten_entries);
+        write_string("deletedEntries", Protocol::DataType::STRING);
+        write_uint64(tensor_update_data.deleted_entries);
+    }
+
+    seal();
+}
 
 void StreamingResponseWriter::write_catalog_success() {
     write_map_header(2UL);
@@ -65,11 +123,15 @@ void StreamingResponseWriter::write_catalog_success() {
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
     write_string("payload", Protocol::DataType::STRING);
-    write_map_header(2UL);
+    write_map_header(3UL);
     write_string("modelId", Protocol::DataType::STRING);
     write_uint64(get_model_id());
     write_string("version", Protocol::DataType::STRING);
     write_uint64(get_catalog_version());
+
+    // TODO: Pass useful additional metadata about the catalog and/or database
+    write_string("metadata", Protocol::DataType::STRING);
+    write_null();
 
     seal();
 }

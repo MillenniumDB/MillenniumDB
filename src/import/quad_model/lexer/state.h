@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Import {
+namespace Import { namespace QuadModel {
 
 enum State {
     // The line is wrong and will be discarded.
@@ -47,4 +47,4 @@ enum State {
 
     TOTAL_STATES = 14
 };
-} // namespace Import
+}} // namespace Import::QuadModel

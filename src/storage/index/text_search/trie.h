@@ -18,7 +18,10 @@ class Trie {
     friend class Node;
 
 public:
-    Trie(std::filesystem::path path);
+    static std::unique_ptr<Trie> create(const std::filesystem::path& path);
+
+    static std::unique_ptr<Trie> load(const std::filesystem::path& path);
+
     ~Trie();
 
     // Adds a new word to Trie
@@ -35,12 +38,11 @@ public:
     void print_trie(std::ostream& os, std::vector<std::string>&& text_list);
 
 private:
+    explicit Trie(FileId file_id, UPage& root_page, std::unique_ptr<TrieGarbage> garbage, bool load);
+
     // FileId of the file containing the trie.
     // All the nodes are in one file.
     const FileId file_id;
-
-    // Garbage Collector
-    TrieGarbage garbage;
 
     // Definition of constants
     static constexpr uint64_t CAPACITY = 16; // Initial capacity for nodes
@@ -55,6 +57,9 @@ private:
 
     std::unique_ptr<Node> root_node;
     UPage& root_page;
+
+    // Garbage Collector
+    std::unique_ptr<TrieGarbage> garbage;
 };
 
 } // namespace TextSearch

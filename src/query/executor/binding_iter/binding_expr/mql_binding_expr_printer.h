@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <vector>
@@ -16,21 +17,23 @@ public:
 
     BindingExprPrinter(std::ostream& os) : ::BindingExprPrinter(os) { }
 
-    void visit(BindingExprAddition&)        override;
-    void visit(BindingExprAnd&)             override;
-    void visit(BindingExprDivision&)        override;
-    void visit(BindingExprEquals&)          override;
-    void visit(BindingExprIs&)              override;
-    void visit(BindingExprLessOrEquals&)    override;
-    void visit(BindingExprLess&)            override;
-    void visit(BindingExprModulo&)          override;
-    void visit(BindingExprMultiplication&)  override;
-    void visit(BindingExprNotEquals&)       override;
-    void visit(BindingExprNot&)             override;
-    void visit(BindingExprOr&)              override;
-    void visit(BindingExprSubtraction&)     override;
-    void visit(BindingExprUnaryMinus&)      override;
-    void visit(BindingExprUnaryPlus&)       override;
-    void visit(BindingExprRegex&)           override;
+    void visit(BindingExprAddition&)                 override;
+    void visit(BindingExprAnd&)                      override;
+    void visit(BindingExprDivision&)                 override;
+    void visit(BindingExprEquals&)                   override;
+    void visit(BindingExprIs&)                       override;
+    void visit(BindingExprLessOrEquals&)             override;
+    void visit(BindingExprLess&)                     override;
+    void visit(BindingExprModulo&)                   override;
+    void visit(BindingExprMultiplication&)           override;
+    void visit(BindingExprNotEquals&)                override;
+    void visit(BindingExprNot&)                      override;
+    void visit(BindingExprOr&)                       override;
+    void visit(BindingExprSubtraction&)              override;
+    void visit(BindingExprUnaryMinus&)               override;
+    void visit(BindingExprUnaryPlus&)                override;
+    void visit(BindingExprRegex&)                    override;
+    void visit(BindingExprTensorDistanceFromExpr&)   override;
+    void visit(BindingExprTensorDistanceFromTensor&) override;
 };
 } // namespace MQL

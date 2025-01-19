@@ -70,7 +70,7 @@ std::size_t compress(const char* iri, std::size_t iri_size, std::size_t uncompre
 }
 
 std::size_t decompress_lower(const char* iri, std::size_t iri_size, char* result) {
-    std::size_t hex_characters = iri[0];
+    std::size_t hex_characters = *reinterpret_cast<const unsigned char*>(iri);
 
     // we skip the first byte since
     memcpy(result, iri + 1, iri_size - hex_characters - 1);
@@ -84,7 +84,7 @@ std::size_t decompress_lower(const char* iri, std::size_t iri_size, char* result
 }
 
 std::size_t decompress_upper(const char* iri, std::size_t iri_size, char* result) {
-    std::size_t hex_characters = iri[0];
+    std::size_t hex_characters = *reinterpret_cast<const unsigned char*>(iri);
 
     // we skip the first byte since
     memcpy(result, iri + 1, iri_size - hex_characters - 1);
@@ -96,7 +96,7 @@ std::size_t decompress_upper(const char* iri, std::size_t iri_size, char* result
     }
     return iri_size - 1 + hex_characters;
 }
-}; // namespace HexCompression
+} // namespace HexCompression
 
 
 namespace UUIDCompression {
@@ -202,4 +202,4 @@ void decompress_upper(char* iri_compressed, std::size_t iri_size, char* result) 
 
     *result = '\0';
 }
-}; // namespace UUIDCompression
+} // namespace UUIDCompression

@@ -60,7 +60,40 @@ public:
 
     void print(std::ostream& os) const override
     {
-        os << type_bitmap;
+        bool first = true;
+        std::string types;
+
+        if (type_bitmap & static_cast<uint8_t>(propertyType::TYPE_NULL)) {
+            if (!first)
+                types += ", ";
+            types += "NULL";
+            first = false;
+        }
+        if (type_bitmap & static_cast<uint8_t>(propertyType::TYPE_BOOL)) {
+            if (!first)
+                types += ", ";
+            types += "BOOL";
+            first = false;
+        }
+        if (type_bitmap & static_cast<uint8_t>(propertyType::TYPE_INTEGER)) {
+            if (!first)
+                types += ", ";
+            types += "INTEGER";
+            first = false;
+        }
+        if (type_bitmap & static_cast<uint8_t>(propertyType::TYPE_FLOAT)) {
+            if (!first)
+                types += ", ";
+            types += "FLOAT";
+            first = false;
+        }
+        if (type_bitmap & static_cast<uint8_t>(propertyType::TYPE_STRING)) {
+            if (!first)
+                types += ", ";
+            types += "STRING";
+            first = false;
+        }
+        os << types;
     }
 
     void try_assign(Binding& binding, ObjectId obj_id) override

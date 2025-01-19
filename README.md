@@ -32,7 +32,7 @@ Currently Unsupported SPARQL Features
 - The `FROM` clause
 - The `GRAPH` keyword
 - Regular expression flags other than `i`
-
+- Property paths with Negated Property Sets
 
 Deviations from the SPARQL Specification
 --------------------------------------------------------------------------------
@@ -55,7 +55,8 @@ The query language is inspired on Cypher and its defined [here](doc/quad_model/q
 [Project build](#millenniumdb)
 ================================================================================
 MillenniumDB should be able to be built on any x86-64 Linux distribution.
-On windows, Windows Subsystem for Linux (WSL) can be used. On Mac or Windows without WSL, Docker can be used: see [Docker](#docker).
+On windows, Windows Subsystem for Linux (WSL) can be used. MacOS is supported if using a Mac chip.
+For Mac with Intel chips or Windows without WSL, Docker can be used: see [Docker](#docker).
 
 
 Install Dependencies:
@@ -71,24 +72,12 @@ MillenniumDB needs the following dependencies:
 
 On current Debian and Ubuntu based distributions they can be installed by running:
 ```bash
-sudo apt update && sudo apt install git g++ cmake libssl-dev libncurses-dev locales less python3 python3-venv
+sudo apt update && sudo apt install git g++ cmake libssl-dev libncurses-dev less python3 python3-venv libicu-dev
 ```
 
-The `en_US.UTF-8` locale also needs to be generated.\
-On Ubuntu based distributions this can be done as follows:
+On mac:
 ```bash
-sudo locale-gen en_US.UTF-8
-```
-
-On distributions without a patched locale-gen you can run:
-```bash
-sudo sed -i '/en_us.utf-8/Is/^# //g' /etc/locale.gen
-sudo locale-gen
-```
-
-Or manually uncomment `en_US.UTF-8` in `/etc/locale.gen` and run:
-```bash
-sudo locale-gen
+brew install cmake ncurses openssl@3 icu4c
 ```
 
 Clone the repository
@@ -103,9 +92,9 @@ export MDB_HOME=$(pwd)
 
 Install Boost
 --------------------------------------------------------------------------------
-Download [`boost_1_82_0.tar.gz`](https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz) using a browser or wget:
+Download [`boost_1_82_0.tar.gz`](https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.gz) using a browser or wget:
 ```bash
-wget -q --show-progress https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz
+wget -q --show-progress https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.gz
 ```
 
 and run the following in the directory where boost was downloaded:
@@ -166,6 +155,8 @@ To run the server use the following command, passing the `<db-directory>` where 
 ```bash
 build/Release/bin/mdb-server <db-directory>
 ```
+
+**IMPORTANT:** we supposing you execute the server from the root directory of this repository (`MDB_HOME`). If you execute the server from another directory, the web server won't be available unless set the environment variable `MDB_BROWSER` is `$MDB_HOME/browser`.
 
 ### Execute a Query
 The easiest way to run a query is to use the Web Browser at http://localhost:4321/ after starting the server.

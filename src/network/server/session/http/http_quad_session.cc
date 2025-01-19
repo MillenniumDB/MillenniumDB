@@ -59,10 +59,10 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj) {
         } else {
             auto valid_until_t = std::chrono::system_clock::to_time_t(valid_until);
             response_ostream << "HTTP/1.1 200 OK\r\n"
-                << "Content-Type: application/json; charset=utf-8\r\n"
-                << "{\"token\":\"" << auth_token << "\",\"valid_until\":\""
-                << std::put_time(std::localtime(&valid_until_t), "%Y-%m-%d %T")
-                << "\"}";
+                                "Content-Type: application/json; charset=utf-8\r\n"
+                                "{\"token\":\""
+                             << auth_token << "\",\"valid_until\":\""
+                             << std::put_time(std::localtime(&valid_until_t), "%Y-%m-%d %T") << "\"}";
         }
         return;
     }
@@ -142,8 +142,8 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
                                 << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }
@@ -151,16 +151,16 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
     }
     catch (const LogicException& e) {
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
     }
 
@@ -183,7 +183,7 @@ void HttpQuadSession::execute_readonly_query_plan(QueryExecutor&  physical_plan,
     const auto execution_start = std::chrono::system_clock::now();
     try {
         os << "HTTP/1.1 200 OK\r\n"
-           << "Server: MillenniumDB\r\n";
+              "Server: MillenniumDB\r\n";
 
         switch (return_type) {
         case MQL::ReturnType::CSV:
@@ -196,9 +196,9 @@ void HttpQuadSession::execute_readonly_query_plan(QueryExecutor&  physical_plan,
             throw LogicException("Response type not implemented: " + std::to_string(static_cast<int>(return_type)));
         }
         os << "Access-Control-Allow-Origin: *\r\n"
-           << "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization\r\n"
-           << "Access-Control-Allow-Methods: GET, POST\r\n"
-           << "\r\n";
+              "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization\r\n"
+              "Access-Control-Allow-Methods: GET, POST\r\n"
+              "\r\n";
 
         logger.log(Category::PhysicalPlan, [&physical_plan](std::ostream& os) {
             physical_plan.analyze(os, false);
@@ -237,7 +237,7 @@ void HttpQuadSession::execute_update(
     std::ostream& os)
 {
     // Mutex to allow only one write query at a time
-    std::lock_guard<std::mutex> lock(update_mutex);
+    std::lock_guard<std::mutex> lock(server.update_execution_mutex);
 
     buffer_manager.upgrade_to_editable(version_scope);
     get_query_ctx().result_version += 1; // TODO: think a better way?
@@ -272,8 +272,8 @@ void HttpQuadSession::execute_update(
         logger(Category::Error) << "Query Execution Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
-           << "Content-Type: text/plain\r\n"
-           << "\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
            << std::string(e.what());
         return;
     }

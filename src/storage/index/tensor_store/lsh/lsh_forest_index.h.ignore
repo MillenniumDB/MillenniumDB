@@ -1,0 +1,49 @@
+#pragma once
+
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+#include "storage/file_id.h"
+#include "storage/index/tensor_store/metric.h"
+#include "storage/index/tensor_store/tensor_store.h"
+
+class ForestIndexQueryIter;
+class LeafPage;
+class ObjectId;
+class LSHTree;
+class LSHTreeDir;
+
+
+class LSHForestIndex {
+    friend class ForestIndexQueryIter;
+    friend class LSHTree;
+
+public:
+    // Initialize a new forest index
+    // LSHForestIndex(std::size_t num_trees, Metric::MetricType metric_type, const TensorStore& tensor_store);
+    LSHForestIndex(const std::string& name);
+
+    // Build the forest index from the TensorStore
+    void bulk_build();
+
+    // Get the top k most similar object ids from the forest using the SynchAscend algorithm
+    std::vector<std::pair<float, ObjectId>>
+        query_top_k(const std::vector<float>& query_tensor, uint64_t k, int64_t search_k) const;
+
+    // Get an iterator for all the object_ids in the forest
+    std::unique_ptr<ForestIndexQueryIter> query_iter(const std::vector<float>& query_tensor) const;
+
+
+private:
+    // const TensorStore& tensor_store;
+    // TensorStore tensor_store;
+
+    Metric::MetricFuncType similarity_func;
+    Metric::MetricType metric_type;
+
+    const FileId split_file_id;
+    const FileId leaf_file_id;
+
+    std::vector<LSHTree> trees;
+};

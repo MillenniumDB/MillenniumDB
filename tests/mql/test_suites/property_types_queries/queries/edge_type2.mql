@@ -1,0 +1,1 @@
+MATCH (?x)-[:Type {value IS BOOL}]->(?y) RETURN ?x,?y

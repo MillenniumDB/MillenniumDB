@@ -1,6 +1,7 @@
 #include "streaming_executor_constructor.h"
 
 #include "query/exceptions.h"
+#include "query/executor/query_executor/sparql/show_streaming_executor.h"
 #include "system/path_manager.h"
 #include "query/executor/query_executor/sparql/ask_streaming_executor.h"
 #include "query/executor/query_executor/sparql/select_streaming_executor.h"
@@ -33,6 +34,10 @@ void StreamingExecutorConstructor::visit(OpAsk& op_ask) {
 }
 
 
+void StreamingExecutorConstructor::visit(OpShow&) {
+    executor = std::make_unique<ShowStreamingExecutor<OpShow::Type::TEXT_SEARCH_INDEX>>();
+}
+
 void StreamingExecutorConstructor::visit(OpDescribe&) {
     // TODO: Implement this
     throw NotSupportedException("SPARQL::StreamingExecutorConstructor::visit(OpDescribe&) not implemented");
@@ -43,3 +48,4 @@ void StreamingExecutorConstructor::visit(OpConstruct&) {
     // TODO: Implement this
     throw NotSupportedException("SPARQL::StreamingExecutorConstructor::visit(OpConstruct&) not implemented");
 }
+

@@ -2,6 +2,8 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_catalog.h"
+#include "graph_models/quad_model/quad_model.h"
+#include "graph_models/rdf_model/conversions.h"
 
 namespace MDBServer {
 
@@ -26,7 +28,7 @@ public:
         }
         case ObjectId::MASK_ANON_INLINED: {
             const auto anon_id = MQL::Conversions::unpack_blank(oid);
-            return encode_string("_b" + std::to_string(anon_id), Protocol::DataType::ANON);
+            return encode_string("_a" + std::to_string(anon_id), Protocol::DataType::ANON);
         }
         case ObjectId::MASK_ANON_TMP: {
             const auto anon_id = MQL::Conversions::unpack_blank(oid);
@@ -48,6 +50,12 @@ public:
         case ObjectId::MASK_POSITIVE_INT: {
             const int64_t i = MQL::Conversions::unpack_int(oid);
             return encode_int64(i);
+        }
+        case ObjectId::MASK_DECIMAL_INLINED:
+        case ObjectId::MASK_DECIMAL_EXTERN:
+        case ObjectId::MASK_DECIMAL_TMP: {
+            const Decimal dec = SPARQL::Conversions::unpack_decimal(oid);
+            return encode_string(dec.to_string(), Protocol::DataType::DECIMAL);
         }
         case ObjectId::MASK_FLOAT: {
             const float f = MQL::Conversions::unpack_float(oid);

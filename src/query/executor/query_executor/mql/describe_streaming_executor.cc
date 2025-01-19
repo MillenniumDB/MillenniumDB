@@ -27,6 +27,8 @@ DescribeStreamingExecutor::DescribeStreamingExecutor(std::unique_ptr<BindingIter
     virtual_vars { std::move(virtual_vars_) },
     object_id { object_id_ } {
     // The projection vars are somewhat internal vars too, they are only used for the get_projections_vars method
+    projection_vars.push_back(get_query_ctx().get_or_create_var("object"));
+
     if (labels_limit > 0) {
         projection_vars.push_back(get_query_ctx().get_or_create_var("labels"));
     }
@@ -71,6 +73,9 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
 
     response_writer.write_string("payload", MDBServer::Protocol::DataType::STRING);
     response_writer.write_list_header(projection_vars.size());
+
+    // Object
+    response_writer.write_object_id(object_id);
 
     // Labels
     if (labels_limit > 0) {

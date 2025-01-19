@@ -4,6 +4,7 @@
 #include <string>
 
 #include "graph_models/common/conversions.h"
+#include "graph_models/common/datatypes/decimal.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 
 namespace SPARQL { namespace Conversions {
@@ -34,6 +35,8 @@ namespace SPARQL { namespace Conversions {
 
     void print_string(ObjectId oid, std::ostream&);
     void print_iri(ObjectId oid, std::ostream&);
+    void print_path_node(std::ostream& os, ObjectId node_id);
+    void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
 
     // Doesn't print the language
     void print_string_lang(ObjectId oid, std::ostream&);
@@ -88,6 +91,7 @@ namespace SPARQL { namespace Conversions {
     constexpr uint8_t OPTYPE_INVALID = 0x05;
 
     Decimal unpack_decimal(ObjectId oid);
+    Decimal unpack_decimal_inlined(ObjectId oid);
 
     uint8_t calculate_optype(ObjectId oid1, ObjectId oid2);
     uint8_t calculate_optype(ObjectId oid);

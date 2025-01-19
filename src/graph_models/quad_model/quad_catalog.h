@@ -1,21 +1,17 @@
 #pragma once
 
-#include <memory>
 #include <ostream>
 #include <string>
 
 #include <boost/unordered_map.hpp>
 
 #include "storage/catalog/catalog.h"
-#include "storage/index/tensor_store/tensor_store.h"
+#include "storage/index/text_search/text_search_index_manager.h"
 
 class QuadCatalog : public Catalog {
-    friend class QuadModel;
-    friend class BulkImport;
-
 public:
     static constexpr uint64_t MODEL_ID = 0;
-    static constexpr uint64_t VERSION = 3;
+    static constexpr uint64_t VERSION = 4;
 
     QuadCatalog(const std::string& filename);
 
@@ -37,7 +33,7 @@ public:
     bool has_changes = false;
 
     uint64_t identifiable_nodes_count; // Does not consider the literals
-    uint64_t anonymous_nodes_count;
+    uint64_t anonymous_nodes_count; // TODO: delete?
 
     uint64_t edge_count;
     uint64_t label_count;
@@ -57,8 +53,5 @@ public:
     boost::unordered_map<uint64_t, uint64_t> type2equal_from_type_count;
     boost::unordered_map<uint64_t, uint64_t> type2equal_to_type_count;
 
-    // TODO: This should be moved as it is not persistent. It is only used for a single query.
-    //       It also should be cleared after the query or after reaching a certain amount of
-    //       loaded stores / memory usage.
-    boost::unordered_map<std::string, std::unique_ptr<TensorStore>> name2tensor_store;
+    TextSearch::TextSearchIndexManager text_search_index_manager;
 };

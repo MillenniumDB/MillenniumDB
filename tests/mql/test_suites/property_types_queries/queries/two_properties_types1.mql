@@ -1,0 +1,1 @@
+MATCH (?x {value IS INTEGER, other IS FLOAT})RETURN ?x, ?x.value, ?x.other

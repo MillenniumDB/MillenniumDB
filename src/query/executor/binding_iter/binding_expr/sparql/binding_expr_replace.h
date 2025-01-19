@@ -5,7 +5,6 @@
 #include <regex>
 
 #include "graph_models/rdf_model/conversions.h"
-#include "misc/locale.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -27,9 +26,7 @@ public:
         expr2(std::move(expr2)),
         expr3(std::move(expr3)),
         expr4(std::move(expr4))
-    {
-        auto locale = misc::get_locale();
-    }
+    { }
 
     ObjectId eval(const Binding& binding) override {
         auto expr1_oid = expr1->eval(binding);

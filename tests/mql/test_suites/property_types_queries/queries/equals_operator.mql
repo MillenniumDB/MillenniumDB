@@ -1,0 +1,1 @@
+MATCH (?x {value == "value1"}) RETURN ?x,?x.value

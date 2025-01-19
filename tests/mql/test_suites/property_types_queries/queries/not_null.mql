@@ -1,0 +1,1 @@
+MATCH (?x {maybenull IS NOT NULL}) RETURN ?x

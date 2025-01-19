@@ -24,8 +24,7 @@ void DisjointObjectPlan::print(std::ostream& os, int indent) const {
 }
 
 double DisjointObjectPlan::estimate_output_size() const {
-    return quad_model.catalog.edge_count + quad_model.catalog.identifiable_nodes_count
-         + quad_model.catalog.anonymous_nodes_count;
+    return quad_model.catalog.edge_count + quad_model.catalog.identifiable_nodes_count;
 }
 
 
@@ -47,14 +46,8 @@ std::unique_ptr<BindingIter> DisjointObjectPlan::get_binding_iter() const {
     ranges[0] = std::make_unique<UnassignedVar>(object_var);
     iters.push_back(std::make_unique<IndexScan<1>>(*quad_model.nodes, std::move(ranges)));
 
-    iters.push_back(std::make_unique<ObjectEnum>(
-        object_var,
-        ObjectId::MASK_ANON_INLINED,
-        quad_model.catalog.anonymous_nodes_count
-    ));
-
     iters.push_back(
-        std::make_unique<ObjectEnum>(object_var, ObjectId::MASK_EDGE, quad_model.catalog.edge_count)
+        std::make_unique<ObjectEnum>(object_var, ObjectId::MASK_EDGE, quad_model.catalog.edge_count, 1)
     );
     return std::make_unique<Union>(std::move(iters));
 }

@@ -130,6 +130,10 @@ void TranslatePropertyPaths::visit(OpFilter& op_filter) {
     }
 }
 
+void TranslatePropertyPaths::visit(OpFrom& op_from) {
+    op_from.op->accept_visitor(*this);
+}
+
 void TranslatePropertyPaths::visit(OpGraph& op_graph) {
     op_graph.op->accept_visitor(*this);
 }

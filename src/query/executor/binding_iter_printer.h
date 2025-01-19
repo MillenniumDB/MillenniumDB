@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/edge_table_lookup_gql.h"
 #include "query/executor/binding_iter_visitor.h"
 #include "query/var_id.h"
 
@@ -37,6 +38,7 @@ public:
     virtual void visit(CrossProduct&)              override;
     virtual void visit(DistinctHash&)              override;
     virtual void visit(EdgeTableLookup&)           override;
+    virtual void visit(EdgeTableLookupGQL&)        override;
     virtual void visit(EmptyBindingIter&)          override;
     virtual void visit(Filter&)                    override;
     virtual void visit(ExprEvaluator&)             override;
@@ -59,8 +61,11 @@ public:
     virtual void visit(Slice&)                     override;
     virtual void visit(SparqlService&)             override;
     virtual void visit(SubSelect&)                 override;
+    virtual void visit(TextSearchIndexScan&)       override;
     virtual void visit(Union&)                     override;
     virtual void visit(Values&)                    override;
+    virtual void visit(SetConstants&)              override;
+    virtual void visit(SetLabels&)                 override;
 
     virtual void visit(HashJoin::BGP::Hybrid::Join1Var&)       override;
     virtual void visit(HashJoin::BGP::Hybrid::Join<2>&)        override;
@@ -127,9 +132,4 @@ public:
     virtual void visit(Paths::AnyTrails::BFSEnum&)                 override;
     virtual void visit(Paths::AnyTrails::DFSCheck&)                override;
     virtual void visit(Paths::AnyTrails::DFSEnum&)                 override;
-
-    virtual void visit(LSH::ForestIndexTopK&)         override;
-    virtual void visit(LSH::ForestIndexTopAll&)       override;
-    virtual void visit(LSH::ProjectTensorSimilarity&) override;
-    virtual void visit(LSH::BruteSimilaritySearch&)   override;
 };

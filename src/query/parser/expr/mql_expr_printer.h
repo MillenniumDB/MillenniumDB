@@ -29,6 +29,8 @@ public:
     void visit(ExprNot&)             override;
     void visit(ExprOr&)              override;
     void visit(ExprRegex&)           override;
+    void visit(ExprTensorDistance&)  override;
+    void visit(ExprTextSearch&)      override;
 
     void visit(MQL::ExprAggAvg&)      override;
     void visit(MQL::ExprAggCountAll&) override;

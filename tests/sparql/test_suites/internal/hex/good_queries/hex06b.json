@@ -1,0 +1,17 @@
+{
+    "head": {
+        "vars": [
+            "str"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "str": {
+                    "type": "literal",
+                    "value": "http://www.example.org/bindAAAA1111DDDD"
+                }
+            }
+        ]
+    }
+}

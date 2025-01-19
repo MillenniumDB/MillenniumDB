@@ -106,6 +106,16 @@ void CheckVarNames::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
                                          + "\". Paths must have an unique variable");
         }
     }
+
+    for (auto& op_text_search_index : op_basic_graph_pattern.text_searches) {
+        for (auto& var : op_text_search_index.get_all_vars()) {
+            declared_vars.insert(var);
+            if (declared_path_vars.find(var) != declared_path_vars.end()) {
+                throw QuerySemanticException("Duplicated path variable \"" + get_query_ctx().get_var_name(var)
+                                             + "\". Paths must have an unique variable");
+            }
+        }
+    }
 }
 
 
@@ -125,22 +135,35 @@ void CheckVarNames::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
+void CheckVarNames::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
 
-void CheckVarNames::visit(OpGroupBy& op_group_by) {
+void CheckVarNames::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
+
+void CheckVarNames::visit(OpGroupBy& op_group_by)
+{
     op_group_by.op->accept_visitor(*this);
-    for (auto& [var, expr] : op_group_by.items) {
-        if (expr && var) {
-            group_vars.insert(*var);
-            if (declared_vars.find(*var) != declared_vars.end()) {
-                throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(*var) + "\" already declared");
+    for (auto&& [expr, alias] : op_group_by.items) {
+        ExprVar* casted = dynamic_cast<ExprVar*>(expr.get());
+        if (casted) { // ExprVar
+            group_vars.insert(casted->var);
+        }
+        if (alias) {
+            group_vars.insert(*alias);
+            if (declared_vars.find(*alias) != declared_vars.end()) {
+                throw QuerySemanticException(
+                    "Variable \"" + get_query_ctx().get_var_name(*alias) + "\" already declared"
+                );
             }
-            declared_vars.insert(*var);
-        } else if (var) {
-            group_vars.insert(*var);
+            declared_vars.insert(*alias);
         }
     }
 }
-
 
 void CheckVarNames::visit(OpHaving& op_having) {
     op_having.op->accept_visitor(*this);
@@ -221,3 +244,5 @@ void CheckVarNames::visit(OpValues& op_values) {
         declared_vars.insert(var);
     }
 }
+
+void CheckVarNames::visit(OpShow&) { }

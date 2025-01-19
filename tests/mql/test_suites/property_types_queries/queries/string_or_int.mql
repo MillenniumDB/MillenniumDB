@@ -1,0 +1,1 @@
+MATCH (?x {value IS STRING OR INTEGER}) RETURN ?x,?x.value

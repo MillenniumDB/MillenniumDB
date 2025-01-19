@@ -1,0 +1,17 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/123123h"
+                }
+            }
+        ]
+    }
+}

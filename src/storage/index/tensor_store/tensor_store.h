@@ -1,99 +1,137 @@
 #pragma once
-/*
- * TensorStore is an on-disk map between object ids and float tensors. The supported operations are insert (also
- * with replacement) and get. It has its own buffer manager for each instance. Once created the TensorStore is a
- * read-only structure, but in nothing in our architecture prevents the implementation of a writeable TensorStore
- * in the future.
- *
- * The TensorStore disk storage are the .tensors and .mapping files:
- *
- * {tensor_store_name}.tensors - stores all the tensor data as an adjacently-arranged vector of floats
- *
- * {tensor_store_name}.mapping - stores the header (bool has_forest_index and uint64 tensors_dim) and the mapping
- * between object_id2tensor_offset map for being loaded into memory
- *
- * {tensor_store_name}.index   - stores the forest index serialized if it was previously built
- */
 
-#include <memory>
+#include <filesystem>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+
+#include "graph_models/object_id.h"
+#include "object2tensor_versioned_hash/object2tensor_versioned_hash.h"
+#include "storage/disk_int_stack.h"
 #include "storage/file_id.h"
-
-class TensorBufferManager;
-
-namespace LSH {
-class ForestIndex;
-class ForestIndexQueryIter;
-class Tree;
-enum class MetricType;
-} // namespace LSH
+#include "tensor_id.h"
+#include "versioned_tensor.h"
 
 class TensorStore {
 public:
-    friend class LSH::Tree;
+    using TombstoneStackType = DiskIntStack<uint32_t>;
 
-    inline static const std::string TENSOR_STORES_DIR = "tensor_stores";
+    struct ObjectIdHasher {
+        uint64_t operator()(ObjectId key) const
+        {
+            return key.id;
+        }
+    };
 
-    // Check if a tensor store with a given name exists. At least the mapping and tensor files must exist
-    static bool exists(const std::string& name);
+    struct TensorsHeader {
+        uint64_t tensors_dim;
+    };
 
-    // Create a new tensor store
-    static void bulk_import(const std::string& tensors_csv_path, const std::string& tensor_store_name, uint64_t tensors_dim);
+    static constexpr char TENSORS_FILENAME[] = "tensors.dat";
+    static constexpr char TOMBSTONES_FILENAME[] = "tombstones.dat";
+    static constexpr char HASH_BUCKETS_FILENAME[] = "hash.dat";
+    static constexpr char HASH_DIRECTORY_FILENAME[] = "hash.dir";
 
-    // Load all existing tensor stores
-    static void load_tensor_stores(uint64_t tensor_page_buffer_size_in_bytes, bool preload);
+    // Initialize a new tensor_store
+    static void create(
+        const std::filesystem::path& db_directory,
+        const std::string& tensor_store_name,
+        uint64_t tensors_dim
+    );
 
-    const std::string name;
-    uint64_t          tensors_dim;
+    // Load an existing tensor_store with a limited frame pool size
+    static std::unique_ptr<TensorStore> load(
+        const std::filesystem::path& db_directory,
+        const std::string& tensor_store_name,
+        uint64_t vtensor_frame_pool_size_in_bytes
+    );
 
-    // Vector index
-    std::unique_ptr<LSH::ForestIndex> forest_index;
+    inline static void unpin(VTensor& vtensor)
+    {
+        vtensor.unpin();
+    }
 
-    // Initialize a new tensor store
-    TensorStore(const std::string& name, uint64_t tensors_dim, uint64_t tensor_page_buffer_size_in_bytes);
+    TensorStore(const TensorStore&) = delete;
+    TensorStore& operator=(const TensorStore&) = delete;
+    // TensorStore(TensorStore&&) = delete;
+    // TensorStore& operator=(TensorStore&&) = delete;
 
-    // Load an existing tensor store with a given name
-    TensorStore(const std::string& name, uint64_t tensor_page_buffer_size_in_bytes, bool preload);
-
-    // Trigger the serialization before being destroyed
     ~TensorStore();
 
-    // Check if a tensor with the given id exists
-    bool contains(uint64_t object_id) const;
+    // Returns true if found, false otherwise
+    bool get(ObjectId object_id, VTensor** vtensor);
 
-    // Write a tensor with the given object id into vec. It is assumed that vec.size() == tensors_dim. Return true
-    // if the tensor is found, false otherwise
-    bool get(uint64_t object_id, std::vector<float>& vec) const;
+    // Returns true if new object_id was inserted, false if object_id already existed and was overwritten
+    bool insert(ObjectId object_id, const float* tensor);
 
-    size_t size() const;
+    // Returns true if object_id was removed, false if object_id was not found
+    bool remove(ObjectId object_id);
 
-    // Build and set a forest index with the entire tensor store
-    void build_forest_index(LSH::MetricType metric_type, uint64_t num_trees, uint64_t max_bucket_size, uint64_t max_depth);
+    uint64_t tensors_dim() const noexcept;
 
-    std::vector<std::pair<uint64_t, float>> query_top_k(const std::vector<float>& query_tensor, int64_t k, int64_t search_k) const;
+    const std::string& name() const noexcept;
 
-    std::unique_ptr<LSH::ForestIndexQueryIter> query_iter(const std::vector<float>& query_tensor) const;
+    std::size_t size() const;
 
-    // Serialize the tensor store (mapping and forest index if it exists)
-    void serialize() const;
+    bool empty() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const TensorStore& tensor_store);
 
 private:
-    FileId tensors_file_id;
+    const std::string tensor_store_name;
 
-    std::string mapping_path;
-    std::string index_path;
+    const FileId tensors_file_id;
 
-    std::unique_ptr<TensorBufferManager> tensor_buffer_manager;
+    Object2TensorVersionedHash object2tensor_index;
 
+    TombstoneStackType tombstones_stack;
 
-    // Mapping between object id and its tensor bytes offset in the file (bytes)
-    std::unordered_map<uint64_t, uint64_t> object_id2tensor_offset;
+    const TensorsHeader tensors_header;
 
-    // Deserialize the tensor store
-    void deserialize();
+    // Frames for tensors
+    const uint64_t vtensor_pool_size;
 
-    void set_tensor_buffer_manager(uint64_t tensor_buffer_page_size_in_bytes, bool preload);
+    VTensor* const vtensor_pool;
+
+    float* const vtensor_data;
+
+    uint64_t vtensor_clock { 0 };
+
+    // Prevent concurrent modifications in vtensor_map
+    std::mutex vtensor_mutex;
+
+    // Prevent concurrent modifications in object2tensor_index
+    std::shared_mutex object2tensor_index_mutex;
+
+    boost::unordered_flat_map<TensorId, VTensor*, TensorId::Hasher> vtensor_map;
+
+    // Must only be called by load
+    TensorStore(
+        const std::string& tensor_store_name,
+        FileId tensors_file_id,
+        FileId tombstones_file_id,
+        FileId hash_buckets_file_id,
+        FileId hash_dir_file_id,
+        TensorsHeader tensors_header,
+        uint64_t vtensor_frame_pool_size_in_bytes
+    );
+
+    VTensor& get_vtensor_readonly(TensorId tensor_id) noexcept;
+
+    VTensor& get_vtensor_editable(TensorId tensor_id) noexcept;
+
+    VTensor& append_vtensor();
+
+    // Write all dirty frames to disk
+    void flush();
+
+    // TODO: File manager
+    inline void flush_vtensor(VTensor& vtensor);
+
+    // TODO: File manager
+    void read_existing_vtensor(TensorId tensor_id, float* tensor);
+
+    VTensor& get_vtensor_available();
 };

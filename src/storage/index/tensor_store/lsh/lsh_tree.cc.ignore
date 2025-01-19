@@ -1,0 +1,335 @@
+#include "lsh_tree.h"
+
+#include <cassert>
+
+#include "storage/index/tensor_store/lsh/lsh_forest_index.h"
+#include "storage/index/tensor_store/lsh/lsh_tree_dir.h"
+#include "storage/index/tensor_store/lsh/lsh_tree_leaf.h"
+#include "storage/index/tensor_store/metric.h"
+#include "storage/index/tensor_store/tensor_store.h"
+#include "system/buffer_manager.h"
+#include "system/file_manager.h"
+
+
+LSHTree::LSHTree(const std::string& name, const LSHForestIndex& lsh_forest_index_) :
+    dir_file_id { file_manager.get_file_id(name + ".dir") },
+    leaf_file_id { file_manager.get_file_id(name + ".leaf") },
+    lsh_forest_index { lsh_forest_index_ } { }
+
+
+void LSHTree::insert(ObjectId object_id, const float* tensor) const {
+    auto&& [descended_leaf, _] = descend(tensor);
+
+    if (!descended_leaf.full()) {
+        // Insert in the descended leaf
+        descended_leaf.upgrade_to_editable();
+        descended_leaf.add(object_id);
+        return;
+    }
+
+    // Descended leaf is full, try to insert in any of its overflown leaves
+    std::vector<LSHTreeLeaf> overflow_leaves;
+    auto current_next_leaf_id = *descended_leaf.next_leaf_id;
+    while (current_next_leaf_id != 0) {
+        auto& current_overflow_leaf =
+            overflow_leaves.emplace_back(&buffer_manager.get_page_readonly(leaf_file_id, current_next_leaf_id)
+            );
+
+        if (!current_overflow_leaf.full()) {
+            // Insert in the current overflow leaf
+            current_overflow_leaf.upgrade_to_editable();
+            current_overflow_leaf.add(object_id);
+            return;
+        }
+
+        current_next_leaf_id = *current_overflow_leaf.next_leaf_id;
+    }
+
+    // All overflow_leaves are full. Extract all object_ids
+    std::vector<ObjectId> object_ids;
+    object_ids.resize(*descended_leaf.num_object_ids);
+    memcpy(&object_ids[0], descended_leaf.object_ids, sizeof(ObjectId) * *descended_leaf.num_object_ids);
+    for (const auto& overflow_leaf : overflow_leaves) {
+        object_ids.resize(object_ids.size() + *overflow_leaf.num_object_ids);
+        memcpy(
+            &object_ids[object_ids.size() - *overflow_leaf.num_object_ids],
+            overflow_leaf.object_ids,
+            sizeof(ObjectId) * *overflow_leaf.num_object_ids
+        );
+    }
+
+    // Try generate a proper split. Initialize the split result
+    SplitResult split_result;
+    split_result.object_ids = std::move(object_ids);
+    // split_result.plane.resize(lsh_forest_index.tensor_store.tensors_dim);
+    for (uint64_t i = 0; i < LSHTree::SPLIT_ATTEMPS; ++i) {
+        generate_split(split_result);
+        const auto left_count = split_result.split_index;
+        const auto right_count = split_result.object_ids.size() - left_count;
+
+        if (check_proportion_threshold(left_count, right_count)) {
+            // The proportion is within the threshold, do the split
+
+            // Append a new split
+            auto num_dir_pages = file_manager.count_pages(dir_file_id);
+            LSHTreeDir last_dir(&buffer_manager.get_page_readonly(dir_file_id, num_dir_pages - 1));
+            if (last_dir.full()) {
+                // Last page is full, append a new one
+                auto& new_page = buffer_manager.append_vpage(dir_file_id);
+                last_dir = LSHTreeDir(&new_page);
+                *last_dir.num_split_data = 1;
+                ++num_dir_pages;
+            } else {
+                // Split fits in the last page
+                ++(*last_dir.num_split_data);
+            }
+            // Compute the new split id
+            const auto new_split_id =
+                LSHTreeDir::MAX_SPLIT_DATA * (num_dir_pages - 1) + *last_dir.num_split_data;
+            // Get a reference to the new split
+            LSHTreeDir::Split& new_split = last_dir.split_data[*last_dir.num_split_data - 1];
+
+            // TODO: Create the tensor in the tensor_store and bind here
+            new_split.tensor_offset = -1;
+
+            // Update the old parent and new split parent pointer
+            const auto old_parent_id = *descended_leaf.parent_id;
+            const auto old_parent_page_id = old_parent_id / LSHTreeDir::MAX_SPLIT_DATA;
+            const auto old_parent_split_index = old_parent_id % LSHTreeDir::MAX_SPLIT_DATA;
+            LSHTreeDir old_parent_dir(&buffer_manager.get_page_readonly(dir_file_id, old_parent_page_id));
+            auto& old_parent_split = old_parent_dir.split_data[old_parent_split_index];
+            // Make the old parent split to point to the newly created split instead of descended leaf
+            const auto encoded_descended_leaf_id = -(descended_leaf.page->page_id.page_number + 1);
+            if (old_parent_split.left_id == encoded_descended_leaf_id) {
+                old_parent_split.left_id = new_split_id + 1;
+            } else {
+                assert(old_parent_split.right_id == encoded_descended_leaf_id && "Invalid old_parent_split");
+                old_parent_split.right_id = new_split_id + 1;
+            }
+            // The new split must point to the old parent
+            new_split.parent_id = old_parent_id;
+
+            // Make leaves editable and reset their state
+            if (object_ids.size() >= LSHTreeLeaf::MAX_OBJECT_IDS * (1 + overflow_leaves.size())) {
+                // We will need an additional overflow leaf
+                auto& new_page = buffer_manager.append_vpage(leaf_file_id);
+                overflow_leaves.emplace_back(&new_page);
+            }
+            for (auto& overflow_leaf : overflow_leaves) {
+                overflow_leaf.upgrade_to_editable();
+                *overflow_leaf.num_object_ids = 0;
+                *overflow_leaf.parent_id = new_split_id;
+                *overflow_leaf.next_leaf_id = 0;
+            }
+            // Add current leaf to the overflow leaves for easier access
+            descended_leaf.upgrade_to_editable();
+            *descended_leaf.num_object_ids = 0;
+            *descended_leaf.parent_id = new_split_id;
+            *descended_leaf.next_leaf_id = 0;
+            overflow_leaves.emplace_back(std::move(descended_leaf));
+
+
+            // Update left leaves
+            std::size_t current_overflow_leaf_index = 0;
+            new_split.left_id = -(overflow_leaves[current_overflow_leaf_index].page->page_id.page_number + 1);
+            for (uint64_t i = 0; i < split_result.split_index; ++i) {
+                if (overflow_leaves[current_overflow_leaf_index].full()) {
+                    // Overflow leaf is full, bind next leaf and advance the index
+                    *overflow_leaves[current_overflow_leaf_index++].next_leaf_id =
+                        overflow_leaves[current_overflow_leaf_index].page->page_id.page_number;
+                }
+                overflow_leaves[current_overflow_leaf_index].add(object_ids[i]);
+            }
+            ++current_overflow_leaf_index;
+
+
+            // Update right leaves
+            new_split.right_id =
+                -(overflow_leaves[current_overflow_leaf_index].page->page_id.page_number + 1);
+            for (auto i = split_result.split_index; i < object_ids.size(); ++i) {
+                if (overflow_leaves[current_overflow_leaf_index].full()) {
+                    // Overflow leaf is full, bind next leaf and advance the index
+                    *overflow_leaves[current_overflow_leaf_index++].next_leaf_id =
+                        overflow_leaves[current_overflow_leaf_index].page->page_id.page_number;
+                }
+                overflow_leaves[current_overflow_leaf_index].add(object_ids[i]);
+            }
+
+            assert(
+                current_overflow_leaf_index == overflow_leaves.size() && "There is an unused overflow leaf!"
+            );
+
+            return;
+        }
+    }
+
+    // No proper split was found, append a new overflow leaf
+    auto& new_page = buffer_manager.append_vpage(leaf_file_id);
+    auto new_overflow_leaf = LSHTreeLeaf(&new_page);
+    new_overflow_leaf.num_object_ids = 0;
+    new_overflow_leaf.parent_id = descended_leaf.parent_id;
+    new_overflow_leaf.next_leaf_id = 0;
+
+    // Update the next leaf pointer
+    if (overflow_leaves.empty()) {
+        // There are no overflow leaves
+        descended_leaf.upgrade_to_editable();
+        *descended_leaf.next_leaf_id = new_page.page_id.page_number;
+    } else {
+        // Must reach the last overflow leaf
+        overflow_leaves.back().upgrade_to_editable();
+        *overflow_leaves.back().next_leaf_id = new_page.page_id.page_number;
+    }
+
+    // Insert in the new overflow leaf
+    new_overflow_leaf.add(object_id);
+}
+
+
+bool LSHTree::remove(ObjectId object_id, const float* tensor) const {
+    auto&& [current_leaf, _] = descend(tensor);
+
+    auto pos = current_leaf.find(object_id);
+    while (pos < 0) {
+        // Object not found in current_leaf, try the next overflow leaf
+        const auto next_overflow_leaf_id = *current_leaf.next_leaf_id;
+
+        if (next_overflow_leaf_id == 0) {
+            // No more overflow leaves to check
+            return false;
+        }
+
+        current_leaf = LSHTreeLeaf(&buffer_manager.get_page_readonly(leaf_file_id, next_overflow_leaf_id));
+        pos = current_leaf.find(object_id);
+    }
+
+    // Object found in current_leaf, erase it
+    current_leaf.upgrade_to_editable();
+    current_leaf.erase(pos);
+    return true;
+}
+
+
+void LSHTree::bulk_build() {
+    // TODO: Prevent overwriting and usage while in this function?
+    // TODO: implement
+}
+
+
+std::tuple<LSHTreeLeaf, std::size_t> LSHTree::descend(const float* tensor) const {
+    // Start with the root
+    LSHTreeDir current_dir { &buffer_manager.get_page_readonly(dir_file_id, 0) };
+    LSHTreeDir::Split current_split { current_dir.split_data[0] };
+    std::size_t current_depth { 0 };
+
+    // Descend until reaching a leaf node
+    while (true) {
+        // TODO: Implement side
+        const auto current_node_id = 0;// current_split.side();
+        if (current_node_id < 0) {
+            LSHTreeLeaf leaf { &buffer_manager.get_page_readonly(leaf_file_id, (-current_node_id) - 1) };
+            return std::make_pair(std::move(leaf), current_depth);
+        }
+
+        const auto page_id = current_node_id / LSHTreeDir::MAX_SPLIT_DATA;
+        const auto split_index = current_node_id % LSHTreeDir::MAX_SPLIT_DATA;
+        current_dir = LSHTreeDir(&buffer_manager.get_page_readonly(dir_file_id, page_id));
+        current_split = current_dir.split_data[split_index];
+        ++current_depth;
+    }
+}
+
+
+void LSHTree::generate_split(SplitResult& split_result) const {
+    // Generate a plane based on the objects
+    generate_plane(split_result);
+
+    // Update object_ids order and split_index value by partitioning them based on the plane
+    std::size_t lo { 0 };
+    std::size_t hi { split_result.object_ids.size() - 1 };
+    std::vector<float> tensor_buffer(/*lsh_forest_index.tensor_store.tensors_dim*/);
+    while (lo <= hi) {
+        // lsh_forest_index.tensor_store.get(split_result.object_ids[lo], tensor_buffer);
+        // TODO: Implement side
+        if (true /*lsh_forest_index.side()*/) {
+            // Object must be moved to the right
+            std::swap(split_result.object_ids[lo], split_result.object_ids[hi]);
+            --hi;
+        } else {
+            // Object stays in the left
+            ++lo;
+        }
+    }
+    split_result.split_index = lo;
+}
+
+
+void LSHTree::generate_plane(SplitResult& split_result) const {
+//     assert(split_result.object_ids.size() > 1 && "Not enough points to generate a plane");
+//     // assert(split_result.plane.size() == lsh_forest_index.tensor_store.tensors_dim && "Invalid plane size");
+
+//     auto centroid_index_a = get_uniform_uint64(0, split_result.object_ids.size() - 1);
+//     auto centroid_index_b = get_uniform_uint64(0, split_result.object_ids.size() - 2);
+//     if (centroid_index_a == centroid_index_b) {
+//         // prevent centroid_a == centroid_b
+//         ++centroid_index_b;
+//     }
+
+//     std::vector<float> centroid_a(/*lsh_forest_index.tensor_store.tensors_dim*/);
+//     std::vector<float> centroid_b(/*lsh_forest_index.tensor_store.tensors_dim*/);
+//     // lsh_forest_index.tensor_store.get(split_result.object_ids[centroid_index_a], centroid_a);
+//     // lsh_forest_index.tensor_store.get(split_result.object_ids[centroid_index_b], centroid_b);
+
+//     uint64_t num_points_centroid_a = 1;
+//     uint64_t num_points_centroid_b = 1;
+
+//     std::vector<float> tensor_buffer(/*lsh_forest_index.tensor_store.tensors_dim*/);
+//     for (auto epochs = 0u; epochs < LSHTree::GENERATE_PLANE_EPOCHS; ++epochs) {
+//         const auto k = get_uniform_uint64(0, split_result.object_ids.size() - 1);
+//         // lsh_forest_index.tensor_store.get(split_result.object_ids[k], tensor_buffer);
+
+//         const float similarity_ak = lsh_forest_index.similarity_func(centroid_a, tensor_buffer);
+//         const float similarity_bk = lsh_forest_index.similarity_func(centroid_b, tensor_buffer);
+//         if (similarity_ak < similarity_bk) {
+// // Centroid A is the most similar, update it
+// #ifdef _OPENMP
+// #pragma omp simd
+// #endif
+//             for (uint64_t i = 0; i < 0/*lsh_forest_index.tensor_store.tensors_dim*/; ++i) {
+//                 centroid_a[i] =
+//                     (num_points_centroid_a * centroid_a[i] + tensor_buffer[i]) / (num_points_centroid_a + 1);
+//             }
+//             ++num_points_centroid_a;
+//         } else {
+// // Centroid B is the most similar, update it
+// #ifdef _OPENMP
+// #pragma omp simd
+// #endif
+//             for (uint64_t i = 0; i < lsh_forest_index.tensor_store.tensors_dim; ++i) {
+//                 centroid_b[i] =
+//                     (num_points_centroid_b * centroid_b[i] + tensor_buffer[i]) / (num_points_centroid_b + 1);
+//             }
+//             ++num_points_centroid_b;
+//         }
+//     }
+
+//     // Compute the normal of the plane between centroid_a and centroid_b
+// #ifdef _OPENMP
+// #pragma omp simd
+// #endif
+//     for (uint64_t i = 0; i < lsh_forest_index.tensor_store.tensors_dim; ++i) {
+//         split_result.plane[i] = centroid_a[i] - centroid_b[i];
+//     }
+
+//     // Compute the offset of the plane if metric is not angular
+//     if (lsh_forest_index.metric_type != Metric::MetricType::ANGULAR) {
+//         float offset = 0.0f;
+// #ifdef _OPENMP
+// #pragma omp simd reduction(+ : offset)
+// #endif
+//         for (uint64_t i = 0; i < lsh_forest_index.tensor_store.tensors_dim; ++i) {
+//             offset += -split_result.plane[i] * (centroid_a[i] + centroid_b[i]) / 2.0f;
+//         }
+//         split_result.offset = offset;
+//     }
+}

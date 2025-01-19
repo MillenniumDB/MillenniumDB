@@ -77,5 +77,6 @@ public:
     virtual std::any visitBlankNode(SparqlUpdateParser::BlankNodeContext*) override;
     virtual std::any visitNil(SparqlUpdateParser::NilContext*) override;
 
+    std::any visitCreateTextIndex(SparqlUpdateParser::CreateTextIndexContext*) override;
 };
 }

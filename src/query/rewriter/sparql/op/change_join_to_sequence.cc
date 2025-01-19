@@ -14,6 +14,7 @@ void ChangeJoinToSequence::visit(OpEmpty&) { }
 void ChangeJoinToSequence::visit(OpService&) { }
 void ChangeJoinToSequence::visit(OpUnitTable&) { }
 void ChangeJoinToSequence::visit(OpValues&) { }
+void ChangeJoinToSequence::visit(OpShow&) { }
 
 
 void ChangeJoinToSequence::visit(OpOptional& op_optional)
@@ -78,6 +79,15 @@ void ChangeJoinToSequence::visit(OpGroupBy& op_group_by)
     assert(!is_castable_to<OpJoin>(op_group_by.op));
 }
 
+void ChangeJoinToSequence::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
+void ChangeJoinToSequence::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
 
 void ChangeJoinToSequence::visit(OpHaving& op_having)
 {

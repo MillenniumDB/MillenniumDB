@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/query_context.h"
+#include "graph_models/object_id.h"
 #include "query/parser/expr/expr.h"
 
 namespace MQL {

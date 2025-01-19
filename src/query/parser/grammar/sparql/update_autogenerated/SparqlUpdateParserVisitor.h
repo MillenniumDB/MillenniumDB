@@ -33,6 +33,16 @@ public:
 
     virtual std::any visitDeleteData(SparqlUpdateParser::DeleteDataContext *context) = 0;
 
+    virtual std::any visitCreateTextIndex(SparqlUpdateParser::CreateTextIndexContext *context) = 0;
+
+    virtual std::any visitNormalizeTextIndex(SparqlUpdateParser::NormalizeTextIndexContext *context) = 0;
+
+    virtual std::any visitNormalizeType(SparqlUpdateParser::NormalizeTypeContext *context) = 0;
+
+    virtual std::any visitTokenizeTextIndex(SparqlUpdateParser::TokenizeTextIndexContext *context) = 0;
+
+    virtual std::any visitTokenizeType(SparqlUpdateParser::TokenizeTypeContext *context) = 0;
+
     virtual std::any visitQuadData(SparqlUpdateParser::QuadDataContext *context) = 0;
 
     virtual std::any visitTriplesTemplate(SparqlUpdateParser::TriplesTemplateContext *context) = 0;

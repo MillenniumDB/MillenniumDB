@@ -1,0 +1,1 @@
+MATCH (?x {value > 1}) RETURN ?x,?x.value

@@ -1,0 +1,2 @@
+MATCH (?x)
+RETURN ?x, REGEX(?x.str, "^N\d$") AS ?rgx

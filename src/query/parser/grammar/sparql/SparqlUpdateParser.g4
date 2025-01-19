@@ -140,6 +140,7 @@ update:
     // | create
      insertData
     | deleteData
+    | createTextIndex
     // | deleteWhere
     // | modify
     ;
@@ -179,6 +180,16 @@ insertData
 deleteData
     : DELETE DATA quadData
     ;
+
+createTextIndex
+    : CREATE TEXT INDEX string ON iri (WITH normalizeTextIndex? tokenizeTextIndex)?
+    ;
+
+normalizeTextIndex: NORMALIZE normalizeType;
+normalizeType: IDENTITY | NFKD_CASEFOLD;
+
+tokenizeTextIndex: TOKENIZE tokenizeType;
+tokenizeType: IDENTITY | WS_SPLIT_PUNCT | WS_RM_PUNCT | WS_KEEP_PUNCT;
 
 // deleteWhere
 //     : DELETE WHERE quadPattern

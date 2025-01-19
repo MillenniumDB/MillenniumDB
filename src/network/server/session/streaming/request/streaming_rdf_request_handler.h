@@ -1,6 +1,6 @@
-#include "streaming_request_handler.h"
+#pragma once
 
-#include <antlr4-runtime.h>
+#include "streaming_request_handler.h"
 
 #include "network/server/session/streaming/response/streaming_rdf_response_writer.h"
 #include "query/optimizer/rdf_model/streaming_executor_constructor.h"
@@ -11,19 +11,29 @@ namespace MDBServer {
 class StreamingRdfRequestHandler : public StreamingRequestHandler {
 public:
     StreamingRdfRequestHandler(StreamingSession& session) :
-        StreamingRequestHandler(session, std::make_unique<StreamingRdfResponseWriter>(session)) { }
+        StreamingRequestHandler(session, std::make_unique<StreamingRdfResponseWriter>(session))
+    { }
 
     ~StreamingRdfRequestHandler() = default;
 
-    std::unique_ptr<Op> create_readonly_logical_plan(const std::string& query) override {
+    std::unique_ptr<Op> create_logical_plan(const std::string& query) override
+    {
+        // TODO: Support updates
         auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
         return logical_plan;
     }
 
-    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(Op& logical_plan) override {
+    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(Op& logical_plan) override
+    {
         SPARQL::StreamingExecutorConstructor query_optimizer;
         logical_plan.accept_visitor(query_optimizer);
         return std::move(query_optimizer.executor);
+    }
+
+    void execute_update(Op& /*logical_plan*/, BufferManager::VersionScope& /*version_scope*/) override
+    {
+        response_writer->write_error("Updates not supported in RDF streaming mode yet");
+        response_writer->flush();
     }
 };
 } // namespace MDBServer

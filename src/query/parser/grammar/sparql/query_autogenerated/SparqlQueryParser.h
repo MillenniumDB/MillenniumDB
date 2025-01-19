@@ -29,59 +29,60 @@ public:
     IF = 85, STRLANG = 86, STRDT = 87, ISNUMERIC = 88, COUNT = 89, SUM = 90, 
     MIN = 91, MAX = 92, AVG = 93, SAMPLE = 94, GROUP_CONCAT = 95, NOT = 96, 
     IN = 97, EXISTS = 98, SEPARATOR = 99, ANY = 100, SHORTEST = 101, SIMPLE = 102, 
-    ACYCLIC = 103, WALKS = 104, IRIREF = 105, PNAME_NS = 106, PNAME_LN = 107, 
-    BLANK_NODE_LABEL = 108, VAR1 = 109, VAR2 = 110, LANGTAG = 111, INTEGER = 112, 
-    DECIMAL = 113, DOUBLE = 114, INTEGER_POSITIVE = 115, DECIMAL_POSITIVE = 116, 
-    DOUBLE_POSITIVE = 117, INTEGER_NEGATIVE = 118, DECIMAL_NEGATIVE = 119, 
-    DOUBLE_NEGATIVE = 120, STRING_LITERAL1 = 121, STRING_LITERAL2 = 122, 
-    STRING_LITERAL_LONG1 = 123, STRING_LITERAL_LONG2 = 124, COMMENT = 125, 
-    REFERENCE = 126, LESS_EQUAL = 127, GREATER_EQUAL = 128, NOT_EQUAL = 129, 
-    AND = 130, OR = 131, INVERSE = 132, OPEN_BRACE = 133, CLOSE_BRACE = 134, 
-    OPEN_CURLY_BRACE = 135, CLOSE_CURLY_BRACE = 136, OPEN_SQUARE_BRACKET = 137, 
-    CLOSE_SQUARE_BRACKET = 138, SEMICOLON = 139, DOT = 140, PLUS_SIGN = 141, 
-    MINUS_SIGN = 142, ASTERISK = 143, QUESTION_MARK = 144, COMMA = 145, 
-    NEGATION = 146, DIVIDE = 147, EQUAL = 148, LESS = 149, GREATER = 150, 
-    PIPE = 151, ANY_OTHER = 152
+    ACYCLIC = 103, WALKS = 104, SHOW = 105, TEXT = 106, INDEX = 107, IRIREF = 108, 
+    PNAME_NS = 109, PNAME_LN = 110, BLANK_NODE_LABEL = 111, VAR1 = 112, 
+    VAR2 = 113, LANGTAG = 114, INTEGER = 115, DECIMAL = 116, DOUBLE = 117, 
+    INTEGER_POSITIVE = 118, DECIMAL_POSITIVE = 119, DOUBLE_POSITIVE = 120, 
+    INTEGER_NEGATIVE = 121, DECIMAL_NEGATIVE = 122, DOUBLE_NEGATIVE = 123, 
+    STRING_LITERAL1 = 124, STRING_LITERAL2 = 125, STRING_LITERAL_LONG1 = 126, 
+    STRING_LITERAL_LONG2 = 127, COMMENT = 128, REFERENCE = 129, LESS_EQUAL = 130, 
+    GREATER_EQUAL = 131, NOT_EQUAL = 132, AND = 133, OR = 134, INVERSE = 135, 
+    OPEN_BRACE = 136, CLOSE_BRACE = 137, OPEN_CURLY_BRACE = 138, CLOSE_CURLY_BRACE = 139, 
+    OPEN_SQUARE_BRACKET = 140, CLOSE_SQUARE_BRACKET = 141, SEMICOLON = 142, 
+    DOT = 143, PLUS_SIGN = 144, MINUS_SIGN = 145, ASTERISK = 146, QUESTION_MARK = 147, 
+    COMMA = 148, NEGATION = 149, DIVIDE = 150, EQUAL = 151, LESS = 152, 
+    GREATER = 153, PIPE = 154, ANY_OTHER = 155
   };
 
   enum {
-    RuleQuery = 0, RulePrologue = 1, RuleBaseDecl = 2, RulePrefixDecl = 3, 
-    RuleSelectQuery = 4, RuleSubSelect = 5, RuleSelectClause = 6, RuleSelectModifier = 7, 
-    RuleSelectVariables = 8, RuleConstructQuery = 9, RuleDescribeQuery = 10, 
-    RuleAskQuery = 11, RuleDatasetClause = 12, RuleWhereClause = 13, RuleSolutionModifier = 14, 
-    RuleGroupClause = 15, RuleGroupCondition = 16, RuleHavingClause = 17, 
-    RuleHavingCondition = 18, RuleOrderClause = 19, RuleOrderCondition = 20, 
-    RuleLimitOffsetClauses = 21, RuleLimitClause = 22, RuleOffsetClause = 23, 
-    RuleValuesClause = 24, RuleTriplesTemplate = 25, RuleGroupGraphPattern = 26, 
-    RuleGroupGraphPatternSub = 27, RuleGroupGraphPatternSubList = 28, RuleTriplesBlock = 29, 
-    RuleGraphPatternNotTriples = 30, RuleOptionalGraphPattern = 31, RuleGraphGraphPattern = 32, 
-    RuleServiceGraphPattern = 33, RuleBind = 34, RuleInlineData = 35, RuleDataBlock = 36, 
-    RuleInlineDataOneVar = 37, RuleInlineDataFull = 38, RuleDataBlockValues = 39, 
-    RuleDataBlockValue = 40, RuleMinusGraphPattern = 41, RuleGroupOrUnionGraphPattern = 42, 
-    RuleFilter = 43, RuleConstraint = 44, RuleFunctionCall = 45, RuleArgList = 46, 
-    RuleExpressionList = 47, RuleConstructTemplate = 48, RuleConstructTriples = 49, 
-    RuleTriplesSameSubject = 50, RulePropertyList = 51, RulePropertyListNotEmpty = 52, 
-    RuleVerb = 53, RuleObjectList = 54, RuleObject = 55, RuleTriplesSameSubjectPath = 56, 
-    RulePropertyListPath = 57, RulePropertyListPathNotEmpty = 58, RulePropertyListPathNotEmptyList = 59, 
-    RuleVerbPath = 60, RuleVerbSimple = 61, RuleObjectListPath = 62, RuleObjectPath = 63, 
-    RulePath = 64, RulePathAlternative = 65, RulePathSequence = 66, RulePathElt = 67, 
-    RulePathEltOrInverse = 68, RulePathMod = 69, RulePathQuantity = 70, 
-    RulePathQuantityExact = 71, RulePathQuantityRange = 72, RulePathQuantityMin = 73, 
-    RulePathQuantityMax = 74, RulePathPrimary = 75, RulePathNegatedPropertySet = 76, 
-    RulePathOneInPropertySet = 77, RuleInteger = 78, RuleTriplesNode = 79, 
-    RuleBlankNodePropertyList = 80, RuleTriplesNodePath = 81, RuleBlankNodePropertyListPath = 82, 
-    RuleCollection = 83, RuleCollectionPath = 84, RuleGraphNode = 85, RuleGraphNodePath = 86, 
-    RuleVarOrTerm = 87, RuleVarOrIRI = 88, RuleVar = 89, RuleGraphTerm = 90, 
-    RuleNil = 91, RuleExpression = 92, RuleConditionalOrExpression = 93, 
-    RuleConditionalAndExpression = 94, RuleRelationalExpression = 95, RuleAdditiveExpression = 96, 
-    RuleRhsAdditiveExpression = 97, RuleRhsAdditiveExpressionSub = 98, RuleMultiplicativeExpression = 99, 
-    RuleUnaryExpression = 100, RulePrimaryExpression = 101, RuleBuiltInCall = 102, 
-    RuleRegexExpression = 103, RuleSubStringExpression = 104, RuleStrReplaceExpression = 105, 
-    RuleExistsFunction = 106, RuleNotExistsFunction = 107, RuleAggregate = 108, 
-    RuleIriOrFunction = 109, RuleRdfLiteral = 110, RuleNumericLiteral = 111, 
-    RuleNumericLiteralUnsigned = 112, RuleNumericLiteralPositive = 113, 
-    RuleNumericLiteralNegative = 114, RuleBooleanLiteral = 115, RuleString = 116, 
-    RuleIri = 117, RulePrefixedName = 118, RuleBlankNode = 119, RuleAnon = 120
+    RuleQuery = 0, RuleShowQuery = 1, RulePrologue = 2, RuleBaseDecl = 3, 
+    RulePrefixDecl = 4, RuleSelectQuery = 5, RuleSubSelect = 6, RuleSelectClause = 7, 
+    RuleSelectModifier = 8, RuleSelectVariables = 9, RuleConstructQuery = 10, 
+    RuleDescribeQuery = 11, RuleAskQuery = 12, RuleDatasetClause = 13, RuleWhereClause = 14, 
+    RuleSolutionModifier = 15, RuleGroupClause = 16, RuleGroupCondition = 17, 
+    RuleHavingClause = 18, RuleHavingCondition = 19, RuleOrderClause = 20, 
+    RuleOrderCondition = 21, RuleLimitOffsetClauses = 22, RuleLimitClause = 23, 
+    RuleOffsetClause = 24, RuleValuesClause = 25, RuleTriplesTemplate = 26, 
+    RuleGroupGraphPattern = 27, RuleGroupGraphPatternSub = 28, RuleGroupGraphPatternSubList = 29, 
+    RuleTriplesBlock = 30, RuleGraphPatternNotTriples = 31, RuleOptionalGraphPattern = 32, 
+    RuleGraphGraphPattern = 33, RuleServiceGraphPattern = 34, RuleBind = 35, 
+    RuleInlineData = 36, RuleDataBlock = 37, RuleInlineDataOneVar = 38, 
+    RuleInlineDataFull = 39, RuleDataBlockValues = 40, RuleDataBlockValue = 41, 
+    RuleMinusGraphPattern = 42, RuleGroupOrUnionGraphPattern = 43, RuleFilter = 44, 
+    RuleConstraint = 45, RuleFunctionCall = 46, RuleArgList = 47, RuleExpressionList = 48, 
+    RuleConstructTemplate = 49, RuleConstructTriples = 50, RuleTriplesSameSubject = 51, 
+    RulePropertyList = 52, RulePropertyListNotEmpty = 53, RuleVerb = 54, 
+    RuleObjectList = 55, RuleObject = 56, RuleTriplesSameSubjectPath = 57, 
+    RulePropertyListPath = 58, RulePropertyListPathNotEmpty = 59, RulePropertyListPathNotEmptyList = 60, 
+    RuleVerbPath = 61, RuleVerbSimple = 62, RuleObjectListPath = 63, RuleObjectPath = 64, 
+    RulePath = 65, RulePathAlternative = 66, RulePathSequence = 67, RulePathElt = 68, 
+    RulePathEltOrInverse = 69, RulePathMod = 70, RulePathQuantity = 71, 
+    RulePathQuantityExact = 72, RulePathQuantityRange = 73, RulePathQuantityMin = 74, 
+    RulePathQuantityMax = 75, RulePathPrimary = 76, RulePathNegatedPropertySet = 77, 
+    RulePathOneInPropertySet = 78, RuleInteger = 79, RuleTriplesNode = 80, 
+    RuleBlankNodePropertyList = 81, RuleTriplesNodePath = 82, RuleBlankNodePropertyListPath = 83, 
+    RuleCollection = 84, RuleCollectionPath = 85, RuleGraphNode = 86, RuleGraphNodePath = 87, 
+    RuleVarOrTerm = 88, RuleVarOrIRI = 89, RuleVar = 90, RuleGraphTerm = 91, 
+    RuleNil = 92, RuleExpression = 93, RuleConditionalOrExpression = 94, 
+    RuleConditionalAndExpression = 95, RuleRelationalExpression = 96, RuleAdditiveExpression = 97, 
+    RuleRhsAdditiveExpression = 98, RuleRhsAdditiveExpressionSub = 99, RuleMultiplicativeExpression = 100, 
+    RuleUnaryExpression = 101, RulePrimaryExpression = 102, RuleBuiltInCall = 103, 
+    RuleRegexExpression = 104, RuleSubStringExpression = 105, RuleStrReplaceExpression = 106, 
+    RuleExistsFunction = 107, RuleNotExistsFunction = 108, RuleAggregate = 109, 
+    RuleIriOrFunction = 110, RuleRdfLiteral = 111, RuleNumericLiteral = 112, 
+    RuleNumericLiteralUnsigned = 113, RuleNumericLiteralPositive = 114, 
+    RuleNumericLiteralNegative = 115, RuleBooleanLiteral = 116, RuleString = 117, 
+    RuleIri = 118, RulePrefixedName = 119, RuleBlankNode = 120, RuleAnon = 121
   };
 
   explicit SparqlQueryParser(antlr4::TokenStream *input);
@@ -102,6 +103,7 @@ public:
 
 
   class QueryContext;
+  class ShowQueryContext;
   class PrologueContext;
   class BaseDeclContext;
   class PrefixDeclContext;
@@ -234,6 +236,7 @@ public:
     ConstructQueryContext *constructQuery();
     DescribeQueryContext *describeQuery();
     AskQueryContext *askQuery();
+    ShowQueryContext *showQuery();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -241,6 +244,21 @@ public:
   };
 
   QueryContext* query();
+
+  class  ShowQueryContext : public antlr4::ParserRuleContext {
+  public:
+    ShowQueryContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *SHOW();
+    antlr4::tree::TerminalNode *TEXT();
+    antlr4::tree::TerminalNode *INDEX();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ShowQueryContext* showQuery();
 
   class  PrologueContext : public antlr4::ParserRuleContext {
   public:
@@ -1774,10 +1792,10 @@ public:
 
   class  RhsAdditiveExpressionContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s143 = nullptr;
+    antlr4::Token *s146 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s147 = nullptr;
-    antlr4::Token *_tset1701 = nullptr;
+    antlr4::Token *s150 = nullptr;
+    antlr4::Token *_tset1717 = nullptr;
     RhsAdditiveExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     RhsAdditiveExpressionSubContext *rhsAdditiveExpressionSub();
@@ -1814,10 +1832,10 @@ public:
 
   class  MultiplicativeExpressionContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s143 = nullptr;
+    antlr4::Token *s146 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s147 = nullptr;
-    antlr4::Token *_tset1744 = nullptr;
+    antlr4::Token *s150 = nullptr;
+    antlr4::Token *_tset1760 = nullptr;
     MultiplicativeExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExpressionContext *> unaryExpression();

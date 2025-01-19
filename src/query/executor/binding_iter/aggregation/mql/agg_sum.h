@@ -7,8 +7,7 @@
 namespace MQL {
 class AggSum : public Agg {
 public:
-    AggSum(VarId var_id, std::unique_ptr<BindingExpr> expr) :
-        Agg (var_id, std::move(expr)) { }
+    using Agg::Agg;
 
     void begin() override {
         sum = 0;

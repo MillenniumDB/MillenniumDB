@@ -31,8 +31,6 @@ public:
 private:
     boost::system::error_code ec;
 
-    Server& server;
-
     std::chrono::seconds query_timeout;
 
     boost::asio::ip::tcp::socket socket;

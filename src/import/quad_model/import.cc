@@ -11,11 +11,11 @@
 using namespace Import::QuadModel;
 
 
-void OnDiskImport::start_import(const std::string& input_filename) {
+void OnDiskImport::start_import(MDBIstream& in) {
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
 
-    lexer.begin(input_filename);
+    lexer.begin(in);
 
     { // Initial memory allocation
         external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size));
@@ -29,12 +29,15 @@ void OnDiskImport::start_import(const std::string& input_filename) {
         external_strings_end = StringManager::METADATA_SIZE;
         assert(external_strings_capacity > StringManager::STRING_BLOCK_SIZE);
     }
-    catalog.anonymous_nodes_count = 0;
 
     int current_state = State::LINE_BEGIN;
     current_line = 1;
-    while (int token = lexer.next_token()) {
+    while (auto token = lexer.get_token()) {
+        // std::cout << "token: " << token << "\n";
+        // std::cout << "str_len: " << lexer.str_len << "\n";
+        // std::cout.write(lexer.str, lexer.str_len);
         current_state = get_transition(current_state, token);
+        // std::cout << "\ncurrect_state: " << current_state << "\n";
     }
     // After EOF simulate and endline
     get_transition(current_state, Token::ENDLINE);
@@ -70,8 +73,9 @@ void OnDiskImport::start_import(const std::string& input_filename) {
     print_duration("Processing strings", start);
 
     { // Destroy external_strings_set replacing it with an empty map
-        robin_hood::unordered_set<ExternalString> tmp;
-        external_strings_set.swap(tmp);
+        // boost::unordered_set<ExternalString> tmp;
+        // external_strings_set.swap(tmp);
+        external_strings_set.clear();
     }
 
     { // Create StringsHash
@@ -125,7 +129,7 @@ void OnDiskImport::start_import(const std::string& input_filename) {
     equal_to_type.finish_appends();
 
     { // Append undeclared nodes (being on an edge)
-        robin_hood::unordered_set<uint64_t> nodes_set;
+        boost::unordered_flat_set<uint64_t> nodes_set;
 
         declared_nodes.begin_tuple_iter();
         while (declared_nodes.has_next_tuple()) {
@@ -133,7 +137,7 @@ void OnDiskImport::start_import(const std::string& input_filename) {
             nodes_set.insert(tuple[0]);
         }
 
-        EdgeTableMemImport table_writer(db_folder + "/edges.table");
+        EdgeTableMemImport<4> table_writer(db_folder + "/edges.table");
 
         edges.begin_tuple_iter();
         while (edges.has_next_tuple()) {
@@ -300,7 +304,6 @@ void OnDiskImport::start_import(const std::string& input_filename) {
 
     catalog.print(std::cout);
 
-    print_duration("Write catalog", start);
     print_duration("Total Import", import_start);
 }
 

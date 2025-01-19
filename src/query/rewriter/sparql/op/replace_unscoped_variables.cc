@@ -77,6 +77,16 @@ void ReplaceUnscopedVariables::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
+void ReplaceUnscopedVariables::visit(OpFrom& op_from)
+{
+    op_from.op->accept_visitor(*this);
+}
+
+void ReplaceUnscopedVariables::visit(OpGraph& op_graph)
+{
+    op_graph.op->accept_visitor(*this);
+}
+
 void ReplaceUnscopedVariables::visit(OpGroupBy& op_group_by) {
     op_group_by.op->accept_visitor(*this);
 }
@@ -157,6 +167,7 @@ void ReplaceUnscopedVariables::visit(OpValues& op_values) {
     }
 }
 
+void ReplaceUnscopedVariables::visit(OpShow&) { }
 
 // +---------------------------------------------------------------------------+
 // |                            ExprVisitor                                    |

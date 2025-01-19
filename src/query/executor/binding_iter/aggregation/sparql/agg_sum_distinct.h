@@ -1,7 +1,7 @@
 #pragma once
 
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/datatypes/decimal.h"
+#include "graph_models/common/datatypes/decimal.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"

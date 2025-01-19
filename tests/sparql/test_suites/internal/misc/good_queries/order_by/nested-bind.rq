@@ -1,0 +1,16 @@
+PREFIX : <http://www.path.com/>
+
+SELECT *
+WHERE {
+    BIND(1 AS ?n)
+    ?s :t18 ?o .
+    {
+        SELECT ?o
+        WHERE {
+            ?s :t12 ?o
+        }
+        ORDER BY DESC(?o)
+        LIMIT 2 # project 5,3
+    }
+}
+ORDER BY ASC(?o)

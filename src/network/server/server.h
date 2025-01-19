@@ -6,9 +6,8 @@
 
 #include <boost/asio.hpp>
 
-#include "query/query_context.h"
 #include "network/server/protocol.h"
-
+#include "query/query_context.h"
 
 namespace MDBServer {
 
@@ -18,12 +17,9 @@ struct LoginInfo {
     std::string token;
     std::chrono::system_clock::time_point valid_until;
 
-    LoginInfo(
-        std::string user,
-        std::string password
-    ) :
-        user (std::move(user)),
-        password (std::move(password))
+    LoginInfo(std::string user, std::string password) :
+        user(std::move(user)),
+        password(std::move(password))
     {
         valid_until = std::chrono::system_clock::now() - std::chrono::hours(1);
     }
@@ -32,6 +28,9 @@ struct LoginInfo {
 class Server {
 public:
     static inline bool shutdown_server = false;
+
+    // Prevent concurrent updates
+    static inline std::mutex update_execution_mutex;
 
     uint64_t model_id;
 
@@ -55,7 +54,8 @@ public:
     bool authorize(Protocol::RequestType, const std::string& auth_token);
 
     // returns empty string if not authorized
-    std::pair<std::string, std::chrono::system_clock::time_point> create_auth_token(const std::string& user, const std::string& pass);
+    std::pair<std::string, std::chrono::system_clock::time_point>
+        create_auth_token(const std::string& user, const std::string& pass);
 
     void set_admin_user(const std::string& user, const std::string& password);
 

@@ -459,7 +459,7 @@ bool BPlusTreeDir<N>::check(std::ostream& os) const {
     }
     if (*key_count == 0 && page->get_page_number() != 0) {
         os << "  WARNING: key_count shouldn't be 0, except for one node (at most)"
-           << " at the right-most branch if bulk import was used\n";
+              " at the right-most branch if bulk import was used\n";
     }
 
     if (*key_count > 1) {

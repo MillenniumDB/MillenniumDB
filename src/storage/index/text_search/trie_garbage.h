@@ -10,6 +10,10 @@ namespace TextSearch {
 
 class TrieGarbage {
 public:
+    static std::unique_ptr<TrieGarbage> create(const std::filesystem::path& path);
+
+    static std::unique_ptr<TrieGarbage> load(const std::filesystem::path& path);
+
     // File id for FileManager
     const FileId garbage_file_id;
 
@@ -47,7 +51,6 @@ public:
     UPage& dir_page;
 
     // Constructor
-    TrieGarbage(const std::filesystem::path& path);
 
     // Destructor
     ~TrieGarbage();
@@ -72,6 +75,7 @@ public:
     void status(std::ostream& os);
 
 private:
+    explicit TrieGarbage(FileId file_id, UPage& dir_page);
 
     // Function to write the value in B bytes from pos
     static inline void write_xbytes(uint64_t value, unsigned char* pos, int B) {

@@ -1,311 +1,531 @@
 #include "tensor_store.h"
 
-#include <cassert>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
+#include <fcntl.h>
+#include <sys/stat.h>
 
-#include "graph_models/quad_model/quad_model.h"
-#include "graph_models/quad_model/quad_object_id.h"
-#include "query/exceptions.h"
+#include "misc/fatal_error.h"
+#include "object2tensor_versioned_hash/object2tensor_versioned_hash_bucket.h"
+#include "query/query_context.h"
 #include "system/file_manager.h"
-#include "storage/filesystem.h"
-#include "storage/index/tensor_store/lsh/forest_index.h"
-#include "storage/index/tensor_store/lsh/forest_index_query_iter.h"
-#include "storage/index/tensor_store/lsh/tree.h"
-#include "storage/index/tensor_store/serialization.h"
-#include "storage/index/tensor_store/tensor_buffer_manager.h"
+#include "tensor_store_manager.h"
 
-TensorStore::TensorStore(const std::string& name_, uint64_t tensors_dim_, uint64_t tensor_page_buffer_size_in_bytes) :
-    name(name_),
-    tensors_dim(tensors_dim_),
-    tensors_file_id(FileId::UNASSIGNED),
-    mapping_path(file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name_ + ".mapping")),
-    index_path(file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name_ + ".index")) {
-    if (tensors_dim < 1)
-        throw std::invalid_argument("Tensor dimension must be at least 1");
+namespace fs = std::filesystem;
 
-    // Create the tensor stores directory if it does not exist
-    std::string tensor_stores_path = file_manager.get_file_path(TENSOR_STORES_DIR);
-    if (!Filesystem::is_directory(tensor_stores_path))
-        Filesystem::create_directories(tensor_stores_path);
+void TensorStore::create(
+    const fs::path& db_directory,
+    const std::string& tensor_store_name,
+    uint64_t tensors_dim
+)
+{
+    if (tensors_dim == 0) {
+        throw std::runtime_error("Tensors dimension cannot be 0");
+    }
 
-    // Create a new tensors file
-    std::string tensors_path = file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name + ".tensors");
-    if (Filesystem::is_regular_file(tensors_path))
-        std::remove(tensors_path.c_str());
-    tensors_file_id = file_manager.get_file_id(TENSOR_STORES_DIR + "/" + name + ".tensors");
+    const auto relative_base_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR) / tensor_store_name;
+    const auto absolute_base_path = db_directory / relative_base_path;
 
-    // Create a new mapping file with the initial header
-    std::fstream ofs;
-    ofs.open(mapping_path, std::ios::out | std::ios::binary | std::ios::trunc);
-    Serialization::write_bool(ofs, false);
-    Serialization::write_uint64(ofs, tensors_dim);
-    Serialization::write_uint64(ofs, 0ULL);
-    ofs.close();
+    if (!fs::create_directories(absolute_base_path)) {
+        throw std::runtime_error("Could not create directories: " + absolute_base_path.string());
+    }
 
-    set_tensor_buffer_manager(tensor_page_buffer_size_in_bytes, false);
+    // Tensors File
+    const auto tensors_file_id = file_manager.get_file_id(relative_base_path / TENSORS_FILENAME);
+
+    TensorStore::TensorsHeader tensors_header {};
+    tensors_header.tensors_dim = tensors_dim;
+    auto write_res = pwrite(tensors_file_id.id, &tensors_header, sizeof(TensorStore::TensorsHeader), 0);
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write into file");
+    }
+
+    // Tombstones File
+    auto tombstones_file_id = file_manager.get_file_id(relative_base_path / TOMBSTONES_FILENAME);
+    TombstoneStackType::create(tombstones_file_id);
+
+    // Object2Tensor Hash
+    const auto hash_buckets_file_id = file_manager.get_file_id(relative_base_path / HASH_BUCKETS_FILENAME);
+    const auto hash_dir_file_id = file_manager.get_file_id(relative_base_path / HASH_DIRECTORY_FILENAME);
+
+    const uint64_t dir_size = 1ULL << Object2TensorVersionedHash::MIN_GLOBAL_DEPTH;
+    auto dir = new uint32_t[dir_size];
+    // Write empty buckets
+    char empty_page[VPage::SIZE];
+    auto empty_page_header = reinterpret_cast<Object2TensorVersionedHashBucket::Header*>(&empty_page[0]);
+    empty_page_header->num_entries = 0;
+    empty_page_header->local_depth = Object2TensorVersionedHash::MIN_GLOBAL_DEPTH;
+    for (uint64_t i = 0; i < dir_size; i++) {
+        // TODO: Could this be done with a single write call instead?
+        const auto write_res = pwrite(hash_buckets_file_id.id, &empty_page[0], VPage::SIZE, i * VPage::SIZE);
+        if (write_res == -1) {
+            throw std::runtime_error("Could not write bucket #" + std::to_string(i) + " to buckets file");
+        }
+        dir[i] = i;
+    }
+    // Write directory
+    Object2TensorVersionedHash::DirectoryHeader dir_header;
+    dir_header.global_depth = Object2TensorVersionedHash::MIN_GLOBAL_DEPTH;
+    dir_header.total_pages = dir_size;
+    dir_header.num_entries = 0;
+    write_res = pwrite(
+        hash_dir_file_id.id,
+        &dir_header,
+        sizeof(Object2TensorVersionedHash::DirectoryHeader),
+        0
+    );
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write hash directory header");
+    }
+    write_res = pwrite(
+        hash_dir_file_id.id,
+        &dir[0],
+        sizeof(uint32_t) * dir_size,
+        sizeof(Object2TensorVersionedHash::DirectoryHeader)
+    );
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write hash directory");
+    }
+
+    delete[](dir);
 }
 
+std::unique_ptr<TensorStore> TensorStore::load(
+    const fs::path& db_directory,
+    const std::string& tensor_store_name,
+    uint64_t vtensor_frame_pool_size_in_bytes
+)
+{
+    const auto relative_base_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR) / tensor_store_name;
+    const auto absolute_base_path = db_directory / relative_base_path;
 
-TensorStore::TensorStore(const std::string& name_, uint64_t tensor_buffer_page_size_in_bytes, bool preload) :
-    name(name_),
-    tensors_file_id (FileId::UNASSIGNED),
-    mapping_path    (file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name_ + ".mapping")),
-    index_path      (file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name_ + ".index")) {
-    if (!exists(name))
-        throw std::invalid_argument("Tensor store " + name + " does not exist");
+    // Tensors File
+    // Read header as is needed for TensorStore initialization
+    const auto tensors_file_id = file_manager.get_file_id(relative_base_path / TENSORS_FILENAME);
+    TensorStore::TensorsHeader tensors_header {};
+    const auto read_res = pread(tensors_file_id.id, &tensors_header, sizeof(TensorStore::TensorsHeader), 0);
+    if (read_res == -1) {
+        throw std::runtime_error("Could not read tensors file");
+    }
 
-    // Load tensors file
-    tensors_file_id = file_manager.get_file_id(TENSOR_STORES_DIR + "/" + name + ".tensors");
+    // Tombstones File
+    const auto tombstones_file_id = file_manager.get_file_id(relative_base_path / TOMBSTONES_FILENAME);
 
-    // Load object_id2tensor_offset and forest_index (if it exists) from disk
-    deserialize();
-    assert(tensors_dim > 0);
+    // ObjectId2TensorId
+    const auto hash_buckets_file_id = file_manager.get_file_id(relative_base_path / HASH_BUCKETS_FILENAME);
+    const auto hash_dir_file_id = file_manager.get_file_id(relative_base_path / HASH_DIRECTORY_FILENAME);
 
-    set_tensor_buffer_manager(tensor_buffer_page_size_in_bytes, preload);
+    return std::unique_ptr<TensorStore>(new TensorStore(
+        tensor_store_name,
+        tensors_file_id,
+        tombstones_file_id,
+        hash_buckets_file_id,
+        hash_dir_file_id,
+        tensors_header,
+        vtensor_frame_pool_size_in_bytes
+    ));
 }
 
+TensorStore::TensorStore(
+    const std::string& tensor_store_name_,
+    FileId tensors_file_id_,
+    FileId tombstones_file_id_,
+    FileId hash_buckets_file_id_,
+    FileId hash_dir_file_id_,
+    TensorsHeader tensors_header_,
+    uint64_t vtensor_frame_pool_size_in_bytes
+) :
+    tensor_store_name { tensor_store_name_ },
+    tensors_file_id { tensors_file_id_ },
+    object2tensor_index { hash_buckets_file_id_, hash_dir_file_id_ },
+    tombstones_stack { tombstones_file_id_ },
+    tensors_header { tensors_header_ },
+    // Plus one to prevent zero
+    vtensor_pool_size {
+        1 + vtensor_frame_pool_size_in_bytes / (sizeof(VTensor) + sizeof(float) * tensors_header.tensors_dim)
+    },
+    vtensor_pool { new VTensor[vtensor_pool_size] },
+    vtensor_data { new float[tensors_header.tensors_dim * vtensor_pool_size]
 
-TensorStore::~TensorStore() {
-    // Save object_id2tensor_offset and forest_index to disk
-    // Disabled because no updates will occur during server execution
-    // serialize();
+    }
+{
+    if (vtensor_data == nullptr || vtensor_pool == nullptr) {
+        FATAL_ERROR("Could not allocate versioned tensor frame buffers, try using a smaller size");
+    }
+
+    for (uint64_t i = 0; i < vtensor_pool_size; ++i) {
+        vtensor_pool[i].set_tensor(&vtensor_data[tensors_header.tensors_dim * i]);
+    }
+
+    vtensor_map.reserve(vtensor_pool_size);
 }
 
+TensorStore::~TensorStore()
+{
+    flush();
+    delete[] vtensor_pool;
+    delete[] vtensor_data;
+}
 
-bool TensorStore::exists(const std::string& name) {
-    if (!Filesystem::is_regular_file(file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name + ".tensors")))
+bool TensorStore::get(ObjectId object_id, VTensor** vtensor)
+{
+    TensorId tensor_id(tensors_file_id, 0);
+
+    std::shared_lock lck(object2tensor_index_mutex);
+    const bool found = object2tensor_index.get(object_id, &tensor_id.tensor_index);
+    if (!found) {
         return false;
-    else if (!Filesystem::is_regular_file(file_manager.get_file_path(TENSOR_STORES_DIR + "/" + name + ".mapping")))
-        return false;
+    }
+
+    *vtensor = &get_vtensor_readonly(tensor_id);
     return true;
 }
 
+bool TensorStore::insert(ObjectId object_id, const float* tensor)
+{
+    std::unique_lock lck(object2tensor_index_mutex);
 
-void TensorStore::bulk_import(const std::string& tensors_csv_path,
-                              const std::string& tensor_store_name,
-                              uint64_t           tensors_dim) {
-    if (tensors_dim < 1) {
-        throw std::invalid_argument("Tensor dimension must be at least 1");
+    TensorId tensor_id(tensors_file_id, 0);
+    const bool found = object2tensor_index.get(object_id, &tensor_id.tensor_index);
+    if (found) {
+        // Existing ObjectId, just overwrite its tensor
+        auto& vtensor = get_vtensor_editable(tensor_id);
+        memcpy(vtensor.tensor, tensor, sizeof(float) * tensors_dim());
+        vtensor.unpin();
+        return false;
     }
 
-    // Create the tensor stores directory if it does not exist
-    const auto tensor_stores_path = file_manager.get_file_path(TENSOR_STORES_DIR);
-    if (!Filesystem::is_directory(tensor_stores_path)) {
-        Filesystem::create_directories(tensor_stores_path);
+    // New ObjectId
+    if (tombstones_stack.empty()) {
+        // Append a new tensor
+        auto& vtensor = append_vtensor();
+        memcpy(vtensor.tensor, tensor, sizeof(float) * tensors_dim());
+        vtensor.unpin();
+        object2tensor_index.insert(object_id, vtensor.tensor_id.tensor_index);
+    } else {
+        // Reuse a tombstone
+        const auto available_tensor_index = tombstones_stack.pop();
+        const auto available_tensor_id = TensorId(tensors_file_id, available_tensor_index);
+        auto& vtensor = get_vtensor_editable(available_tensor_id);
+        memcpy(vtensor.tensor, tensor, sizeof(float) * tensors_dim());
+        vtensor.unpin();
+        object2tensor_index.insert(object_id, available_tensor_id.tensor_index);
     }
 
+    return true;
+}
 
-    // Create the files
-    const auto tensors_file_path = file_manager.get_file_path(TENSOR_STORES_DIR + "/" + tensor_store_name + ".tensors");
-    const auto mapping_file_path = file_manager.get_file_path(TENSOR_STORES_DIR + "/" + tensor_store_name + ".mapping");
-    std::fstream tensors_file_ofs(tensors_file_path, std::ios::out | std::ios::binary | std::ios::trunc);
-    std::fstream mapping_file_ofs(mapping_file_path, std::ios::out | std::ios::binary | std::ios::trunc);
+bool TensorStore::remove(ObjectId object_id)
+{
+    std::unique_lock lck(object2tensor_index_mutex);
 
-    std::string   line;
-    std::string   cell;
-    uint_fast32_t current_line_index = 0;
+    TensorId tensor_id(tensors_file_id, 0);
+    auto found = object2tensor_index.get(object_id, &tensor_id.tensor_index);
+    if (!found) {
+        return false;
+    }
 
-    robin_hood::unordered_flat_set<uint64_t> object_ids;
+    tombstones_stack.push(tensor_id.tensor_index);
+    object2tensor_index.remove(object_id);
 
-    std::fstream tensors_csv_ifs(tensors_csv_path, std::ios::in | std::ios::binary);
-    Serialization::write_uint64(mapping_file_ofs, tensors_dim);
-    Serialization::write_uint64(mapping_file_ofs, 0);
+    return true;
+}
 
-    // Process the csv line by line and insert the tensors
-    std::cout << "Inserting tensors...\n";
-    const auto start = std::chrono::high_resolution_clock::now();
-    while (std::getline(tensors_csv_ifs, line)) {
-        std::stringstream ss(line);
+uint64_t TensorStore::tensors_dim() const noexcept
+{
+    return tensors_header.tensors_dim;
+}
 
-        // ObjectId
-        std::getline(ss, cell, ',');
-        const auto object_id = QuadObjectId::get_fixed_node_inside(cell);
-        if (object_ids.contains(object_id.id)) {
-            std::cout << "Skipping duplicate ObjectId: \"" << cell << "\" at line " << current_line_index << "\n";
+const std::string& TensorStore::name() const noexcept
+{
+    return tensor_store_name;
+}
+
+std::size_t TensorStore::size() const
+{
+    return object2tensor_index.size();
+}
+
+bool TensorStore::empty() const
+{
+    return object2tensor_index.empty();
+}
+
+VTensor& TensorStore::get_vtensor_readonly(TensorId tensor_id) noexcept
+{
+    const auto start_version = get_query_ctx().start_version;
+    const auto result_version = get_query_ctx().result_version;
+
+    vtensor_mutex.lock();
+    auto it = vtensor_map.find(tensor_id);
+
+    if (it == vtensor_map.end()) {
+        auto& vtensor = get_vtensor_available();
+
+        vtensor.reassign(tensor_id);
+        vtensor.version_number = start_version;
+        vtensor.prev_version = nullptr;
+        vtensor.next_version = nullptr;
+        vtensor_map.insert({ tensor_id, &vtensor });
+
+        read_existing_vtensor(tensor_id, vtensor.tensor);
+        vtensor_mutex.unlock();
+
+        return vtensor;
+    } else {
+        VTensor* vtensor = it->second;
+
+        while (vtensor->next_version != nullptr && vtensor->next_version->version_number <= result_version) {
+            vtensor = vtensor->next_version;
+        }
+
+        assert(vtensor->version_number <= result_version);
+
+        vtensor->pin();
+        vtensor_mutex.unlock();
+
+        return *vtensor;
+    }
+}
+
+VTensor& TensorStore::get_vtensor_editable(TensorId tensor_id) noexcept
+{
+    const auto start_version = get_query_ctx().start_version;
+    const auto result_version = get_query_ctx().result_version;
+
+    std::lock_guard<std::mutex> lck(vtensor_mutex);
+    auto it = vtensor_map.find(tensor_id);
+
+    if (it == vtensor_map.end()) {
+        auto& new_vtensor = get_vtensor_available();
+        new_vtensor.reassign(tensor_id); // this will pin the tensor
+
+        auto& old_vtensor = get_vtensor_available();
+        old_vtensor.reassign_tensor_id(tensor_id);
+        old_vtensor.version_number = start_version;
+        old_vtensor.prev_version = nullptr;
+        old_vtensor.next_version = &new_vtensor;
+
+        new_vtensor.version_number = result_version;
+        new_vtensor.prev_version = &old_vtensor;
+        new_vtensor.next_version = nullptr;
+        new_vtensor.dirty = true;
+
+        vtensor_map.insert({ tensor_id, &old_vtensor });
+
+        read_existing_vtensor(tensor_id, old_vtensor.tensor);
+
+        // NOTE: The current implementation does not need an editable copy of the old version, if needed
+        // activate this std::memcpy(new_vtensor.tensor, old_vtensor.tensor, sizeof(float) * tensors_dim());
+
+        return new_vtensor;
+    } else {
+        // tensor is in the buffer, search for the corresponding version
+        VTensor* vtensor_head = it->second;
+
+        VTensor* vtensor_tail = vtensor_head;
+        while (vtensor_tail->next_version != nullptr) {
+            vtensor_tail = vtensor_tail->next_version;
+        }
+
+        assert(vtensor_tail->version_number <= result_version);
+
+        vtensor_head->pin();
+        vtensor_tail->pin();
+
+        if (vtensor_tail->version_number != result_version) {
+            auto& new_vtensor = get_vtensor_available();
+
+            vtensor_head->unpin();
+            vtensor_tail->unpin();
+
+            new_vtensor.reassign(tensor_id);
+
+            vtensor_tail->next_version = &new_vtensor;
+
+            new_vtensor.version_number = result_version;
+            new_vtensor.prev_version = vtensor_tail;
+            new_vtensor.next_version = nullptr;
+            new_vtensor.dirty = true;
+
+            // NOTE: The current implementation does not need an editable copy of the old version, if needed
+            // activate this std::memcpy(new_vtensor.tensor, vtensor->tensor, sizeof(float) * tensors_dim());
+            return new_vtensor;
+        } else {
+            // vtensor_tail is already pinned
+            vtensor_head->unpin();
+            return *vtensor_tail;
+        }
+    }
+}
+
+VTensor& TensorStore::append_vtensor()
+{
+    const auto result_version = get_query_ctx().result_version;
+
+    std::lock_guard<std::mutex> lck(vtensor_mutex);
+
+    auto& new_vtensor = get_vtensor_available();
+
+    const auto fd = tensors_file_id.id;
+    // TODO: Check
+    const uint32_t new_vtensor_index = (lseek(fd, 0, SEEK_END) - sizeof(TensorsHeader))
+                                     / (sizeof(float) * tensors_dim());
+
+    memset(new_vtensor.tensor, 0, sizeof(float) * tensors_dim());
+    const auto write_res = write(fd, new_vtensor.tensor, sizeof(float) * tensors_dim());
+
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write into file");
+    }
+
+    const TensorId new_tensor_id(tensors_file_id, new_vtensor_index);
+    new_vtensor.reassign(new_tensor_id);
+
+    new_vtensor.version_number = result_version;
+    new_vtensor.prev_version = nullptr;
+    new_vtensor.next_version = nullptr;
+
+    new_vtensor.dirty = true;
+
+    vtensor_map.insert({ new_tensor_id, &new_vtensor });
+
+    return new_vtensor;
+}
+
+void TensorStore::flush()
+{
+    assert(vtensor_pool != nullptr);
+
+    for (uint64_t i = 0; i < vtensor_pool_size; ++i) {
+        VTensor& vtensor = vtensor_pool[i];
+        assert(vtensor.pins == 0);
+        if (vtensor.dirty && vtensor.next_version == nullptr) {
+            flush_vtensor(vtensor);
+        }
+    }
+}
+
+void TensorStore::flush_vtensor(VTensor& vtensor)
+{
+    const auto fd = vtensor.tensor_id.file_id.id;
+    const auto offset = sizeof(TensorsHeader)
+                      + sizeof(float) * tensors_dim() * vtensor.tensor_id.tensor_index;
+    const auto write_res = pwrite(fd, vtensor.get_tensor(), sizeof(float) * tensors_dim(), offset);
+    if (write_res == -1) {
+        throw std::runtime_error("Could not write into file");
+    }
+    vtensor.dirty = false;
+}
+
+void TensorStore::read_existing_vtensor(TensorId tensor_id, float* tensor)
+{
+    const auto fd = tensor_id.file_id.id;
+
+#ifndef NDEBUG
+    struct stat buf;
+    fstat(fd, &buf);
+    const auto file_size = buf.st_size;
+    assert(tensor_id.tensor_index < (file_size - sizeof(TensorsHeader)) / (sizeof(float) * tensors_dim()));
+#endif
+
+    const auto read_res = pread(
+        fd,
+        tensor,
+        sizeof(float) * tensors_dim(),
+        sizeof(TensorsHeader) + sizeof(float) * tensors_dim() * tensor_id.tensor_index
+    );
+    if (read_res == -1) {
+        throw std::runtime_error("Could not read file tensor");
+    }
+}
+
+VTensor& TensorStore::get_vtensor_available()
+{
+    while (true) {
+        ++vtensor_clock;
+        vtensor_clock = vtensor_clock < vtensor_pool_size ? vtensor_clock : 0;
+
+        auto& vtensor = vtensor_pool[vtensor_clock];
+
+        if (vtensor.pins != 0) {
             continue;
         }
 
-        // Write object_id2tensor_offset
-        Serialization::write_uint64(mapping_file_ofs, object_id.id);
-        Serialization::write_uint64(mapping_file_ofs, tensors_file_ofs.tellp());
-
-        object_ids.insert(object_id.id);
-
-        // Tensor entries
-        for (auto i = 0u; i < tensors_dim; i++) {
-            std::getline(ss, cell, ',');
-            const auto f = std::strtof(cell.c_str(), nullptr);
-            Serialization::write_float(tensors_file_ofs, f);
-        }
-        ++current_line_index;
-    }
-    tensors_csv_ifs.close();
-
-    // Add zeroes in order to make the file size a multiple of TensorPage::SIZE (nesessary for the tensor_buffer_manager)
-    const auto tensors_file_size = tensors_file_ofs.tellp();
-    if (tensors_file_size % TensorPage::SIZE != 0) {
-        size_t remaining_bytes = TensorPage::SIZE - (tensors_file_size % TensorPage::SIZE);
-        while (remaining_bytes > 0) {
-            tensors_file_ofs.write("\0", 1);
-            --remaining_bytes;
-        }
-    }
-    tensors_file_ofs.close();
-
-    // Update the metadata in the mapping file
-    mapping_file_ofs.seekp(sizeof(uint64_t));
-    Serialization::write_uint64(mapping_file_ofs, object_ids.size());
-    mapping_file_ofs.close();
-
-    const auto end = std::chrono::high_resolution_clock::now();
-    std::cout << "TensorStore::bulk_import took: "
-              << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " seconds for "
-              << object_ids.size() << " tensors\n";
-}
-
-
-void TensorStore::load_tensor_stores(uint64_t tensor_page_buffer_size_in_bytes, bool preload) {
-    const auto tensor_stores_path = file_manager.get_file_path(TensorStore::TENSOR_STORES_DIR);
-
-    if (Filesystem::is_directory(tensor_stores_path)) {
-        robin_hood::unordered_set<std::string> tensor_store_names;
-        // Get the stem of each file
-        for (const auto& file : Filesystem::directory_iterator(tensor_stores_path)) {
-            tensor_store_names.insert(file.path().filename().stem());
+        if (vtensor.second_chance) {
+            vtensor.second_chance = false;
+            continue;
         }
 
-        // Load the tensor stores
-        for (const auto& tensor_store_name : tensor_store_names) {
-            if (TensorStore::exists(tensor_store_name)) {
-                std::cout << "Loading Tensor Store \"" << tensor_store_name << "\"...\n";
-                auto tensor_store = std::make_unique<TensorStore>(tensor_store_name, tensor_page_buffer_size_in_bytes, preload);
-                std::cout << "  num_tensors     : " << tensor_store->size() << "\n";
-                std::cout << "  tensors_dim     : " << tensor_store->tensors_dim << "\n";
-                if (tensor_store->forest_index != nullptr) {
-                    std::cout << "  num_trees       : " << tensor_store->forest_index->num_trees << "\n";
-                    std::cout << "  max_bucket_size : " << tensor_store->forest_index->max_bucket_size << "\n";
-                    std::cout << "  max_depth       : " << tensor_store->forest_index->max_depth << "\n";
-                }
-                quad_model.catalog.name2tensor_store.emplace(tensor_store_name, std::move(tensor_store));
+        if (vtensor.prev_version == nullptr && vtensor.next_version == nullptr) {
+            if (vtensor.tensor_id.file_id.id != FileId::UNASSIGNED) {
+                vtensor_map.erase(vtensor.tensor_id);
             }
+
+            if (vtensor.dirty) {
+                // TODO: reduce counter of version writing pending for page version
+                // (we know this is the last version and there is no previous version)
+                flush_vtensor(vtensor);
+            }
+
+            return vtensor;
+        }
+
+        bool version_not_being_used = buffer_manager.version_not_being_used(vtensor.version_number);
+
+        if (version_not_being_used) {
+            if (vtensor.dirty) {
+                // TODO: reduce counter of version writing pending for page version
+                // (we know this is the last version and there is no previous version)
+            }
+
+            if (vtensor.prev_version != nullptr) {
+                vtensor.prev_version->next_version = vtensor.next_version;
+            } else {
+                // vtensor is the first in the linked list
+                // We know vtensor.next_version != nullptr
+                // If it is the first version and there are more versions, we need to edit vtensor_map to
+                // point to the new oldest version
+                if (vtensor.tensor_id.file_id.id != FileId::UNASSIGNED) {
+                    auto it2 = vtensor_map.find(vtensor.tensor_id);
+                    assert(it2 != vtensor_map.end());
+                    vtensor_map.erase(it2);
+                    vtensor_map.insert({ vtensor.tensor_id, vtensor.next_version });
+                }
+            }
+
+            if (vtensor.next_version != nullptr) {
+                vtensor.next_version->prev_version = vtensor.prev_version;
+                vtensor.dirty = false;
+            } else {
+                // vtensor is the last in the linked list
+                // flush when dirty and there is no next version
+                if (vtensor.dirty) {
+                    flush_vtensor(vtensor);
+
+                    // We know vtensor.prev_version != nullptr
+                    VTensor* curr_prev = vtensor.prev_version;
+                    // All previous dirty vtensor_map are no longer dirty because a newer version was written
+                    // to disk, and we only have one update at a time, so previous versions must be ended
+                    do {
+                        if (curr_prev->dirty) {
+                            curr_prev->dirty = false;
+                        }
+
+                        curr_prev = curr_prev->prev_version;
+                    } while (curr_prev != nullptr);
+                }
+            }
+
+            return vtensor;
         }
     }
 
-    if (quad_model.catalog.name2tensor_store.size() > 0) {
-        std::cout << "Successfully loaded " << quad_model.catalog.name2tensor_store.size() << " Tensor Store(s)\n";
-        std::cout << "-------------------------------------\n";
-    }
+    return vtensor_pool[vtensor_clock];
 }
 
-
-bool TensorStore::contains(uint64_t object_id) const {
-    return object_id2tensor_offset.find(object_id) != object_id2tensor_offset.end();
-}
-
-
-bool TensorStore::get(uint64_t object_id, std::vector<float>& vec) const {
-    assert(vec.size() == tensors_dim && "Vector size must match tensor dimension");
-    auto it = object_id2tensor_offset.find(object_id);
-    if (it == object_id2tensor_offset.end())
-        return false;
-
-    auto vec_bytes            = reinterpret_cast<char*>(vec.data());
-    const auto vec_bytes_size = sizeof(float) * vec.size();
-
-    // Start from the corresponding page and offset
-    auto page_number         = it->second / TensorPage::SIZE;
-    auto page_offset         = it->second % TensorPage::SIZE;
-    TensorPage* current_page = &tensor_buffer_manager->get_page(page_number);
-
-    // Read the tensor directly to the vector bytes
-    size_t remaining_bytes = sizeof(float) * vec.size();
-    while (remaining_bytes > 0) {
-        size_t max_read_bytes = (TensorPage::SIZE - page_offset);
-        auto   current_ptr    = current_page->get_bytes() + page_offset;
-        if (remaining_bytes <= max_read_bytes) {
-            // All the remaining bytes are in the current page
-            std::memcpy(&vec_bytes[vec_bytes_size - remaining_bytes], current_ptr, remaining_bytes);
-            tensor_buffer_manager->unpin(*current_page);
-            break;
-        } else {
-            // There are remaining bytes in the next page
-            std::memcpy(&vec_bytes[vec_bytes_size - remaining_bytes], current_ptr, max_read_bytes);
-            tensor_buffer_manager->unpin(*current_page);
-            remaining_bytes -= max_read_bytes;
-            ++page_number;
-            page_offset  = 0;
-            current_page = &tensor_buffer_manager->get_page(page_number);
-        }
-    }
-
-    return true;
-}
-
-
-size_t TensorStore::size() const {
-    return object_id2tensor_offset.size();
-}
-
-
-void TensorStore::build_forest_index(LSH::MetricType metric_type, uint64_t num_trees, uint64_t max_bucket_size, uint64_t max_depth) {
-    if (size() == 0)
-        throw std::logic_error("Cannot build forest index because the store is empty!");
-    forest_index = std::make_unique<LSH::ForestIndex>(*this, metric_type, num_trees, max_bucket_size, max_depth);
-    forest_index->build();
-
-}
-
-
-std::vector<std::pair<uint64_t, float>>
-  TensorStore::query_top_k(const std::vector<float>& query_tensor, int64_t k, int64_t search_k) const {
-    if (forest_index == nullptr)
-        throw LogicException("Forest index is not built for this tensor store \"" + name + "\"");
-    if (k <= 0)
-        throw LogicException("k must be positive");
-    return forest_index->query_top_k(query_tensor, uint64_t(k), search_k);
-}
-
-
-std::unique_ptr<LSH::ForestIndexQueryIter> TensorStore::query_iter(const std::vector<float>& query_tensor) const {
-    if (forest_index == nullptr)
-        throw LogicException("Forest index is not built for this tensor store \"" + name + "\"");
-    return forest_index->query_iter(query_tensor);
-}
-
-
-void TensorStore::serialize() const {
-    // Serialize mapping
-    std::fstream ofs(mapping_path, std::ios::out | std::ios::binary | std::ios::trunc);
-    Serialization::write_uint64(ofs, tensors_dim);
-    Serialization::write_uint64(ofs, object_id2tensor_offset.size());
-    Serialization::write_uint642uint64_unordered_map(ofs, object_id2tensor_offset);
-    ofs.close();
-
-    // Serialize forest index
-    if (forest_index != nullptr)
-        forest_index->serialize(index_path);
-}
-
-
-void TensorStore::deserialize() {
-    // Deserialize mapping
-    std::fstream ifs(mapping_path, std::ios::in | std::ios::binary);
-    tensors_dim                       = Serialization::read_uint64(ifs);
-    auto object_id2tensor_offset_size = Serialization::read_uint64(ifs);
-    object_id2tensor_offset = Serialization::read_uint642uint64_unordered_map(ifs, object_id2tensor_offset_size);
-    ifs.close();
-
-    // Deserialize forest index
-    if (Filesystem::is_regular_file(index_path))
-        forest_index = std::make_unique<LSH::ForestIndex>(index_path, *this);
-}
-
-
-void TensorStore::set_tensor_buffer_manager(uint64_t tensor_buffer_page_size_in_bytes, bool preload) {
-    const auto tensor_page_buffer_pool_size = tensor_buffer_page_size_in_bytes / TensorPage::SIZE;
-    tensor_buffer_manager= std::make_unique<TensorBufferManager>(tensors_file_id, tensor_page_buffer_pool_size, preload);
+std::ostream& operator<<(std::ostream& os, const TensorStore& tensor_store)
+{
+    os << "TensorStore(tensors_dim=" << tensor_store.tensors_dim();
+    os << ", size=" << tensor_store.size();
+    os << ", vtensor_pool_size=" << tensor_store.vtensor_pool_size;
+    return os << ")";
 }

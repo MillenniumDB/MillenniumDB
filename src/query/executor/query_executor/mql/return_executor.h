@@ -3,11 +3,10 @@
 #include <map>
 
 #include "query/executor/binding_iter.h"
+#include "query/executor/query_executor/mql/return_type.h"
 #include "query/executor/query_executor/query_executor.h"
 
 namespace MQL {
-
-enum class ReturnType { CSV, TSV };
 
 template<ReturnType>
 class ReturnExecutor : public QueryExecutor {
@@ -17,9 +16,10 @@ public:
         std::map<VarId, ObjectId>&& set_vars,
         std::vector<VarId>&& projection_vars
     ) :
-        iter            (std::move(iter)),
-        set_vars        (std::move(set_vars)),
-        projection_vars (std::move(projection_vars)) { }
+        iter(std::move(iter)),
+        set_vars(std::move(set_vars)),
+        projection_vars(std::move(projection_vars))
+    { }
 
     // returns how many results were obtained
     uint64_t execute(std::ostream&) override;
@@ -27,7 +27,6 @@ public:
     void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 
     static void print(std::ostream& os, ObjectId oid);
-
 
 private:
     std::unique_ptr<BindingIter> iter;

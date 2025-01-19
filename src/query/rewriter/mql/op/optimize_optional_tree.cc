@@ -115,15 +115,6 @@ void OptimizeOptionalTree::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
 }
 
 
-void OptimizeOptionalTree::visit(OpMatch& op_match) {
-    optional_to_match = false;
-    op_match.op->accept_visitor(*this);
-    if (optional_to_match) {
-        op_match.op = std::move(optionals[0]);
-    }
-}
-
-
 void OptimizeOptionalTree::visit(OpSet& op_set) {
     op_set.op->accept_visitor(*this);
 }
@@ -148,11 +139,3 @@ void OptimizeOptionalTree::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
-
-void OptimizeOptionalTree::visit(OpProjectSimilarity& op_project_similarity) {
-    op_project_similarity.op->accept_visitor(*this);
-}
-
-void OptimizeOptionalTree::visit(OpBruteSimilaritySearch& op_brute_similarity_search) {
-    op_brute_similarity_search.op->accept_visitor(*this);
-}

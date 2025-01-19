@@ -21,6 +21,8 @@ public:
    */
     virtual std::any visitQuery(SparqlQueryParser::QueryContext *context) = 0;
 
+    virtual std::any visitShowQuery(SparqlQueryParser::ShowQueryContext *context) = 0;
+
     virtual std::any visitPrologue(SparqlQueryParser::PrologueContext *context) = 0;
 
     virtual std::any visitBaseDecl(SparqlQueryParser::BaseDeclContext *context) = 0;

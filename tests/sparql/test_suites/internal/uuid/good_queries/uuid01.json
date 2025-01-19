@@ -1,0 +1,41 @@
+{
+    "head": {
+        "vars": [
+            "o"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/98e38A95-f19C-4797-b872-740e4f9C34C9"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/98e38a951-f19c-4797-b872740e4f9c34c9"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/98e38A95-f19c-4797-b8---740e419c34c9"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/98e38A95-f19c-4797-b872-55556666777"
+                }
+            },
+            {
+                "o": {
+                    "type": "uri",
+                    "value": "http://www.example.org/98e38A95-G19H-4797-LLLL-555566667777"
+                }
+            }
+        ]
+    }
+}

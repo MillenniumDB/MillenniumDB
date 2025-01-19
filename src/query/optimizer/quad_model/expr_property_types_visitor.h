@@ -52,4 +52,6 @@ public:
     virtual void visit(MQL::ExprAggMin&) override { }
     virtual void visit(MQL::ExprAggSum&) override { }
     virtual void visit(MQL::ExprRegex&) override { }
+    virtual void visit(MQL::ExprTensorDistance&) override { }
+    virtual void visit(MQL::ExprTextSearch&) override { }
 };

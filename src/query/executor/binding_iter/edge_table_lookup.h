@@ -15,14 +15,14 @@ public:
         bool to_assigned,
         bool type_assigned
     ) :
-        table(table),
         edge(edge),
         from(from),
         to(to),
         type(type),
         from_assigned(from_assigned),
         to_assigned(to_assigned),
-        type_assigned(type_assigned) { }
+        type_assigned(type_assigned),
+        table(table) { }
 
     void accept_visitor(BindingIterVisitor& visitor) override;
     void _begin(Binding& parent_binding) override;
@@ -32,8 +32,6 @@ public:
 
     uint64_t lookups = 0;
 
-private:
-    RandomAccessTable<3>& table;
     Id edge;
     Id from;
     Id to;
@@ -41,6 +39,9 @@ private:
     bool from_assigned;
     bool to_assigned;
     bool type_assigned;
+
+private:
+    RandomAccessTable<3>& table;
 
     // because the interface will call next() until returns false, this variable
     // prevent giving the same result multiple times

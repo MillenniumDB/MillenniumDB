@@ -73,6 +73,8 @@ INTERNAL_TESTS: List[str] = [
     "union",
     "print",
     "schemes",
+    "uuid",
+    "hex",
     # "service",
 ]
 

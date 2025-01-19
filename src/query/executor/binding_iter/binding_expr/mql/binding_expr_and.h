@@ -21,7 +21,7 @@ public:
 
             if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
                 continue;
-            } else if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
+            } else if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
                 return oid;
             } else {
                 return ObjectId::get_null();

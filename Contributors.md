@@ -14,6 +14,7 @@
 - [Vicente Calisto](https://github.com/VicenteVicente)
 - [Tristan Heuer](https://github.com/tristan-heuer)
 - [Gustavo Toro](https://github.com/gustavo-toro)
+- [Juan Pablo Sánchez](https://github.com/jpsanchez7)
 - [Juan Romero](https://github.com/jaromero6)
 - [Benjamín Farías](https://github.com/BFFV)
 - [Kyle Bossonney](https://github.com/kylevon)
@@ -22,7 +23,11 @@
 - [Nicolás Van Sint Jan](https://github.com/nicovsj)
 - [Cristóbal Espinoza](https://github.com/caespinoza5)
 - [Santiago Laguna](https://github.com/santilaguna)
+- [Andrés Cabezas](https://github.com/ElTioAndresCabezas)
+- [Amanda Sandoval](https://github.com/Amandasandov)
+- [Cristian Sáez](https://github.com/crisasm01)
 - [Vicente García](https://github.com/VicenteGM123)
+
 
 ## External projects
 Some pieces of code were extracted from other projects and included inside our codebase ([third_party](third_party) and [src/third_party](src/third_party) folders).

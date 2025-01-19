@@ -1,0 +1,1 @@
+MATCH (?x {value IS NOT NULL}) WHERE ?x.value IS NOT INTEGER return *

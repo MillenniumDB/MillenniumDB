@@ -7,8 +7,7 @@
 namespace MQL {
 class AggCount : public Agg {
 public:
-    AggCount(VarId var_id, std::unique_ptr<BindingExpr> expr) :
-        Agg (var_id, std::move(expr)) { }
+    using Agg::Agg;
 
     void begin() override {
         count = 0;

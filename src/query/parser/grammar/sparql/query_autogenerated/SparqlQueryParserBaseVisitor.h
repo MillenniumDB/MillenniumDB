@@ -19,6 +19,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitShowQuery(SparqlQueryParser::ShowQueryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitPrologue(SparqlQueryParser::PrologueContext *ctx) override {
     return visitChildren(ctx);
   }

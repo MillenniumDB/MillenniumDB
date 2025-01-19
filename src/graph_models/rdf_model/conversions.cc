@@ -354,7 +354,7 @@ Conversion:
 */
 
 
-Decimal unpack_decimal_inlined(ObjectId oid) {
+Decimal Conversions::unpack_decimal_inlined(ObjectId oid) {
     assert(oid.get_type() == ObjectId::MASK_DECIMAL_INLINED);
 
     auto sign     = (oid.id & Conversions::DECIMAL_SIGN_MASK) != 0;
@@ -551,12 +551,12 @@ double Conversions::to_double(ObjectId oid) {
 }
 
 
-void print_path_node(std::ostream& os, ObjectId node_id) {
+void Conversions::print_path_node(std::ostream& os, ObjectId node_id) {
     Conversions::debug_print(os, node_id);
 }
 
 
-void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
+void Conversions::print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
     os << ' ';
     if (inverse) {
         os << '^';

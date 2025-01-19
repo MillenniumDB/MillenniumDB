@@ -1,0 +1,95 @@
+/* Tree is the data structure used for storing the data for LSH ForestIndex. It is a full binary tree that
+ * stores buckets of object_ids in the leaves. In order to descend the tree with a given tensor, it must be
+ * hashed by doing a dot product at each level with a random hyperplane for choosing the direction. Each node
+ * will always have either zero or two children.
+ */
+#pragma once
+
+
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <random>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include "storage/file_id.h"
+
+
+class LSHForestIndex;
+class LSHTreeLeaf;
+class TensorStore;
+class ObjectId;
+
+
+class LSHTree {
+public:
+    struct SplitResult {
+        // The object_ids involved in the split
+        std::vector<ObjectId> object_ids {};
+
+        // The index of the first object in the right side
+        std::size_t split_index { 0 };
+
+        // The plane used for the split
+        std::vector<float> plane {};
+
+        // The offset of the plane
+        float offset { 0 };
+    };
+
+    // Number of epochs to use for two-means
+    static constexpr uint_fast32_t GENERATE_PLANE_EPOCHS = 200ul;
+
+    // Number of attempts to split a node until reaching the imbalance threshold
+    static constexpr uint_fast32_t SPLIT_ATTEMPS = 3ul;
+
+    // For example a proportion threshold of 99, means that the proportion of ObjectIds on each side of
+    // the split is 99:1. Lowering the PROPORTION_THRESHOLD enhances the quality of the tree, but
+    // increases the probability of triggering overflow leaf pages
+    static constexpr double PROPORTION_THRESHOLD = 99l;
+
+    static inline auto random_engine =
+        std::default_random_engine(std::chrono::system_clock::now().time_since_epoch().count());
+
+    static inline auto uniform_distribution = std::uniform_real_distribution<double>(0.0, 1.0);
+
+    static inline uint64_t get_uniform_uint64(uint64_t min, uint64_t max) {
+        return uniform_distribution(random_engine) * (max - min) + min;
+    }
+
+    // Returns true if the split proportion does not exceed the PROPORTION_THRESHOLD
+    static inline bool check_proportion_threshold(std::size_t left_count, std::size_t right_count) {
+        const auto [min, max] = std::minmax(left_count, right_count);
+        const auto proportion = static_cast<double>(max) / static_cast<double>(min);
+        return proportion <= PROPORTION_THRESHOLD;
+    }
+
+    explicit LSHTree(const std::string& name, const LSHForestIndex& lsh_forest_index);
+
+    // Insert a new object into the tree. May generate splits and/or overflow pages
+    void insert(ObjectId object_id, const float* tensor) const;
+
+    // Remove an object from the tree. Will never change the tree structure. Returns false if the object
+    // was not found, true otherwise
+    bool remove(ObjectId object_id, const float* tensor) const;
+
+    // Bulk build the tree with all the tensors in the TensorStore
+    void bulk_build();
+
+    // Get the leaf (readonly) with the highest similarity and its depth for a given tensor
+    std::tuple<LSHTreeLeaf, std::size_t> descend(const float* tensor) const;
+
+private:
+    const FileId dir_file_id;
+    const FileId leaf_file_id;
+    const LSHForestIndex& lsh_forest_index;
+
+    // Generate a split for a leaf and its overflown leaves. The SplitResult object_ids order, split_index,
+    // plane and offset will be updated
+    void generate_split(SplitResult& split_result) const;
+
+    // Generate a plane for split. The SplitResult's plane and offset will be updated
+    void generate_plane(SplitResult& split_result) const;
+};

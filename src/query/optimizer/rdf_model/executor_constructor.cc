@@ -4,6 +4,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/exceptions.h"
+#include "query/executor/query_executor/sparql/show_executor.h"
 #include "system/path_manager.h"
 #include "query/executor/query_executor/sparql/ask_executor.h"
 #include "query/executor/query_executor/sparql/construct_executor.h"
@@ -121,4 +122,20 @@ void ExecutorConstructor::visit(OpAsk& op_ask) {
         std::move(binding_iter),
         response_type
     );
+}
+
+void ExecutorConstructor::visit(OpShow&)
+{
+    switch (response_type) {
+    case SPARQL::ResponseType::CSV:
+        executor = std::make_unique<
+            SPARQL::ShowExecutor<SPARQL::ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
+        break;
+    case SPARQL::ResponseType::TSV:
+        executor = std::make_unique<
+            SPARQL::ShowExecutor<SPARQL::ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
+        break;
+    default:
+        throw NotSupportedException("SHOW response type: " + SPARQL::response_type_to_string(response_type));
+    }
 }

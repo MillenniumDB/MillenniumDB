@@ -32,7 +32,6 @@
 #endif
 
 #include "storage/page/private_page.h"
-#include "storage/index/tensor_store/tensor_page.h"
 #include "storage/page/unversioned_page.h"
 #include "storage/page/versioned_page.h"
 
@@ -51,7 +50,7 @@ public:
 
     // count how many pages a file have
     uint_fast32_t count_pages(FileId file_id) const {
-        static_assert(VPage::SIZE == PPage::SIZE && VPage::SIZE == UPage::SIZE && VPage::SIZE == TensorPage::SIZE);
+        static_assert(VPage::SIZE == PPage::SIZE && VPage::SIZE == UPage::SIZE);
         // We don't need mutex here as long as db is readonly
         return lseek(file_id.id, 0, SEEK_END) / VPage::SIZE;
     }
@@ -59,6 +58,9 @@ public:
     inline const std::string get_file_path(const std::string& filename) const noexcept {
         return db_folder + "/" + filename;
     }
+
+    // Create a file and initialize it with a zeroed page
+    void init_file(const std::string& file_name) const;
 
 private:
     // folder where all the used files will be

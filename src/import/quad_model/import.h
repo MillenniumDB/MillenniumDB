@@ -4,6 +4,9 @@
 #include <functional>
 #include <iostream>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
+
 #include "graph_models/common/conversions.h"
 #include "graph_models/inliner.h"
 #include "graph_models/common/datatypes/datetime.h"
@@ -11,10 +14,12 @@
 #include "import/disk_vector.h"
 #include "import/exceptions.h"
 #include "import/external_string.h"
-#include "import/quad_model/lexer/lexer.h"
 #include "import/quad_model/lexer/state.h"
+#include "import/quad_model/lexer/token.h"
+#include "import/quad_model/lexer/tokenizer.h"
 #include "macros/aligned_alloc.h"
-#include "third_party/robin_hood/robin_hood.h"
+#include "misc/istream.h"
+#include "misc/unicode_escape.h"
 
 namespace Import { namespace QuadModel {
 class OnDiskImport {
@@ -40,14 +45,14 @@ public:
         delete[](state_transitions);
     }
 
-    void start_import(const std::string& input_filename);
+    void start_import(MDBIstream& in);
 
 private:
     uint64_t buffer_size;
 
     int* state_transitions;
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
-    Lexer lexer;
+    MQLTokenizer lexer;
     int current_line;
 
     uint64_t parsing_errors = 0;
@@ -75,13 +80,11 @@ private:
     DiskVector<3> equal_to_type;
     DiskVector<2> equal_from_to_type;
 
-    robin_hood::unordered_set<ExternalString> external_strings_set;
+    boost::unordered_flat_set<ExternalString, std::hash<ExternalString>> external_strings_set;
 
     char*    external_strings;
     uint64_t external_strings_capacity;
     uint64_t external_strings_end;
-
-    static constexpr uint8_t replacement_char[] = { 0xEF, 0xBF, 0xBD };
 
     void do_nothing() { }
     void set_left_direction() { direction = false; }
@@ -100,9 +103,6 @@ private:
         ids_stack.clear();
         uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id1 = unmasked_id | ObjectId::MASK_ANON_INLINED;
-        if (unmasked_id > catalog.anonymous_nodes_count) {
-            catalog.anonymous_nodes_count = unmasked_id;
-        }
     }
 
     void save_first_id_string() {
@@ -224,9 +224,6 @@ private:
         // delete first 2 characters: '_a'
         uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id2 = unmasked_id | ObjectId::MASK_ANON_INLINED;
-        if (unmasked_id > catalog.anonymous_nodes_count) {
-            catalog.anonymous_nodes_count = unmasked_id;
-        }
     }
 
     void save_second_id_string() {
@@ -437,113 +434,18 @@ private:
     }
 
     int get_transition(int state, int token) {
-        try {
-            state_funcs[State::TOTAL_STATES*state + token]();
-            return state_transitions[State::TOTAL_STATES*state + token];
-        }
-        catch (std::exception& e) {
-            parsing_errors++;
-            std::cout << "ERROR on line " << current_line << "\n";
-            std::cout << e.what() << "\n";
-            return State::WRONG_LINE;
-        }
-    }
-
-
-    inline bool is_hex(char byte) {
-        return (('a' <= byte && byte <= 'f') || ('A' <= byte && byte <= 'F') || ('0' <= byte && byte <= '9'));
-    }
-
-    void handle_escape_small_u(char*& read_ptr, char*& write_ptr, char* end) {
-        uint8_t unicode_length = 4;
-        int     size           = read_codepoint(read_ptr, write_ptr, end, unicode_length);
-        if (size != 0) {
-            write_ptr += size - 1;
-            // 5 because of the u and the hex characters
-            read_ptr += 5 - 1;
-            lexer.str_len += size - 5;
-        } else {
-            write_ptr[0] = '\\';
-            write_ptr[1] = 'u';
-            write_ptr++;
-            lexer.str_len++;
-        }
-    }
-
-    void handle_escape_big_u(char*& read_ptr, char*& write_ptr, char* end) {
-        uint8_t unicode_length = 8;
-        int     size           = read_codepoint(read_ptr, write_ptr, end, unicode_length);
-        if (size != 0) {
-            write_ptr += size - 1;
-            // 9 because of the u and the hex characters
-            read_ptr += 9 - 1;
-            lexer.str_len += size - 9;
-        } else {
-            write_ptr[0] = '\\';
-            write_ptr[1] = 'U';
-            write_ptr++;
-            lexer.str_len++;
-        }
-    }
-
-    uint8_t read_codepoint(char* str_ptr, char* write_ptr, char* end_ptr, uint8_t unicode_length) {
-        // skip u character
-        str_ptr++;
-
-        if (str_ptr + unicode_length > end_ptr) {
-            return 0;
-        }
-
-        uint8_t buffer[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        for (unsigned i = 0; i < unicode_length; ++i) {
-            if (is_hex(*str_ptr)) {
-                buffer[i] = *str_ptr;
-                str_ptr++;
-            } else {
-                return 0;
-            }
-        }
-
-        const uint32_t code = strtoul((const char*) buffer, NULL, 16);
-
-        uint8_t size = 0;
-        if (code < 0x0080) {
-            size = 1;
-        } else if (code < 0x0800) {
-            size = 2;
-        } else if (code < 0x00010000) {
-            size = 3;
-        } else if (code < 0x00110000) {
-            size = 4;
-        } else {
-            memcpy(write_ptr, replacement_char, 3);
-            return 3;
-        }
-
-        uint32_t c = code;
-        switch (size) {
-        case 4:
-            write_ptr[3] = (uint8_t) (0x80u | (c & 0x3Fu));
-            c >>= 6;
-            c |= (16 << 12); // set bit 4
-            [[fallthrough]];
-        case 3:
-            write_ptr[2] = (uint8_t) (0x80u | (c & 0x3Fu));
-            c >>= 6;
-            c |= (32 << 6); // set bit 5
-            [[fallthrough]];
-        case 2:
-            write_ptr[1] = (uint8_t) (0x80u | (c & 0x3Fu));
-            c >>= 6;
-            c |= 0xC0; // set bits 6 and 7
-            [[fallthrough]];
-        case 1:
-            write_ptr[0] = (uint8_t) c;
-            [[fallthrough]];
-        default:
-            break;
-        }
-        return size;
+        // try {
+        //     state_funcs[State::TOTAL_STATES*state + token]();
+        //     return state_transitions[State::TOTAL_STATES*state + token];
+        // }
+        // catch (std::exception& e) {
+        //     parsing_errors++;
+        //     std::cout << "ERROR on line " << current_line << "\n";
+        //     std::cout << e.what() << "\n";
+        //     return State::WRONG_LINE;
+        // }
+        state_funcs[State::TOTAL_STATES*state + token]();
+        return state_transitions[State::TOTAL_STATES*state + token];
     }
 
     // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place
@@ -554,58 +456,7 @@ private:
         lexer.str_len -= 2;
         char* end = lexer.str + lexer.str_len + 1;
 
-        while (read_ptr < end) {
-            if (*read_ptr == '\\') {
-                read_ptr++;
-                lexer.str_len--;
-                switch (*read_ptr) {
-                    case '"':
-                        *write_ptr = '"';
-                        break;
-                    case '\\':
-                        *write_ptr = '\\';
-                        break;
-                    case 'n':
-                        *write_ptr = '\n';
-                        break;
-                    case 't':
-                        *write_ptr = '\t';
-                        break;
-                    case 'r':
-                        *write_ptr = '\r';
-                        break;
-                    case '/':
-                        *write_ptr = '/';
-                        break;
-                    // case 'f':
-                    //     *write_ptr = '\f';
-                    //     break;
-                    // case 'b':
-                    //     *write_ptr = '\b';
-                    //     break;
-                    case 'u':
-                        handle_escape_small_u(read_ptr, write_ptr, end);
-                        break;
-                    case 'U':
-                        handle_escape_big_u(read_ptr, write_ptr, end);
-                        break;
-                    default:
-                        *write_ptr = '\\';
-                        write_ptr++;
-                        *write_ptr = *read_ptr;
-                        lexer.str_len++;
-                        break;
-                }
-                read_ptr++;
-                write_ptr++;
-
-            } else {
-                *write_ptr = *read_ptr;
-                read_ptr++;
-                write_ptr++;
-            }
-        }
-        *write_ptr = '\0';
+        UnicodeEscape::normalize_string(read_ptr, write_ptr, end, lexer.str_len);
     }
 
     uint64_t get_or_create_external_string_id() {
