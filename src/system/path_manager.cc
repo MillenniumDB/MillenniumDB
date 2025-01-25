@@ -44,6 +44,12 @@ ObjectId PathManager::set_path(const Paths::Any::SearchState* visited_pointer, V
     return ObjectId(ObjectId::MASK_PATH | ANY_SHORTEST_WALKS_MASK | path_var.id);
 }
 
+ObjectId PathManager::set_path(const Paths::Any::MultiSourceSearchState* visited_pointer, VarId path_var) {
+    auto index = get_thread_index();
+    paths[index][path_var.id] = visited_pointer;
+    return ObjectId(ObjectId::MASK_PATH | ANY_SHORTEST_WALKS_MULTIPLE_STARTS_MASK | path_var.id);
+}
+
 ObjectId PathManager::set_path(const Paths::Any::DirectionalSearchState* visited_pointer, VarId path_var) {
     auto index = get_thread_index();
     paths[index][path_var.id] = visited_pointer;
