@@ -83,7 +83,7 @@ struct MultiSourceSearchState {
 template<>
 struct std::hash<Paths::Any::MultiSourceSearchState> {
     std::size_t operator() (const Paths::Any::MultiSourceSearchState& lhs) const {
-        return lhs.automaton_state ^ lhs.node_id.id;
+        return lhs.automaton_state ^ lhs.node_id.id ^ lhs.bfs_id.id;
     }
 };
 
