@@ -1,0 +1,16 @@
+John->Joe :follows
+Joe->John :follows
+Joe->Paul :follows
+Joe->Lily :follows
+Paul->Anne :follows
+Paul->Jane :follows
+Lily->Jane :follows
+John->Rome :lives
+Anne->Rome :lives
+Jane->Paris :works
+Anne->Paris :works
+
+Joe :start
+John :start
+Paul :start
+Lily :start

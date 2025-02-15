@@ -237,6 +237,11 @@ void PathManager::print(std::ostream& os,
         state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
         break;
     }
+    case ANY_SHORTEST_WALKS_MULTIPLE_STARTS_MASK: {
+        auto state = reinterpret_cast<const Paths::Any::MultiSourceSearchState*>(paths[index][decoded_id]);
+        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        break;
+    }
     default:
         break;
     }

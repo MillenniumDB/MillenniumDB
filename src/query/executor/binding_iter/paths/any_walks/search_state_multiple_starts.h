@@ -4,6 +4,9 @@
 
 #include "query/id.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
+#include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/paths/any_walks/search_state.h"
+#include "query/parser/paths/automaton/rpq_automaton.h"
 
 namespace Paths { namespace Any {
 struct MultiSourceSearchState {
@@ -52,7 +55,12 @@ struct MultiSourceSearchState {
             return node_id < other.node_id;
         }
     }
-
+   
+    // Overloading the ostream operator<<
+    friend std::ostream& operator<<(std::ostream& os, const MultiSourceSearchState& state) {
+        os << "MultiSourceSearchState: bfs_id(" << state.bfs_id << "), type_id(" << state.type_id << "), automaton_state(" << state.automaton_state << "), node_id(" << state.node_id << ")";
+        return os;
+    } 
     // For unordered set
     bool operator==(const MultiSourceSearchState& other) const {
         return automaton_state == other.automaton_state && node_id == other.node_id && bfs_id == other.bfs_id;
