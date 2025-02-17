@@ -117,6 +117,8 @@ public:
     virtual void visit(Paths::Any::BFSEnum<true>&)         override;
     virtual void visit(Paths::Any::BFSMultipleStarts<false>&)          override;
     virtual void visit(Paths::Any::BFSMultipleStarts<true>&)           override;
+    virtual void visit(Paths::Any::BFSMultipleStartsNaive<false>&)          override;
+    virtual void visit(Paths::Any::BFSMultipleStartsNaive<true>&)           override;
     virtual void visit(Paths::AnySimple::BFSCheck<false>&)         override;
     virtual void visit(Paths::AnySimple::BFSCheck<true>&)          override;
     virtual void visit(Paths::AnySimple::BFSEnum<false>&)          override;

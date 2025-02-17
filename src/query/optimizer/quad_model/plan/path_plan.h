@@ -69,6 +69,8 @@ private:
     RPQ_DFA automaton_inverted;
 
     bool from_is_better_start_direction() const;
+    
+    std::unique_ptr<BindingIter> run_multiple_walks(std::unique_ptr<Paths::IndexProvider> provider, const RPQ_DFA &automaton, Id start, VarId end) const;
 
     // Construct index provider for this automaton
     std::unique_ptr<Paths::IndexProvider> get_provider(const RPQ_DFA& automaton) const;

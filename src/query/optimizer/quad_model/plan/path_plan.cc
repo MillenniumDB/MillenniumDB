@@ -35,11 +35,46 @@
 #include "system/path_manager.h"
 #include "query/executor/binding_iter/paths/unfixed_composite.h"
 #include "query/executor/binding_iter/paths/any_walks/bfs_multiple_starts.h"
+#include "query/executor/binding_iter/paths/any_walks/bfs_multiple_starts_naive.h"
 #include "query/executor/binding_iter/paths/any_walks/debug_mati.h"
+#include <iostream>
+#include <algorithm>
+#include <cctype>
+#include <string>
 
 using namespace MQL;
 using namespace std;
 
+std::unique_ptr<BindingIter> PathPlan::run_multiple_walks(std::unique_ptr<Paths::IndexProvider> provider,const RPQ_DFA &automaton, Id start, VarId end) const
+{
+    char* ms_strategy_c_str = std::getenv("MS_STRATEGY");
+    std::string ms_strategy = "";
+    if (ms_strategy_c_str != nullptr) {
+        ms_strategy = ms_strategy_c_str;
+        std::transform(ms_strategy.begin(), ms_strategy.end(), ms_strategy.begin(), ::tolower);
+    }
+    if (ms_strategy == "naive")
+    {
+        if (automaton.total_final_states > 1)
+        {
+            return make_unique<Paths::Any::BFSMultipleStartsNaive<true>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
+        }
+        else
+        {
+            return make_unique<Paths::Any::BFSMultipleStartsNaive<false>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
+        }
+    } else {
+        if (automaton.total_final_states > 1)
+        {
+            return make_unique<Paths::Any::BFSMultipleStarts<true>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
+        }
+        else
+        {
+            return make_unique<Paths::Any::BFSMultipleStarts<false>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
+        }
+
+    }
+}
 PathPlan::PathPlan(
     std::vector<bool>& begin_at_left,
     OpPath::Direction direction,
@@ -281,11 +316,7 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
                 return make_unique<Paths::Any::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
             }
         } else {
-            if (automaton.total_final_states > 1) {
-                return make_unique<Paths::Any::BFSMultipleStarts<true>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
-            } else {
-                return make_unique<Paths::Any::BFSMultipleStarts<false>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
-            }
+            return run_multiple_walks(std::move(provider), automaton, start, end);
         }
     }
 
@@ -309,18 +340,9 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
     case PathSemantic::ANY_SHORTEST_TRAILS:
         return make_unique<Paths::AnyTrails::BFSEnum>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ANY_SHORTEST_WALKS:
-        if (automaton.total_final_states > 1) {
-            return make_unique<Paths::Any::BFSMultipleStarts<true>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
-        } else {
-            return make_unique<Paths::Any::BFSMultipleStarts<false>>(path_var, std::vector<Id>({start}), end, automaton, std::move(provider));
-        }
+        return run_multiple_walks(std::move(provider), automaton, start, end);
     case PathSemantic::DEFAULT: {
-        std::vector<Id> start_nodes;
-        if (automaton.total_final_states > 1) {
-            return make_unique<Paths::Any::BFSMultipleStarts<true>>(path_var, start_nodes, end, automaton, std::move(provider));
-        } else {
-            return make_unique<Paths::Any::BFSMultipleStarts<false>>(path_var, start_nodes, end, automaton, std::move(provider));
-        }
+        return run_multiple_walks(std::move(provider), automaton, start, end);
     }
     case PathSemantic::ALL_SHORTEST_WALKS_COUNT:
         throw QuerySemanticException("ALL_SHORTEST_WALKS_COUNT enum not supported yet");

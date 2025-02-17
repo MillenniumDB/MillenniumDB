@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <boost/range/algorithm/set_algorithm.hpp>
-
+#include <boost/unordered_set.hpp>
 #include "graph_models/quad_model/quad_object_id.h"
 #include "graph_models/quad_model/quad_model.h"
 #include "system/path_manager.h"
@@ -147,6 +147,16 @@ inline void debug_print_container(const Container &c)
     }
 }
 
+boost::unordered_flat_set<ObjectId, objectid_hash> set_difference(const boost::unordered_node_set<ObjectId, objectid_hash> &s1, const boost::unordered_node_set<ObjectId, objectid_hash> &s2) {
+    boost::unordered_flat_set<ObjectId, objectid_hash> difference;
+    for(const auto &it : s1) {
+        if (s2.find(it) == s2.end()) {
+            difference.insert(it);
+        }
+    }
+    return difference;
+}
+
 template <bool MULTIPLE_FINAL>
 const MultiSourceSearchState *BFSMultipleStarts<MULTIPLE_FINAL>::expand_neighbors(const SearchNodeId &current_state_id)
 {
@@ -199,9 +209,10 @@ const MultiSourceSearchState *BFSMultipleStarts<MULTIPLE_FINAL>::expand_neighbor
             debug_print_container(bfses_that_reached_the_new_state);
             _debug_mati_simple() << std::endl;
 
-            boost::unordered_node_set<ObjectId, objectid_hash> difference;
-            boost::set_difference(bfses_to_be_visited_by_current_state, bfses_that_reached_the_new_state, std::inserter(difference, difference.end()));
 
+//            boost::set_difference(bfses_to_be_visited_by_current_state, bfses_that_reached_the_new_state, std::inserter(difference, difference.end()));
+
+            boost::unordered_flat_set<ObjectId, objectid_hash> difference = set_difference(bfses_to_be_visited_by_current_state, bfses_that_reached_the_new_state);
             _debug_mati() << "difference: ";
             debug_print_container(difference);
             _debug_mati_simple() << std::endl;

@@ -1023,13 +1023,27 @@ void BindingIterPrinter::visit(Paths::Any::BFSMultipleStarts<false>& binding_ite
 }
 
 
+void BindingIterPrinter::visit(Paths::Any::BFSMultipleStartsNaive<true>& binding_iter) {
+    std::stringstream ss;
+    ss << "idx_searches: " << binding_iter.idx_searches;
+    auto helper = BindingIterPrinterHelper("Paths::Any::BFSMultipleStartsNaive<true>", *this, binding_iter, ss.str());
+    os << ")\n";
+}
+
+void BindingIterPrinter::visit(Paths::Any::BFSMultipleStartsNaive<false>& binding_iter) {
+    std::stringstream ss;
+    ss << "idx_searches: " << binding_iter.idx_searches;
+    auto helper = BindingIterPrinterHelper("Paths::Any::BFSMultipleStartsNaive<false>", *this, binding_iter, ss.str());
+    os << ")\n";
+}
+
+
 void BindingIterPrinter::visit(Paths::Any::BFSMultipleStarts<true>& binding_iter) {
     std::stringstream ss;
     ss << "idx_searches: " << binding_iter.idx_searches;
     auto helper = BindingIterPrinterHelper("Paths::Any::BFSMultipleStarts<true>", *this, binding_iter, ss.str());
     os << ")\n";
 }
-
 void BindingIterPrinter::visit(Paths::AnySimple::BFSCheck<false>& binding_iter) {
     std::stringstream ss;
     ss << "idx_searches: " << binding_iter.idx_searches;
