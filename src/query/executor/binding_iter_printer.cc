@@ -481,21 +481,21 @@ void BindingIterPrinter::visit(OrderBy& binding_iter)
 
     os << "order_vars: ";
     auto first = true;
-    for (size_t i = 0; i < binding_iter.order_vars.size(); i++) {
+    for (size_t i = 0; i < binding_iter.order_info.ascending.size(); i++) {
         if (first)
             first = false;
         else
             os << ", ";
-        if (binding_iter.ascending[i])
+        if (binding_iter.order_info.ascending[i])
             os << "ASC ";
         else
             os << "DESC ";
-        os << '?' << get_query_ctx().get_var_name(binding_iter.order_vars[i]);
+        os << '?' << get_query_ctx().get_var_name(binding_iter.order_info.saved_vars[i]);
     }
 
     os << ", saved_vars: ";
     first = true;
-    for (auto [var, _] : binding_iter.saved_vars) {
+    for (auto var : binding_iter.order_info.saved_vars) {
         if (first)
             first = false;
         else
@@ -731,6 +731,39 @@ void BindingIterPrinter::visit(SetLabels& binding_iter)
         }
         os << var.object;
     }
+    os << ")\n";
+    binding_iter.child_iter->accept_visitor(*this);
+}
+
+void BindingIterPrinter::visit(SetStartBoundaryVariable& binding_iter)
+{
+    auto helper = BindingIterPrinterHelper("SetStartBoundaryVariable", *this, binding_iter);
+    os << "start:" << binding_iter.start_var_to_set;
+    os << ")\n";
+    binding_iter.child_iter->accept_visitor(*this);
+}
+
+void BindingIterPrinter::visit(SetEndBoundaryVariable& binding_iter)
+{
+    auto helper = BindingIterPrinterHelper("SetEndBoundaryVariable", *this, binding_iter);
+    os << "end:" << binding_iter.end_var_to_set;
+    os << ")\n";
+    binding_iter.child_iter->accept_visitor(*this);
+}
+
+void BindingIterPrinter::visit(Sequence& binding_iter)
+{
+    auto helper = BindingIterPrinterHelper("Sequence", *this, binding_iter);
+    os << ")\n";
+    for (auto& iter : binding_iter.iters) {
+        iter->accept_visitor(*this);
+    }
+}
+
+void BindingIterPrinter::visit(SetRepeatedVariable& binding_iter)
+{
+    auto helper = BindingIterPrinterHelper("SetRepeatedVariable", *this, binding_iter);
+    os << "start:" << binding_iter.start_var;
     os << ")\n";
     binding_iter.child_iter->accept_visitor(*this);
 }

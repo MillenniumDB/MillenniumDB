@@ -817,6 +817,86 @@ void ExprToBindingExpr::visit(SPARQL::ExprCast& expr_cast) {
     tmp = make_unique<BindingExprCast>(expr_cast.cast_type, std::move(expr));
 }
 
+void ExprToBindingExpr::visit(SPARQL::ExprCosineSimilarity& expr_cosine_similarity)
+{
+    at_root = false;
+    expr_cosine_similarity.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_cosine_similarity.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprCosineSimilarity>(std::move(lhs), std::move(rhs));
+}
+
+void ExprToBindingExpr::visit(ExprDot& expr_dot)
+{
+    at_root = false;
+    expr_dot.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_dot.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprDot>(std::move(lhs), std::move(rhs));
+}
+
+void ExprToBindingExpr::visit(ExprEuclideanDistance& expr_euclidean_distance)
+{
+    at_root = false;
+    expr_euclidean_distance.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_euclidean_distance.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprEuclideanDistance>(std::move(lhs), std::move(rhs));
+}
+
+void ExprToBindingExpr::visit(ExprManhattanDistance& expr_manhattan_distance)
+{
+    at_root = false;
+    expr_manhattan_distance.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_manhattan_distance.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprManhattanDistance>(std::move(lhs), std::move(rhs));
+}
+
+void ExprToBindingExpr::visit(ExprPow& expr_pow)
+{
+    at_root = false;
+    expr_pow.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_pow.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprPow>(std::move(lhs), std::move(rhs));
+}
+
+void ExprToBindingExpr::visit(ExprSqrt& expr_sqrt)
+{
+    at_root = false;
+    expr_sqrt.expr->accept_visitor(*this);
+
+    auto expr = std::move(tmp);
+
+    tmp = make_unique<BindingExprSqrt>(std::move(expr));
+}
+
+void ExprToBindingExpr::visit(ExprSum& expr_sum)
+{
+    at_root = false;
+    expr_sum.expr->accept_visitor(*this);
+
+    auto expr = std::move(tmp);
+
+    tmp = make_unique<BindingExprSum>(std::move(expr));
+}
+
 void ExprToBindingExpr::visit(ExprAggSum& expr) {
     if (expr.distinct) {
         check_and_make_aggregate<AggSumDistinct>(expr.expr.get());

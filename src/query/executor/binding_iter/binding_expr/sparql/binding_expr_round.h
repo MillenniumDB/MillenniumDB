@@ -56,6 +56,14 @@ public:
 
             return ObjectId(Conversions::pack_double(n));
         }
+        case RDF_OID::GenericSubType::TENSOR_FLOAT: {
+            auto tensor = Conversions::unpack_tensor<float>(expr_oid);
+            return Conversions::pack_tensor<float>(tensor.sparql11_round());
+        }
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
+            auto tensor = Conversions::unpack_tensor<double>(expr_oid);
+            return Conversions::pack_tensor<double>(tensor.sparql11_round());
+        }
         default:
             return ObjectId::get_null();
         }

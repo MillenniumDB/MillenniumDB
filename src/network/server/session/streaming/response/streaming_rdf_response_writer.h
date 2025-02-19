@@ -123,6 +123,18 @@ public:
         case RDF_OID::Type::NULL_ID: {
             return encode_null();
         }
+        case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+        case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+        case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+            const auto tensor = Common::Conversions::unpack_tensor<float>(oid);
+            return encode_tensor<float>(tensor);
+        }
+        case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+        case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+        case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+            const auto tensor = Common::Conversions::unpack_tensor<double>(oid);
+            return encode_tensor<double>(tensor);
+        }
         default:
             throw std::logic_error("Unmanaged type in RdfResponseWriter::encode_object_id: "
                                    + std::to_string(static_cast<uint8_t>(type)));

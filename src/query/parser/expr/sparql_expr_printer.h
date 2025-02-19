@@ -90,5 +90,13 @@ public:
     void visit(ExprUUID&)           override;
     void visit(ExprYear&)           override;
     void visit(ExprCast&)           override;
+
+    void visit(SPARQL::ExprCosineSimilarity&)  override;
+    void visit(SPARQL::ExprDot&)               override;
+    void visit(SPARQL::ExprEuclideanDistance&) override;
+    void visit(SPARQL::ExprManhattanDistance&) override;
+    void visit(SPARQL::ExprPow&)               override;
+    void visit(SPARQL::ExprSqrt&)              override;
+    void visit(SPARQL::ExprSum&)               override;
 };
 } // namespace SPARQL

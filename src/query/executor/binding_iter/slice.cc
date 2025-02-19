@@ -1,7 +1,5 @@
 #include "slice.h"
 
-#include "query/parser/op/sparql/op_select.h"
-
 void Slice::_begin(Binding& _parent_binding) {
     parent_binding = &_parent_binding;
     child_iter->begin(_parent_binding);

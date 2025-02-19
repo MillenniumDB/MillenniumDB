@@ -3,8 +3,10 @@
 #include <thread>
 
 #include "import/gql/import.h"
+#include "import/gql/csv/import.h"
 #include "import/quad_model/import.h"
 #include "import/rdf_model/import.h"
+#include "import/quad_model/csv/import.h"
 #include "misc/fatal_error.h"
 #include "misc/istream.h"
 #include "storage/filesystem.h"
@@ -79,6 +81,10 @@ int main(int argc, char* argv[])
     uint64_t buffer_size = 2ULL * 1024 * 1024 * 1024;
     size_t btree_permutations = 4;
 
+    bool csv_import = false;
+    std::vector<std::string> node_paths;
+    std::vector<std::string> edge_paths;
+
     CLI::App app { "MillenniumDB Import" };
     app.get_formatter()->column_width(35);
     app.option_defaults()->always_capture_default();
@@ -110,6 +116,20 @@ int main(int argc, char* argv[])
         ->option_text("quad|rdf|gql")
         ->transform(ModelNameValidator());
 
+
+    auto* csv_flag = app.add_flag("--csv", csv_import)
+        ->description("Import data from CSV files defining nodes and edges.");
+
+    app.add_option("--nodes,-n", node_paths)
+        ->description("list (size >= 1) of paths to CSV files containing node data.")
+        ->type_name("")
+        ->needs(csv_flag);
+
+    app.add_option("--edges,-e", edge_paths)
+        ->description("list (size >= 1) of paths to CSV files containing edge data.")
+        ->type_name("")
+        ->needs(csv_flag);
+
     // app.set_help_flag("");
     // app.add_flag_callback("--help",[](){ std::cout << help_message;  throw CLI::Success(); })->trigger_on_parse();
 
@@ -135,7 +155,7 @@ int main(int argc, char* argv[])
     Model model = Model::NOT_ASSIGNED;
     if (model_name.empty()) {
         if (input_files.empty()) {
-            FATAL_ERROR("Must specify the model when not working with input files");
+            FATAL_ERROR("Must specify the model when not working with input files or when importing CSV files");
         }
 
         for (auto& input_file : input_files) {
@@ -192,9 +212,17 @@ int main(int argc, char* argv[])
         prefixes_file = "";
     }
 
+    if (csv_import && model == Model::RDF) {
+        FATAL_ERROR("RDF does not have CSV importing support");
+    }
+
+    if (csv_import && node_paths.empty()) {
+        FATAL_ERROR("Node paths have to be specified.");
+    }
+
     std::cout << "Creating new " << model << " model database\n";
     std::cout << "  db directory:  " << db_directory << "\n";
-    if (input_files.empty()) {
+    if (input_files.empty() && !csv_import) {
         auto in_avail = std::cin.rdbuf()->in_avail();
         if (in_avail == 0) {
             // wait just in case
@@ -214,13 +242,34 @@ int main(int argc, char* argv[])
 
     switch (model) {
     case Model::Quad: {
-        Import::QuadModel::OnDiskImport importer(db_directory, buffer_size);
-        if (input_files.empty()) {
-            MDBIstreamWrapper in(std::cin);
-            importer.start_import(in);
+        if (csv_import) {
+            Import::QuadModel::CSV::OnDiskImport importer(db_directory, buffer_size);
+
+            std::vector<std::unique_ptr<MDBIstreamFiles>> streams_nodes;
+            std::vector<std::unique_ptr<MDBIstreamFiles>> streams_edges;
+
+            for (auto path : node_paths) {
+                std::vector<std::string> a = {path};
+                std::unique_ptr<MDBIstreamFiles> b(new MDBIstreamFiles(a));
+                streams_nodes.push_back(std::move(b));
+            }
+
+            for (auto path : edge_paths) {
+                std::vector<std::string> a = {path};
+                std::unique_ptr<MDBIstreamFiles> b(new MDBIstreamFiles(a));
+                streams_edges.push_back(std::move(b));
+            }
+
+            importer.start_import(streams_nodes, streams_edges);
         } else {
-            MDBIstreamFiles files(input_files);
-            importer.start_import(files);
+            Import::QuadModel::OnDiskImport importer(db_directory, buffer_size);
+            if (input_files.empty()) {
+                MDBIstreamWrapper in(std::cin);
+                importer.start_import(in);
+            } else {
+                MDBIstreamFiles files(input_files);
+                importer.start_import(files);
+            }
         }
         break;
     }
@@ -231,21 +280,42 @@ int main(int argc, char* argv[])
         Import::Rdf::OnDiskImport importer(db_directory, buffer_size, btree_permutations);
         if (input_files.empty()) {
             MDBIstreamWrapper in(std::cin);
-            importer.start_import(in, prefixes_file);
+            importer.start_import(in, prefixes_file, input_files);
         } else {
             MDBIstreamFiles files(input_files);
-            importer.start_import(files, prefixes_file);
+            importer.start_import(files, prefixes_file, input_files);
         }
         break;
     }
     case Model::GQL: {
-        Import::GQL::OnDiskImport importer(db_directory, buffer_size);
-        if (input_files.empty()) {
-            MDBIstreamWrapper in(std::cin);
-            importer.start_import(in);
+        if (csv_import) {
+            Import::GQL::CSV::OnDiskImport importer(db_directory, buffer_size);
+
+            std::vector<std::unique_ptr<MDBIstreamFiles>> streams_nodes;
+            std::vector<std::unique_ptr<MDBIstreamFiles>> streams_edges;
+
+            for (auto path : node_paths) {
+                std::vector<std::string> a = {path};
+                std::unique_ptr<MDBIstreamFiles> b(new MDBIstreamFiles(a));
+                streams_nodes.push_back(std::move(b));
+            }
+
+            for (auto path : edge_paths) {
+                std::vector<std::string> a = {path};
+                std::unique_ptr<MDBIstreamFiles> b(new MDBIstreamFiles(a));
+                streams_edges.push_back(std::move(b));
+            }
+
+            importer.start_import(streams_nodes, streams_edges);
         } else {
-            MDBIstreamFiles files(input_files);
-            importer.start_import(files);
+            Import::GQL::OnDiskImport importer(db_directory, buffer_size);
+            if (input_files.empty()) {
+                MDBIstreamWrapper in(std::cin);
+                importer.start_import(in);
+            } else {
+                MDBIstreamFiles files(input_files);
+                importer.start_import(files);
+            }
         }
         break;
     }

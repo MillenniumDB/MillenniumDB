@@ -626,6 +626,128 @@ Decimal Decimal::round() const {
     return d;
 }
 
+Decimal Decimal::abs() const {
+    Decimal d(*this);
+    d.sign = false;
+    return d;
+}
+
+Decimal Decimal::log(const Decimal& base) const {
+    if (*this <= Decimal(0) || base <= Decimal(0) || base == Decimal(1)) {
+        throw std::invalid_argument("Invalid base or argument for logarithm.");
+    }
+    double argument_value = this->to_double();
+    double base_value = base.to_double();
+    auto string_log = std::to_string(std::log(argument_value) / std::log(base_value));
+    bool error;
+    return Decimal(string_log, &error);
+}
+
+Decimal Decimal::log10() const {
+    if (*this <= Decimal(0)) {
+        throw std::invalid_argument("Logarithm undefined for non-positive values.");
+    }
+    auto string_log = std::to_string(std::log10(this->to_double()));
+    bool error;
+    return Decimal(string_log, &error);
+}
+
+Decimal Decimal::ln() const {
+    if (*this <= Decimal(0)) {
+        throw std::invalid_argument("Logarithm undefined for non-positive values.");
+    }
+    auto string_ln = std::to_string(std::log(this->to_double()));
+    bool error;
+    return Decimal(string_ln, &error);
+}
+
+Decimal Decimal::exp() const {
+    auto string_exp = std::to_string(std::exp(this->to_double()));
+    bool error;
+    return Decimal(string_exp, &error);
+}
+
+Decimal Decimal::pow(const Decimal& exponent) const {
+    if (*this == Decimal(0) && exponent == Decimal(0)) {
+        throw std::invalid_argument("0^0 is undefined.");
+    }
+    double base_value = this->to_double();
+    double exponent_value = exponent.to_double();
+    auto string_pow = std::to_string(std::pow(base_value, exponent_value));
+    bool error;
+    return Decimal(string_pow, &error);
+}
+
+Decimal Decimal::sqrt() const {
+    if (*this < Decimal(0)) {
+        throw std::invalid_argument("Square root undefined for negative values.");
+    }
+    auto string_sqrt = std::to_string(std::sqrt(this->to_double()));
+    bool error;
+    return Decimal(string_sqrt, &error);
+}
+
+
+Decimal Decimal::sin() const {
+    auto string_sin = std::to_string(std::sin(this->to_double()));
+    bool error;
+    return Decimal(string_sin, &error);
+}
+
+Decimal Decimal::cos() const {
+    auto string_cos = std::to_string(std::cos(this->to_double()));
+    bool error;
+    return Decimal(string_cos, &error);
+}
+
+Decimal Decimal::tan() const {
+    auto string_tan = std::to_string(std::tan(this->to_double()));
+    bool error;
+    return Decimal(string_tan, &error);
+}
+
+Decimal Decimal::cot() const {
+    auto string_cot = std::to_string(std::cos(this->to_double()) / std::sin(this->to_double()));
+    bool error;
+    return Decimal(string_cot, &error);
+}
+
+Decimal Decimal::sinh() const {
+    auto string_sinh = std::to_string(std::sinh(this->to_double()));
+    bool error;
+    return Decimal(string_sinh, &error);
+}
+
+Decimal Decimal::cosh() const {
+    auto string_cosh = std::to_string(std::cosh(this->to_double()));
+    bool error;
+    return Decimal(string_cosh, &error);
+}
+
+Decimal Decimal::tanh() const {
+    auto string_tanh = std::to_string(std::tanh(this->to_double()));
+    bool error;
+    return Decimal(string_tanh, &error);
+}
+
+Decimal Decimal::asin() const {
+    auto string_asin = std::to_string(std::asin(this->to_double()));
+    bool error;
+    return Decimal(string_asin, &error);
+}
+
+Decimal Decimal::acos() const {
+    auto string_acos = std::to_string(std::acos(this->to_double()));
+    bool error;
+    return Decimal(string_acos, &error);
+}
+
+Decimal Decimal::atan() const {
+    auto string_atan = std::to_string(std::atan(this->to_double()));
+    bool error;
+    return Decimal(string_atan, &error);
+}
+
 Decimal Decimal::operator-() const {
     Decimal dec(*this);
     dec.sign = !dec.sign;
@@ -813,6 +935,45 @@ Decimal Decimal::operator/(const Decimal& rhs) const {
     res.trim_zeros();
     return res;
 }
+
+/**
+ *  @brief Computes the modulo of this Decimal by a divisor. The divisor must not be 0.
+ *  @param rhs The divisor for the modulo operation, must not be 0.
+ *  @return The result of the modulo operation.
+ */
+Decimal Decimal::operator%(const Decimal& rhs) const {
+    if (rhs == Decimal(0)) {
+        throw LogicException("Modulo by zero");
+    }
+    if (*this == Decimal(0)) {
+        return *this;
+    }
+
+    // Align exponents for dividend and divisor.
+    Decimal dividend(*this);
+    Decimal divisor(rhs);
+    bool result_sign = dividend.sign;
+
+    // Make both dividend and divisor positive for calculation.
+    dividend.sign = false;
+    divisor.sign = false;
+
+    // Perform division to compute the quotient.
+    Decimal quotient = dividend / divisor;
+
+    // Floor the quotient to get the largest integer less than or equal to the quotient.
+    Decimal int_quotient = quotient.floor();
+
+    // Compute the modulo: a - b * floor(a / b)
+    Decimal result = dividend - (divisor * int_quotient);
+
+    // Restore the sign of the result.
+    result.sign = result_sign;
+
+    result.trim_zeros();
+    return result;
+}
+
 
 bool Decimal::operator<(const Decimal& rhs) const {
     if (this->digits.size() == 0 && rhs.digits.size() == 0) {

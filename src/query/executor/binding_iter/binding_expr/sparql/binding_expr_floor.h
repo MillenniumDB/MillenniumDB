@@ -33,6 +33,14 @@ public:
             auto n = Conversions::unpack_double(expr_oid);
             return ObjectId(Conversions::pack_double(std::floor(n)));
         }
+        case RDF_OID::GenericSubType::TENSOR_FLOAT: {
+            auto tensor = Conversions::unpack_tensor<float>(expr_oid);
+            return Conversions::pack_tensor<float>(tensor.floor());
+        }
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
+            auto tensor = Conversions::unpack_tensor<double>(expr_oid);
+            return Conversions::pack_tensor<double>(tensor.floor());
+        }
         default:
             return ObjectId::get_null();
         }

@@ -1,7 +1,7 @@
 #include "text_search_index_manager.h"
 
-#include "misc/logger.h"
-#include "storage/index/text_search/text_search_index.h"
+#include <mutex>
+
 #include "system/file_manager.h"
 
 using namespace TextSearch;
@@ -22,9 +22,8 @@ void TextSearchIndexManager::init(
 
     const auto text_searches_path = file_manager.get_file_path(TEXT_SEARCH_INDEX_DIR);
     if (!fs::is_directory(text_searches_path)) {
-        // Text searches directory did not exist, nothing to load
+        // Text searches directory did not exist
         fs::create_directories(text_searches_path);
-        return;
     }
 }
 
@@ -40,8 +39,6 @@ void TextSearchIndexManager::load_text_search_index(const std::string& name, con
         name2text_search_index[name] = std::move(text_search_index);
         name2metadata[name] = metadata;
         predicate2names[metadata.predicate].emplace_back(name);
-
-        logger(Category::Info) << "Loaded TextSearchIndex \"" << name << "\" with metadata:\n" << metadata;
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to load TextSearchIndex \"" + name + "\": " + e.what());
     } catch (...) {
@@ -60,7 +57,11 @@ bool TextSearchIndexManager::get_text_search_index(
         return false;
     }
 
-    *text_search_index = it->second.get();
+    // Useful when just want to check if the index exists
+    if (text_search_index != nullptr) {
+        *text_search_index = it->second.get();
+    }
+
     return true;
 }
 
@@ -71,14 +72,6 @@ std::tuple<uint_fast32_t, uint_fast32_t> TextSearchIndexManager::create_text_sea
     TOKENIZE_TYPE tokenization_type
 )
 {
-    {
-        std::shared_lock lck(name2text_search_mutex);
-        auto it = name2text_search_index.find(name);
-        if (it != name2text_search_index.end()) {
-            throw std::runtime_error("TextSearchIndex \"" + name + "\" already exists");
-        }
-    }
-
     try {
         auto text_search_index = TextSearch::TextSearchIndex::create(
             name,

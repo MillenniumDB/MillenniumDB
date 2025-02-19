@@ -44,6 +44,22 @@ void RewriteRuleVisitor::visit(OpGraphPatternList& op_graph_pattern)
     }
 }
 
+void RewriteRuleVisitor::visit(OpLinearPattern& op_linear_pattern)
+{
+    for (auto& rule : rules) {
+        for (auto& pattern : op_linear_pattern.patterns) {
+            if (rule->is_possible_to_regroup(pattern)) {
+                pattern = rule->regroup(std::move(pattern));
+                has_rewritten = true;
+            }
+        }
+    }
+
+    for (auto& pattern : op_linear_pattern.patterns) {
+        pattern->accept_visitor(*this);
+    }
+}
+
 void RewriteRuleVisitor::visit(OpGraphPattern& op_graph_pattern)
 {
     for (auto& rule : rules) {

@@ -33,11 +33,31 @@ void PushLabels::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         patterns.push_back(std::move(tmp));
     }
 
-    for (auto& label : labels_to_push) {
-        patterns.push_back(label->clone());
+    tmp = std::make_unique<OpBasicGraphPattern>(std::move(patterns));
+}
+
+void PushLabels::visit(OpLinearPattern& op_linear_pattern)
+{
+    vars_in_linear_pattern.clear();
+
+    std::vector<std::unique_ptr<Op>> patterns;
+
+    for (auto& pattern : op_linear_pattern.patterns) {
+        pattern->accept_visitor(*this);
+        patterns.push_back(std::move(tmp));
     }
 
-    tmp = std::make_unique<OpBasicGraphPattern>(std::move(patterns));
+    for (auto& label : labels_to_push) {
+        if (vars_in_linear_pattern.count(label.id)) {
+            patterns.push_back(label.op->clone());
+        }
+    }
+
+    tmp = std::make_unique<OpLinearPattern>(
+        std::move(patterns),
+        std::move(op_linear_pattern.start),
+        std::move(op_linear_pattern.end)
+    );
 }
 
 void PushLabels::visit(OpRepetition& op)
@@ -49,15 +69,19 @@ void PushLabels::visit(OpRepetition& op)
 void PushLabels::visit(OpReturn& op)
 {
     op.op->accept_visitor(*this);
-    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op.return_items));
+    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op.return_items), op.distinct);
 }
 
 void PushLabels::visit(OpOrderBy& op)
 {
     op.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOrderBy>(std::move(tmp), std::move(op.items), std::move(op.ascending_order), std::move(op.null_order));
+    tmp = std::make_unique<OpOrderBy>(
+        std::move(tmp),
+        std::move(op.items),
+        std::move(op.ascending_order),
+        std::move(op.null_order)
+    );
 }
-
 
 void PushLabels::visit(OpFilter& op_filter)
 {
@@ -106,11 +130,13 @@ void PushLabels::visit(OpPathUnion& op)
 
 void PushLabels::visit(OpNode& op)
 {
+    vars_in_linear_pattern.insert(op.id);
     tmp = op.clone();
 }
 
 void PushLabels::visit(OpEdge& op)
 {
+    vars_in_linear_pattern.insert(op.id);
     tmp = op.clone();
 }
 

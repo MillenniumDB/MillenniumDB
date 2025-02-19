@@ -98,8 +98,8 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             TextSearch::Quad::remove_single,
             TextSearch::Quad::oid_to_string
         );
-        const auto name2metadata = read_uint64();
-        for (uint_fast32_t i = 0; i < name2metadata; i++) {
+        const auto text_index_name2metadata_size = read_uint64();
+        for (uint_fast32_t i = 0; i < text_index_name2metadata_size; i++) {
             const auto name = read_string();
             TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
             metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
@@ -107,12 +107,21 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             metadata.predicate = read_string();
             text_search_index_manager.load_text_search_index(name, metadata);
         }
+
+        tensor_store_manager.init();
+        const auto tensor_store_name2metadata_size = read_uint64();
+        for (uint_fast32_t i = 0; i < tensor_store_name2metadata_size; i++) {
+            const auto name = read_string();
+            TensorStoreManager::TensorStoreMetadata metadata;
+            metadata.tensors_dim = read_uint64();
+            tensor_store_manager.load_tensor_store(name, metadata);
+        }
     }
 }
 
 QuadCatalog::~QuadCatalog()
 {
-    if (has_changes || text_search_index_manager.has_changes()) {
+    if (has_changes || text_search_index_manager.has_changes() || tensor_store_manager.has_changes()) {
         save();
     }
 }
@@ -178,13 +187,20 @@ void QuadCatalog::save()
         write_uint64(v);
     }
 
-    const auto& name2metadata = text_search_index_manager.get_name2metadata();
-    write_uint64(name2metadata.size());
-    for (const auto& [name, metadata] : name2metadata) {
+    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    write_uint64(text_index_name2metadata.size());
+    for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
         write_uint8(static_cast<uint8_t>(metadata.normalization_type));
         write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
         write_string(metadata.predicate);
+    }
+
+    const auto& tensor_store_name2metadata = tensor_store_manager.get_name2metadata();
+    write_uint64(tensor_store_name2metadata.size());
+    for (const auto& [name, metadata] : tensor_store_name2metadata) {
+        write_string(name);
+        write_uint64(metadata.tensors_dim);
     }
 }
 
@@ -207,6 +223,23 @@ void QuadCatalog::print(std::ostream& os)
     os << "  equal_to_type_count:      " << equal_to_type_count << "\n";
     os << "  equal_from_type_count:    " << equal_from_type_count << "\n";
     os << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
+
+     const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    if (!text_index_name2metadata.empty()) {
+        os << "  Text Search Indexes (" << text_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : text_index_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
+
+    const auto& tensor_store_name2metadata = tensor_store_manager.get_name2metadata();
+    if (!tensor_store_name2metadata.empty()) {
+        os << "  Tensor Stores (" << tensor_store_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : tensor_store_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
+
     os << "-------------------------------------\n";
 }
 

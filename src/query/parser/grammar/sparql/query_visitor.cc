@@ -12,7 +12,7 @@
 #include "query/exceptions.h"
 #include "query/id.h"
 #include "query/parser/expr/sparql_exprs.h"
-#include "query/parser/grammar/sparql/mdb_function.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 #include "query/parser/grammar/sparql/sparql_parser_context_traits.h"
 #include "query/parser/op/op_visitor.h"
 #include "query/parser/op/sparql/op_show.h"
@@ -137,7 +137,15 @@ Any QueryVisitor::visitAskQuery(SparqlParser::AskQueryContext* ctx) {
 Any QueryVisitor::visitShowQuery(SparqlParser::ShowQueryContext* ctx) {
     LOG_VISITOR
     visitChildren(ctx);
-    current_op = std::make_unique<OpShow>(OpShow::Type::TEXT_SEARCH_INDEX);
+
+    OpShow::Type type {};
+    if (ctx->TEXT() != nullptr) {
+        type = OpShow::Type::TEXT_SEARCH_INDEX;
+    } else {
+        throw QueryException("Unhandled show type: " + ctx->getText());
+    }
+    current_op = std::make_unique<OpShow>(type);
+
     return 0;
 }
 
@@ -663,49 +671,17 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
     } else if (ctx->builtInCall()) {
         visit(ctx->builtInCall());
     } else if (ctx->iriOrFunction()) {
-        auto iri = iriCtxToString(ctx->iriOrFunction()->iri());
+        auto iri = ctx->iriOrFunction()->iri();
         auto argList = ctx->iriOrFunction()->argList();
-
         if (argList) {
-
-            const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
-            bool is_xml_schema = false;
-            if (iri.size() > xml_schema.size()) {
-                is_xml_schema = iri.substr(0, xml_schema.size()) == xml_schema;
-            }
-            if (!is_xml_schema) {
-                throw NotSupportedException("Unsupported IRI function");
-            }
-
-            auto expressions = argList->expressionList()->expression();
-            if (expressions.size() != 1) {
-                throw QuerySemanticException("Cast function must have one argument");
-            }
-            visit(expressions[0]);
-
-            auto xsd_suffix = iri.substr(xml_schema.size());
-            if (xsd_suffix == "boolean") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_boolean, std::move(current_expr));
-            } else if (xsd_suffix == "double") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_double, std::move(current_expr));
-            } else if (xsd_suffix == "float") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_float, std::move(current_expr));
-            } else if (xsd_suffix == "decimal") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_decimal, std::move(current_expr));
-            } else if (xsd_suffix == "integer") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_integer, std::move(current_expr));
-            } else if (xsd_suffix == "dateTime") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_dateTime, std::move(current_expr));
-            } else if (xsd_suffix == "string") {
-                current_expr = std::make_unique<ExprCast>(CastType::xsd_string, std::move(current_expr));
-            } else {
-                throw NotSupportedException("Unsupported IRI function");
-            }
+            handle_function_call(iri, argList);
         } else {
-            current_expr = std::make_unique<ExprTerm>(Conversions::pack_iri(iri));
+            const auto iri_str = iriCtxToString(iri);
+            current_expr = std::make_unique<ExprTerm>(Conversions::pack_iri(iri_str));
         }
     } else if (ctx->rdfLiteral()) {
         visit(ctx->rdfLiteral());
+        std::cout << ctx->rdfLiteral()->getText() << std::endl;
         current_expr = std::make_unique<ExprTerm>(current_sparql_element.get_OID());
     } else if (ctx->numericLiteral()) {
         visit(ctx->numericLiteral());
@@ -1289,44 +1265,10 @@ Any QueryVisitor::visitNotExistsFunction(SparqlParser::NotExistsFunctionContext*
     return 0;
 }
 
-
 Any QueryVisitor::visitFunctionCall(SparqlParser::FunctionCallContext* ctx) {
     LOG_VISITOR
-    auto iri = iriCtxToString(ctx->iri());
 
-    const std::string xml_schema = "http://www.w3.org/2001/XMLSchema#";
-    bool is_xml_schema = false;
-    if (iri.size() > xml_schema.size()) {
-        is_xml_schema = iri.substr(0, xml_schema.size()) == xml_schema;
-    }
-    if (!is_xml_schema) {
-        throw NotSupportedException("Unsupported IRI function");
-    }
-
-    auto expressions = ctx->argList()->expressionList()->expression();
-    if (expressions.size() != 1) {
-        throw QuerySemanticException("Cast function must have one argument");
-    }
-    visit(expressions[0]);
-
-    auto xsd_suffix = iri.substr(xml_schema.size());
-    if (xsd_suffix == "boolean") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_boolean, std::move(current_expr));
-    } else if (xsd_suffix == "double") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_double, std::move(current_expr));
-    } else if (xsd_suffix == "float") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_float, std::move(current_expr));
-    } else if (xsd_suffix == "decimal") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_decimal, std::move(current_expr));
-    } else if (xsd_suffix == "integer") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_integer, std::move(current_expr));
-    } else if (xsd_suffix == "dateTime") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_dateTime, std::move(current_expr));
-    } else if (xsd_suffix == "string") {
-        current_expr = std::make_unique<ExprCast>(CastType::xsd_string, std::move(current_expr));
-    } else {
-        throw NotSupportedException("Unsupported IRI function");
-    }
+    handle_function_call(ctx->iri(), ctx->argList());
     return 0;
 }
 
@@ -1419,27 +1361,35 @@ Any QueryVisitor::visitPropertyListPathNotEmpty(SparqlParser::PropertyListPathNo
     predicate_stack.push(std::move(current_sparql_element));
 
     // 2. Visit the first object list
-    check_mdb_function(predicate_stack.top());
-    if (current_function_type != MDBFunction::MDBFunctionType::NONE) {
-        // Handle a MillenniumDB Function
-        if (!subject_stack.top().is_var() || get_query_ctx().is_internal(subject_stack.top().get_var())) {
-            throw QuerySemanticException("MillenniumDB functions must have a variable as subject");
-        }
-        switch (current_function_type) {
-        case MDBFunction::MDBFunctionType::TEXT_SEARCH: {
-            for (auto& objectPath : ctx->objectListPath()->objectPath()) {
-                const auto args = parse_context_as_function_args<ObjectPathContextTraits>(objectPath);
-                current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+    bool handled_as_procedure { false };
+    const auto& curr_predicate = predicate_stack.top();
+    if (curr_predicate.is_OID()) {
+        const auto curr_predicate_oid = curr_predicate.get_OID();
+        if (RDF_OID::get_generic_type(curr_predicate_oid) == RDF_OID::GenericType::IRI) {
+            // Handle MDB Procedures extension
+            namespace MDBProc = MDBExtensions::Procedure;
+            const auto curr_iri_str = Conversions::unpack_iri(curr_predicate_oid);
+            const bool is_mdb_procedure = curr_iri_str.rfind(MDBProc::PROCEDURE_PREFIX_IRI, 0) == 0
+                                       && curr_iri_str.size() > MDBProc::PROCEDURE_PREFIX_IRI.size();
+            if (is_mdb_procedure) {
+                if (!subject_stack.top().is_var()
+                    || get_query_ctx().is_internal(subject_stack.top().get_var())) {
+                    throw QuerySemanticException("MillenniumDB Procedures must have a variable as subject");
+                }
+                const auto curr_iri_str_suffix = curr_iri_str.substr(MDBProc::PROCEDURE_PREFIX_IRI.size());
+                if (curr_iri_str_suffix == MDBExtensions::Procedure::TEXT_SEARCH_SUFFIX_IRI) {
+                    for (const auto& objectPath : ctx->objectListPath()->objectPath()) {
+                        const auto args = parse_context_as_procedure_args<ObjectPathContextTraits>(objectPath);
+                        current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+                        handled_as_procedure = true;
+                    }
+                } else {
+                    throw QuerySemanticException("Unknown MilenniumDB Procedure: " + curr_iri_str);
+                }
             }
-            break;
         }
-        default:
-            throw QuerySemanticException(
-                "Unhandled MillenniumDB function: "
-                + std::to_string(static_cast<uint8_t>(current_function_type))
-            );
-        }
-    } else {
+    }
+    if (!handled_as_procedure){
         // Handle a regular triple
         for (auto& objectPath : ctx->objectListPath()->objectPath()) {
             visit(objectPath);
@@ -1458,29 +1408,36 @@ Any QueryVisitor::visitPropertyListPathNotEmpty(SparqlParser::PropertyListPathNo
         predicate_stack.push(std::move(current_sparql_element));
 
         // 2. Visit the object list
-        check_mdb_function(predicate_stack.top());
-        if (current_function_type != MDBFunction::MDBFunctionType::NONE) {
-            // Handle a MillenniumDB Function
-            if (!subject_stack.top().is_var() || get_query_ctx().is_internal(subject_stack.top().get_var())) {
-                throw QuerySemanticException("MillenniumDB functions must have a variable as subject");
-            }
-
-            switch (current_function_type) {
-            case MDBFunction::MDBFunctionType::TEXT_SEARCH: {
-                for (auto& object : propertyListPathNotEmptyList->objectList()->object()) {
-                    const auto args = parse_context_as_function_args<ObjectContextTraits>(object);
-                    current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+        bool handled_as_procedure { false };
+        const auto& curr_predicate = predicate_stack.top();
+        if (curr_predicate.is_OID()) {
+            const auto curr_predicate_oid = curr_predicate.get_OID();
+            if (RDF_OID::get_generic_type(curr_predicate_oid) == RDF_OID::GenericType::IRI) {
+                // Handle MDB Procedures extension
+                namespace MDBProc = MDBExtensions::Procedure;
+                const auto curr_iri_str = Conversions::unpack_iri(curr_predicate_oid);
+                const bool is_mdb_procedure = curr_iri_str.rfind(MDBProc::PROCEDURE_PREFIX_IRI, 0) == 0
+                                           && curr_iri_str.size() > MDBProc::PROCEDURE_PREFIX_IRI.size();
+                if (is_mdb_procedure) {
+                    if (!subject_stack.top().is_var()
+                        || get_query_ctx().is_internal(subject_stack.top().get_var())) {
+                        throw QuerySemanticException("MillenniumDB Procedures must have a variable as subject"
+                        );
+                    }
+                    const auto curr_iri_str_suffix = curr_iri_str.substr(MDBProc::PROCEDURE_PREFIX_IRI.size());
+                    if (curr_iri_str_suffix == MDBExtensions::Procedure::TEXT_SEARCH_SUFFIX_IRI) {
+                        for (auto& object : propertyListPathNotEmptyList->objectList()->object()) {
+                            const auto args = parse_context_as_procedure_args<ObjectContextTraits>(object);
+                            current_text_searches.emplace_back(subject_stack.top().get_var(), args);
+                            handled_as_procedure = true;
+                        }
+                    } else {
+                        throw QuerySemanticException("Unknown MilenniumDB Procedure: " + curr_iri_str);
+                    }
                 }
-                break;
             }
-            default:
-                throw QuerySemanticException(
-                    "Unhandled MillenniumDB function: "
-                    + std::to_string(static_cast<uint8_t>(current_function_type))
-                );
-            }
-
-        } else {
+        }
+        if (!handled_as_procedure) {
             // Handle a regular triple
             for (auto& object : propertyListPathNotEmptyList->objectList()->object()) {
                 visit(object);
@@ -2216,26 +2173,8 @@ ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::st
     }
 }
 
-void QueryVisitor::check_mdb_function(const IdOrPath& id_or_path)
-{
-    if (!id_or_path.is_OID()) {
-        // id_or_path is not even an ObjectId, so it cannot be a function
-        current_function_type = MDBFunction::MDBFunctionType::NONE;
-        return;
-    }
-
-    const auto oid = id_or_path.get_OID();
-    if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI) {
-        current_function_type = MDBFunction::MDBFunctionType::NONE;
-        return;
-    }
-
-    const auto iri_str = Conversions::unpack_iri(oid);
-    current_function_type = MDBFunction::get_mdb_function_type(iri_str);
-}
-
 template<typename ContextTraits>
-std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTraits::ContextType* ctx)
+std::vector<Id> QueryVisitor::parse_context_as_procedure_args(typename ContextTraits::ContextType* ctx)
 {
     std::vector<Id> res;
 
@@ -2249,7 +2188,7 @@ std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTra
             const auto var = current_sparql_element.get_var();
             if (get_query_ctx().is_internal(var)) {
                 throw QuerySemanticException(
-                    "Unexpected anonymous node as function argument: " + varOrTerm->getText()
+                    "Unexpected anonymous node as procedure argument: " + varOrTerm->getText()
                 );
             }
             res.emplace_back(current_sparql_element.get_var());
@@ -2262,7 +2201,7 @@ std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTra
         const auto blankNodePropertyList = ContextTraits::get_blank_node_property_list(triplesNode);
         if (blankNodePropertyList != nullptr) {
             throw QuerySemanticException(
-                "Unexpected blank node property list as function argument: "
+                "Unexpected blank node property list as procedure argument: "
                 + blankNodePropertyList->getText()
             );
         }
@@ -2276,7 +2215,7 @@ std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTra
                     const auto var = current_sparql_element.get_var();
                     if (get_query_ctx().is_internal(var)) {
                         throw QuerySemanticException(
-                            "Unexpected anonymous node as function argument: " + varOrTerm->getText()
+                            "Unexpected anonymous node as procedure argument: " + varOrTerm->getText()
                         );
                     }
                     res.emplace_back(current_sparql_element.get_var());
@@ -2288,17 +2227,188 @@ std::vector<Id> QueryVisitor::parse_context_as_function_args(typename ContextTra
                 const auto blankNodePropertyList = ContextTraits::get_blank_node_property_list(triplesNode);
                 if (blankNodePropertyList != nullptr) {
                     throw QuerySemanticException(
-                        "Unexpected blank node property list as function argument: "
+                        "Unexpected blank node property list as procedure argument: "
                         + blankNodePropertyList->getText()
                     );
                 }
                 const auto collection = ContextTraits::get_collection(triplesNode);
                 throw QuerySemanticException(
-                    "Unexpected collection as function argument: " + collection->getText()
+                    "Unexpected collection as procedure argument: " + collection->getText()
                 );
             }
         }
     }
 
     return res;
+}
+
+void QueryVisitor::handle_function_call(
+    SparqlQueryParser::IriContext* iriCtx,
+    SparqlQueryParser::ArgListContext* argListCtx
+)
+{
+    assert(argListCtx != nullptr && "Expected a function call");
+
+    if (argListCtx->DISTINCT() != nullptr) {
+        // Only custom aggregate functions use the DISTINCT keyword in a function call. We have not implemented custom
+        // aggregate functions yet.
+        throw NotSupportedException("DISTINCT inside function call argument list is not supported yet");
+    }
+
+    const auto iri = iriCtxToString(iriCtx);
+
+    // XSD Cast
+    const std::string_view XML_SCHEMA = "http://www.w3.org/2001/XMLSchema#";
+    if (iri.size() > XML_SCHEMA.size() && iri.rfind(XML_SCHEMA, 0) == 0) {
+        const auto expressionList = argListCtx->expressionList();
+        if (expressionList == nullptr) {
+            throw QuerySemanticException("Cast functions must have one argument");
+        }
+        const auto expressions = expressionList->expression();
+        if (expressions.size() != 1) {
+            throw QuerySemanticException("Cast functions must have one argument");
+        }
+        visit(expressions[0]);
+        const auto xsd_suffix = iri.substr(XML_SCHEMA.size());
+        // xsd:boolean
+        if (xsd_suffix == "boolean") {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_boolean, std::move(current_expr));
+        }
+        // xsd:double
+        else if (xsd_suffix == "double")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_double, std::move(current_expr));
+        }
+        // xsd:float
+        else if (xsd_suffix == "float")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_float, std::move(current_expr));
+        }
+        // xsd:decimal
+        else if (xsd_suffix == "decimal")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_decimal, std::move(current_expr));
+        }
+        // xsd:integer
+        else if (xsd_suffix == "integer")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_integer, std::move(current_expr));
+        }
+        // xsd:dateTime
+        else if (xsd_suffix == "dateTime")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_dateTime, std::move(current_expr));
+        }
+        // xsd:string
+        else if (xsd_suffix == "string")
+        {
+            current_expr = std::make_unique<ExprCast>(CastType::xsd_string, std::move(current_expr));
+        } else {
+            throw NotSupportedException("Unsupported xsd cast function: " + iri);
+        }
+        return;
+    }
+
+    // MDB Cast
+    namespace MDBType = MDBExtensions::Type;
+    if (iri.size() > MDBType::TYPE_PREFIX_IRI.size() && iri.rfind(MDBType::TYPE_PREFIX_IRI, 0) == 0) {
+        const auto expressionList = argListCtx->expressionList();
+        if (expressionList == nullptr) {
+            throw QuerySemanticException("Cast functions must have one argument");
+        }
+        const auto expressions = expressionList->expression();
+        if (expressions.size() != 1) {
+            throw QuerySemanticException("Cast functions must have one argument");
+        }
+        visit(expressions[0]);
+
+        const auto mdbtype_suffix = iri.substr(MDBType::TYPE_PREFIX_IRI.size());
+        // mdbtype:tensorFloat
+        if (mdbtype_suffix == MDBType::TENSOR_FLOAT_SUFFIX_IRI) {
+            current_expr = std::make_unique<ExprCast>(CastType::mdbtype_tensorFloat, std::move(current_expr));
+        }
+        // mdbtype:tensorDouble
+        else if (mdbtype_suffix == MDBType::TENSOR_DOUBLE_SUFFIX_IRI)
+        {
+            current_expr = std::make_unique<ExprCast>(
+                CastType::mdbtype_tensorDouble,
+                std::move(current_expr)
+            );
+        } else {
+            throw NotSupportedException("Unsupported mdbtype cast function: " + iri);
+        }
+        return;
+    }
+
+    // MDB Function
+    namespace MDBFn = MDBExtensions::Function;
+    if (iri.size() > MDBFn::FUNCTION_PREFIX_IRI.size() && iri.rfind(MDBFn::FUNCTION_PREFIX_IRI, 0) == 0) {
+        const auto mdbfn_suffix = iri.substr(MDBFn::FUNCTION_PREFIX_IRI.size());
+        const auto expressionList = argListCtx->expressionList();
+        if (expressionList == nullptr) {
+            // NOTE: Here non-argument functions could be handled
+            throw QuerySemanticException("Cast functions must have one argument");
+        }
+        const auto expressions = expressionList->expression();
+
+        // mdbfn:sqrt
+        if (mdbfn_suffix == MDBFn::SQRT_SUFFIX_IRI) {
+            if (expressions.size() != 1) {
+                throw QuerySemanticException(iri + " function expects 1 argument");
+            }
+            visit(expressions[0]);
+            current_expr = std::make_unique<ExprSqrt>(std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::POW_SUFFIX_IRI) {
+            if (expressions.size() != 2) {
+                throw QuerySemanticException(iri + " function expects 2 arguments");
+            }
+            visit(expressions[0]);
+            auto lhs = std::move(current_expr);
+            visit(expressions[1]);
+            current_expr = std::make_unique<ExprPow>(std::move(lhs), std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::DOT_SUFFIX_IRI) {
+            if (expressions.size() != 2) {
+                throw QuerySemanticException(iri + " function expects 2 arguments");
+            }
+            visit(expressions[0]);
+            auto lhs = std::move(current_expr);
+            visit(expressions[1]);
+            current_expr = std::make_unique<ExprDot>(std::move(lhs), std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::SUM_SUFFIX_IRI) {
+            if (expressions.size() != 1) {
+                throw QuerySemanticException(iri + " function expects 1 argument");
+            }
+            visit(expressions[0]);
+            current_expr = std::make_unique<ExprSum>(std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::COSINE_SIMILARITY_SUFFIX_IRI) {
+            if (expressions.size() != 2) {
+                throw QuerySemanticException(iri + " function expects 2 arguments");
+            }
+            visit(expressions[0]);
+            auto lhs = std::move(current_expr);
+            visit(expressions[1]);
+            current_expr = std::make_unique<ExprCosineSimilarity>(std::move(lhs), std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::EUCLIDEAN_DISTANCE_SUFFIX_IRI) {
+            if (expressions.size() != 2) {
+                throw QuerySemanticException(iri + " function expects 2 arguments");
+            }
+            visit(expressions[0]);
+            auto lhs = std::move(current_expr);
+            visit(expressions[1]);
+            current_expr = std::make_unique<ExprEuclideanDistance>(std::move(lhs), std::move(current_expr));
+        } else if (mdbfn_suffix == MDBFn::MANHATTAN_DISTANCE_SUFFIX_IRI) {
+            if (expressions.size() != 2) {
+                throw QuerySemanticException(iri + " function expects 2 arguments");
+            }
+            visit(expressions[0]);
+            auto lhs = std::move(current_expr);
+            visit(expressions[1]);
+            current_expr = std::make_unique<ExprManhattanDistance>(std::move(lhs), std::move(current_expr));
+        } else {
+            throw NotSupportedException("Unsupported mdbfn function: " + iri);
+        }
+        return;
+    }
+
+    throw NotSupportedException("Unsupported function call: " + iri);
 }

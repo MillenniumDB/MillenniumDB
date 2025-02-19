@@ -1,11 +1,16 @@
 #pragma once
 
-#include "tmp_lists_page.h"
+#include <vector>
+
+#include "graph_models/object_id.h"
+#include "storage/file_id.h"
 
 class TmpLists {
 public:
     TmpLists();
-    TmpLists(TmpFileId file_id);
+
+    TmpLists(const TmpLists&) = delete;
+
     ~TmpLists();
 
     // returns the offset

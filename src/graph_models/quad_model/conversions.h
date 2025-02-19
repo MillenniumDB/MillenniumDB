@@ -150,5 +150,34 @@ namespace MQL { namespace Conversions {
             return ObjectId::get_null();
         }
     }
+
+    // works for named nodes and strings
+    inline size_t print_string(ObjectId oid, char* out) {
+        const auto mask = oid.id & ObjectId::TYPE_MASK;
+        const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
+        switch (mask) {
+        case ObjectId::MASK_NAMED_NODE_INLINED: {
+            return Inliner::print_string_inlined<7>(out , unmasked_id);
+        }
+        case ObjectId::MASK_NAMED_NODE_EXTERN: {
+            return string_manager.print_to_buffer(out, unmasked_id);
+        }
+        case ObjectId::MASK_NAMED_NODE_TMP: {
+            return tmp_manager.print_to_buffer(out, unmasked_id);
+        }
+        case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+            return Inliner::print_string_inlined<7>(out, unmasked_id);
+        }
+        case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+            return string_manager.print_to_buffer(out, unmasked_id);
+        }
+        case ObjectId::MASK_STRING_SIMPLE_TMP: {
+            return tmp_manager.print_to_buffer(out, unmasked_id);
+        }
+        default:
+            throw std::logic_error("Unmanaged mask in MQL::Conversions::print_string: "
+                + std::to_string(mask));
+        }
+    }
 }
 } // namespace MQL::Conversions

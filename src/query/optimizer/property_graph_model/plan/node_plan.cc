@@ -3,6 +3,7 @@
 #include "query/executor/binding_iter/object_enum.h"
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
 #include "query/executor/binding_iter/union.h"
+#include "query/executor/binding_iter/single_result_binding_iter.h"
 
 using namespace GQL;
 
@@ -23,10 +24,15 @@ std::set<VarId> NodePlan::get_vars() const
     return result;
 }
 
-void NodePlan::set_input_vars(const std::set<VarId>& /* input_vars */) { }
+void NodePlan::set_input_vars(const std::set<VarId>& input_vars) {
+    set_input_var(input_vars, node_id, &node_assigned);
+}
 
 std::unique_ptr<BindingIter> NodePlan::get_binding_iter() const
 {
+    if (node_assigned) {
+        return std::make_unique<SingleResultBindingIter>();
+    }
     return std::make_unique<ObjectEnum>(node_id, ObjectId::MASK_NODE, gql_model.catalog.nodes_count);
 }
 

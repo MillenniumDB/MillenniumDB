@@ -131,7 +131,7 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
             std::move(group_saved_vars),
             std::move(group_vars_vector),
             std::move(ascending),
-            &SPARQL::Comparisons::compare
+            &OrderBy::internal_compare
         );
         op_group_by = nullptr;
     }

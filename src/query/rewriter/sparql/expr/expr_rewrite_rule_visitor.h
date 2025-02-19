@@ -108,6 +108,8 @@ public:
     void visit(ExprYear&           expr) override { visit_expr_with_one_expr<ExprYear>(expr);           }
     void visit(ExprStrLen&         expr) override { visit_expr_with_one_expr<ExprStrLen>(expr);         }
     void visit(ExprCast&           expr) override { visit_expr_with_one_expr<ExprCast>(expr);           }
+    void visit(ExprSqrt&           expr) override { visit_expr_with_one_expr<ExprSqrt>(expr);           }
+    void visit(ExprSum&            expr) override { visit_expr_with_one_expr<ExprSum>(expr);            }
 
     // lhs rhs
     void visit(ExprMultiplication& expr) override { visit_expr_with_lhs_and_rhs<ExprMultiplication>(expr); }
@@ -126,6 +128,8 @@ public:
     void visit(ExprSameTerm&       expr) override { visit_expr_with_lhs_and_rhs<ExprSameTerm>(expr);       }
     void visit(ExprStrAfter&       expr) override { visit_expr_with_lhs_and_rhs<ExprStrAfter>(expr);       }
     void visit(ExprStrBefore&      expr) override { visit_expr_with_lhs_and_rhs<ExprStrBefore>(expr);      }
+    void visit(ExprDot&            expr) override { visit_expr_with_lhs_and_rhs<ExprDot>(expr);            }
+    void visit(ExprPow&            expr) override { visit_expr_with_lhs_and_rhs<ExprPow>(expr);            }
 
     // lhs_expr and exprs
     void visit(ExprIn&    expr) override { visit_expr_with_lhs_expr_and_exprs<ExprIn>(expr);    }

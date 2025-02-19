@@ -222,8 +222,24 @@ void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
         os << "</literal>";
         break;
     }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        os << "<literal datatype=\"" << MDBExtensions::Type::TENSOR_FLOAT_IRI << "\">";
+        os << Conversions::unpack_tensor<float>(oid);
+        os << "</literal>";
+        break;
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        os << "<literal datatype=\"" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << "\">";
+        os << Conversions::unpack_tensor<double>(oid);
+        os << "</literal>";
+        break;
+    }
     case RDF_OID::Type::NULL_ID: {
-        // executor should not call print with NULL
+        // executor should not call print
         break;
     }
     }

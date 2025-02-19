@@ -106,4 +106,24 @@ public:
 
         os.write(buff, str_len);
     }
+
+    // transforms the least N significant bytes of id into a string
+    template <uint_fast32_t N>
+    static size_t print_string_inlined(char* out, uint64_t id) {
+        int suffix_shift_size = 8 * (N - 1);
+
+        size_t str_len = N;
+        for (uint_fast32_t i = 0; i < N; i++) {
+            uint8_t byte = (id >> suffix_shift_size) & 0xFF;
+            char c = byte;
+            if (c == '\0') {
+                str_len = i;
+                break;
+            }
+            out[i] = c;
+            suffix_shift_size -= 8;
+        }
+
+        return str_len;
+    }
 };

@@ -124,18 +124,23 @@ void ExecutorConstructor::visit(OpAsk& op_ask) {
     );
 }
 
-void ExecutorConstructor::visit(OpShow&)
+void ExecutorConstructor::visit(OpShow& op_show)
 {
     switch (response_type) {
     case SPARQL::ResponseType::CSV:
-        executor = std::make_unique<
-            SPARQL::ShowExecutor<SPARQL::ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
-        break;
+        if (op_show.type == OpShow::Type::TEXT_SEARCH_INDEX) {
+            executor = std::make_unique<
+                SPARQL::ShowExecutor<SPARQL::ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
+            break;
+        }
+
     case SPARQL::ResponseType::TSV:
-        executor = std::make_unique<
-            SPARQL::ShowExecutor<SPARQL::ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
-        break;
+        if (op_show.type == OpShow::Type::TEXT_SEARCH_INDEX) {
+            executor = std::make_unique<
+                SPARQL::ShowExecutor<SPARQL::ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
+            break;
+        }
     default:
-        throw NotSupportedException("SHOW response type: " + SPARQL::response_type_to_string(response_type));
+        throw std::runtime_error("Unhandled SHOW");
     }
 }

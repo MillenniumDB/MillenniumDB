@@ -551,3 +551,42 @@ void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprYear& expr) {
 void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCast& expr) {
     visit_and_replace_if_necessary(expr.expr);
 }
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCosineSimilarity& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprDot& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprEuclideanDistance& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprManhattanDistance& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprPow& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSqrt& expr)
+{
+    visit_and_replace_if_necessary(expr.expr);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSum& expr)
+{
+    visit_and_replace_if_necessary(expr.expr);
+}

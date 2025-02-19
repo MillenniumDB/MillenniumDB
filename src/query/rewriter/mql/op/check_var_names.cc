@@ -327,11 +327,8 @@ void CheckVarNamesExpr::visit(ExprRegex& expr)
 
 void CheckVarNamesExpr::visit(ExprTensorDistance& expr)
 {
-    expr.expr->accept_visitor(*this);
-
-    if (expr.expr_ref != nullptr) {
-        expr.expr_ref->accept_visitor(*this);
-    }
+    expr.lhs_expr->accept_visitor(*this);
+    expr.rhs_expr->accept_visitor(*this);
 }
 
 void CheckVarNamesExpr::visit(ExprTextSearch& expr)

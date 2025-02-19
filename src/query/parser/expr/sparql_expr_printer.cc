@@ -653,5 +653,63 @@ void ExprPrinter::visit(ExprCast& expr) {
     os << ')';
 }
 
+void ExprPrinter::visit(ExprCosineSimilarity& expr)
+{
+    os << "mdbfn:cosineSimilarity(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprDot& expr)
+{
+    os << "mdbfn:dot(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprEuclideanDistance& expr)
+{
+    os << "mdbfn:euclideanDistance(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprManhattanDistance& expr)
+{
+    os << "mdbfn:manhattanDistance(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprPow& expr)
+{
+    os << "mdbfn:pow(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprSqrt& expr)
+{
+    os << "mdbfn:sqrt(";
+    expr.expr->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(ExprSum& expr)
+{
+    os << "mdbfn:sum(";
+    expr.expr->accept_visitor(*this);
+    os << ')';
+}
 
 } // namespace SPARQL

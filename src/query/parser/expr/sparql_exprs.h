@@ -85,3 +85,11 @@
 #include "query/parser/expr/sparql/builtin_call/expr_uri.h" // IWYU pragma: export
 #include "query/parser/expr/sparql/builtin_call/expr_uuid.h" // IWYU pragma: export
 #include "query/parser/expr/sparql/builtin_call/expr_year.h" // IWYU pragma: export
+
+#include "query/parser/expr/sparql/function_call/expr_cosine_similarity.h"  // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_dot.h"                // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_euclidean_distance.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_manhattan_distance.h" // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_pow.h"                // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_sqrt.h"               // IWYU pragma: export
+#include "query/parser/expr/sparql/function_call/expr_sum.h"                // IWYU pragma: export

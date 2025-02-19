@@ -64,7 +64,8 @@ void UpdateExecutor::visit(OpInsert& op)
         }
         bool is_new_node = quad_model.nodes->insert({ node.id });
         if (is_new_node) {
-            quad_model.catalog.identifiable_nodes_count++;
+            ++quad_model.catalog.identifiable_nodes_count;
+            ++graph_update_data.new_nodes;
         }
     }
 
@@ -91,9 +92,9 @@ void UpdateExecutor::visit(OpInsert& op)
 
         bool is_new_label_record = quad_model.label_node->insert({ label.id, node.id });
         if (is_new_label_record) {
-            ++graph_update_data.new_labels;
             quad_model.node_label->insert({ node.id, label.id });
             quad_model.catalog.insert_label(label.id);
+            ++graph_update_data.new_labels;
         }
     }
 
@@ -208,6 +209,8 @@ void UpdateExecutor::visit(OpInsert& op)
             quad_model.object_key_value->insert({ node.id, key.id, value.id });
             quad_model.key_value_object->insert({ key.id, value.id, node.id });
 
+            ++graph_update_data.overwritten_properties;
+
             if (!predicate2names.empty()) {
                 const auto predicate_str = MQL::Conversions::unpack_string(key);
                 auto it = predicate2names.find(predicate_str);
@@ -224,6 +227,8 @@ void UpdateExecutor::visit(OpInsert& op)
             quad_model.key_value_object->insert({ key.id, value.id, node.id });
             quad_model.catalog.insert_property(key.id);
 
+            ++graph_update_data.new_properties;
+
             if (!predicate2names.empty()) {
                 const auto predicate_str = MQL::Conversions::unpack_string(key);
                 auto it = predicate2names.find(predicate_str);
@@ -234,8 +239,6 @@ void UpdateExecutor::visit(OpInsert& op)
                 }
             }
         }
-
-        ++graph_update_data.new_properties;
     }
 
     // Execute text search index updates, starting with deletes
@@ -260,7 +263,7 @@ void UpdateExecutor::visit(OpInsert& op)
         tsi_update.text_search_index_name = name;
         tsi_update.removed_elements = removed_elements;
         tsi_update.removed_tokens = removed_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     }
 
     for (const auto& [name, inserts] : text_search_index_name2inserts) {
@@ -282,7 +285,7 @@ void UpdateExecutor::visit(OpInsert& op)
         tsi_update.text_search_index_name = name;
         tsi_update.inserted_elements = inserted_elements;
         tsi_update.inserted_tokens = inserted_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     }
 }
 
@@ -300,22 +303,16 @@ void UpdateExecutor::visit(OpInsertTensors& op)
         && "Tensors must not come with different sizes at this point!"
     );
 
+    auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
     TensorStore* tensor_store;
-    const bool found = tensor_store_manager.get_tensor_store(op.tensor_store_name, &tensor_store);
-    if (!found) {
-        throw QueryExecutionException("TensorStore \"" + op.tensor_store_name + "\" does not exist");
-    }
+    [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(
+        op.tensor_store_name,
+        &tensor_store
+    );
+    assert(found && "TensorStore not found");
 
-    const auto inserted_tensors_dimension = std::get<1>(op.inserts[0]).size();
-    if (tensor_store->tensors_dim() != std::get<1>(op.inserts[0]).size()) {
-        throw QueryExecutionException(
-            "TensorStore \"" + op.tensor_store_name + "\" has dimension "
-            + std::to_string(tensor_store->tensors_dim()) + " but the inserted tensors has dimension "
-            + std::to_string(inserted_tensors_dimension)
-        );
-    }
-
-    tensor_update_data.tensor_store_name = op.tensor_store_name;
+    TensorStoreUpdateData ts_update {};
+    ts_update.tensor_store_name = op.tensor_store_name;
 
     for (const auto& insert : op.inserts) {
         // Insert node if it does not exist
@@ -332,31 +329,38 @@ void UpdateExecutor::visit(OpInsertTensors& op)
         // Insert into tensor store
         const bool new_key = tensor_store->insert(node, std::get<1>(insert).data());
         if (new_key) {
-            ++tensor_update_data.new_entries;
+            ++ts_update.inserted_tensors;
         } else {
-            ++tensor_update_data.overwritten_entries;
+            ++ts_update.overwritten_tensors;
         }
     }
+
+    insert_tensor_store_update_data(std::move(ts_update));
 }
 
 void UpdateExecutor::visit(OpDeleteTensors& op)
 {
     assert(!op.deletes.empty());
 
+    auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
     TensorStore* tensor_store;
-    const bool found = tensor_store_manager.get_tensor_store(op.tensor_store_name, &tensor_store);
-    if (!found) {
-        throw QueryExecutionException("TensorStore \"" + op.tensor_store_name + "\" does not exist");
-    }
+    [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(
+        op.tensor_store_name,
+        &tensor_store
+    );
+    assert(found && "TensorStore not found");
 
-    tensor_update_data.tensor_store_name = op.tensor_store_name;
+    TensorStoreUpdateData ts_update {};
+    ts_update.tensor_store_name = op.tensor_store_name;
 
     for (const auto& object_id : op.deletes) {
         const bool removed = tensor_store->remove(object_id);
         if (removed) {
-            ++tensor_update_data.deleted_entries;
+            ++ts_update.removed_tensors;
         }
     }
+
+    insert_tensor_store_update_data(std::move(ts_update));
 }
 
 void UpdateExecutor::visit(OpCreateTensorStore& op)
@@ -364,10 +368,13 @@ void UpdateExecutor::visit(OpCreateTensorStore& op)
     assert(op.tensors_dim > 0);
 
     try {
+        auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
         tensor_store_manager.create_tensor_store(op.tensor_store_name, op.tensors_dim);
 
-        tensor_update_data.tensor_store_name = op.tensor_store_name;
-        tensor_update_data.created = true;
+        TensorStoreUpdateData ts_update {};
+        ts_update.tensor_store_name = op.tensor_store_name;
+        ts_update.created = true;
+        insert_tensor_store_update_data(std::move(ts_update));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
@@ -387,9 +394,10 @@ void UpdateExecutor::visit(OpCreateTextSearchIndex& op)
 
         TextSearchIndexUpdateData tsi_update;
         tsi_update.text_search_index_name = op.text_search_index_name;
+        tsi_update.created = true;
         tsi_update.inserted_elements = inserted_elements;
         tsi_update.inserted_tokens = inserted_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
@@ -399,29 +407,55 @@ void UpdateExecutor::visit(OpCreateTextSearchIndex& op)
 void UpdateExecutor::print_stats(std::ostream& os)
 {
     bool has_changes = false;
+
     if (!graph_update_data.empty()) {
-        // The graph was updated
-        os << graph_update_data;
+        os << "Graph updates:\n";
+        os << "  " << graph_update_data << '\n';
         has_changes = true;
     }
 
-    if (!tensor_update_data.empty()) {
-        // A TensorStore was updated
-        os << tensor_update_data;
-        has_changes = true;
-    }
-
-    if (!text_search_index_updates.empty()) {
-        // A TextSearchIndex was updated
+    if (!name2text_search_index_update_data.empty()) {
         os << "TextSearchIndex updates:\n";
-        for (const auto& text_search_update_data : text_search_index_updates) {
-            os << text_search_update_data;
-            os << '\n';
+        for (const auto& [_, tsi_update] : name2text_search_index_update_data) {
+            os << "  " << tsi_update << '\n';
+        }
+        has_changes = true;
+    }
+
+    if (!name2tensor_store_update_data.empty()) {
+        os << "TensorStore updates:\n";
+        for (const auto& [_, ts_update] : name2tensor_store_update_data) {
+            os << "  " << ts_update << '\n';
         }
         has_changes = true;
     }
 
     if (!has_changes) {
         os << "No modifications were performed\n";
+    }
+}
+
+void UpdateExecutor::insert_text_search_index_update_data(TextSearchIndexUpdateData&& data)
+{
+    auto it = name2text_search_index_update_data.find(data.text_search_index_name);
+    if (it == name2text_search_index_update_data.end()) {
+        name2text_search_index_update_data.emplace(data.text_search_index_name, std::move(data));
+    } else {
+        it->second.inserted_elements += data.inserted_elements;
+        it->second.inserted_tokens += data.inserted_tokens;
+        it->second.removed_elements += data.removed_elements;
+        it->second.removed_tokens += data.removed_tokens;
+    }
+}
+
+void UpdateExecutor::insert_tensor_store_update_data(TensorStoreUpdateData&& data)
+{
+    auto it = name2tensor_store_update_data.find(data.tensor_store_name);
+    if (it == name2tensor_store_update_data.end()) {
+        name2tensor_store_update_data.emplace(data.tensor_store_name, std::move(data));
+    } else {
+        it->second.inserted_tensors += data.inserted_tensors;
+        it->second.overwritten_tensors += data.overwritten_tensors;
+        it->second.removed_tensors += data.removed_tensors;
     }
 }

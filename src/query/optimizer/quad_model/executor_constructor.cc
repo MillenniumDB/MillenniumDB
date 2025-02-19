@@ -118,22 +118,31 @@ void ExecutorConstructor::visit(OpReturn& op_return) {
     }
 }
 
-void ExecutorConstructor::visit(OpShow& op_show) {
-    if (ret == MQL::ReturnType::CSV) {
+void ExecutorConstructor::visit(OpShow& op_show)
+{
+    switch (ret) {
+    case MQL::ReturnType::CSV:
         if (op_show.type == MQL::OpShow::Type::TENSOR_STORE) {
-            executor = std::make_unique<MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TENSOR_STORE>>();
+            executor = std::make_unique<
+                MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TENSOR_STORE>>();
+            break;
         } else if (op_show.type == MQL::OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
-        } else {
-            throw std::runtime_error("Invalid type");
+            executor = std::make_unique<
+                MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
+            break;
         }
-    } else {
+    case MQL::ReturnType::TSV:
         if (op_show.type == MQL::OpShow::Type::TENSOR_STORE) {
-            executor = std::make_unique<MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TENSOR_STORE>>();
+            executor = std::make_unique<
+                MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TENSOR_STORE>>();
+            break;
+
         } else if (op_show.type == MQL::OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
-        } else {
-            throw std::runtime_error("Invalid type");
+            executor = std::make_unique<
+                MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
+            break;
         }
+    default:
+        throw std::runtime_error("Unhandled SHOW");
     }
 }

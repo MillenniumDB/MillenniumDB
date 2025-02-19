@@ -74,7 +74,7 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        return { id };
     }
 
     std::set<VarId> get_fixable_vars() const override

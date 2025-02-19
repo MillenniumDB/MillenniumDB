@@ -8,7 +8,6 @@
 #include "graph_models/gql/gql_model.h"
 #include "graph_models/gql/gql_object_id.h"
 #include "graph_models/inliner.h"
-#include "query/query_context.h"
 #include "system/path_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
@@ -70,6 +69,25 @@ void Conversions::print_string(ObjectId oid, std::ostream& os)
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(os, external_id);
         break;
+    }
+    default:
+        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
+    }
+}
+
+size_t Conversions::print_string(ObjectId oid, char* out)
+{
+    switch (oid.get_type()) {
+    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+        return Inliner::print_string_inlined<7>(out, oid.id);
+    }
+    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return string_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return tmp_manager.print_to_buffer(out, external_id);
     }
     default:
         throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
@@ -206,7 +224,7 @@ ObjectId Conversions::pack_edge_property(const std::string& property)
 
 ObjectId Conversions::pack_list(const std::vector<ObjectId>& list)
 {
-    TmpLists& tmp_list = get_query_ctx().get_tmp_list();
+    TmpLists& tmp_list = tmp_manager.get_tmp_list();
     uint32_t file_id = tmp_list.get_file_id();
     uint64_t list_offset = tmp_list.insert(list);
     return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
@@ -214,7 +232,7 @@ ObjectId Conversions::pack_list(const std::vector<ObjectId>& list)
 
 void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
 {
-    auto& lists = get_query_ctx().get_tmp_list();
+    auto& lists = tmp_manager.get_tmp_list();
     assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
 
     lists.get(out, list_id.id & LIST_OFFSET_MASK);
@@ -254,7 +272,16 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         break;
     }
     case GQL_OID::Type::LIST: {
-        os << "list:" << std::hex << oid.id;
+        std::vector<ObjectId> out;
+        Conversions::unpack_list(oid, out);
+        os << "[";
+        for (auto it = out.begin(); it != out.end(); ++it) {
+            if (it != out.begin()) {
+                os << ",";
+            }
+            debug_print(os, *it);
+        }
+        os << "]";
         break;
     }
     case GQL_OID::Type::STRING_SIMPLE_INLINE:

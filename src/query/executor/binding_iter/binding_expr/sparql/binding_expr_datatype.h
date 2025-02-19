@@ -6,6 +6,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 
 namespace SPARQL {
 class BindingExprDatatype : public BindingExpr {
@@ -54,6 +55,10 @@ public:
         }
         case RDF_OID::GenericSubType::BOOL:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#boolean");
+        case RDF_OID::GenericSubType::TENSOR_FLOAT:
+            return Conversions::pack_iri(MDBExtensions::Type::TENSOR_FLOAT_IRI);
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE:
+            return Conversions::pack_iri(MDBExtensions::Type::TENSOR_DOUBLE_IRI);
         default:
             return ObjectId::get_null();
         }

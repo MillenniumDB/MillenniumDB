@@ -339,7 +339,8 @@ int main(int argc, char* argv[]) {
 
     System system (
         db_directory,
-        StringManager::DEFAULT_LOAD_STR,
+        StringManager::DEFAULT_STATIC_BUFFER,
+        StringManager::DEFAULT_DYNAMIC_BUFFER,
         BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE,
         BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE,
         BufferManager::DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE,

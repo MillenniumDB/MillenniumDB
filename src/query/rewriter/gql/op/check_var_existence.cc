@@ -158,9 +158,7 @@ void CheckVarExistence::visit(GQL::OpBasicGraphPattern& op_basic_graph_pattern)
 
 void CheckVarExistence::visit(GQL::OpProperty& op_property)
 {
-    for (auto& property : op_property.properties) {
-        variables.insert(property.object);
-    }
+    variables.insert(op_property.property.object);
 }
 
 void CheckVarExistence::visit(OpNode& op_node)

@@ -99,7 +99,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value)
         dir_page.make_dirty();
     }
 
-    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, target_page);
+    UPage& page = buffer_manager.get_or_append_unversioned_page(garbage_file_id, target_page);
 
     // Write new value:
     unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());

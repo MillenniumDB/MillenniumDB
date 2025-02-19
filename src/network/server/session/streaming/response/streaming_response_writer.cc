@@ -63,9 +63,7 @@ void StreamingResponseWriter::write_records_success(uint64_t result_count,
 void StreamingResponseWriter::write_update_success(
     uint64_t parser_duration_ms,
     uint64_t optimizer_duration_ms,
-    uint64_t execution_duration_ms,
-    const MQL::UpdateExecutor::GraphUpdateData& graph_update_data,
-    const MQL::UpdateExecutor::TensorUpdateData& tensor_update_data
+    uint64_t execution_duration_ms
 )
 {
     write_map_header(2UL);
@@ -73,7 +71,7 @@ void StreamingResponseWriter::write_update_success(
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
     write_string("payload", Protocol::DataType::STRING);
-    write_map_header(6UL);
+    write_map_header(4UL);
 
     write_string("update", Protocol::DataType::STRING);
     write_bool(true);
@@ -84,35 +82,7 @@ void StreamingResponseWriter::write_update_success(
     write_string("executionDurationMs", Protocol::DataType::STRING);
     write_uint64(execution_duration_ms);
 
-    write_string("graphUpdateData", Protocol::DataType::STRING);
-    if (graph_update_data.empty()) {
-        write_null();
-    } else {
-        write_map_header(3UL);
-        write_string("newEdges", Protocol::DataType::STRING);
-        write_uint64(graph_update_data.new_edges);
-        write_string("newLabels", Protocol::DataType::STRING);
-        write_uint64(graph_update_data.new_labels);
-        write_string("newProperties", Protocol::DataType::STRING);
-        write_uint64(graph_update_data.new_properties);
-    }
-
-    write_string("tensorUpdateData", Protocol::DataType::STRING);
-    if (tensor_update_data.empty()) {
-        write_null();
-    } else {
-        write_map_header(5UL);
-        write_string("tensorStoreName", Protocol::DataType::STRING);
-        write_string(tensor_update_data.tensor_store_name, Protocol::DataType::STRING);
-        write_string("created", Protocol::DataType::STRING);
-        write_bool(tensor_update_data.created);
-        write_string("newEntries", Protocol::DataType::STRING);
-        write_uint64(tensor_update_data.new_entries);
-        write_string("overwrittenEntries", Protocol::DataType::STRING);
-        write_uint64(tensor_update_data.overwritten_entries);
-        write_string("deletedEntries", Protocol::DataType::STRING);
-        write_uint64(tensor_update_data.deleted_entries);
-    }
+    // TODO: Send update data
 
     seal();
 }
@@ -355,6 +325,23 @@ std::string StreamingResponseWriter::encode_datetime(DateTime datetime) const {
     return res;
 }
 
+template<typename T>
+std::string StreamingResponseWriter::encode_tensor(const Tensor<T>& tensor) const
+{
+    std::string res;
+    res += static_cast<char>(Protocol::DataType::LIST);
+    res += encode_size(tensor.size());
+    for (std::size_t i = 0; i < tensor.size(); ++i) {
+        if constexpr (std::is_same_v<T, float>) {
+            res += encode_float(tensor[i]);
+        } else if constexpr (std::is_same_v<T, double>) {
+            res += encode_double(tensor[i]);
+        } else {
+            throw std::runtime_error("Unhandled tensor type");
+        }
+    }
+    return res;
+}
 
 void StreamingResponseWriter::seal() {
     response_buffer.seal();
@@ -389,3 +376,6 @@ void StreamingResponseWriter::write_size(uint_fast32_t value) {
     bytes[3] = static_cast<uint8_t>(value & 0xFF);
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
+
+template std::string StreamingResponseWriter::encode_tensor<float>(const Tensor<float>& tensor) const;
+template std::string StreamingResponseWriter::encode_tensor<double>(const Tensor<double>& tensor) const;

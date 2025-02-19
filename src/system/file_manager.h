@@ -59,6 +59,29 @@ public:
         return db_folder + "/" + filename;
     }
 
+    // Returns whether the filename is valid before attemping to create a file
+    // Only alphanumeric characters, and ' ', '_', '-' are allowed
+    inline bool is_filename_valid(const std::string& filename) const noexcept
+    {
+        if (filename.empty()) {
+            // Empty filename
+            return false;
+        }
+
+        if (filename == "." || filename == "..") {
+            // Reserved filenames
+            return false;
+        }
+
+        for (const auto ch : filename ) {
+            if (!isalnum(static_cast<unsigned char>(ch)) && ch != '_' && ch != '-' && ch != ' ') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Create a file and initialize it with a zeroed page
     void init_file(const std::string& file_name) const;
 

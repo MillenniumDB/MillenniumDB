@@ -48,7 +48,20 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        if (op_list.empty()) {
+            return {};
+        }
+
+        std::set<VarId> res = op_list.front()->get_safe_vars();
+        std::set<VarId> outer;
+
+        for (auto& op : op_list) {
+            auto op_safe_vars = op->get_safe_vars();
+            set_intersection(res.begin(), res.end(), op_safe_vars.begin(), op_safe_vars.end(),
+                 std::inserter(res, res.begin()));
+        }
+
+        return res;
     }
 
     std::set<VarId> get_fixable_vars() const override

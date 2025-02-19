@@ -40,29 +40,25 @@ int main() {
     strings_file.read(reinterpret_cast<char*>(&last_block_offset), 8);
 
     auto buffer_size = 2ULL * 1024 * 1024 * 1024;
-    char* buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(
-                                    UPage::SIZE,
-                                    buffer_size));
+    char* buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
 
-    char* pending_string_buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(
-                                    UPage::SIZE,
-                                    StringManager::STRING_BLOCK_SIZE));
+    char* pending_string_buffer = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE));
 
     {
         StringsHashBulkOnDiskImport strings_hash("test_str_hash/str_hash",
                                                 buffer,
                                                 buffer_size);
-        uint64_t current_pos = StringManager::METADATA_SIZE;
+        uint64_t current_pos = 0;
 
-        assert(string_file_size % StringManager::STRING_BLOCK_SIZE == 0);
+        assert(string_file_size % StringManager::BLOCK_SIZE == 0);
 
-        auto string_blocks = string_file_size / StringManager::STRING_BLOCK_SIZE;
-        auto last_str_pos = (string_blocks-1) * StringManager::STRING_BLOCK_SIZE + last_block_offset;
+        auto string_blocks = string_file_size / StringManager::BLOCK_SIZE;
+        auto last_str_pos = (string_blocks-1) * StringManager::BLOCK_SIZE + last_block_offset;
 
         // read all strings one by one and add them to the StringsHash
         while (current_pos < last_str_pos) {
-            size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                            - (current_pos % StringManager::STRING_BLOCK_SIZE);
+            size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                            - (current_pos % StringManager::BLOCK_SIZE);
 
             if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
                 current_pos += remaining_in_block;

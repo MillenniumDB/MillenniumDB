@@ -9,9 +9,6 @@ namespace Import {
 
 class ExternalString {
 public:
-    // we suppose no string will need more than these bytes to encode its length
-    static constexpr size_t MAX_LEN_BYTES = 5;
-
     static char* strings;
 
     uint64_t offset;

@@ -34,8 +34,14 @@ void StreamingExecutorConstructor::visit(OpAsk& op_ask) {
 }
 
 
-void StreamingExecutorConstructor::visit(OpShow&) {
-    executor = std::make_unique<ShowStreamingExecutor<OpShow::Type::TEXT_SEARCH_INDEX>>();
+void StreamingExecutorConstructor::visit(OpShow& op_show) {
+    switch (op_show.type) {
+    case OpShow::Type::TEXT_SEARCH_INDEX:
+        executor = std::make_unique<ShowStreamingExecutor<OpShow::Type::TEXT_SEARCH_INDEX>>();
+        break;
+    default:
+        throw NotSupportedException("SPARQL::StreamingExecutorConstructor::visit(OpShow&): Unhandled SHOW");
+    }
 }
 
 void StreamingExecutorConstructor::visit(OpDescribe&) {

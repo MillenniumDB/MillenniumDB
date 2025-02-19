@@ -47,6 +47,7 @@ public:
     void visit(OpGraphPattern&) override;
     void visit(OpGraphPatternList&) override;
     void visit(OpBasicGraphPattern&) override;
+    void visit(OpLinearPattern&) override;
     void visit(OpRepetition&) override;
     void visit(OpReturn&) override;
     void visit(OpOrderBy&) override;

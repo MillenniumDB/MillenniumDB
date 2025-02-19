@@ -7,11 +7,12 @@
 
 #include "storage/catalog/catalog.h"
 #include "storage/index/text_search/text_search_index_manager.h"
+#include "storage/index/tensor_store/tensor_store_manager.h"
 
 class QuadCatalog : public Catalog {
 public:
     static constexpr uint64_t MODEL_ID = 0;
-    static constexpr uint64_t VERSION = 4;
+    static constexpr uint64_t VERSION = 5;
 
     QuadCatalog(const std::string& filename);
 
@@ -54,4 +55,6 @@ public:
     boost::unordered_map<uint64_t, uint64_t> type2equal_to_type_count;
 
     TextSearch::TextSearchIndexManager text_search_index_manager;
+
+    TensorStoreManager tensor_store_manager;
 };

@@ -1,103 +1,90 @@
-// TODO: Check locks
 #include "tensor_store_manager.h"
 
-#include "misc/logger.h"
+#include <mutex>
+#include <filesystem>
+
 #include "query/exceptions.h"
-#include "tensor_store.h"
+#include "system/file_manager.h"
 
 namespace fs = std::filesystem;
 
-static typename std::aligned_storage<sizeof(TensorStoreManager), alignof(TensorStoreManager)>::type
-    tensor_store_manager_buf;
-TensorStoreManager& tensor_store_manager = reinterpret_cast<TensorStoreManager&>(tensor_store_manager_buf);
+// Set default tensor buffer size. It will be overriden at src/system/system.cc
+uint64_t TensorStoreManager::tensor_buffer_size_bytes = DEFAULT_TENSOR_BUFFER_SIZE;
 
-TensorStoreManager::~TensorStoreManager() = default;
-
-void TensorStoreManager::init(const std::string& db_directory, uint64_t vtensor_frame_pool_size_in_bytes)
+void TensorStoreManager::init()
 {
-    new (&tensor_store_manager) TensorStoreManager(db_directory, vtensor_frame_pool_size_in_bytes);
-}
-
-TensorStoreManager::TensorStoreManager(
-    const std::string& db_directory_,
-    uint64_t vtensor_frame_pool_size_in_bytes_
-) :
-    db_directory { db_directory_ },
-    vtensor_frame_pool_size_in_bytes { vtensor_frame_pool_size_in_bytes_ }
-{
-    const auto tensor_stores_path = db_directory / TENSOR_STORES_DIR;
+    const auto tensor_stores_path = file_manager.get_file_path(TENSOR_STORES_DIR);
     if (!fs::is_directory(tensor_stores_path)) {
-        // Tensor stores directory did not exist, nothing to load
+        // Tensor stores directory did not exist
         fs::create_directories(tensor_stores_path);
-        return;
-    }
-
-    auto it = fs::directory_iterator(tensor_stores_path);
-    for (const auto& entry : it) {
-        if (!entry.is_directory()) {
-            // Ignore non-directories
-            continue;
-        }
-
-        const auto tensor_store_name = entry.path().filename().string();
-        try {
-            auto tensor_store = TensorStore::load(
-                db_directory,
-                tensor_store_name,
-                vtensor_frame_pool_size_in_bytes
-            );
-            name2tensor_store[tensor_store_name] = std::move(tensor_store);
-
-            logger(Category::Info) << "Loaded TensorStore \"" << tensor_store_name
-                                   << "\": " << *name2tensor_store[tensor_store_name];
-        } catch (const std::exception& e) {
-            logger(Category::Error) << "Load failed for TensorStore \"" << tensor_store_name
-                                   << "\": " << e.what();
-        } catch (...) {
-            logger(Category::Error) << "Load failed for TensorStore \"" << tensor_store_name
-                                   << "\": Unknown error";
-        }
     }
 }
 
-bool TensorStoreManager::get_tensor_store(const std::string& tensor_store_name, TensorStore** tensor_store) const
+void TensorStoreManager::load_tensor_store(const std::string& name, const TensorStoreMetadata& metadata)
+{
+    try {
+        auto tensor_store = TensorStore::load(name, TensorStoreManager::tensor_buffer_size_bytes);
+        name2tensor_store[name] = std::move(tensor_store);
+        name2metadata[name] = metadata;
+    } catch (const std::exception& e) {
+        throw std::runtime_error("Failed to load TensorStore \"" + name + "\": " + e.what());
+    } catch (...) {
+        throw std::runtime_error("Failed to load TensorStore \"" + name + "\": Unknown error");
+    }
+}
+
+bool TensorStoreManager::get_tensor_store(const std::string& tensor_store_name, TensorStore** tensor_store)
+
 {
     std::shared_lock lck(name2tensor_store_mutex);
 
     auto it = name2tensor_store.find(tensor_store_name);
     if (it == name2tensor_store.end()) {
-        // Tensor store not found
         return false;
     }
 
-    *tensor_store = it->second.get();
+    // Useful when just want to check if the index exists
+    if (tensor_store != nullptr) {
+        *tensor_store = it->second.get();
+    }
+
     return true;
 }
 
 void TensorStoreManager::create_tensor_store(const std::string& tensor_store_name, uint64_t tensors_dim)
 {
-    {
-        std::shared_lock lck(name2tensor_store_mutex);
-        auto it = name2tensor_store.find(tensor_store_name);
-        if (it != name2tensor_store.end()) {
-            throw QuerySemanticException("TensorStore \"" + tensor_store_name + "\" already exists");
-        }
-    }
-
     try {
-        // TODO: Implement create-and-load?
-        TensorStore::create(db_directory, tensor_store_name, tensors_dim);
-        auto tensor_store = TensorStore::load(
-            db_directory,
+        auto tensor_store = TensorStore::create(
             tensor_store_name,
-            vtensor_frame_pool_size_in_bytes
+            tensors_dim,
+            TensorStoreManager::tensor_buffer_size_bytes
         );
+
         std::unique_lock lck(name2tensor_store_mutex);
         name2tensor_store[tensor_store_name] = std::move(tensor_store);
+        name2metadata[tensor_store_name] = { tensors_dim };
+
+        has_changes_ = true;
     } catch (const std::exception& e) {
-        throw QueryExecutionException("Failed to create TensorStore \"" + tensor_store_name + "\": " + e.what());
+        throw QueryExecutionException(
+            "Failed to create TensorStore \"" + tensor_store_name + "\": " + e.what()
+        );
     } catch (...) {
-        throw QueryExecutionException("Failed to create TensorStore \"" + tensor_store_name + "\": Unknown error");
+        throw QueryExecutionException(
+            "Failed to create TensorStore \"" + tensor_store_name + "\": Unknown error"
+        );
     }
 }
 
+// std::vector<float> get_tensor(uint64_t external_id) {
+//     const uint16_t tensor_store_id = 0;
+//     const uint64_t tensor_index = 0;
+
+//     auto it = tensor_store_id2tensor_store.find(tensor_store_id);
+//     if (it == tensor_store_id2tensor_store.end()) {
+//         // TODO: error
+//     }
+
+//     const TensorId()
+//     it->second->get()
+// }

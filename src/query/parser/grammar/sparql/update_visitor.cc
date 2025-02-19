@@ -4,6 +4,8 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "misc/unicode_escape.h"
 #include "query/parser/op/sparql/ops.h"
+#include "system/file_manager.h"
+#include "mdb_extensions.h"
 
 using namespace SPARQL;
 using antlrcpp::Any;
@@ -501,6 +503,23 @@ Any UpdateVisitor::visitNil(SUP::NilContext*)
 Any UpdateVisitor::visitCreateTextIndex(SUP::CreateTextIndexContext* ctx)
 {
     auto text_search_index_name = stringCtxToString(ctx->string());
+
+    // Check if text index existed before
+    if (rdf_model.catalog.text_search_index_manager.get_text_search_index(text_search_index_name, nullptr)) {
+        throw QueryException("TextSearchIndex \"" + text_search_index_name + "\" already exists");
+    }
+
+    // Check if text index is being created twice
+    for (const auto& op : op_update->updates) {
+        if (auto op_create_text_index = dynamic_cast<OpCreateTextSearchIndex*>(op.get())) {
+            if (op_create_text_index->text_search_index_name == text_search_index_name) {
+                throw QueryException(
+                    "TextSearchIndex \"" + text_search_index_name + "\" is being created twice"
+                );
+            }
+        }
+    }
+
     auto iri_str = iriCtxToString(ctx->iri());
 
     // Default values
@@ -532,9 +551,12 @@ Any UpdateVisitor::visitCreateTextIndex(SUP::CreateTextIndexContext* ctx)
         }
     }
 
-    op_update->updates.emplace_back(
-        std::make_unique<OpCreateTextSearchIndex>(std::move(text_search_index_name), std::move(iri_str), normalize_type, tokenize_type)
-    );
+    op_update->updates.emplace_back(std::make_unique<OpCreateTextSearchIndex>(
+        std::move(text_search_index_name),
+        std::move(iri_str),
+        normalize_type,
+        tokenize_type
+    ));
 
     return 0;
 }

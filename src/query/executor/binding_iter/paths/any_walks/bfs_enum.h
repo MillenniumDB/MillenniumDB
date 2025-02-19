@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <queue>
-#include <type_traits>
 
 #include <boost/unordered/unordered_node_set.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>

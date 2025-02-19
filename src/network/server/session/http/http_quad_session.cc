@@ -278,7 +278,7 @@ void HttpQuadSession::execute_update(
         return;
     }
 
-    os << "HTTP/1.1 204 No Content\r\n";
+    os << "HTTP/1.1 204 No Content\r\n\r\n";
     logger(Category::Info) << "Parser duration: " << parser_duration.count() << "ms\n"
                            << "Execution duration:" << execution_duration.count() << "ms";
 }

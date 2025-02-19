@@ -4,7 +4,6 @@
 
 #include "graph_models/exceptions.h"
 #include "storage/index/text_search/rdf.h"
-#include "storage/index/text_search/text_search_index_manager.h"
 
 using namespace std;
 
@@ -52,8 +51,8 @@ RdfCatalog::RdfCatalog(const std::string& filename) :
         TextSearch::RDF::remove_single,
         TextSearch::RDF::oid_to_string
     );
-    const auto name2metadata = read_uint64();
-    for (uint_fast32_t i = 0; i < name2metadata; i++) {
+    const auto text_index_name2metadata_size = read_uint64();
+    for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
         const auto name = read_string();
         TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
         metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
@@ -109,9 +108,9 @@ void RdfCatalog::save()
 
     write_map(predicate2total_count);
 
-    const auto& name2metadata = text_search_index_manager.get_name2metadata();
-    write_uint64(name2metadata.size());
-    for (const auto& [name, metadata] : name2metadata) {
+    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    write_uint64(text_index_name2metadata.size());
+    for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
         write_uint8(static_cast<uint8_t>(metadata.normalization_type));
         write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
@@ -148,6 +147,13 @@ void RdfCatalog::print(std::ostream& os)
         break;
     }
 
+    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    if (!text_index_name2metadata.empty()) {
+        os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : text_index_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
     os << "-------------------------------------\n";
 }
 

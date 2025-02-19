@@ -81,7 +81,7 @@ uint64_t Table::insert(std::vector<uint64_t> values)
         if (current_insert_page->get_page_number() != page_number) {
             // Another page is currently loaded
             buffer_manager.unpin(*current_insert_page);
-            current_insert_page = &buffer_manager.get_unversioned_page(file_id, page_number);
+            current_insert_page = &buffer_manager.get_or_append_unversioned_page(file_id, page_number);
         }
 
         std::memcpy(
@@ -109,7 +109,7 @@ uint64_t Table::insert(std::vector<uint64_t> values)
     if (current_insert_page->get_page_number() != page_number) {
         // Another page is currently loaded
         buffer_manager.unpin(*current_insert_page);
-        current_insert_page = &buffer_manager.get_unversioned_page(file_id, page_number);
+        current_insert_page = &buffer_manager.get_or_append_unversioned_page(file_id, page_number);
     }
 
     std::memcpy(current_insert_page->get_bytes() + page_offset, values.data(), row_size);

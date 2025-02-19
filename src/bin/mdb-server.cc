@@ -48,7 +48,8 @@ int main(int argc, char* argv[])
     auto max_threads = std::thread::hardware_concurrency();
 
     uint64_t limit = 0;
-    uint64_t load_strings = StringManager::DEFAULT_LOAD_STR;
+    uint64_t strings_static_buffer = StringManager::DEFAULT_STATIC_BUFFER;
+    uint64_t strings_dynamic_buffer = StringManager::DEFAULT_DYNAMIC_BUFFER;
     uint64_t versioned_pages_buffer = BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE;
     uint64_t private_pages_buffer = BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE;
     uint64_t unversioned_pages_buffer = BufferManager::DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE;
@@ -100,9 +101,15 @@ int main(int argc, char* argv[])
         ->type_name("<number>")
         ->check(CLI::Range(1, 128).description(""));
 
-    app.add_option("--load-strings", load_strings)
+    app.add_option("--strings-static", strings_static_buffer)
         ->description("Total amount of strings to pre-load\nAllows units such as MB and GB")
-        ->option_text("<bytes> [2GB]")
+        ->option_text("<bytes> [1GB]")
+        ->transform(CLI::AsSizeValue(false))
+        ->check(CLI::Range(1024ULL * 1024, 1024ULL * 1024 * 1024 * 1024));
+
+    app.add_option("--strings-dynamic", strings_dynamic_buffer)
+        ->description("")
+        ->option_text("<bytes> [1GB]")
         ->transform(CLI::AsSizeValue(false))
         ->check(CLI::Range(1024ULL * 1024, 1024ULL * 1024 * 1024 * 1024));
 
@@ -176,7 +183,8 @@ int main(int argc, char* argv[])
 
     System system(
         db_directory,
-        load_strings,
+        strings_static_buffer,
+        strings_dynamic_buffer,
         versioned_pages_buffer,
         private_pages_buffer,
         unversioned_pages_buffer,

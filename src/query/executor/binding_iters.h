@@ -17,8 +17,12 @@
 #include "query/executor/binding_iter/no_free_variable_minus.h"     // IWYU pragma: keep
 #include "query/executor/binding_iter/object_enum.h"                // IWYU pragma: keep
 #include "query/executor/binding_iter/order_by.h"                   // IWYU pragma: keep
+#include "query/executor/binding_iter/sequence.h"                   // IWYU pragma: keep
+#include "query/executor/binding_iter/set_repeated_variable.h"      // IWYU pragma: keep
 #include "query/executor/binding_iter/set_constants.h"              // IWYU pragma: keep
+#include "query/executor/binding_iter/set_end_boundary_variable.h"  // IWYU pragma: keep
 #include "query/executor/binding_iter/set_labels.h"                 // IWYU pragma: keep
+#include "query/executor/binding_iter/set_start_boundary_variable.h"// IWYU pragma: keep
 #include "query/executor/binding_iter/single_result_binding_iter.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/slice.h"                      // IWYU pragma: keep
 #include "query/executor/binding_iter/sparql_service.h"             // IWYU pragma: keep

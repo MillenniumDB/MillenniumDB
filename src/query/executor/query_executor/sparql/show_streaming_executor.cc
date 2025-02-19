@@ -73,11 +73,7 @@ void ShowStreamingExecutor<type>::analyze(std::ostream& os, bool /*print_stats*/
 {
     os << std::string(indent, ' ');
     os << "ShowStreamingExecutor(";
-    if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
-        os << "TEXT_SEARCH_INDEX";
-    } else {
-        throw std::runtime_error("Unhandled Show::Type");
-    }
+    os << OpShow::get_type_string(type);
     os << ")\n";
 }
 

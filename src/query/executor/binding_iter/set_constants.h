@@ -7,7 +7,7 @@
 
 class SetConstants : public BindingIter {
 public:
-    SetConstants(std::unique_ptr<BindingIter>&& iter, std::vector<std::pair<VarId, ObjectId>> var2oid) :
+    SetConstants(std::unique_ptr<BindingIter>&& iter, std::set<std::pair<VarId, ObjectId>> var2oid) :
         child_iter(std::move(iter)),
         var2oid(var2oid)
     { }
@@ -20,7 +20,7 @@ public:
 
     std::unique_ptr<BindingIter> child_iter;
 
-    std::vector<std::pair<VarId, ObjectId>> var2oid;
+    std::set<std::pair<VarId, ObjectId>> var2oid;
 private:
     Binding* parent_binding;
 };

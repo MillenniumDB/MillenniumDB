@@ -6,12 +6,12 @@
 #include <vector>
 
 #include "graph_models/common/datatypes/datetime.h"
+#include "graph_models/common/datatypes/tensor.h"
 #include "graph_models/object_id.h"
 #include "network/server/protocol.h"
 #include "network/server/session/streaming/response/streaming_response_buffer.h"
 #include "query/executor/binding.h"
 #include "query/var_id.h"
-#include "update/mql/update_executor.h"
 
 namespace MDBServer {
 
@@ -29,7 +29,9 @@ public:
     virtual uint64_t get_catalog_version() const = 0;
 
     StreamingResponseWriter(StreamingSession& session_) :
-        response_buffer { session_ }, response_ostream { &response_buffer } { }
+        response_buffer { session_ },
+        response_ostream { &response_buffer }
+    { }
 
     virtual ~StreamingResponseWriter() = default;
 
@@ -51,70 +53,88 @@ public:
     std::string encode_date(DateTime datetime) const;
     std::string encode_time(DateTime datetime) const;
     std::string encode_datetime(DateTime datetime) const;
+    template<typename T>
+    std::string encode_tensor(const Tensor<T>& tensor) const;
 
     // Helpers writing responses
-    void write_variables(const std::vector<VarId>& projection_vars, uint_fast32_t worker_idx, const std::string& cancellation_token);
-    void write_records_success(uint64_t result_count,
-                               uint64_t parser_duration_ms,
-                               uint64_t optimizer_duration_ms,
-                               uint64_t execution_duration);
+    void write_variables(
+        const std::vector<VarId>& projection_vars,
+        uint_fast32_t worker_idx,
+        const std::string& cancellation_token
+    );
+    void write_records_success(
+        uint64_t result_count,
+        uint64_t parser_duration_ms,
+        uint64_t optimizer_duration_ms,
+        uint64_t execution_duration
+    );
     void write_update_success(
         uint64_t parser_duration_ms,
         uint64_t optimizer_duration_ms,
-        uint64_t execution_duration_ms,
-        const MQL::UpdateExecutor::GraphUpdateData& graph_update_data,
-        const MQL::UpdateExecutor::TensorUpdateData& tensor_update_data
+        uint64_t execution_duration_ms
     );
     void write_catalog_success();
     void write_cancel_success();
     void write_record(const std::vector<VarId>& projection_vars, const Binding& binding);
     void write_error(const std::string& message);
 
-    void write_object_id(const ObjectId& oid) {
+    void write_object_id(const ObjectId& oid)
+    {
         const auto encoded_oid = encode_object_id(oid);
         response_ostream.write(encoded_oid.data(), encoded_oid.size());
     }
-    void write_null() {
+    void write_null()
+    {
         const auto enc = encode_null();
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_uint8(uint8_t value) {
+    void write_uint8(uint8_t value)
+    {
         const auto enc = encode_uint8(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_bool(bool value) {
+    void write_bool(bool value)
+    {
         const auto enc = encode_bool(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_uint32(uint32_t value) {
+    void write_uint32(uint32_t value)
+    {
         const auto enc = encode_uint32(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_float(float value) {
+    void write_float(float value)
+    {
         const auto enc = encode_float(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_double(double value) {
+    void write_double(double value)
+    {
         const auto enc = encode_double(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_uint64(uint64_t value) {
+    void write_uint64(uint64_t value)
+    {
         const auto enc = encode_uint64(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_int64(int64_t value) {
+    void write_int64(int64_t value)
+    {
         const auto enc = encode_int64(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_string(const std::string& value, Protocol::DataType data_type) {
+    void write_string(const std::string& value, Protocol::DataType data_type)
+    {
         const auto enc = encode_string(value, data_type);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_map_header(uint32_t size) {
+    void write_map_header(uint32_t size)
+    {
         response_ostream.put(static_cast<char>(Protocol::DataType::MAP));
         write_size(size);
     }
-    void write_list_header(uint32_t size) {
+    void write_list_header(uint32_t size)
+    {
         response_ostream.put(static_cast<char>(Protocol::DataType::LIST));
         write_size(size);
     }

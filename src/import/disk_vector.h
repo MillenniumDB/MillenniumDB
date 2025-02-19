@@ -34,7 +34,7 @@ public:
     DiskVector(const std::string& filename) :
         filename (filename),
         buffer_size (VPage::SIZE*N*sizeof(uint64_t)),
-        buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size)))
+        buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size)))
     {
         file.open(filename, std::ios::out|std::ios::app);
         if (file.fail()) {

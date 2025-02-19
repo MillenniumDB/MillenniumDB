@@ -53,7 +53,10 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        if (lower > 0) {
+            return op->get_safe_vars();
+        }
+        return {};
     }
 
     std::set<VarId> get_fixable_vars() const override
@@ -65,9 +68,17 @@ public:
     {
         std::map<VarId, std::unique_ptr<GQL::VarType>> res = op->get_var_types();
 
-        for (auto& [var, type] : res) {
-            if (!type->is_group()) {
-                res[var] = std::make_unique<Group>(std::move(type));
+        if (lower == 0 && upper == 1) {
+            for (auto& [var, type] : res) {
+                if (!type->is_conditional()) {
+                    res[var] = std::make_unique<Maybe>(std::move(type));
+                }
+            }
+        } else {
+            for (auto& [var, type] : res) {
+                if (!type->is_group()) {
+                    res[var] = std::make_unique<Group>(std::move(type));
+                }
             }
         }
 
@@ -79,7 +90,7 @@ public:
         os << std::string(indent, ' ');
         os << "OpRepetition(" << lower << ", ";
         if (upper.has_value()) {
-            os << upper.value();
+            os << *upper;
         }
         os << ")\n";
         op->print_to_ostream(os, indent + 2);

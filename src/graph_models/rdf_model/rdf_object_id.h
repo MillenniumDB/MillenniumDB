@@ -14,6 +14,7 @@ namespace RDF_OID {
         DATE,
         BOOL,
         PATH,
+        TENSOR
         // GEOMETRY, ?
     };
 
@@ -21,7 +22,6 @@ namespace RDF_OID {
         NULL_ID = 0x00,
         BLANK,
         IRI,
-        // URI,
         STRING_SIMPLE,
         STRING_XSD,
         STRING_LANG,
@@ -33,6 +33,8 @@ namespace RDF_OID {
         DATE,
         BOOL,
         PATH,
+        TENSOR_FLOAT,
+        TENSOR_DOUBLE
         // POINT, ?
     };
 
@@ -52,7 +54,6 @@ namespace RDF_OID {
         IRI_HEX_UPPER_TMP,
         IRI_HEX_LOWER,
         IRI_HEX_LOWER_TMP,
-        // URI,
         STRING_SIMPLE_INLINE,
         STRING_SIMPLE_EXTERN,
         STRING_SIMPLE_TMP,
@@ -80,6 +81,12 @@ namespace RDF_OID {
         DATETIMESTAMP,
         BOOL,
         PATH,
+        TENSOR_FLOAT_INLINE,
+        TENSOR_FLOAT_EXTERN,
+        TENSOR_FLOAT_TMP,
+        TENSOR_DOUBLE_INLINE,
+        TENSOR_DOUBLE_EXTERN,
+        TENSOR_DOUBLE_TMP
         // POINT, ?
     };
 
@@ -182,6 +189,19 @@ namespace RDF_OID {
         case (ObjectId::MASK_DT_DATETIMESTAMP >> 56):
             return Type::DATETIMESTAMP;
 
+        case (ObjectId::MASK_TENSOR_FLOAT_INLINED >> 56):
+            return Type::TENSOR_FLOAT_INLINE;
+        case (ObjectId::MASK_TENSOR_FLOAT_EXTERN >> 56):
+            return Type::TENSOR_FLOAT_EXTERN;
+        case (ObjectId::MASK_TENSOR_FLOAT_TMP >> 56):
+            return Type::TENSOR_FLOAT_TMP;
+        case (ObjectId::MASK_TENSOR_DOUBLE_INLINED >> 56):
+            return Type::TENSOR_DOUBLE_INLINE;
+        case (ObjectId::MASK_TENSOR_DOUBLE_EXTERN >> 56):
+            return Type::TENSOR_DOUBLE_EXTERN;
+        case (ObjectId::MASK_TENSOR_DOUBLE_TMP >> 56):
+            return Type::TENSOR_DOUBLE_TMP;
+
         default:
             assert(false);
             return Type::NULL_ID;
@@ -247,6 +267,14 @@ namespace RDF_OID {
                 return GenericSubType::DATE;
             case Type::PATH:
                 return GenericSubType::PATH;
+            case Type::TENSOR_FLOAT_INLINE:
+            case Type::TENSOR_FLOAT_EXTERN:
+            case Type::TENSOR_FLOAT_TMP:
+                return GenericSubType::TENSOR_FLOAT;
+            case Type::TENSOR_DOUBLE_INLINE:
+            case Type::TENSOR_DOUBLE_EXTERN:
+            case Type::TENSOR_DOUBLE_TMP:
+                return GenericSubType::TENSOR_DOUBLE;
         }
         assert(false);
         return GenericSubType::NULL_ID;
@@ -304,6 +332,13 @@ namespace RDF_OID {
                 return GenericType::DATE;
             case Type::PATH:
                 return GenericType::PATH;
+            case Type::TENSOR_FLOAT_INLINE:
+            case Type::TENSOR_FLOAT_EXTERN:
+            case Type::TENSOR_FLOAT_TMP:
+            case Type::TENSOR_DOUBLE_INLINE:
+            case Type::TENSOR_DOUBLE_EXTERN:
+            case Type::TENSOR_DOUBLE_TMP:
+                return GenericType::TENSOR;
             default:
                 assert(false);
                 return GenericType::NULL_ID;

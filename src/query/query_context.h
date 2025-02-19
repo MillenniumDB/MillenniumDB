@@ -15,7 +15,6 @@
 #include "graph_models/object_id.h"
 #include "query/id.h"
 #include "query/var_id.h"
-#include "storage/index/lists/tmp_lists.h"
 #include "system/buffer_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
@@ -80,26 +79,25 @@ private:
     char* buffer1;
     char* buffer2;
 
-    // Lists used for storing labels
-    std::unique_ptr<TmpLists> tmp_list;
-
 public:
-    QueryContext() {
-        buffer1 = new char[StringManager::STRING_BLOCK_SIZE];
-        buffer2 = new char[StringManager::STRING_BLOCK_SIZE];
-    }
-
-    ~QueryContext() {
-        delete[] buffer1;
-        delete[] buffer2;
+    QueryContext()
+    {
+        buffer1 = new char[StringManager::MAX_STRING_SIZE];
+        buffer2 = new char[StringManager::MAX_STRING_SIZE];
     }
 
     QueryContext(QueryContext&& other) :
         buffer1(std::exchange(other.buffer1, nullptr)),
-        buffer2(std::exchange(other.buffer2, nullptr)),
-        tmp_list(std::move(other.tmp_list))
+        buffer2(std::exchange(other.buffer2, nullptr))
     { }
+
     QueryContext(const QueryContext& other) = delete;
+
+    ~QueryContext()
+    {
+        delete[] buffer1;
+        delete[] buffer2;
+    }
 
     // Cleans up everything. Must be called before parsing the query
     void prepare(BufferManager::VersionScope& version_scope, std::chrono::seconds timeout) {
@@ -119,8 +117,6 @@ public:
         result_version = version_scope.start_version + (version_scope.is_editable ? 1 : 0);
 
         cancellation_token = get_uuid();
-
-        tmp_list = std::make_unique<TmpLists>();
 
         tmp_manager.reset(thread_info.worker_index);
     }
@@ -226,10 +222,6 @@ public:
 
     char* get_buffer2() {
         return buffer2;
-    }
-
-    TmpLists& get_tmp_list() {
-        return *tmp_list;
     }
 };
 

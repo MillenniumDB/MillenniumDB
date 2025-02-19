@@ -239,6 +239,12 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
     }
     catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
+
+        logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
+            physical_plan.analyze(os, true);
+            os << '\n';
+        });
+
         logger(Category::Info) << "Timeout thrown after "
                                << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count()
                                << " ms";
@@ -334,7 +340,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         return;
     }
 
-    os << "HTTP/1.1 204 No Content\r\n";
+    os << "HTTP/1.1 204 No Content\r\n\r\n";
     logger(Category::Info) << "Parser duration: " << parser_duration.count() << "ms\n"
                            << "Execution duration:" << execution_duration.count() << "ms";
 }

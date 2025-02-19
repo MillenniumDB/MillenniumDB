@@ -58,10 +58,29 @@ public:
     Decimal operator-(const Decimal&) const;
     Decimal operator*(const Decimal&) const;
     Decimal operator/(const Decimal&) const;
+    Decimal operator%(const Decimal&) const;
 
     Decimal ceil() const;
     Decimal floor() const;
     Decimal round() const;
+    Decimal abs() const;
+    Decimal log(const Decimal&) const;
+    Decimal log10() const;
+    Decimal ln() const;
+    Decimal exp() const;
+    Decimal pow(const Decimal&) const;
+    Decimal sqrt() const;
+
+    Decimal sin() const;
+    Decimal cos() const;
+    Decimal tan() const;
+    Decimal cot() const;
+    Decimal sinh() const;
+    Decimal cosh() const;
+    Decimal tanh() const;
+    Decimal asin() const;
+    Decimal acos() const;
+    Decimal atan() const;
 
     float                to_float() const;
     double               to_double() const;

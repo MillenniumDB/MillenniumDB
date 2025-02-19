@@ -63,4 +63,3 @@ inline bool is_trail(const PathState* path_state, ObjectId new_edge) {
     return true;
 }
 }} // namespace Paths::AllShortestTrails
-

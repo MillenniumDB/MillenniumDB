@@ -44,13 +44,16 @@ uint64_t OnDiskImport::get_str_id()
 uint64_t OnDiskImport::get_or_create_external_string_id()
 {
     // reserve more space if needed
-    while (external_strings_end + lexer.str_len + StringManager::MIN_PAGE_REMAINING_BYTES
-               + ExternalString::MAX_LEN_BYTES + 1
-           >= external_strings_capacity)
+    while (external_strings_end
+           + lexer.str_len
+           + StringManager::MIN_PAGE_REMAINING_BYTES
+           + StringManager::MAX_LEN_BYTES
+           + 1 >= external_strings_capacity)
     {
+        // TODO: use pending strings
         // duplicate buffer
         char* new_external_strings = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(VPage::SIZE, external_strings_capacity * 2)
+            MDB_ALIGNED_ALLOC(external_strings_capacity * 2)
         );
         std::memcpy(new_external_strings, external_strings, external_strings_capacity);
 
@@ -76,8 +79,8 @@ uint64_t OnDiskImport::get_or_create_external_string_id()
         external_strings_set.insert(s);
         external_strings_end += lexer.str_len + bytes_for_len;
 
-        size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                  - (external_strings_end % StringManager::STRING_BLOCK_SIZE);
+        size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                  - (external_strings_end % StringManager::BLOCK_SIZE);
         if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
             external_strings_end += remaining_in_block;
         }
@@ -679,7 +682,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     lexer.begin(in);
 
     { // Initial memory allocation
-        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size));
+        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
 
         if (external_strings == nullptr) {
             FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
@@ -687,8 +690,8 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         Import::ExternalString::strings = external_strings;
         external_strings_capacity = buffer_size;
-        external_strings_end = StringManager::METADATA_SIZE;
-        assert(external_strings_capacity > StringManager::STRING_BLOCK_SIZE);
+        external_strings_end = 0;
+        assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
     }
 
     int current_state = State::LINE_BEGIN;
@@ -798,21 +801,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     std::fstream strings_file;
     strings_file.open(db_folder + "/strings.dat", std::ios::out | std::ios::binary);
     strings_file.write(external_strings, external_strings_end);
-
-    // std::cout << "external_strings_end: " << external_strings_end << std::endl;
-
-    // Round up to strings file to be a multiple of StringManager::STRING_BLOCK_SIZE
     uint64_t last_str_pos = strings_file.tellp();
-    uint64_t last_block_offset = last_str_pos % StringManager::STRING_BLOCK_SIZE;
-    uint64_t remaining = StringManager::STRING_BLOCK_SIZE - last_block_offset;
-
-    // can copy anything, content doesn't matter, but setting zeros is better for debug
-    memset(external_strings, '\0', remaining);
-    strings_file.write(external_strings, remaining);
-
-    // Write strings_file metadata
-    strings_file.seekp(0, strings_file.beg);
-    strings_file.write(reinterpret_cast<char*>(&last_block_offset), sizeof(uint64_t));
 
     print_duration("Processing strings", start);
 
@@ -827,7 +816,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     { // Create StringsHash
         // Big enough buffer to store any string
         char* string_buffer = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(VPage::SIZE, StringManager::STRING_BLOCK_SIZE)
+            MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
         );
 
         // we reuse the allocated memory for external strings as a buffer
@@ -838,13 +827,13 @@ void OnDiskImport::start_import(MDBIstream& in)
         );
         strings_file.close();
         strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(StringManager::METADATA_SIZE, strings_file.beg);
-        uint64_t current_pos = StringManager::METADATA_SIZE;
+        strings_file.seekg(0, strings_file.beg);
+        uint64_t current_pos = 0;
 
         // read all strings one by one and add them to the StringsHash
         while (current_pos < last_str_pos) {
-            size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                      - (current_pos % StringManager::STRING_BLOCK_SIZE);
+            size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                      - (current_pos % StringManager::BLOCK_SIZE);
 
             if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
                 current_pos += remaining_in_block;

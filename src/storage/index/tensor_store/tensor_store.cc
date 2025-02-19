@@ -1,6 +1,7 @@
 #include "tensor_store.h"
 
 #include <fcntl.h>
+#include <filesystem>
 #include <sys/stat.h>
 
 #include "misc/fatal_error.h"
@@ -11,25 +12,26 @@
 
 namespace fs = std::filesystem;
 
-void TensorStore::create(
-    const fs::path& db_directory,
+std::unique_ptr<TensorStore> TensorStore::create(
     const std::string& tensor_store_name,
-    uint64_t tensors_dim
+    uint64_t tensors_dim,
+    uint64_t vtensor_frame_pool_size_in_bytes
 )
 {
     if (tensors_dim == 0) {
         throw std::runtime_error("Tensors dimension cannot be 0");
     }
 
-    const auto relative_base_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR) / tensor_store_name;
-    const auto absolute_base_path = db_directory / relative_base_path;
+    const auto relative_tensor_store_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR)
+                                          / tensor_store_name;
 
-    if (!fs::create_directories(absolute_base_path)) {
-        throw std::runtime_error("Could not create directories: " + absolute_base_path.string());
+    const auto absolute_tensor_store_path = file_manager.get_file_path(relative_tensor_store_path);
+    if (!fs::create_directories(absolute_tensor_store_path)) {
+        throw std::runtime_error("Could not create directories: " + absolute_tensor_store_path);
     }
 
     // Tensors File
-    const auto tensors_file_id = file_manager.get_file_id(relative_base_path / TENSORS_FILENAME);
+    const auto tensors_file_id = file_manager.get_file_id(relative_tensor_store_path / TENSORS_FILENAME);
 
     TensorStore::TensorsHeader tensors_header {};
     tensors_header.tensors_dim = tensors_dim;
@@ -39,12 +41,16 @@ void TensorStore::create(
     }
 
     // Tombstones File
-    auto tombstones_file_id = file_manager.get_file_id(relative_base_path / TOMBSTONES_FILENAME);
+    auto tombstones_file_id = file_manager.get_file_id(relative_tensor_store_path / TOMBSTONES_FILENAME);
     TombstoneStackType::create(tombstones_file_id);
 
     // Object2Tensor Hash
-    const auto hash_buckets_file_id = file_manager.get_file_id(relative_base_path / HASH_BUCKETS_FILENAME);
-    const auto hash_dir_file_id = file_manager.get_file_id(relative_base_path / HASH_DIRECTORY_FILENAME);
+    const auto hash_buckets_file_id = file_manager.get_file_id(
+        relative_tensor_store_path / HASH_BUCKETS_FILENAME
+    );
+    const auto hash_dir_file_id = file_manager.get_file_id(
+        relative_tensor_store_path / HASH_DIRECTORY_FILENAME
+    );
 
     const uint64_t dir_size = 1ULL << Object2TensorVersionedHash::MIN_GLOBAL_DEPTH;
     auto dir = new uint32_t[dir_size];
@@ -86,20 +92,27 @@ void TensorStore::create(
     }
 
     delete[](dir);
+
+    return std::unique_ptr<TensorStore>(new TensorStore(
+        tensor_store_name,
+        tensors_file_id,
+        tombstones_file_id,
+        hash_buckets_file_id,
+        hash_dir_file_id,
+        tensors_header,
+        vtensor_frame_pool_size_in_bytes
+    ));
 }
 
-std::unique_ptr<TensorStore> TensorStore::load(
-    const fs::path& db_directory,
-    const std::string& tensor_store_name,
-    uint64_t vtensor_frame_pool_size_in_bytes
-)
+std::unique_ptr<TensorStore>
+    TensorStore::load(const std::string& tensor_store_name, uint64_t vtensor_frame_pool_size_in_bytes)
 {
-    const auto relative_base_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR) / tensor_store_name;
-    const auto absolute_base_path = db_directory / relative_base_path;
+    const auto relative_tensor_store_path = fs::path(TensorStoreManager::TENSOR_STORES_DIR)
+                                          / tensor_store_name;
 
     // Tensors File
     // Read header as is needed for TensorStore initialization
-    const auto tensors_file_id = file_manager.get_file_id(relative_base_path / TENSORS_FILENAME);
+    const auto tensors_file_id = file_manager.get_file_id(relative_tensor_store_path / TENSORS_FILENAME);
     TensorStore::TensorsHeader tensors_header {};
     const auto read_res = pread(tensors_file_id.id, &tensors_header, sizeof(TensorStore::TensorsHeader), 0);
     if (read_res == -1) {
@@ -107,11 +120,17 @@ std::unique_ptr<TensorStore> TensorStore::load(
     }
 
     // Tombstones File
-    const auto tombstones_file_id = file_manager.get_file_id(relative_base_path / TOMBSTONES_FILENAME);
+    const auto tombstones_file_id = file_manager.get_file_id(
+        relative_tensor_store_path / TOMBSTONES_FILENAME
+    );
 
     // ObjectId2TensorId
-    const auto hash_buckets_file_id = file_manager.get_file_id(relative_base_path / HASH_BUCKETS_FILENAME);
-    const auto hash_dir_file_id = file_manager.get_file_id(relative_base_path / HASH_DIRECTORY_FILENAME);
+    const auto hash_buckets_file_id = file_manager.get_file_id(
+        relative_tensor_store_path / HASH_BUCKETS_FILENAME
+    );
+    const auto hash_dir_file_id = file_manager.get_file_id(
+        relative_tensor_store_path / HASH_DIRECTORY_FILENAME
+    );
 
     return std::unique_ptr<TensorStore>(new TensorStore(
         tensor_store_name,

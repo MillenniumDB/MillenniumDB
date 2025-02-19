@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdio>
 #include <ctime>
+#include <regex>
 
 #include "graph_models/rdf_model/rdf_model.h"
 #include "import/disk_vector.h"
@@ -184,7 +185,11 @@ void OnDiskImport::handle_object(
     }
 }
 
-void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_filename)
+void OnDiskImport::start_import(
+    MDBIstream& in,
+    const std::string& prefixes_filename,
+    std::vector<std::string>& input_files
+)
 {
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
@@ -194,7 +199,7 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
     pending_strings = get_fstream(pending_strings_filename);
 
     { // Initial memory allocation
-        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(VPage::SIZE, buffer_size));
+        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
 
         if (external_strings == nullptr) {
             FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
@@ -202,8 +207,8 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
 
         Import::ExternalString::strings = external_strings;
         external_strings_capacity = buffer_size;
-        external_strings_end = StringManager::METADATA_SIZE;
-        assert(external_strings_capacity > StringManager::STRING_BLOCK_SIZE);
+        external_strings_end = 0;
+        assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
     }
 
     { // Process IRI prefixes
@@ -272,32 +277,35 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
             }
         }
 
-        // TODO:
-        // std::string line;
-        // int lines_checked = 0;
-        // const std::regex prefix_regex("^\\s*@?(prefix|base)", std::regex::icase);
-        // std::fstream ttl_stream(input_filename);
+        // Look in each file for the first `MAX_LINES_TLL_PREFIX` lines looking for
+        // prefix declarations
+        for (auto& input_file : input_files) {
+            std::string line;
+            int lines_checked = 0;
+            const std::regex prefix_regex("^\\s*@?(prefix|base)", std::regex::icase);
+            std::fstream ttl_file(input_file);
 
-        // while (prefix_set.size() < 256 && lines_checked < MAX_LINES_TLL_PREFIX
-        //        && std::getline(ttl_stream, line))
-        // {
-        //     lines_checked++;
+            while (prefix_set.size() < 256 && lines_checked < MAX_LINES_TLL_PREFIX
+                   && std::getline(ttl_file, line))
+            {
+                lines_checked++;
 
-        //     if (std::regex_search(line, prefix_regex)) {
-        //         auto start = line.find_first_of('<');
-        //         if (start == std::string::npos) {
-        //             continue;
-        //         }
+                if (std::regex_search(line, prefix_regex)) {
+                    auto start = line.find_first_of('<');
+                    if (start == std::string::npos) {
+                        continue;
+                    }
 
-        //         auto end = line.find_last_of('>');
-        //         if (end == std::string::npos || start >= end) {
-        //             continue;
-        //         }
+                    auto end = line.find_last_of('>');
+                    if (end == std::string::npos || start >= end) {
+                        continue;
+                    }
 
-        //         auto iri = line.substr(start + 1, end - start - 1);
-        //         prefix_set.insert(iri);
-        //     }
-        // }
+                    auto iri = line.substr(start + 1, end - start - 1);
+                    prefix_set.insert(iri);
+                }
+            }
+        }
 
         prefixes.init(std::move(prefix_set));
     }
@@ -360,7 +368,7 @@ exit_while:
 
     // Big enough buffer to store any string
     char* pending_string_buffer = reinterpret_cast<char*>(
-        MDB_ALIGNED_ALLOC(VPage::SIZE, StringManager::STRING_BLOCK_SIZE)
+        MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
     );
     int i = 0; // used for tmp filenames
     pending_triples->finish_appends();
@@ -380,7 +388,7 @@ exit_while:
         external_strings_set.clear();
 
         // set to align properly the old block of strings with the new block that will be created
-        external_strings_align_offset = external_strings_end % StringManager::STRING_BLOCK_SIZE;
+        external_strings_align_offset = external_strings_end % StringManager::BLOCK_SIZE;
         external_strings_end = external_strings_align_offset;
 
         old_pending_triples->begin_tuple_iter();
@@ -435,19 +443,7 @@ exit_while:
     pending_strings->close();
     std::remove(pending_strings_filename.c_str());
 
-    // Finish Strings File
-    // Round up to strings file to be a multiple of StringManager::STRING_BLOCK_SIZE
     uint64_t last_str_pos = strings_file.tellp();
-    uint64_t last_block_offset = last_str_pos % StringManager::STRING_BLOCK_SIZE;
-    uint64_t remaining = StringManager::STRING_BLOCK_SIZE - last_block_offset;
-
-    // can copy anything, content doesn't matter, but setting zeros is better for debug
-    memset(external_strings, '\0', remaining);
-    strings_file.write(external_strings, remaining);
-
-    // Write strings_file metadata
-    strings_file.seekp(0, strings_file.beg);
-    strings_file.write(reinterpret_cast<char*>(&last_block_offset), sizeof(uint64_t));
 
     print_duration("Processing strings", start);
 
@@ -470,13 +466,13 @@ exit_while:
         );
         strings_file.close();
         strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(StringManager::METADATA_SIZE, strings_file.beg);
-        uint64_t current_pos = StringManager::METADATA_SIZE;
+        strings_file.seekg(0, strings_file.beg);
+        uint64_t current_pos = 0;
 
         // read all strings one by one and add them to the StringsHash
         while (current_pos < last_str_pos) {
-            size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                      - (current_pos % StringManager::STRING_BLOCK_SIZE);
+            size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                      - (current_pos % StringManager::BLOCK_SIZE);
 
             if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
                 current_pos += remaining_in_block;

@@ -10,7 +10,6 @@
 #include "storage/index/text_search/tokenize_funcs.h"
 
 namespace TextSearch {
-class TextSearchIndex;
 class TextSearchIndexManager {
     friend class TextSearch::TextSearchIndex;
 
@@ -22,9 +21,9 @@ public:
 
         friend std::ostream& operator<<(std::ostream& os, const TextSearchIndexMetadata& metadata)
         {
-            os << "tokenization : " << metadata.tokenization_type << '\n';
-            os << "normalization: " << metadata.normalization_type << '\n';
-            os << "predicate    : " << metadata.predicate;
+            os << "{\"tokenization\": " << '"' << metadata.tokenization_type << '"';
+            os << ", \"normalization\": " << '"' << metadata.normalization_type << '"';
+            os << ", \"predicate\": \"" << metadata.predicate << "\"}";
             return os;
         }
     };

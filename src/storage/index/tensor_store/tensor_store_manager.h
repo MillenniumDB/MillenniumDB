@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include <filesystem>
 #include <shared_mutex>
 
 #include <boost/unordered/unordered_map.hpp>
 
-class TensorStore;
+#include "tensor_store.h"
 
 class TensorStoreManager {
 public:
@@ -16,34 +15,55 @@ public:
 
     static constexpr char TENSOR_STORES_DIR[] = "tensor_stores";
 
-    ~TensorStoreManager();
+    static uint64_t tensor_buffer_size_bytes;
 
-    static void init(const std::string& db_directory, uint64_t vtensor_frame_pool_size_in_bytes);
+    struct TensorStoreMetadata {
+        uint64_t tensors_dim;
+
+        friend std::ostream& operator<<(std::ostream& os, const TensorStoreMetadata& metadata)
+        {
+            os << "{\"tensors_dim\": " << metadata.tensors_dim << '}';
+            return os;
+        }
+    };
+
+    // Initialize the tensor store manager
+    void init();
+
+    void load_tensor_store(const std::string& name, const TensorStoreMetadata& metadata);
 
     // Returns true if the tensor store was found
-    bool get_tensor_store(const std::string& name, TensorStore** tensor_store) const;
+    bool get_tensor_store(const std::string& name, TensorStore** tensor_store);
 
     void create_tensor_store(const std::string& name, uint64_t tensors_dim);
 
-    std::vector<std::string> get_tensor_store_names() const {
-        std::vector<std::string> names;
-        for (const auto& [name, _] : name2tensor_store) {
-            names.emplace_back(name);
-        }
-
-        return names;
+    const boost::unordered_map<std::string, TensorStoreMetadata>& get_name2metadata() const
+    {
+        return name2metadata;
     }
 
+    bool has_changes() const
+    {
+        return has_changes_;
+    }
+
+    std::vector<float> get_tensor(uint64_t external_id);
+
 private:
-    const std::filesystem::path db_directory;
-    const uint64_t vtensor_frame_pool_size_in_bytes;
+    bool has_changes_ = false;
 
     // Prevents concurrent access to name2tensor_store
-    mutable std::shared_mutex name2tensor_store_mutex;
+    std::shared_mutex name2tensor_store_mutex;
+
+    boost::unordered_map<std::string, uint64_t> name2tensor_store_id;
 
     boost::unordered_map<std::string, std::unique_ptr<TensorStore>> name2tensor_store;
 
-    explicit TensorStoreManager(const std::string& db_directory, uint64_t vtensor_frame_pool_size_in_bytes);
-};
+    boost::unordered_map<std::string, TensorStoreMetadata> name2metadata;
+    // auto id = name2tensor_store_id["hola"];
+    // tensor_stores[id];
 
-extern TensorStoreManager& tensor_store_manager;
+    // std::vector<std::unique_ptr<TensorStore>> tensor_stores;
+
+    // std::vector<TensorStoreMetadata> tensor_store_metadatas;
+};

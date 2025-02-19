@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <queue>
-#include <type_traits>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/search_state.h"

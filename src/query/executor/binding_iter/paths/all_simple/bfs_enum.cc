@@ -2,7 +2,6 @@
 
 #include <cassert>
 
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;

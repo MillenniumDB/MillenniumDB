@@ -84,7 +84,7 @@ public:
         return current_in.bad();
     }
 
-    std::vector<std::string>& filenames;
+    std::vector<std::string> filenames;
 
     std::ifstream current_in;
 

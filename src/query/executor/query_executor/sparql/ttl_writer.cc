@@ -2,6 +2,7 @@
 
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace SPARQL;
@@ -137,6 +138,20 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
     }
     case RDF_OID::Type::BOOL: {
         os << (Conversions::unpack_bool(oid) ? "true" : "false");
+        break;
+    }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        os << '"' << Conversions::unpack_tensor<float>(oid);
+        os << "\"^^<" << MDBExtensions::Type::TENSOR_FLOAT_IRI << ">";
+        break;
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        os << '"' << Conversions::unpack_tensor<double>(oid);
+        os << "\"^^<" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << ">";
         break;
     }
     case RDF_OID::Type::PATH:

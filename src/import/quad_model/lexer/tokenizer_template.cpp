@@ -6,7 +6,7 @@
 #include "system/string_manager.h"
 
 /*!max:re2c*/
-constexpr size_t MQLTokenizer_SIZE = StringManager::STRING_BLOCK_SIZE;
+constexpr size_t MQLTokenizer_SIZE = StringManager::MAX_STRING_SIZE;
 
 MQLTokenizer::MQLTokenizer() :
     _str(new char[MQLTokenizer_SIZE + YYMAXFILL]),

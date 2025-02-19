@@ -55,9 +55,12 @@ void ExtractOptionalLabels::visit(OpBasicGraphPattern& op)
     for (auto& pattern : op.patterns) {
         pattern->accept_visitor(*this);
     }
+}
 
-    for (auto& op_label : op_labels_to_push) {
-        op.patterns.push_back(op_label->clone());
+void ExtractOptionalLabels::visit(OpLinearPattern& op)
+{
+    for (auto& pattern : op.patterns) {
+        pattern->accept_visitor(*this);
     }
 }
 

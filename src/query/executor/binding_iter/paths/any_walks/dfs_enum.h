@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <stack>
-#include <type_traits>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/any_walks/search_state.h"

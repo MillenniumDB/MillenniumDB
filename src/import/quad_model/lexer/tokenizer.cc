@@ -11,7 +11,7 @@
 #define YYMAXFILL 6
 #line 8 "tokenizer_template.cpp"
 
-constexpr size_t MQLTokenizer_SIZE = StringManager::STRING_BLOCK_SIZE;
+constexpr size_t MQLTokenizer_SIZE = StringManager::MAX_STRING_SIZE;
 
 MQLTokenizer::MQLTokenizer() :
     _str(new char[MQLTokenizer_SIZE + YYMAXFILL]),

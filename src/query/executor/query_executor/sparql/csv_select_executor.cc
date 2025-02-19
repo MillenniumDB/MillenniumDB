@@ -188,8 +188,24 @@ void CSVSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
         os << decimal;
         break;
     }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        const auto tensor = Conversions::unpack_tensor<float>(oid);
+        os << '"' << tensor.to_string();
+        os << "\"^^<" << MDBExtensions::Type::TENSOR_FLOAT_IRI << ">";
+        break;
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        const auto tensor = Conversions::unpack_tensor<double>(oid);
+        os << '"' << tensor.to_string();
+        os << "\"^^<" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << ">";
+        break;
+    }
     case RDF_OID::Type::NULL_ID: {
-        // executor should not call print with NULL
+        // executor should not call print
         break;
     }
     }

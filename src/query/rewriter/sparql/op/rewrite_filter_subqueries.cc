@@ -486,3 +486,43 @@ void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprYear& expr) {
 void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprCast& expr) {
     expr.expr->accept_visitor(*this);
 }
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprCosineSimilarity& expr)
+{
+    expr.lhs->accept_visitor(*this);
+    expr.rhs->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprDot& expr)
+{
+    expr.lhs->accept_visitor(*this);
+    expr.rhs->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprEuclideanDistance& expr)
+{
+    expr.lhs->accept_visitor(*this);
+    expr.rhs->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprManhattanDistance& expr)
+{
+    expr.lhs->accept_visitor(*this);
+    expr.rhs->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprPow& expr)
+{
+    expr.lhs->accept_visitor(*this);
+    expr.rhs->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprSqrt& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
+void RewriteFilterSubqueriesExpr::visit(SPARQL::ExprSum& expr)
+{
+    expr.expr->accept_visitor(*this);
+}

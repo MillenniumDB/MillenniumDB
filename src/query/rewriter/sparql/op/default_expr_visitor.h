@@ -360,5 +360,23 @@ public:
     virtual void visit(ExprCast& e) override {
         e.expr->accept_visitor(*this);
     }
+
+    virtual void visit(ExprDot& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprPow& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprSqrt& e) override {
+        e.expr->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprSum& e) override {
+        e.expr->accept_visitor(*this);
+    }
 };
 } // namespace SPARQL

@@ -36,6 +36,7 @@ Currently Unsupported SPARQL Features
 
 Deviations from the SPARQL Specification
 --------------------------------------------------------------------------------
+- Alternative property paths are not transformed into UNION.
 - **Language tag** (`@`) handling is **case sensitive** for `JOIN`s and related operators, but in **expressions** it is **case insensitive**.
 - We do **not** store the exact **lexical representation** of numeric datatypes, only the **numeric value**. For example, `"01"^^xsd:integer` and `"1"^^xsd:integer` are identical in MillenniumDB.
     - This implies that expressions that work with the lexical representation may result in a different value. For example `STR(1e0)` should be `"1e0"` according to the standard, but MillenniumDB will evaluate it as `"1.0E0"`.
@@ -253,8 +254,7 @@ Running a Server
 To run the server with the previously created database use:
 ```bash
 docker run --rm --volume "$PWD"/data:/data -p 1234:1234 -p 4321:4321 mdb \
-    mdb-server \
-    /data/example-rdf-database
+    mdb-server /data/example-rdf-database
 ```
 
 

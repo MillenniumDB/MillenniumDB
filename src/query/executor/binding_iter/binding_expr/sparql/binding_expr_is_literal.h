@@ -21,6 +21,7 @@ public:
             case RDF_OID::GenericType::NUMERIC:
             case RDF_OID::GenericType::BOOL:
             case RDF_OID::GenericType::DATE:
+            case RDF_OID::GenericType::TENSOR:
                 return Conversions::pack_bool(true);
             case RDF_OID::GenericType::NULL_ID:
                 return ObjectId::get_null();
