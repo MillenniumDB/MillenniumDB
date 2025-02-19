@@ -79,5 +79,13 @@ public:
     void visit(BindingExprUnaryMinus&)     override;
     void visit(BindingExprUnaryPlus&)      override;
     void visit(BindingExprYear&)           override;
+
+    void visit(BindingExprCosineSimilarity&)  override;
+    void visit(BindingExprDot&)               override;
+    void visit(BindingExprEuclideanDistance&) override;
+    void visit(BindingExprManhattanDistance&) override;
+    void visit(BindingExprPow&)               override;
+    void visit(BindingExprSqrt&)              override;
+    void visit(BindingExprSum&)               override;
 };
 } // namespace SPARQL

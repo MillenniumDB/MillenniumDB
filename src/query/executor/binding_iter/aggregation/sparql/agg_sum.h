@@ -26,7 +26,7 @@ public:
         auto oid = expr->eval(*binding);
         auto op_type = Conversions::calculate_optype(oid);
 
-        if (op_type == Conversions::OPTYPE_INVALID) {
+        if (op_type > Conversions::OPTYPE_DOUBLE) {
             type = Conversions::OPTYPE_INVALID;
             return;
         }

@@ -464,12 +464,14 @@ private:
         while (external_strings_end
                + lexer.str_len
                + StringManager::MIN_PAGE_REMAINING_BYTES
-               + ExternalString::MAX_LEN_BYTES
+               + StringManager::MAX_LEN_BYTES
                + 1 >= external_strings_capacity)
         {
+            // TODO: use pending strings
             // duplicate buffer
             char* new_external_strings = reinterpret_cast<char*>(
-                MDB_ALIGNED_ALLOC(VPage::SIZE, external_strings_capacity*2));
+                MDB_ALIGNED_ALLOC(external_strings_capacity * 2)
+            );
             std::memcpy(new_external_strings,
                         external_strings,
                         external_strings_capacity);
@@ -498,8 +500,8 @@ private:
             external_strings_set.insert(s);
             external_strings_end += lexer.str_len + bytes_for_len;
 
-            size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                        - (external_strings_end % StringManager::STRING_BLOCK_SIZE);
+            size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                        - (external_strings_end % StringManager::BLOCK_SIZE);
             if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
                 external_strings_end += remaining_in_block;
             }

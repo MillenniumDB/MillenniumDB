@@ -15,22 +15,22 @@ static typename std::aligned_storage<sizeof(BufferManager), alignof(BufferManage
 // global object
 BufferManager& buffer_manager = reinterpret_cast<BufferManager&>(buffer_manager_buf);
 
-
-BufferManager::BufferManager(uint64_t vpage_buffer_pool_size,
-                             uint64_t ppage_buffer_pool_size_per_worker,
-                             uint64_t upage_buffer_pool_size,
-                             uint64_t workers) :
+BufferManager::BufferManager(
+    uint64_t vpage_buffer_pool_size,
+    uint64_t ppage_buffer_pool_size_per_worker,
+    uint64_t upage_buffer_pool_size,
+    uint64_t workers
+) :
     vp_pool(new VPage[vpage_buffer_pool_size]),
-    vp_data(reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(VPage::SIZE, vpage_buffer_pool_size * VPage::SIZE))),
+    vp_data(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(vpage_buffer_pool_size * VPage::SIZE))),
     vp_pool_size(vpage_buffer_pool_size),
     pp_pool(new PPage[ppage_buffer_pool_size_per_worker * workers]),
-    pp_data(reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(PPage::SIZE, ppage_buffer_pool_size_per_worker * workers * PPage::SIZE))),
+    pp_data(
+        reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(ppage_buffer_pool_size_per_worker * workers * PPage::SIZE))
+    ),
     pp_pool_size(ppage_buffer_pool_size_per_worker),
     up_pool(new UPage[upage_buffer_pool_size]),
-    up_data(reinterpret_cast<char*>(
-             MDB_ALIGNED_ALLOC(UPage::SIZE, upage_buffer_pool_size * UPage::SIZE))),
+    up_data(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(upage_buffer_pool_size * UPage::SIZE))),
     up_pool_size(upage_buffer_pool_size)
 {
     if (vp_data == nullptr || vp_pool == nullptr) {
@@ -64,7 +64,6 @@ BufferManager::BufferManager(uint64_t vpage_buffer_pool_size,
     vp_map.reserve(vpage_buffer_pool_size);
     up_map.reserve(upage_buffer_pool_size);
 }
-
 
 BufferManager::~BufferManager() {
     flush();
@@ -434,6 +433,59 @@ UPage& BufferManager::append_unversioned_page(FileId file_id) noexcept {
     return new_page;
 }
 
+UPage& BufferManager::get_or_append_unversioned_page(FileId file_id, uint64_t page_number) noexcept
+{
+    // Cant just call get/append_unversioned_page because we need to lock the page count
+    up_mutex.lock();
+
+    const auto num_pages = file_manager.count_pages(file_id);
+
+    if (page_number < num_pages) {
+        // Get existing page
+        const PageId page_id(file_id, page_number);
+
+        auto it = up_map.find(page_id);
+        if (it == up_map.end()) {
+            auto& page = get_upage_available();
+
+            if (page.page_id.file_id.id != FileId::UNASSIGNED) {
+                up_map.erase(page.page_id);
+            }
+
+            if (page.dirty) {
+                file_manager.flush(page);
+            }
+
+            page.reassign(page_id);
+            up_map.insert({ page_id, &page });
+
+            file_manager.read_existing_page(page_id, page.bytes);
+            up_mutex.unlock();
+
+            return page;
+        } else {
+            UPage* page = it->second;
+            page->pin();
+            up_mutex.unlock();
+
+            return *page;
+        }
+    } else {
+        // Append new page
+        auto& new_page = get_upage_available();
+        const auto new_page_number = file_manager.append_page(file_id, new_page.bytes);
+        assert(new_page_number == page_number && "appended page is not next to the last one");
+
+        PageId page_id(file_id, new_page_number);
+        new_page.reassign(page_id);
+        new_page.dirty = true;
+
+        up_map.insert({ page_id, &new_page });
+        up_mutex.unlock();
+
+        return new_page;
+    }
+}
 
 PPage& BufferManager::get_ppage(TmpFileId tmp_file_id, uint64_t page_number) /*noexcept*/ {
     const TmpPageId tmp_page_id(tmp_file_id.id, page_number);
@@ -524,6 +576,7 @@ void BufferManager::remove_tmp(TmpFileId tmp_file_id) {
 
 
 BufferManager::VersionScope::~VersionScope() {
+    tmp_manager.reset_tmp_list();
     buffer_manager.terminate(*this);
 }
 

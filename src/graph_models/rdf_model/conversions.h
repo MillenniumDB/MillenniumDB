@@ -38,11 +38,17 @@ namespace SPARQL { namespace Conversions {
     void print_path_node(std::ostream& os, ObjectId node_id);
     void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
 
+    size_t print_iri(ObjectId oid, char* out);
+    size_t print_iri_suffix(ObjectId oid, char* out);
+    size_t print_string(ObjectId oid, char* out);
+
     // Doesn't print the language
     void print_string_lang(ObjectId oid, std::ostream&);
+    size_t print_string_lang(ObjectId oid, char* out);
 
     // Doesn't print the datatype
     void print_string_datatype(ObjectId oid, std::ostream&);
+    size_t print_string_datatype(ObjectId oid, char* out);
 
     ObjectId string_simple_to_xsd(ObjectId oid);
 
@@ -72,6 +78,8 @@ namespace SPARQL { namespace Conversions {
     ObjectId pack_string_lang(const std::string& lang, const std::string& str);
     ObjectId pack_string_datatype(const std::string& dt, const std::string& str);
     ObjectId try_pack_string_datatype(const std::string& dt, const std::string& str);
+    ObjectId try_pack_xsd_datatype(const std::string& dt, const std::string& str);
+    ObjectId try_pack_mdb_datatype(const std::string& dt, const std::string& str);
     ObjectId try_pack_integer(const std::string& dt, const std::string& str);
 
     constexpr ObjectId pack_empty_string() {
@@ -83,12 +91,14 @@ namespace SPARQL { namespace Conversions {
     constexpr uint64_t DECIMAL_SEPARATOR_MASK = 0x0000'0000'0000'000FUL;
     // constexpr uint64_t FLOAT_SIGN_MASK        = 0x0000'0000'8000'0000UL;
 
-    // The order, int < dec < flt < inv is important
-    constexpr uint8_t OPTYPE_INTEGER = 0x01;
-    constexpr uint8_t OPTYPE_DECIMAL = 0x02;
-    constexpr uint8_t OPTYPE_FLOAT   = 0x03;
-    constexpr uint8_t OPTYPE_DOUBLE  = 0x04;
-    constexpr uint8_t OPTYPE_INVALID = 0x05;
+    // The order, int < dec < flt < ...tensors < inv is important
+    constexpr uint8_t OPTYPE_INTEGER       = 0x01;
+    constexpr uint8_t OPTYPE_DECIMAL       = 0x02;
+    constexpr uint8_t OPTYPE_FLOAT         = 0x03;
+    constexpr uint8_t OPTYPE_DOUBLE        = 0x04;
+    constexpr uint8_t OPTYPE_TENSOR_FLOAT  = 0x05;
+    constexpr uint8_t OPTYPE_TENSOR_DOUBLE = 0x06;
+    constexpr uint8_t OPTYPE_INVALID       = 0x07;
 
     Decimal unpack_decimal(ObjectId oid);
     Decimal unpack_decimal_inlined(ObjectId oid);
@@ -113,13 +123,13 @@ namespace SPARQL { namespace Conversions {
 
     std::ostream& debug_print(std::ostream& os, ObjectId object_id);
 
-    void print_iri_uuid_lower(ObjectId oid, std::ostream& os);
-    void print_iri_uuid_upper(ObjectId oid, std::ostream& os);
-    void print_tmp_iri_uuid_lower(ObjectId oid, std::ostream& os);
-    void print_tmp_iri_uuid_upper(ObjectId oid, std::ostream& os);
+    size_t print_iri_uuid_lower(ObjectId oid, char* out);
+    size_t print_iri_uuid_upper(ObjectId oid, char* out);
+    size_t print_tmp_iri_uuid_lower(ObjectId oid, char* out);
+    size_t print_tmp_iri_uuid_upper(ObjectId oid, char* out);
 
-    void print_iri_hex_lower(ObjectId oid, std::ostream& os);
-    void print_tmp_iri_hex_lower(ObjectId oid, std::ostream& os);
-    void print_iri_hex_upper(ObjectId oid, std::ostream& os);
-    void print_tmp_iri_hex_upper(ObjectId oid, std::ostream& os);
+    size_t  print_iri_hex_lower(ObjectId oid, char* out);
+    size_t  print_tmp_iri_hex_lower(ObjectId oid, char* out);
+    size_t  print_iri_hex_upper(ObjectId oid, char* out);
+    size_t  print_tmp_iri_hex_upper(ObjectId oid, char* out);
 }} // namespace SPARQL::Conversions

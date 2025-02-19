@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <queue>
-#include <type_traits>
 
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"

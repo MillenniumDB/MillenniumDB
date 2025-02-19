@@ -18,6 +18,8 @@ namespace GQL { namespace Conversions {
     std::string unpack_string(ObjectId oid);
 
     void print_string(ObjectId oid, std::ostream&);
+    size_t print_string(ObjectId oid, char* out);
+
     void print_path_node(std::ostream& os, ObjectId node_id);
     void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "query/parser/expr/expr.h"
 #include "storage/index/tensor_store/metric.h"
@@ -14,55 +13,30 @@ public:
 
     std::string tensor_store_name;
 
-    std::unique_ptr<Expr> expr;
-
-    std::unique_ptr<Expr> expr_ref;
-    std::vector<float> tensor_ref;
+    std::unique_ptr<Expr> lhs_expr;
+    std::unique_ptr<Expr> rhs_expr;
 
     ExprTensorDistance(
-        std::string&& tensor_store_name,
-        Metric::MetricType metric_type,
-        std::unique_ptr<Expr>&& expr,
-        std::unique_ptr<Expr>&& expr_ref
+        std::string&& tensor_store_name_,
+        Metric::MetricType metric_type_,
+        std::unique_ptr<Expr>&& lhs_expr_,
+        std::unique_ptr<Expr>&& rhs_expr_
     ) :
-        metric_type(metric_type),
-        tensor_store_name(std::move(tensor_store_name)),
-        expr(std::move(expr)),
-        expr_ref(std::move(expr_ref))
-    { }
-
-    ExprTensorDistance(
-        std::string&& tensor_store_name,
-        Metric::MetricType metric_type,
-        std::unique_ptr<Expr>&& expr,
-        std::vector<float>&& tensor_ref
-    ) :
-        metric_type(metric_type),
-        tensor_store_name(std::move(tensor_store_name)),
-        expr(std::move(expr)),
-        tensor_ref(std::move(tensor_ref))
+        metric_type(metric_type_),
+        tensor_store_name(std::move(tensor_store_name_)),
+        lhs_expr(std::move(lhs_expr_)),
+        rhs_expr(std::move(rhs_expr_))
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
         auto tensor_store_name_clone = tensor_store_name;
-
-        if (expr_ref != nullptr) {
-            return std::make_unique<ExprTensorDistance>(
-                std::move(tensor_store_name_clone),
-                metric_type,
-                expr->clone(),
-                expr_ref->clone()
-            );
-        } else {
-            auto tensor_ref_clone = tensor_ref;
-            return std::make_unique<ExprTensorDistance>(
-                std::move(tensor_store_name_clone),
-                metric_type,
-                expr->clone(),
-                std::move(tensor_ref_clone)
-            );
-        }
+        return std::make_unique<ExprTensorDistance>(
+            std::move(tensor_store_name_clone),
+            metric_type,
+            lhs_expr->clone(),
+            rhs_expr->clone()
+        );
     }
 
     void accept_visitor(ExprVisitor& visitor) override
@@ -72,30 +46,14 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        std::set<VarId> res;
-        auto expr_vars = expr->get_all_vars();
-        res.insert(expr_vars.begin(), expr_vars.end());
-
-        if (expr_ref != nullptr) {
-            auto expr_ref_vars = expr_ref->get_all_vars();
-            res.insert(expr_ref_vars.begin(), expr_ref_vars.end());
-        }
+        std::set<VarId> res = lhs_expr->get_all_vars();
+        res.merge(rhs_expr->get_all_vars());
         return res;
     }
 
     bool has_aggregation() const override
     {
-        if (expr->has_aggregation()) {
-            return true;
-        }
-
-        if (expr_ref != nullptr) {
-            if (expr_ref->has_aggregation()) {
-                return true;
-            }
-        }
-
-        return false;
+        return lhs_expr->has_aggregation() || rhs_expr->has_aggregation();
     }
 };
 } // namespace MQL

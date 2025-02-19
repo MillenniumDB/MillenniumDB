@@ -44,7 +44,7 @@ Node::Node(
     // Get some space and a page for the new node.
     auto [page_number, page_offset_] = get_space(capacity);
     page_offset = page_offset_;
-    page = &buffer_manager.get_unversioned_page(trie.file_id, page_number);
+    page = &buffer_manager.get_or_append_unversioned_page(trie.file_id, page_number);
 
     init_pointers_using_string_length(string_length);
 
@@ -184,7 +184,7 @@ std::unique_ptr<Node> Node::insert_child(Node* parent, unsigned char* parent_chi
     if (capacity < needed_capacity) {
         // Not enough capacity, we have to move this node to a bigger capacity
         auto [new_page_number, new_page_offset] = get_space(needed_capacity);
-        auto new_page = &buffer_manager.get_unversioned_page(trie.file_id, new_page_number);
+        auto new_page = &buffer_manager.get_or_append_unversioned_page(trie.file_id, new_page_number);
 
         // Copy over everything
         std::memcpy(new_page->get_bytes() + new_page_offset, page->get_bytes() + page_offset, capacity);

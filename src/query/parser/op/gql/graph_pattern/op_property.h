@@ -18,15 +18,15 @@ struct PropertyValue {
 
 class OpProperty : public Op {
 public:
-    std::vector<PropertyValue> properties;
+    PropertyValue property;
 
-    OpProperty(const std::vector<PropertyValue>& properties) :
-        properties(properties)
+    OpProperty(PropertyValue property) :
+        property(property)
     { }
 
     std::unique_ptr<Op> clone() const override
     {
-        return std::make_unique<OpProperty>(properties);
+        return std::make_unique<OpProperty>(property);
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -36,11 +36,7 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        std::set<VarId> res;
-        for (auto& property : properties) {
-            res.insert(property.object);
-        }
-        return res;
+        return { property.object };
     }
 
     std::set<VarId> get_scope_vars() const override
@@ -50,7 +46,7 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        return { property.object };
     }
 
     std::set<VarId> get_fixable_vars() const override
@@ -60,7 +56,6 @@ public:
 
     std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
     {
-        // TODO: include expr variables
         return {};
     }
 
@@ -69,8 +64,7 @@ public:
         os << std::string(indent, ' ');
         os << "OpProperty(";
 
-        auto it = properties.begin();
-        switch (it->type) {
+        switch (property.type) {
         case VarType::Node:
             os << "node ";
             break;
@@ -80,23 +74,7 @@ public:
         default:
             break;
         }
-        os << it->object << "." << it->key << "=" << it->value;
-        it++;
-
-        for (; it != properties.end(); ++it) {
-            switch (it->type) {
-            case VarType::Node:
-                os << "node ";
-                break;
-            case VarType::Edge:
-                os << "edge ";
-                break;
-            default:
-                break;
-            }
-            os << ", " << it->object << "." << it->key << "=" << it->value;
-        }
-        os << ")\n";
+        os << property.object << "." << property.key << "=" << property.value << ")\n";
         return os;
     }
 };

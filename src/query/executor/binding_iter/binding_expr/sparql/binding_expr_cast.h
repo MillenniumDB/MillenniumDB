@@ -108,6 +108,24 @@ public:
                     return ObjectId::get_null();
                 }
             }
+            case CastType::mdbtype_tensorFloat: {
+                const auto str = Conversions::to_lexical_str(oid);
+                bool error;
+                const auto tensor = Tensor<float>::from_literal(str, &error);
+                if (error) {
+                    return ObjectId::get_null();
+                }
+                return Conversions::pack_tensor<float>(tensor);
+            }
+            case CastType::mdbtype_tensorDouble: {
+                const auto str = Conversions::to_lexical_str(oid);
+                bool error;
+                const auto tensor = Tensor<double>::from_literal(str, &error);
+                if (error) {
+                    return ObjectId::get_null();
+                }
+                return Conversions::pack_tensor<double>(tensor);
+            }
             default: return ObjectId::get_null();
             }
         }
@@ -297,6 +315,38 @@ public:
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            default:
+                return ObjectId::get_null();
+            }
+        }
+        case RDF_OID::GenericSubType::TENSOR_FLOAT: {
+            switch (cast_type) {
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::mdbtype_tensorFloat:
+                return oid;
+            case CastType::mdbtype_tensorDouble: {
+                const auto casted = Conversions::to_tensor<double>(oid);
+                return Conversions::pack_tensor<double>(casted);
+            }
+            default:
+                return ObjectId::get_null();
+            }
+        }
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
+            switch (cast_type) {
+            case CastType::xsd_boolean:
+                return Conversions::to_boolean(oid);
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::mdbtype_tensorFloat: {
+                const auto tensor = Conversions::to_tensor<float>(oid);
+                return Conversions::pack_tensor<float>(tensor);
+            }
+            case CastType::mdbtype_tensorDouble:
+                return oid;
             default:
                 return ObjectId::get_null();
             }

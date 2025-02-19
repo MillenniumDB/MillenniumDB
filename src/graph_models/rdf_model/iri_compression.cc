@@ -1,24 +1,27 @@
 #include "iri_compression.h"
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-
 namespace HexCompression {
 
-inline bool is_hex_upper(char byte) {
+inline bool is_hex_upper(char byte)
+{
     return (('A' <= byte && byte <= 'F') || ('0' <= byte && byte <= '9'));
 }
 
-inline bool is_hex_lower(char byte) {
+inline bool is_hex_lower(char byte)
+{
     return (('a' <= byte && byte <= 'f') || ('0' <= byte && byte <= '9'));
 }
 
-std::size_t get_lower_hex_length(const char* str, size_t str_len) {
-    std::size_t hex_length = 0;
+size_t get_lower_hex_length(const char* str, size_t str_len)
+{
+    size_t hex_length = 0;
     for (int i = str_len - 1; i >= 0; --i) {
         if (is_hex_lower(str[i])) {
             hex_length++;
@@ -32,8 +35,9 @@ std::size_t get_lower_hex_length(const char* str, size_t str_len) {
     return hex_length;
 }
 
-std::size_t get_upper_hex_length(const char* str, size_t str_len) {
-    std::size_t hex_length = 0;
+size_t get_upper_hex_length(const char* str, size_t str_len)
+{
+    size_t hex_length = 0;
     for (int i = str_len - 1; i >= 0; --i) {
         if (is_hex_upper(str[i])) {
             hex_length++;
@@ -47,8 +51,8 @@ std::size_t get_upper_hex_length(const char* str, size_t str_len) {
     return hex_length;
 }
 
-
-std::size_t compress(const char* iri, std::size_t iri_size, std::size_t uncompressed_hex_len, char* result) {
+size_t compress(const char* iri, size_t iri_size, size_t uncompressed_hex_len, char* result)
+{
     int compressed_hex_len = uncompressed_hex_len / 2;
 
     // result+1 because we use 1 byte to store the length of the hex suffix
@@ -58,7 +62,7 @@ std::size_t compress(const char* iri, std::size_t iri_size, std::size_t uncompre
 
     char temp[] = { 0, 0, 0 };
 
-    for (std::size_t i = iri_size - compressed_hex_len * 2; i < iri_size - 1; i += 2) {
+    for (size_t i = iri_size - compressed_hex_len * 2; i < iri_size - 1; i += 2) {
         temp[0] = iri[i];
         temp[1] = iri[i + 1];
 
@@ -69,47 +73,79 @@ std::size_t compress(const char* iri, std::size_t iri_size, std::size_t uncompre
     return iri_size - compressed_hex_len + 1;
 }
 
-std::size_t decompress_lower(const char* iri, std::size_t iri_size, char* result) {
-    std::size_t hex_characters = *reinterpret_cast<const unsigned char*>(iri);
+size_t decompress_lower(char* iri_compressed, size_t iri_size)
+{
+    // first byte tells the hex length
+    auto hex_bytes = *reinterpret_cast<const unsigned char*>(iri_compressed);
 
-    // we skip the first byte since
-    memcpy(result, iri + 1, iri_size - hex_characters - 1);
-    result += iri_size - hex_characters - 1;
+    assert(iri_size > hex_bytes);
 
-    for (std::size_t i = iri_size - hex_characters; i < iri_size; ++i) {
-        sprintf(result, "%02x", static_cast<unsigned char>(iri[i]));
-        result += 2;
+    // last (hex_bytes) bytes will transfor into (2*hex_bytes)
+
+    char* copy = iri_compressed + iri_size + hex_bytes;
+    memcpy(copy, iri_compressed, iri_size);
+
+    uint32_t non_hex_size = iri_size - (hex_bytes + 1);
+
+    // copy again the non hex byes
+    memcpy(iri_compressed, copy + 1, non_hex_size);
+
+    char* out = iri_compressed + non_hex_size;
+    char* read = copy + non_hex_size + 1;
+
+    for (size_t i = 0; i < iri_size; ++i) {
+        sprintf(out, "%02x", static_cast<unsigned char>(*read));
+        out += 2;
+        read++;
     }
-    return iri_size - 1 + hex_characters;
+
+    return iri_size - 1 + hex_bytes;
 }
 
-std::size_t decompress_upper(const char* iri, std::size_t iri_size, char* result) {
-    std::size_t hex_characters = *reinterpret_cast<const unsigned char*>(iri);
+size_t decompress_upper(char* iri_compressed, size_t iri_size)
+{
+    // first byte tells the hex length
+    auto hex_bytes = *reinterpret_cast<const unsigned char*>(iri_compressed);
 
-    // we skip the first byte since
-    memcpy(result, iri + 1, iri_size - hex_characters - 1);
-    result += iri_size - hex_characters - 1;
+    assert(iri_size > hex_bytes);
 
-    for (std::size_t i = iri_size - hex_characters; i < iri_size; ++i) {
-        sprintf(result, "%02X", static_cast<unsigned char>(iri[i]));
-        result += 2;
+    // last (hex_bytes) bytes will transfor into (2*hex_bytes)
+
+    char* copy = iri_compressed + iri_size + hex_bytes;
+    memcpy(copy, iri_compressed, iri_size);
+
+    uint32_t non_hex_size = iri_size - (hex_bytes + 1);
+
+    // copy again the non hex byes
+    memcpy(iri_compressed, copy + 1, non_hex_size);
+
+    char* out = iri_compressed + non_hex_size;
+    char* read = copy + non_hex_size + 1;
+
+    for (size_t i = 0; i < iri_size; ++i) {
+        sprintf(out, "%02X", static_cast<unsigned char>(*read));
+        out += 2;
+        read++;
     }
-    return iri_size - 1 + hex_characters;
+
+    return iri_size - 1 + hex_bytes;
 }
 } // namespace HexCompression
 
-
 namespace UUIDCompression {
-
-inline bool check_len_iri(std::size_t iri_size) {
+inline bool check_len_iri(size_t iri_size)
+{
     return iri_size >= 36;
 }
 
-bool compress_lower(const char* iri, std::size_t iri_size, char* result) {
+bool compress_lower(const char* iri, size_t iri_size, char* result)
+{
     if (!check_len_iri(iri_size)) {
         return false;
     }
-    std::size_t result_iri_pos = iri_size - 36;
+    const char* initial_iri = iri;
+    size_t result_iri_pos = iri_size - 36;
+    iri += result_iri_pos;
 
     char temp[3];
     temp[2] = '\0';
@@ -134,15 +170,18 @@ bool compress_lower(const char* iri, std::size_t iri_size, char* result) {
         result_iri_pos++;
         i += 2;
     }
-    memcpy(result, iri, iri_size - 36);
+    memcpy(result, initial_iri, iri_size - 36);
     return true;
 }
 
-bool compress_upper(const char* iri, std::size_t iri_size, char* result) {
+bool compress_upper(const char* iri, size_t iri_size, char* result)
+{
     if (!check_len_iri(iri_size)) {
         return false;
     }
-    std::size_t result_iri_pos = iri_size - 36;
+    const char* initial_iri = iri;
+    size_t result_iri_pos = iri_size - 36;
+    iri += result_iri_pos;
 
     char temp[3];
     temp[2] = '\0';
@@ -167,39 +206,51 @@ bool compress_upper(const char* iri, std::size_t iri_size, char* result) {
         result_iri_pos++;
         i += 2;
     }
-    memcpy(result, iri, iri_size - 36);
+    memcpy(result, initial_iri, iri_size - 36);
     return true;
 }
 
-void decompress_lower(char* iri_compressed, std::size_t iri_size, char* result) {
-    memcpy(result, iri_compressed, iri_size - 16);
-    result += iri_size - 16;
+size_t decompress_lower(char* iri_compressed, size_t iri_size)
+{
+    // last 16 bytes will transfor into 36 characters
+    // so we copy those 16 bytes reserving 20 bytes after the string
+    char* out = iri_compressed + (iri_size - 16);
+    char* read = iri_compressed + (iri_size + 20);
+
+    // this writes a copy into read
+    memcpy(read, out, 16);
 
     for (int i = 0; i < 16; ++i) {
         if (i == 4 || i == 6 || i == 8 || i == 10) {
-            *result = '-';
-            result++;
+            *out = '-';
+            out++;
         }
-        sprintf(result, "%02x", static_cast<unsigned char>(iri_compressed[i]));
-        result += 2;
+        sprintf(out, "%02x", static_cast<unsigned char>(*read));
+        read++;
+        out += 2;
     }
-
-    *result = '\0';
+    return iri_size + 20;
 }
 
-void decompress_upper(char* iri_compressed, std::size_t iri_size, char* result) {
-    memcpy(result, iri_compressed, iri_size - 16);
-    result += iri_size - 16;
+size_t decompress_upper(char* iri_compressed, size_t iri_size)
+{
+    // last 16 bytes will transfor into 36 characters
+    // so we copy those 16 bytes reserving 20 bytes after the string
+    char* out = iri_compressed + (iri_size - 16);
+    char* read = iri_compressed + (iri_size + 20);
+
+    // this writes a copy into read
+    memcpy(read, out, 16);
 
     for (int i = 0; i < 16; ++i) {
         if (i == 4 || i == 6 || i == 8 || i == 10) {
-            *result = '-';
-            result++;
+            *out = '-';
+            out++;
         }
-        sprintf(result, "%02X", static_cast<unsigned char>(iri_compressed[i]));
-        result += 2;
+        sprintf(out, "%02X", static_cast<unsigned char>(*read));
+        read++;
+        out += 2;
     }
-
-    *result = '\0';
+    return iri_size + 20;
 }
 } // namespace UUIDCompression

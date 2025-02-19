@@ -13,7 +13,7 @@ class RdfCatalog : public Catalog {
 public:
     static constexpr uint64_t MODEL_ID = 1;
 
-    static constexpr uint64_t VERSION  = 6;
+    static constexpr uint64_t VERSION  = 7;
 
     // The database can handle more than MAX_LANG_AND_DTT languages and datatypes,
     // but the catalog can save up to this this many

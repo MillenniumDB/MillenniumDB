@@ -17,7 +17,13 @@ void Aggregation::_begin(Binding& _parent_binding) {
 
 
 void Aggregation::_reset() {
-    this->child->reset();
+    child->reset();
+    new_group = child->next();
+
+    for (auto&& [var_id, agg] : aggregations) {
+        agg->set_binding(child_binding);
+        agg->begin();
+    }
 }
 
 

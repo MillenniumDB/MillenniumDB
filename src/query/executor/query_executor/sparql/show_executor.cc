@@ -24,7 +24,9 @@ ShowExecutor<res, type>::ShowExecutor()
 template<ResponseType res, OpShow::Type type>
 uint64_t ShowExecutor<res, type>::execute(std::ostream& os)
 {
-    const auto& name2metadata = rdf_model.catalog.text_search_index_manager.get_name2metadata();
+    constexpr char delim = res == ResponseType::CSV ? ',' : '\t';
+
+    uint64_t num_res { 0 };
 
     // Header
     auto it = projection_vars.cbegin();
@@ -47,25 +49,23 @@ uint64_t ShowExecutor<res, type>::execute(std::ostream& os)
 
     if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
         assert(projection_vars.size() == 4);
-
-        if constexpr (res == ResponseType::TSV) {
-            for (const auto& [name, metadata] : name2metadata) {
-                os << '"' << name << "\"\t\"" << metadata.predicate << "\"\t\"" << metadata.normalization_type
-                   << "\"\t\"" << metadata.tokenization_type << "\"\n";
-            }
-        } else if constexpr (res == ResponseType::CSV) {
-            for (const auto& [name, metadata] : name2metadata) {
-                os << '"' << name << "\",\"" << metadata.predicate << "\",\"" << metadata.normalization_type
-                   << "\",\"" << metadata.tokenization_type << "\"\n";
-            }
-        } else {
-            throw std::runtime_error("ShowExecutor: Unhandled ResponseType");
+        const auto& name2metadata = rdf_model.catalog.text_search_index_manager.get_name2metadata();
+        num_res = name2metadata.size();
+        for (const auto& [name, metadata] : name2metadata) {
+            os << '"' << name << '"';
+            os << delim;
+            os << '"' << metadata.predicate << '"';
+            os << delim;
+            os << '"' << to_string(metadata.normalization_type) << '"';
+            os << delim;
+            os << '"' << to_string(metadata.tokenization_type) << '"';
+            os << '\n';
         }
     } else {
         throw std::runtime_error("Unhandled Show::Type");
     }
 
-    return name2metadata.size();
+    return num_res;
 }
 
 template<ResponseType res, OpShow::Type type>
@@ -73,14 +73,9 @@ void ShowExecutor<res, type>::analyze(std::ostream& os, bool /*print_stats*/, in
 {
     os << std::string(indent, ' ');
     os << "ShowExecutor(";
-    if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
-        os << "TEXT_SEARCH_INDEX";
-    } else {
-        throw std::runtime_error("Unhandled Show::Type");
-    }
+    os << OpShow::get_type_string(type);
     os << ")\n";
 }
-
 
 template class SPARQL::ShowExecutor<ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>;
 template class SPARQL::ShowExecutor<ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>;

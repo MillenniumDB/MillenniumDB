@@ -1,16 +1,10 @@
 #include "tmp_lists.h"
 
+#include "storage/index/lists/tmp_lists_page.h"
 #include "system/buffer_manager.h"
 
 TmpLists::TmpLists() :
     file_id(buffer_manager.get_tmp_file_id())
-{
-    // +1 because it stores the size of the list in 1 byte
-    buffer = new char[MAX_LIST_SIZE + 1];
-}
-
-TmpLists::TmpLists(TmpFileId file_id) :
-    file_id(file_id)
 {
     // +1 because it stores the size of the list in 1 byte
     buffer = new char[MAX_LIST_SIZE + 1];

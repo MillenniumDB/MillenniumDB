@@ -9,6 +9,7 @@
 #include "graph_models/rdf_model/iri_compression.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 #include "system/path_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
@@ -129,100 +130,85 @@ ObjectId Conversions::pack_string_lang(const std::string& lang, const std::strin
         return ObjectId(id | lang_id);
 }
 
-
-ObjectId Conversions::try_pack_string_datatype(const std::string& dt, const std::string& str) {
-    const char* xml_schema = "http://www.w3.org/2001/XMLSchema#";
-    auto const xml_schema_len = std::strlen(xml_schema);
-
-    bool is_xml_schema = false;
-    if (dt.size() > xml_schema_len) {
-        is_xml_schema = std::memcmp(dt.c_str(), xml_schema, xml_schema_len) == 0;
+ObjectId Conversions::try_pack_string_datatype(const std::string& dt, const std::string& str)
+{
+    namespace MDBType = MDBExtensions::Type;
+    if (dt.size() > MDBType::TYPE_PREFIX_IRI.size()
+        && strncmp(dt.c_str(), MDBType::TYPE_PREFIX_IRI.c_str(), MDBType::TYPE_PREFIX_IRI.size()) == 0)
+    {
+        return try_pack_mdb_datatype(dt, str);
     }
 
-    if (!is_xml_schema) {
-        return pack_string_datatype(dt, str);
+    constexpr std::string_view XML_SCHEMA = "http://www.w3.org/2001/XMLSchema#";
+    if (dt.size() > XML_SCHEMA.size() && strncmp(dt.c_str(), XML_SCHEMA.data(), XML_SCHEMA.size()) == 0) {
+        return try_pack_xsd_datatype(dt, str);
     }
 
-    auto xsd_suffix = dt.substr(xml_schema_len);
+    return pack_string_datatype(dt, str);
+}
+
+ObjectId Conversions::try_pack_xsd_datatype(const std::string& dt, const std::string& str)
+{
+    const std::string_view XML_SCHEMA = "http://www.w3.org/2001/XMLSchema#";
+    const auto xsd_suffix = dt.substr(XML_SCHEMA.size());
 
     if (xsd_suffix == "date") {
-        uint64_t object_id = DateTime::from_date(str);
+        const auto object_id = DateTime::from_date(str);
         if (object_id == ObjectId::NULL_ID) {
             return pack_string_datatype(dt, str);
         }
         return pack_date(DateTime(object_id));
-
     } else if (xsd_suffix == "time") {
-        uint64_t object_id = DateTime::from_time(str);
+        const auto object_id = DateTime::from_time(str);
         if (object_id == ObjectId::NULL_ID) {
             return pack_string_datatype(dt, str);
         }
         return pack_date(DateTime(object_id));
-
     } else if (xsd_suffix == "dateTime") {
-        uint64_t object_id = DateTime::from_dateTime(str);
+        const auto object_id = DateTime::from_dateTime(str);
         if (object_id == ObjectId::NULL_ID) {
             return pack_string_datatype(dt, str);
         }
         return pack_date(DateTime(object_id));
-
     } else if (xsd_suffix == "dateTimeStamp") {
-        uint64_t object_id = DateTime::from_dateTimeStamp(str);
+        const auto object_id = DateTime::from_dateTimeStamp(str);
         if (object_id == ObjectId::NULL_ID) {
             return pack_string_datatype(dt, str);
         }
         return pack_date(object_id);
-
     } else if (xsd_suffix == "string") {
         return pack_string_xsd(str);
-
     } else if (xsd_suffix == "decimal") {
-        bool    error;
-        Decimal dec(str, &error);
+        bool error;
+        const Decimal dec(str, &error);
         if (error) {
             return pack_string_datatype(dt, str);
         }
         return pack_decimal(dec);
-
     } else if (xsd_suffix == "float") {
         try {
             return pack_float(std::stof(str));
-        }
-        catch (const std::out_of_range& e) {
+        } catch (const std::out_of_range& e) {
+            return pack_string_datatype(dt, str);
+        } catch (const std::invalid_argument& e) {
             return pack_string_datatype(dt, str);
         }
-        catch (const std::invalid_argument& e) {
-            return pack_string_datatype(dt, str);
-        }
-
     } else if (xsd_suffix == "double") {
         try {
             return pack_double(std::stod(str));
-        }
-        catch (const std::out_of_range& e) {
+        } catch (const std::out_of_range& e) {
+            return pack_string_datatype(dt, str);
+        } catch (const std::invalid_argument& e) {
             return pack_string_datatype(dt, str);
         }
-        catch (const std::invalid_argument& e) {
-            return pack_string_datatype(dt, str);
-        }
-    }
-    // Signed integer
-    else if (xsd_suffix == "integer" || xsd_suffix == "long" || xsd_suffix == "int" || xsd_suffix == "short"
-             || xsd_suffix == "byte")
+    } else if (xsd_suffix == "integer" || xsd_suffix == "long" || xsd_suffix == "int" || xsd_suffix == "short" || xsd_suffix == "byte")
     {
         return try_pack_integer(dt, str);
-
-    }
-    // Negative integer
-    else if (xsd_suffix == "nonPositiveInteger" || xsd_suffix == "negativeInteger") {
+    } else if (xsd_suffix == "nonPositiveInteger" || xsd_suffix == "negativeInteger") {
         return try_pack_integer(dt, str);
-    }
-    // Positive integer
-    else if (xsd_suffix == "positiveInteger" || xsd_suffix == "nonNegativeInteger" || xsd_suffix == "unsignedLong"
-               || xsd_suffix == "unsignedInt" || xsd_suffix == "unsignedShort" || xsd_suffix == "unsignedByte")
+    } else if (xsd_suffix == "positiveInteger" || xsd_suffix == "nonNegativeInteger" || xsd_suffix == "unsignedLong" || xsd_suffix == "unsignedInt" || xsd_suffix == "unsignedShort" || xsd_suffix == "unsignedByte")
     {
         return try_pack_integer(dt, str);
-
     } else if (xsd_suffix == "boolean") {
         if (str == "true" || str == "1") {
             return pack_bool(true);
@@ -232,10 +218,30 @@ ObjectId Conversions::try_pack_string_datatype(const std::string& dt, const std:
             return pack_string_datatype(dt, str);
         }
     }
-
     return pack_string_datatype(dt, str);
 }
 
+ObjectId Conversions::try_pack_mdb_datatype(const std::string& dt, const std::string& str) {
+    namespace MDBType = MDBExtensions::Type;
+    const auto mdbtype_suffix = dt.substr(MDBType::TYPE_PREFIX_IRI.size());
+    if (mdbtype_suffix == MDBType::TENSOR_FLOAT_SUFFIX_IRI) {
+        bool error;
+        const auto tensor = Tensor<float>::from_literal(str, &error);
+        if (error) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_tensor<float>(tensor);
+    } else if (mdbtype_suffix == MDBType::TENSOR_DOUBLE_SUFFIX_IRI) {
+        bool error;
+        const auto tensor = Tensor<double>::from_literal(str, &error);
+        if (error) {
+            return pack_string_datatype(dt, str);
+        }
+        return pack_tensor<double>(tensor);
+    }
+
+    return pack_string_datatype(dt, str);
+}
 
 ObjectId Conversions::pack_string_datatype(const std::string& dt, const std::string& str) {
     uint64_t id;
@@ -308,6 +314,7 @@ ObjectId Conversions::to_boolean(ObjectId oid) {
     case ObjectId::MASK_STRING_SIMPLE_INLINED:
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     case ObjectId::MASK_STRING_SIMPLE_EXTERN:
+    case ObjectId::MASK_STRING_SIMPLE_TMP:
         return ObjectId(ObjectId::BOOL_TRUE);
     // Integer
     case ObjectId::MASK_NEGATIVE_INT:
@@ -329,6 +336,18 @@ ObjectId Conversions::to_boolean(ObjectId oid) {
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Note: Extern decimals will never be zero
     case ObjectId::MASK_DECIMAL_EXTERN:
+    case ObjectId::MASK_DECIMAL_TMP:
+        return ObjectId(ObjectId::BOOL_TRUE);
+    // Tensor
+    // Note: This assumes empty tensors will never be external/tmp and they are the only inlined value
+    case ObjectId::MASK_TENSOR_FLOAT_INLINED:
+    case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
+        return ObjectId(ObjectId::BOOL_FALSE);
+    // Note: Extern/tmp tensors will never be empty
+    case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
+    case ObjectId::MASK_TENSOR_FLOAT_TMP:
+    case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
+    case ObjectId::MASK_TENSOR_DOUBLE_TMP:
         return ObjectId(ObjectId::BOOL_TRUE);
     // Can not be converted to boolean
     default:
@@ -448,7 +467,6 @@ ObjectId Conversions::pack_double(double dbl) {
     return ObjectId(oid);
 }
 
-
 /**
  *  @brief Calculates the datatype that should be used for expression evaluation.
  *  @param oid1 ObjectId of the first operand.
@@ -466,13 +484,16 @@ uint8_t Conversions::calculate_optype(ObjectId oid1, ObjectId oid2) {
  *  @param oid ObjectId of the operand involved in an expression.
  *  @return generic numeric datatype of the operand or OPTYPE_INVALID if oid is not numeric
  */
-uint8_t Conversions::calculate_optype(ObjectId oid) {
+uint8_t Conversions::calculate_optype(ObjectId oid)
+{
     switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:     return OPTYPE_INTEGER;
-    case ObjectId::MASK_DECIMAL: return OPTYPE_DECIMAL;
-    case ObjectId::MASK_FLOAT:   return OPTYPE_FLOAT;
-    case ObjectId::MASK_DOUBLE:  return OPTYPE_DOUBLE;
-    default: return OPTYPE_INVALID;
+    case ObjectId::MASK_INT:           return OPTYPE_INTEGER;
+    case ObjectId::MASK_DECIMAL:       return OPTYPE_DECIMAL;
+    case ObjectId::MASK_FLOAT:         return OPTYPE_FLOAT;
+    case ObjectId::MASK_DOUBLE:        return OPTYPE_DOUBLE;
+    case ObjectId::MASK_TENSOR_FLOAT:  return OPTYPE_TENSOR_FLOAT;
+    case ObjectId::MASK_TENSOR_DOUBLE: return OPTYPE_TENSOR_FLOAT;
+    default:                           return OPTYPE_INVALID;
     }
 }
 
@@ -663,6 +684,18 @@ std::string Conversions::to_lexical_str(ObjectId oid) {
     case RDF_OID::Type::NULL_ID: {
         return "";
     }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        const auto tensor = unpack_tensor<float>(oid);
+        return tensor.to_string();
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        const auto tensor = unpack_tensor<double>(oid);
+        return tensor.to_string();
+    }
     }
     return "";
 }
@@ -797,6 +830,20 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid) {
         os << "NULL";
         break;
     }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        const auto tensor = unpack_tensor<float>(oid);
+        os << tensor.to_string();
+        break;
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        const auto tensor = unpack_tensor<double>(oid);
+        os << tensor.to_string();
+        break;
+    }
     }
     return os;
 }
@@ -905,6 +952,8 @@ void Conversions::print_iri(ObjectId oid, std::ostream& os) {
     auto& prefix = rdf_model.catalog.prefixes.get_prefix(prefix_id);
     os << prefix;
 
+    char* buffer = get_query_ctx().get_buffer1();
+
     switch (oid.get_type()) {
     case ObjectId::MASK_IRI_INLINED: {
         Inliner::print_string_inlined<6>(os, oid.id);
@@ -921,35 +970,43 @@ void Conversions::print_iri(ObjectId oid, std::ostream& os) {
         break;
     }
     case ObjectId::MASK_IRI_UUID_LOWER_TMP:{
-        print_tmp_iri_uuid_lower(oid, os);
+        auto size = print_tmp_iri_uuid_lower(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_UUID_LOWER: {
-        print_iri_uuid_lower(oid, os);
+        auto size = print_iri_uuid_lower(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_UUID_UPPER_TMP: {
-        print_tmp_iri_uuid_upper(oid, os);
+        auto size = print_tmp_iri_uuid_upper(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_UUID_UPPER: {
-        print_iri_uuid_upper(oid, os);
+        auto size = print_iri_uuid_upper(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_HEX_LOWER_TMP: {
-        print_tmp_iri_hex_lower(oid, os);
+        auto size = print_tmp_iri_hex_lower(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_HEX_LOWER: {
-        print_iri_hex_lower(oid, os);
+        auto size = print_iri_hex_lower(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_HEX_UPPER_TMP: {
-        print_tmp_iri_hex_upper(oid, os);
+        auto size = print_tmp_iri_hex_upper(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     case ObjectId::MASK_IRI_HEX_UPPER: {
-        print_iri_hex_upper(oid, os);
+        auto size = print_iri_hex_upper(oid, buffer);
+        os.write(buffer, size);
         break;
     }
     default:
@@ -957,173 +1014,173 @@ void Conversions::print_iri(ObjectId oid, std::ostream& os) {
     }
 }
 
+size_t Conversions::print_iri(ObjectId oid, char* out)
+{
+    auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
+    auto& prefix = rdf_model.catalog.prefixes.get_prefix(prefix_id);
+    std::memcpy(out, prefix.data(), prefix.size());
 
-void Conversions::print_iri_uuid_lower(ObjectId oid, std::ostream& os) {
-    char* iri_buffer    = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
-    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-    uint64_t size        = string_manager.print_to_buffer(iri_buffer, external_id);
-    UUIDCompression::decompress_lower(iri_buffer, size, result_buffer);
-
-    os.write(result_buffer, size + 20);
+    return prefix.size() + print_iri_suffix(oid, out + prefix.size());
 }
 
-
-void Conversions::print_iri_uuid_upper(ObjectId oid, std::ostream& os) {
-    char* iri_buffer    = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
-    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-    uint64_t size        = string_manager.print_to_buffer(iri_buffer, external_id);
-    UUIDCompression::decompress_upper(iri_buffer, size, result_buffer);
-
-    os.write(result_buffer, size + 20);
+size_t Conversions::print_iri_suffix(ObjectId oid, char* out)
+{
+    switch (oid.get_type() >> 56) {
+    case ObjectId::MASK_IRI_INLINED >> 56: {
+        return Inliner::print_string_inlined<6>(out, oid.id);
+    }
+    case ObjectId::MASK_IRI_EXTERN >> 56: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return string_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_IRI_TMP >> 56: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return tmp_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_IRI_UUID_LOWER_TMP >> 56: {
+        return print_tmp_iri_uuid_lower(oid, out);
+    }
+    case ObjectId::MASK_IRI_UUID_LOWER >> 56: {
+        return print_iri_uuid_lower(oid, out);
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER_TMP >> 56: {
+        return print_tmp_iri_uuid_upper(oid, out);
+    }
+    case ObjectId::MASK_IRI_UUID_UPPER >> 56: {
+        return print_iri_uuid_upper(oid, out);
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER_TMP >> 56: {
+        return print_tmp_iri_hex_lower(oid, out);
+    }
+    case ObjectId::MASK_IRI_HEX_LOWER >> 56: {
+        return print_iri_hex_lower(oid, out);
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER_TMP >> 56: {
+        return print_tmp_iri_hex_upper(oid, out);
+    }
+    case ObjectId::MASK_IRI_HEX_UPPER >> 56: {
+        return print_iri_hex_upper(oid, out);
+    }
+    default:
+        throw LogicException("Called unpack_iri with incorrect ObjectId type, this should never happen");
+    }
 }
 
-
-void Conversions::print_tmp_iri_uuid_lower(ObjectId oid, std::ostream& os) {
-    char* iri_buffer    = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
+size_t Conversions::print_iri_uuid_lower(ObjectId oid, char* buffer)
+{
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-    uint64_t size        = tmp_manager.print_to_buffer(iri_buffer, external_id);
-    UUIDCompression::decompress_lower(iri_buffer, size, result_buffer);
-
-    os.write(result_buffer, size + 20);
+    uint64_t size = string_manager.print_to_buffer(buffer, external_id);
+    return UUIDCompression::decompress_lower(buffer, size);
 }
 
-
-void Conversions::print_tmp_iri_uuid_upper(ObjectId oid, std::ostream& os) {
-    char* iri_buffer    = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
+size_t Conversions::print_iri_uuid_upper(ObjectId oid, char* buffer)
+{
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-    uint64_t size        = tmp_manager.print_to_buffer(iri_buffer, external_id);
-    UUIDCompression::decompress_upper(iri_buffer, size, result_buffer);
-
-    os.write(result_buffer, size + 20);
+    uint64_t size = string_manager.print_to_buffer(buffer, external_id);
+    return UUIDCompression::decompress_upper(buffer, size);
 }
 
+size_t Conversions::print_tmp_iri_uuid_lower(ObjectId oid, char* buffer)
+{
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size = tmp_manager.print_to_buffer(buffer, external_id);
+    return UUIDCompression::decompress_lower(buffer, size);
+}
 
-void Conversions::print_iri_hex_lower(ObjectId oid, std::ostream& os) {
-    char* buffer        = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
+size_t Conversions::print_tmp_iri_uuid_upper(ObjectId oid, char* buffer)
+{
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+    uint64_t size = tmp_manager.print_to_buffer(buffer, external_id);
+    return UUIDCompression::decompress_upper(buffer, size);
+}
 
+size_t Conversions::print_iri_hex_lower(ObjectId oid, char* buffer)
+{
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
     auto size = string_manager.print_to_buffer(buffer, external_id);
-    auto decompressed_size = HexCompression::decompress_lower(buffer, size, result_buffer);
-
-    os.write(result_buffer, decompressed_size);
+    return HexCompression::decompress_lower(buffer, size);
 }
 
-
-void Conversions::print_tmp_iri_hex_lower(ObjectId oid, std::ostream& os) {
-    char* buffer        = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
+size_t Conversions::print_tmp_iri_hex_lower(ObjectId oid, char* buffer)
+{
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
     auto size = tmp_manager.print_to_buffer(buffer, external_id);
-    auto decompressed_size = HexCompression::decompress_lower(buffer, size, result_buffer);
-
-    os.write(result_buffer, decompressed_size);
+    return HexCompression::decompress_lower(buffer, size);
 }
 
-
-void Conversions::print_iri_hex_upper(ObjectId oid, std::ostream& os) {
-    char* buffer        = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
+size_t Conversions::print_iri_hex_upper(ObjectId oid, char* buffer) {
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
     auto size = string_manager.print_to_buffer(buffer, external_id);
-    auto decompressed_size = HexCompression::decompress_upper(buffer, size, result_buffer);
-
-    os.write(result_buffer, decompressed_size);
+    return HexCompression::decompress_upper(buffer, size);
 }
 
 
-void Conversions::print_tmp_iri_hex_upper(ObjectId oid, std::ostream& os) {
-    char* buffer        = get_query_ctx().get_buffer1();
-    char* result_buffer = get_query_ctx().get_buffer2();
-
+size_t Conversions::print_tmp_iri_hex_upper(ObjectId oid, char* buffer) {
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
     auto size = tmp_manager.print_to_buffer(buffer, external_id);
-    auto decompressed_size = HexCompression::decompress_upper(buffer, size, result_buffer);
-
-    os.write(result_buffer, decompressed_size);
+    return HexCompression::decompress_upper(buffer, size);
 }
 
 
 std::string Conversions::unpack_iri(ObjectId oid) {
     auto prefix_id = oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
     auto prefix = rdf_model.catalog.prefixes.get_prefix(prefix_id);
+    char* buffer = get_query_ctx().get_buffer1();
 
     switch (oid.get_type()) {
     case ObjectId::MASK_IRI_INLINED: {
         return prefix + Inliner::get_string_inlined<6>(oid.id);
     }
     case ObjectId::MASK_IRI_EXTERN: {
-        std::stringstream ss;
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        string_manager.print(ss, external_id);
-
-        prefix.append(ss.str());
+        auto size = string_manager.print_to_buffer(buffer, external_id);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_UUID_LOWER: {
-        std::stringstream ss;
-        print_iri_uuid_lower(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_iri_uuid_lower(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_UUID_UPPER: {
-        std::stringstream ss;
-        print_iri_uuid_upper(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_iri_uuid_upper(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_UUID_LOWER_TMP: {
-        std::stringstream ss;
-        print_tmp_iri_uuid_lower(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_tmp_iri_uuid_lower(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_UUID_UPPER_TMP: {
-        std::stringstream ss;
-        print_tmp_iri_uuid_upper(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_tmp_iri_uuid_upper(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
-    case ObjectId::MASK_IRI_HEX_LOWER_TMP:{
-        std::stringstream ss;
-        print_tmp_iri_hex_lower(oid, ss);
-        prefix.append(ss.str());
+    case ObjectId::MASK_IRI_HEX_LOWER_TMP: {
+        auto size = print_tmp_iri_hex_lower(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_HEX_UPPER_TMP: {
-        std::stringstream ss;
-        print_tmp_iri_hex_upper(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_tmp_iri_hex_upper(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_TMP: {
-        std::stringstream ss;
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        tmp_manager.print_str(ss, external_id);
-
-        prefix.append(ss.str());
+        auto size = tmp_manager.print_to_buffer(buffer, external_id);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_HEX_LOWER: {
-        std::stringstream ss;
-        print_iri_hex_lower(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_iri_hex_lower(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     case ObjectId::MASK_IRI_HEX_UPPER: {
-        std::stringstream ss;
-        print_iri_hex_upper(oid, ss);
-        prefix.append(ss.str());
+        auto size = print_iri_hex_upper(oid, buffer);
+        prefix.append(buffer, size);
         return prefix;
     }
     default:
@@ -1152,10 +1209,31 @@ void Conversions::print_string(ObjectId oid, std::ostream& os) {
         break;
     }
     default:
-        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
+        throw LogicException("Called print_string with incorrect ObjectId type, this should never happen");
     }
 }
 
+size_t Conversions::print_string(ObjectId oid, char* out)
+{
+    switch (oid.get_type()) {
+    case ObjectId::MASK_STRING_SIMPLE_INLINED:
+    case ObjectId::MASK_STRING_XSD_INLINED: {
+        return Inliner::print_string_inlined<7>(out, oid.id);
+    }
+    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
+    case ObjectId::MASK_STRING_XSD_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return string_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_STRING_SIMPLE_TMP:
+    case ObjectId::MASK_STRING_XSD_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return tmp_manager.print_to_buffer(out, external_id);
+    }
+    default:
+        throw LogicException("Called print_string with incorrect ObjectId type, this should never happen");
+    }
+}
 
 std::string Conversions::unpack_string(ObjectId oid) {
     switch (oid.get_type()) {
@@ -1250,6 +1328,27 @@ void Conversions::print_string_lang(ObjectId oid, std::ostream& os) {
     }
 }
 
+// Doesn't print the language
+size_t Conversions::print_string_lang(ObjectId oid, char* out)
+{
+    switch (oid.get_type()) {
+    case ObjectId::MASK_STRING_LANG_INLINED: {
+        return Inliner::print_string_inlined<5>(out, oid.id);
+    }
+    case ObjectId::MASK_STRING_LANG_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return string_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_STRING_LANG_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return tmp_manager.print_to_buffer(out, external_id);
+    }
+    default:
+        throw LogicException(
+            "Called unpack_string_lang with incorrect ObjectId type, this should never happen"
+        );
+    }
+}
 
 // returns <datatype, str>
 std::pair<std::string, std::string> Conversions::unpack_string_datatype(ObjectId oid) {
@@ -1315,5 +1414,27 @@ void Conversions::print_string_datatype(ObjectId oid, std::ostream& os) {
     }
     default:
         throw LogicException("Called unpack_string_data with incorrect ObjectId type, this should never happen");
+    }
+}
+
+// Doesn't print the datatype
+size_t Conversions::print_string_datatype(ObjectId oid, char* out)
+{
+    switch (oid.get_type()) {
+    case ObjectId::MASK_STRING_DATATYPE_INLINED: {
+        return Inliner::print_string_inlined<5>(out, oid.id);
+    }
+    case ObjectId::MASK_STRING_DATATYPE_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return string_manager.print_to_buffer(out, external_id);
+    }
+    case ObjectId::MASK_STRING_DATATYPE_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        return tmp_manager.print_to_buffer(out, external_id);
+    }
+    default:
+        throw LogicException(
+            "Called unpack_string_data with incorrect ObjectId type, this should never happen"
+        );
     }
 }

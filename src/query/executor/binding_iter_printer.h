@@ -66,6 +66,10 @@ public:
     virtual void visit(Values&)                    override;
     virtual void visit(SetConstants&)              override;
     virtual void visit(SetLabels&)                 override;
+    virtual void visit(SetStartBoundaryVariable&)  override;
+    virtual void visit(SetEndBoundaryVariable&)    override;
+    virtual void visit(Sequence&)                  override;
+    virtual void visit(SetRepeatedVariable&)       override;
 
     virtual void visit(HashJoin::BGP::Hybrid::Join1Var&)       override;
     virtual void visit(HashJoin::BGP::Hybrid::Join<2>&)        override;
@@ -132,4 +136,22 @@ public:
     virtual void visit(Paths::AnyTrails::BFSEnum&)                 override;
     virtual void visit(Paths::AnyTrails::DFSCheck&)                override;
     virtual void visit(Paths::AnyTrails::DFSEnum&)                 override;
+
+    virtual void visit(Paths::ShortestKSimple::BFSCheck<false>&)       override {}
+    virtual void visit(Paths::ShortestKSimple::BFSCheck<true>&)        override {}
+    virtual void visit(Paths::ShortestKSimple::BFSEnum<false>&)        override {}
+    virtual void visit(Paths::ShortestKSimple::BFSEnum<true>&)         override {}
+    virtual void visit(Paths::ShortestKTrails::BFSCheck&) override {}
+    virtual void visit(Paths::ShortestKTrails::BFSEnum&)  override {}
+    virtual void visit(Paths::ShortestKWalks::BFSCheck&) override {}
+    virtual void visit(Paths::ShortestKWalks::BFSEnum&)  override {}
+
+    virtual void visit(Paths::ShortestKGroupsSimple::BFSCheck<false>&) override {}
+    virtual void visit(Paths::ShortestKGroupsSimple::BFSCheck<true>&)  override {}
+    virtual void visit(Paths::ShortestKGroupsSimple::BFSEnum<false>&)  override {}
+    virtual void visit(Paths::ShortestKGroupsSimple::BFSEnum<true>&)   override {}
+    virtual void visit(Paths::ShortestKGroupsTrails::BFSCheck&) override {}
+    virtual void visit(Paths::ShortestKGroupsTrails::BFSEnum&) override {}
+    virtual void visit(Paths::ShortestKGroupsWalks::BFSCheck&) override {}
+    virtual void visit(Paths::ShortestKGroupsWalks::BFSEnum&) override {}
 };

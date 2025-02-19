@@ -7,10 +7,22 @@ namespace MQL {
 
 class OpShow : public Op {
 public:
-    enum Type : uint8_t {
+    enum class Type : uint8_t {
         TENSOR_STORE,
         TEXT_SEARCH_INDEX,
     };
+
+    static std::string get_type_string(Type type)
+    {
+        switch (type) {
+        case Type::TENSOR_STORE:
+            return "TENSOR_STORE";
+        case Type::TEXT_SEARCH_INDEX:
+            return "TEXT_SEARCH_INDEX";
+        default:
+            return "UNKNOWN";
+        }
+    }
 
     Type type;
 
@@ -51,19 +63,10 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        return os << "OpShow(" << type << ")\n";
+        os << "OpShow(";
+        os << OpShow::get_type_string(type);
+        return os << ")\n";
     }
 };
-} // namespace MQL
 
-inline std::ostream& operator<<(std::ostream& os, const MQL::OpShow::Type& type)
-{
-    switch (type) {
-    case MQL::OpShow::Type::TENSOR_STORE:
-        return os << "TENSOR_STORE";
-    case MQL::OpShow::Type::TEXT_SEARCH_INDEX:
-        return os << "TEXT_SEARCH_INDEX";
-    default:
-        return os << "UNKNOWN_SHOW_TYPE";
-    }
-}
+} // namespace MQL

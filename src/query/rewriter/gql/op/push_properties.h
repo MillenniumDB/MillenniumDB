@@ -13,12 +13,14 @@ public:
     ExtractPropertiesFromExpr visitor;
     std::unique_ptr<Op> tmp;
     std::vector<PropertyValue> properties;
+    std::set<VarId> vars_in_linear_pattern;
 
     void visit(OpGraphPattern&) override;
     void visit(OpGraphPatternList&) override;
     void visit(OpBasicGraphPattern&) override;
     void visit(OpRepetition&) override;
     void visit(OpReturn&) override;
+    void visit(OpLinearPattern&) override;
 
     void visit(OpOrderBy&) override;
     void visit(OpFilter&) override;

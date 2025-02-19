@@ -5,6 +5,17 @@
 #include "query/parser/op/op.h"
 
 namespace GQL {
+
+struct LabelOpId {
+    std::unique_ptr<Op> op;
+    VarId id;
+
+    LabelOpId(std::unique_ptr<Op> op, VarId id) :
+        op(std::move(op)),
+        id(id)
+    { }
+};
+
 class OpNodeLabel : public Op {
 public:
     VarId node_id;
@@ -27,7 +38,7 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        return {};
+        return { node_id };
     }
 
     std::set<VarId> get_scope_vars() const override
@@ -37,7 +48,7 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        return { node_id };
     }
 
     std::set<VarId> get_fixable_vars() const override

@@ -1,6 +1,7 @@
 #include "streaming_executor_constructor.h"
 
 #include "graph_models/quad_model/quad_model.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "query/executor/binding_iter/scan_ranges/term.h"
@@ -135,11 +136,14 @@ void StreamingExecutorConstructor::visit(OpSet& op_set)
 
 void StreamingExecutorConstructor::visit(OpShow& op_show)
 {
-    if (op_show.type == MQL::OpShow::Type::TENSOR_STORE) {
+    switch (op_show.type) {
+    case MQL::OpShow::Type::TENSOR_STORE:
         executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::TENSOR_STORE>>();
-    } else if (op_show.type == MQL::OpShow::Type::TEXT_SEARCH_INDEX) {
+        break;
+    case MQL::OpShow::Type::TEXT_SEARCH_INDEX:
         executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
-    } else {
-        throw std::runtime_error("Unknown show type");
+        break;
+    default:
+        throw NotSupportedException("MQL::StreamingExecutorConstructor::visit(OpShow&): Unhandled SHOW");
     }
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <filesystem>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
@@ -35,18 +34,15 @@ public:
     static constexpr char HASH_DIRECTORY_FILENAME[] = "hash.dir";
 
     // Initialize a new tensor_store
-    static void create(
-        const std::filesystem::path& db_directory,
+    static std::unique_ptr<TensorStore> create(
         const std::string& tensor_store_name,
-        uint64_t tensors_dim
+        uint64_t tensors_dim,
+        uint64_t vtensor_frame_pool_size_in_bytes
     );
 
     // Load an existing tensor_store with a limited frame pool size
-    static std::unique_ptr<TensorStore> load(
-        const std::filesystem::path& db_directory,
-        const std::string& tensor_store_name,
-        uint64_t vtensor_frame_pool_size_in_bytes
-    );
+    static std::unique_ptr<TensorStore>
+        load(const std::string& tensor_store_name, uint64_t vtensor_frame_pool_size_in_bytes);
 
     inline static void unpin(VTensor& vtensor)
     {
@@ -60,7 +56,7 @@ public:
 
     ~TensorStore();
 
-    // Returns true if found, false otherwise
+    // Get tensor by its associated ObjectId. Returns true if found, false otherwise
     bool get(ObjectId object_id, VTensor** vtensor);
 
     // Returns true if new object_id was inserted, false if object_id already existed and was overwritten

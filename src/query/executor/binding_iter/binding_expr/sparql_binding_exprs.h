@@ -1,66 +1,74 @@
 #pragma once
 
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_abs.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_addition.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_and.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_bnode.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_bound.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_cast.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_ceil.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_coalesce.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_concat.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_contains.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_datatype.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_day.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_division.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_encode_for_uri.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_equals.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_exists.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_floor.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_greater.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_greater_or_equal.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_hours.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_if.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_in.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_iri.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_blank.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_iri.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_literal.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_numeric.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lang.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lang_matches.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lcase.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_less.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_less_or_equal.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_md5.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_minutes.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_month.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_multiplication.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_not.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_not_exists.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_or.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_regex.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_replace.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_round.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_same_term.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_seconds.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha1.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha256.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha384.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha512.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_after.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_before.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_dt.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_ends.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_lang.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_len.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_starts.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_substr.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_subtraction.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_timezone.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_tz.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_ucase.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_unary_minus.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_unary_plus.h"
-#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_year.h"
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_abs.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_addition.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_and.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_bnode.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_bound.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_cast.h"     // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_ceil.h"     // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_coalesce.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_concat.h"   // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_contains.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_datatype.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_day.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_division.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_encode_for_uri.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_equals.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_exists.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_floor.h"   // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_greater.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_greater_or_equal.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_hours.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_if.h"            // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_in.h"            // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_iri.h"           // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_blank.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_iri.h"        // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_literal.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_is_numeric.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lang.h"          // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lang_matches.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_lcase.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_less.h"          // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_less_or_equal.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_md5.h"           // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_minutes.h"       // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_month.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_multiplication.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_not.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_not_exists.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_or.h"          // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_regex.h"       // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_replace.h"     // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_round.h"       // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_same_term.h"   // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_seconds.h"     // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha1.h"        // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha256.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha384.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sha512.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_after.h"   // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_before.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_dt.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_ends.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_lang.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_len.h"     // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_str_starts.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_substr.h"      // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_subtraction.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_timezone.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_tz.h"          // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_ucase.h"       // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_unary_minus.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_unary_plus.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_year.h"        // IWYU pragma: export
+
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_cosine_similarity.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_dot.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_euclidean_distance.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_manhattan_distance.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_pow.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sqrt.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_sum.h"  // IWYU pragma: export

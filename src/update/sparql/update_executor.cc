@@ -272,7 +272,7 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
             }
 
             rdf_model.catalog.insert_triple(S.id, P.id, O.id);
-            triples_inserted++;
+            graph_update_data.triples_inserted++;
 
             Record<3> record_pos = { P.id, O.id, S.id };
             rdf_model.pos->insert(record_pos);
@@ -333,21 +333,18 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
         );
         assert(found && "Text search index not found");
 
-        uint_fast32_t inserted_elements { 0 };
-        uint_fast32_t inserted_tokens { 0 };
+        TextSearchIndexUpdateData tsi_update {};
+        tsi_update.text_search_index_name = name;
+
         for (const auto& [S, O] : inserts) {
             const auto current_inserted_tokens = text_search_index->index_single(S, O);
             if (current_inserted_tokens > 0) {
-                ++inserted_elements;
-                inserted_tokens += current_inserted_tokens;
+                ++tsi_update.inserted_elements;
+                tsi_update.inserted_tokens += current_inserted_tokens;
             }
         }
 
-        TextSearchIndexUpdateData tsi_update;
-        tsi_update.text_search_index_name = name;
-        tsi_update.inserted_elements = inserted_elements;
-        tsi_update.inserted_tokens = inserted_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     }
 }
 
@@ -404,7 +401,7 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
             }
 
             rdf_model.catalog.delete_triple(S.id, P.id, O.id);
-            triples_deleted++;
+            graph_update_data.triples_deleted++;
 
             Record<3> record_pos = { P.id, O.id, S.id };
             rdf_model.pos->delete_record(record_pos);
@@ -465,21 +462,18 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
         );
         assert(found && "Text search index not found");
 
-        uint_fast32_t removed_elements { 0 };
-        uint_fast32_t removed_tokens { 0 };
+        TextSearchIndexUpdateData tsi_update {};
+        tsi_update.text_search_index_name = name;
+
         for (const auto& [S, O] : deletes) {
             const auto current_removed_tokens = text_search_index->remove_single(S, O);
             if (current_removed_tokens > 0) {
-                ++removed_elements;
-                removed_tokens += current_removed_tokens;
+                ++tsi_update.removed_elements;
+                tsi_update.removed_tokens += current_removed_tokens;
             }
         }
 
-        TextSearchIndexUpdateData tsi_update;
-        tsi_update.text_search_index_name = name;
-        tsi_update.removed_elements = removed_elements;
-        tsi_update.removed_tokens = removed_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     }
 }
 
@@ -494,11 +488,12 @@ void UpdateExecutor::visit(SPARQL::OpCreateTextSearchIndex& op_create_text_searc
             op_create_text_search_index.tokenize_type
         );
 
-        TextSearchIndexUpdateData tsi_update;
+        TextSearchIndexUpdateData tsi_update {};
         tsi_update.text_search_index_name = op_create_text_search_index.text_search_index_name;
+        tsi_update.created = true;
         tsi_update.inserted_elements = inserted_elements;
         tsi_update.inserted_tokens = inserted_tokens;
-        text_search_index_updates.emplace_back(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(tsi_update));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
@@ -509,24 +504,35 @@ void UpdateExecutor::print_stats(std::ostream& os)
 {
     bool has_changes = false;
 
-    if (triples_inserted != 0) {
-        os << "Triples inserted: " << triples_inserted << '\n';
+    if (!graph_update_data.empty()) {
+        os << "Graph updates:\n";
+        os << "  " << graph_update_data << '\n';
+        has_changes = true;
     }
 
-    if (triples_deleted != 0) {
-        os << "Triples deleted: " << triples_deleted << '\n';
-    }
-
-    if (!text_search_index_updates.empty()) {
+    if (!name2text_search_index_update_data.empty()) {
         os << "TextSearchIndex updates:\n";
-        for (const auto& text_search_update_data : text_search_index_updates) {
-            os << text_search_update_data;
-            os << '\n';
+        for (const auto& [_, tsi_update] : name2text_search_index_update_data) {
+            os << "  " << tsi_update << '\n';
         }
+        has_changes = true;
     }
 
     if (!has_changes) {
         os << "No modifications were performed\n";
         return;
+    }
+}
+
+void UpdateExecutor::insert_text_search_index_update_data(TextSearchIndexUpdateData&& data)
+{
+    auto it = name2text_search_index_update_data.find(data.text_search_index_name);
+    if (it == name2text_search_index_update_data.end()) {
+        name2text_search_index_update_data.emplace(data.text_search_index_name, std::move(data));
+    } else {
+        it->second.inserted_elements += data.inserted_elements;
+        it->second.inserted_tokens += data.inserted_tokens;
+        it->second.removed_elements += data.removed_elements;
+        it->second.removed_tokens += data.removed_tokens;
     }
 }

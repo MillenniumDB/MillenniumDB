@@ -7,6 +7,7 @@
 #include "graph_models/gql/conversions.h"
 #include "graph_models/gql/gql_model.h"
 #include "graph_models/inliner.h"
+#include "query/query_context.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
@@ -56,65 +57,13 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
 
     switch (lhs_gen_t) {
     case GQL_OID::GenericType::STRING: {
-        auto lhs_sub_t = lhs_oid.get_sub_type();
-        auto rhs_sub_t = rhs_oid.get_sub_type();
+        auto lhs_buffer = get_query_ctx().get_buffer1();
+        auto rhs_buffer = get_query_ctx().get_buffer2();
 
-        if (lhs_sub_t != rhs_sub_t) {
-            return static_cast<int64_t>(lhs_sub_t) - static_cast<int64_t>(rhs_sub_t);
-        }
-        auto lhs_mod = lhs_oid.get_mod();
-        auto rhs_mod = rhs_oid.get_mod();
+        auto lhs_size = Conversions::print_string(lhs_oid, lhs_buffer);
+        auto rhs_size = Conversions::print_string(rhs_oid, rhs_buffer);
 
-        auto lhs_value = lhs_oid.get_value();
-        auto rhs_value = rhs_oid.get_value();
-
-        std::unique_ptr<CharIter> lhs_string_iter;
-        std::unique_ptr<CharIter> rhs_string_iter;
-
-        switch (lhs_sub_t) {
-        case ObjectId::MASK_STRING_SIMPLE: {
-            switch (lhs_mod) {
-            case ObjectId::MOD_INLINE: {
-                lhs_string_iter = std::make_unique<StringInlineIter>(
-                    Inliner::decode<ObjectId::STR_INLINE_BYTES>(lhs_value)
-                );
-                break;
-            }
-            case ObjectId::MOD_EXTERNAL: {
-                uint64_t external_id = lhs_oid.id & ObjectId::VALUE_MASK;
-                lhs_string_iter = string_manager.get_char_iter(external_id);
-                break;
-            }
-            case ObjectId::MOD_TMP: {
-                uint64_t external_id = lhs_oid.id & ObjectId::VALUE_MASK;
-                lhs_string_iter = tmp_manager.get_str_char_iter(external_id);
-                break;
-            }
-            }
-
-            switch (rhs_mod) {
-            case ObjectId::MOD_INLINE: {
-                rhs_string_iter = std::make_unique<StringInlineIter>(
-                    Inliner::decode<ObjectId::STR_INLINE_BYTES>(rhs_value)
-                );
-                break;
-            }
-            case ObjectId::MOD_EXTERNAL: {
-                uint64_t external_id = rhs_oid.id & ObjectId::VALUE_MASK;
-                rhs_string_iter = string_manager.get_char_iter(external_id);
-                break;
-            }
-            case ObjectId::MOD_TMP: {
-                uint64_t external_id = rhs_oid.id & ObjectId::VALUE_MASK;
-                rhs_string_iter = tmp_manager.get_str_char_iter(external_id);
-                break;
-            }
-            }
-            break;
-        }
-        }
-
-        return string_manager.compare(*lhs_string_iter, *rhs_string_iter);
+        return StringManager::compare(lhs_buffer, rhs_buffer, lhs_size, rhs_size);
     }
     case GQL_OID::GenericType::NUMERIC: {
         auto lhs_sub_t = lhs_oid.get_sub_type();

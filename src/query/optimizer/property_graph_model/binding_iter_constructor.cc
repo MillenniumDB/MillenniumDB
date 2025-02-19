@@ -1,16 +1,22 @@
 #include "binding_iter_constructor.h"
-#include "graph_models/gql/gql_model.h"
+
 #include "graph_models/gql/comparisons.h"
+#include "graph_models/gql/gql_model.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/expr_evaluator.h"
 #include "query/executor/binding_iter/filter.h"
-#include "query/executor/binding_iter/hash_join/generic/hybrid/left_join.h"
 #include "query/executor/binding_iter/index_left_outer_join.h"
 #include "query/executor/binding_iter/index_nested_loop_join.h"
-#include "query/executor/binding_iter/order_by.h"
 #include "query/executor/binding_iter/index_scan.h"
+#include "query/executor/binding_iter/order_by.h"
+#include "query/executor/binding_iter/sequence.h"
 #include "query/executor/binding_iter/set_constants.h"
+#include "query/executor/binding_iter/set_end_boundary_variable.h"
 #include "query/executor/binding_iter/set_labels.h"
+#include "query/executor/binding_iter/set_repeated_variable.h"
+#include "query/executor/binding_iter/set_start_boundary_variable.h"
+#include "query/executor/binding_iter/union.h"
+#include "query/executor/binding_iters.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
 #include "query/optimizer/plan/join_order/leapfrog_optimizer.h"
 #include "query/optimizer/plan/join_order/selinger_optimizer.h"
@@ -34,7 +40,8 @@ using namespace GQL;
 constexpr auto MAX_SELINGER_PLANS = 0;
 
 std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
-get_non_redundant_exprs_gql(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>&& exprs) {
+    get_non_redundant_exprs_gql(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>&& exprs)
+{
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> res;
 
     for (auto&& [var, e] : exprs) {
@@ -46,7 +53,7 @@ get_non_redundant_exprs_gql(std::vector<std::pair<VarId, std::unique_ptr<Binding
             }
         }
 
-        res.push_back({var, std::move(e)});
+        res.push_back({ var, std::move(e) });
     }
     exprs.clear(); // vectors are not guaranteed to be empty after the move, so we make sure of that
     return res;
@@ -54,6 +61,13 @@ get_non_redundant_exprs_gql(std::vector<std::pair<VarId, std::unique_ptr<Binding
 
 void BindingIterConstructor::visit(OpOrderBy& op_order_by)
 {
+    for (const auto& item : op_order_by.items) {
+        if (item->has_aggregation()) {
+            grouping = true;
+            break;
+        }
+    }
+
     op_order_by.op->accept_visitor(*this);
 
     assert(op_order_by.items.size() > 0);
@@ -63,7 +77,14 @@ void BindingIterConstructor::visit(OpOrderBy& op_order_by)
 
 void BindingIterConstructor::visit(OpReturn& op_return)
 {
+    for (auto& item : op_return.return_items) {
+        if (item.expr != nullptr && item.expr->has_aggregation()) {
+            grouping = true;
+            break;
+        }
+    }
     op_return.op->accept_visitor(*this);
+
     std::vector<VarId> order_vars;
     if (op_order_by) {
         for (auto& item : op_order_by->items) {
@@ -72,7 +93,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
             if (casted_expr_var) {
                 order_vars.push_back(casted_expr_var->id);
                 order_saved_vars.insert(casted_expr_var->id);
-            } else if (casted_expr_property){
+            } else if (casted_expr_property) {
                 order_vars.push_back(casted_expr_property->value);
                 order_saved_vars.insert(casted_expr_property->value);
             } else {
@@ -86,23 +107,17 @@ void BindingIterConstructor::visit(OpReturn& op_return)
 
                 expr->accept_visitor(expr_to_binding_expr);
 
-                projection_order_exprs.emplace_back(
-                        var,
-                        std::move(expr_to_binding_expr.tmp)
-                    );
+                projection_order_exprs.emplace_back(var, std::move(expr_to_binding_expr.tmp));
             }
         }
         auto non_redundant_expr_eval = get_non_redundant_exprs_gql(std::move(projection_order_exprs));
         if (non_redundant_expr_eval.size() > 0) {
-            tmp = std::make_unique<ExprEvaluator>(
-                std::move(tmp),
-                std::move(non_redundant_expr_eval)
-            );
+            tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(non_redundant_expr_eval));
         }
         for (auto& var : op_return.get_all_vars()) {
             order_saved_vars.insert(var);
         }
-        if (op_order_by->null_order[0]){
+        if (op_order_by->null_order[0]) {
             tmp = std::make_unique<OrderBy>(
                 std::move(tmp),
                 std::move(order_saved_vars),
@@ -122,6 +137,8 @@ void BindingIterConstructor::visit(OpReturn& op_return)
         op_order_by = nullptr;
     }
 
+
+
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> projection_exprs;
 
     for (auto& item : op_return.return_items) {
@@ -133,8 +150,23 @@ void BindingIterConstructor::visit(OpReturn& op_return)
         }
     }
 
+    if (aggregations.size() > 0 || group_vars.size() > 0) {
+        tmp = std::make_unique<Aggregation>(
+            std::move(tmp),
+            std::move(aggregations),
+            std::move(group_vars)
+        );
+    }
+
     if (projection_exprs.size() > 0) {
         tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(projection_exprs));
+    }
+
+    if (op_return.distinct) {
+        auto projected_vars_set = op_return.get_expr_vars();
+        std::vector<VarId> projected_vars;
+        std::copy(projected_vars_set.begin(), projected_vars_set.end(), std::back_inserter(projected_vars));
+        tmp = std::make_unique<DistinctHash>(std::move(tmp), std::move(projected_vars));
     }
 }
 
@@ -164,7 +196,7 @@ void BindingIterConstructor::visit(OpOptProperties& op_opt_properties)
             index_scan = std::make_unique<IndexScan<3>>(*gql_model.edge_key_value, std::move(ranges));
         }
 
-        std::vector<VarId> rhs_vars = { property.object, property.value };
+        std::vector<VarId> rhs_vars = { property.value };
         tmp = std::make_unique<IndexLeftOuterJoin>(
             std::move(tmp),
             std::move(index_scan),
@@ -175,21 +207,46 @@ void BindingIterConstructor::visit(OpOptProperties& op_opt_properties)
 
 void BindingIterConstructor::visit(OpGraphPatternList& op)
 {
+    std::unique_ptr<BindingIter> current_tmp;
+
     for (auto& pattern : op.patterns) {
         pattern->accept_visitor(*this);
+
+        if (current_tmp == nullptr) {
+            current_tmp = std::move(tmp);
+        } else {
+            current_tmp = std::make_unique<IndexNestedLoopJoin>(std::move(current_tmp), std::move(tmp));
+        }
+        node_at_left = false;
     }
+    tmp = std::move(current_tmp);
 }
 
 void BindingIterConstructor::visit(OpGraphPattern& op)
 {
     op.op->accept_visitor(*this);
+
+    if (op.path_var_id.has_value()) {
+        // tmp = std::make_unique<SetPath>(std::move(tmp), op.path_var_id.value());
+    }
 }
 
-void BindingIterConstructor::visit(OpPathUnion& op)
+void BindingIterConstructor::visit(OpPathUnion& op_union)
 {
-    for (auto& pattern : op.op_list) {
+    std::vector<std::unique_ptr<BindingIter>> iters;
+
+    std::set<VarId> previous_assigned_vars = assigned_vars;
+    bool previous_end_var = node_at_left;
+
+    for (auto& pattern : op_union.op_list) {
         pattern->accept_visitor(*this);
+        iters.push_back(std::move(tmp));
+
+        assigned_vars = previous_assigned_vars;
+        node_at_left = previous_end_var;
     }
+    tmp = std::make_unique<Union>(std::move(iters));
+    node_at_left = true;
 }
 
 void BindingIterConstructor::visit(OpFilter& op_filter)
@@ -222,12 +279,14 @@ void BindingIterConstructor::visit(OpRepetition& op_repetition)
     op_repetition.op->accept_visitor(*this);
 }
 
-void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
+void BindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
 {
-    for (auto& pattern : op_basic_graph_pattern.patterns) {
-        bgp_depth++;
+    base_plans.clear();
+    possible_disjoint_nodes.clear();
+    seen_nodes.clear();
+
+    for (auto& pattern : op_linear_pattern.patterns) {
         pattern->accept_visitor(*this);
-        bgp_depth--;
     }
 
     for (auto& node_id : possible_disjoint_nodes) {
@@ -236,20 +295,22 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         }
     }
 
-    // TODO: maybe this should be in a higher scope
-    // only when depth = 0, we get the iter
-    if (bgp_depth > 0) {
-        return;
+    // assign the leftmost variable
+    if (node_at_left && op_linear_pattern.start != nullptr) {
+        std::set<VarId> input_var = { *op_linear_pattern.start };
+        for (auto& plan : base_plans) {
+            plan->set_input_vars(input_var);
+        }
     }
 
     // Build the basic graph pattern join
     for (auto& plan : base_plans) {
-        plan->set_input_vars(safe_assigned_vars);
+        plan->set_input_vars(assigned_vars);
     }
 
     // try to use leapfrog if there is a join
     if (base_plans.size() > 1) {
-        if (safe_assigned_vars.size() > 0) {
+        if (assigned_vars.size() > 0) {
             tmp = LeapfrogOptimizer::try_get_iter_with_assigned(base_plans);
         } else {
             tmp = LeapfrogOptimizer::try_get_iter_without_assigned(base_plans);
@@ -268,15 +329,49 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         tmp = root_plan->get_binding_iter();
     }
 
-    // insert new safe_assigned_vars
-    for (auto& plan : base_plans) {
-        for (auto var : plan->get_vars()) {
-            safe_assigned_vars.insert(var);
+    if (!setted_vars.empty()) {
+        tmp = std::make_unique<SetConstants>(std::move(tmp), setted_vars);
+    }
+
+    // set start and end vars
+    if (node_at_left && op_linear_pattern.start != nullptr) {
+        get_query_ctx().get_or_create_var(".end");
+
+        if (all_seen_vars.count(*op_linear_pattern.start)) {
+            tmp = std::make_unique<SetRepeatedVariable>(std::move(tmp), *op_linear_pattern.start);
+        } else {
+            tmp = std::make_unique<SetStartBoundaryVariable>(std::move(tmp), *op_linear_pattern.start);
         }
     }
 
-    if (!setted_vars.empty()) {
-        tmp = std::make_unique<SetConstants>(std::move(tmp), setted_vars);
+    if (op_linear_pattern.end != nullptr) {
+        get_query_ctx().get_or_create_var(".end");
+        tmp = std::make_unique<SetEndBoundaryVariable>(std::move(tmp), *op_linear_pattern.end);
+    }
+
+    // insert new assigned vars
+    for (auto& plan : base_plans) {
+        for (auto var : plan->get_vars()) {
+            assigned_vars.insert(var);
+        }
+    }
+    all_seen_vars.insert(assigned_vars.begin(), assigned_vars.end());
+
+    node_at_left = true;
+}
+
+void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
+{
+    std::vector<std::unique_ptr<BindingIter>> iters;
+
+    for (auto& pattern : op_basic_graph_pattern.patterns) {
+        pattern->accept_visitor(*this);
+        iters.push_back(std::move(tmp));
+    }
+    if (iters.size() > 1) {
+        tmp = std::make_unique<Sequence>(std::move(iters));
+    } else {
+        tmp = std::move(iters[0]);
     }
 }
 
@@ -325,19 +420,20 @@ void BindingIterConstructor::visit(OpEdgeLabel& op_edge_label)
 
 void BindingIterConstructor::visit(OpProperty& op_property)
 {
-    for (auto& op_property : op_property.properties) {
-        seen_nodes.insert(op_property.object);
+    seen_nodes.insert(op_property.property.object);
+    setted_vars.insert({ op_property.property.var_with_property, op_property.property.value });
 
-        setted_vars.push_back({ op_property.var_with_property, op_property.value });
-
-        if (op_property.type == VarType::Node) {
-            base_plans.push_back(
-                std::make_unique<NodePropertyPlan>(op_property.object, op_property.key, op_property.value)
-            );
-        } else {
-            base_plans.push_back(
-                std::make_unique<EdgePropertyPlan>(op_property.object, op_property.key, op_property.value)
-            );
-        }
+    if (op_property.property.type == VarType::Node) {
+        base_plans.push_back(std::make_unique<NodePropertyPlan>(
+            op_property.property.object,
+            op_property.property.key,
+            op_property.property.value
+        ));
+    } else {
+        base_plans.push_back(std::make_unique<EdgePropertyPlan>(
+            op_property.property.object,
+            op_property.property.key,
+            op_property.property.value
+        ));
     }
 }

@@ -107,6 +107,17 @@ public:
     static constexpr uint64_t MASK_IRI_HEX_UPPER           = 0xAD'00000000000000UL; // 0b1010'11'01
     static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP       = 0xAE'00000000000000UL; // 0b1010'11'10
 
+    // Inlined tensors are only used to represent the empty tensor
+    static constexpr uint64_t MASK_TENSOR                  = 0xB0'00000000000000UL; // 0b1011'00'00  GENERIC
+    static constexpr uint64_t MASK_TENSOR_FLOAT            = 0xB0'00000000000000UL; // 0b1011'00'00    SUBTYPE
+    static constexpr uint64_t MASK_TENSOR_FLOAT_INLINED    = 0xB0'00000000000000UL; // 0b1011'00'00      TYPE
+    static constexpr uint64_t MASK_TENSOR_FLOAT_EXTERN     = 0xB1'00000000000000UL; // 0b1011'00'01      TYPE
+    static constexpr uint64_t MASK_TENSOR_FLOAT_TMP        = 0xB2'00000000000000UL; // 0b1011'00'10      TYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE           = 0xB4'00000000000000UL; // 0b1011'10'00    SUBTYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_INLINED   = 0xB4'00000000000000UL; // 0b1011'10'00      TYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXTERN    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
+
     // TODO: reorganize IDs
     static constexpr uint64_t MASK_NODE                    = 0xF0'00000000000000UL;
     static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xF1'00000000000000UL;

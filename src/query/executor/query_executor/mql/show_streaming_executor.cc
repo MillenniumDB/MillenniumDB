@@ -51,14 +51,17 @@ uint64_t ShowStreamingExecutor<type>::execute(MDBServer::StreamingResponseWriter
             response_writer.seal();
         };
 
-        const auto tensor_store_names = tensor_store_manager.get_tensor_store_names();
-        res = tensor_store_names.size();
+        auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
+        const auto& name2metadata = tensor_store_manager.get_name2metadata();
+        res = name2metadata.size();
 
-        for (const auto& name : tensor_store_names) {
+        for (const auto& [name, metadata] : name2metadata) {
             TensorStore* tensor_store;
             [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(name, &tensor_store);
-            assert(found);
-            write_record(name, tensor_store->tensors_dim(), tensor_store->size());
+            assert(found && "TensorStore not found");
+            const auto tensors_dim = tensor_store->tensors_dim();
+            const auto num_entries = tensor_store->size();
+            write_record(name, tensors_dim, num_entries);
         }
     } else if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
         assert(projection_vars.size() == 4);
@@ -103,13 +106,7 @@ void ShowStreamingExecutor<type>::analyze(std::ostream& os, bool /*print_stats*/
 {
     os << std::string(indent, ' ');
     os << "ShowStreamingExecutor(";
-    if constexpr (type == OpShow::Type::TENSOR_STORE) {
-        os << "TENSOR_STORE";
-    } else if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
-        os << "TEXT_SEARCH_INDEX";
-    } else {
-        throw std::runtime_error("Invalid Show::Type");
-    }
+    os << OpShow::get_type_string(type);
     os << ")\n";
 }
 

@@ -79,6 +79,7 @@ class OpOptProperties;
 class OpProperty;
 class OpOptLabels;
 class OpOrderBy;
+class OpLinearPattern;
 } // namespace GQL
 
 class OpVisitor {
@@ -110,9 +111,9 @@ public:
     virtual void visit(MQL::OpWhere&)                 { throw LogicException("visit MQL::OpWhere not implemented"); }
 
     // SPARQL
-    virtual void visit(SPARQL::OpUpdate&)               { throw LogicException("visit SPARQL::OpUpdate not implemented"); }
-    virtual void visit(SPARQL::OpInsertData&)           { throw LogicException("visit SPARQL::OpInsertData not implemented"); }
-    virtual void visit(SPARQL::OpDeleteData&)           { throw LogicException("visit SPARQL::OpDeleteData not implemented"); }
+    virtual void visit(SPARQL::OpUpdate&)                { throw LogicException("visit SPARQL::OpUpdate not implemented"); }
+    virtual void visit(SPARQL::OpInsertData&)            { throw LogicException("visit SPARQL::OpInsertData not implemented"); }
+    virtual void visit(SPARQL::OpDeleteData&)            { throw LogicException("visit SPARQL::OpDeleteData not implemented"); }
     virtual void visit(SPARQL::OpCreateTextSearchIndex&) { throw LogicException("visit SPARQL::OpCreateTextSearchIndex not implemented"); }
 
     virtual void visit(SPARQL::OpOptional&)          { throw LogicException("visit SPARQL::OpOptional not implemented"); }
@@ -160,4 +161,5 @@ public:
     virtual void visit(GQL::OpOptLabels&) { throw LogicException("visit GQL::OpOptLabels not implemented"); }
     virtual void visit(GQL::OpProperty&) { throw LogicException("visit GQL::OpProperty not implemented"); }
     virtual void visit(GQL::OpOrderBy&) { throw LogicException("visit GQL::OpOrderBy not implemented"); }
+    virtual void visit(GQL::OpLinearPattern&) { throw LogicException("visit GQL::OpLinearPattern not implemented"); }
 };

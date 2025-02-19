@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "query/exceptions.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -13,9 +12,63 @@ public:
     std::unique_ptr<BindingExpr> rhs;
 
     BindingExprDivision(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
-        lhs(std::move(lhs)), rhs(std::move(rhs)) { }
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    template<typename T>
+    inline ObjectId handle_divide_tensors(ObjectId lhs_oid, ObjectId rhs_oid)
+    {
+        bool swapped = false;
+        if (RDF_OID::get_generic_type(rhs_oid) == RDF_OID::GenericType::TENSOR) {
+            // Make sure that a tensor will be on the left
+            std::swap(lhs_oid, rhs_oid);
+            swapped = true;
+        }
+
+        auto lhs = Conversions::to_tensor<T>(lhs_oid);
+        if (RDF_OID::get_generic_type(rhs_oid) == RDF_OID::GenericType::TENSOR) {
+            // Both tensors
+            auto rhs = Conversions::to_tensor<T>(rhs_oid);
+            if (lhs.size() != rhs.size()) {
+                return ObjectId::get_null();
+            }
+            if (swapped) {
+                return Conversions::pack_tensor<T>(rhs.divide(lhs));
+            } else {
+                return Conversions::pack_tensor<T>(lhs.divide(rhs));
+            }
+        } else {
+            // lhs tensor, rhs scalar
+            if constexpr (std::is_same_v<T, float>) {
+                const auto rhs = Conversions::to_float(rhs_oid);
+                if (swapped) {
+                    return Conversions::pack_tensor<T>(lhs.multiplicative_inverse().multiply(rhs));
+                } else {
+                    return Conversions::pack_tensor<T>(lhs.divide(rhs));
+                }
+            } else if constexpr (std::is_same_v<T, double>) {
+                const auto rhs = Conversions::to_double(rhs_oid);
+                if (swapped) {
+                    return Conversions::pack_tensor<T>(lhs.multiplicative_inverse().multiply(rhs));
+                } else {
+                    return Conversions::pack_tensor<T>(lhs.divide(rhs));
+                }
+            } else {
+                assert(false && "Unhandled tensor type");
+                return ObjectId::get_null();
+            }
+        }
+
+        if (swapped) {
+            // Due the swap, we evaluated (lhs - rhs) as (rhs - lhs), so the result must be negated
+            lhs.negate();
+        }
+        return Conversions::pack_tensor<T>(lhs);
+    }
+
+    ObjectId eval(const Binding& binding) override
+    {
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
@@ -33,7 +86,7 @@ public:
         }
         case Conversions::OPTYPE_DECIMAL: {
             auto rhs = Conversions::to_decimal(rhs_oid);
-              if (rhs == 0) {
+            if (rhs == 0) {
                 return ObjectId::get_null();
             }
             auto lhs = Conversions::to_decimal(lhs_oid);
@@ -53,15 +106,24 @@ public:
             // SPARQL 1.1 follows IEEE 754-2008.
             return Conversions::pack_double(lhs / rhs);
         }
+        case Conversions::OPTYPE_TENSOR_FLOAT: {
+            return handle_divide_tensors<float>(lhs_oid, rhs_oid);
+        }
+        case Conversions::OPTYPE_TENSOR_DOUBLE: {
+            return handle_divide_tensors<double>(lhs_oid, rhs_oid);
+        }
         case Conversions::OPTYPE_INVALID: {
             return ObjectId::get_null();
         }
-        default:
-            throw LogicException("This should never happen");
+        default: {
+            assert(false);
+            return ObjectId::get_null();
+        }
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

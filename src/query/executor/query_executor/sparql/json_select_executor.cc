@@ -2,8 +2,9 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "system/path_manager.h"
 #include "query/executor/query_executor/json_ostream_escape.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
+#include "system/path_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace SPARQL;
@@ -222,6 +223,22 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "{\"type\":\"literal\",\"value\":\"";
         os << decimal;
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#decimal\"}";
+        break;
+    }
+    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
+    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
+    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+        os << "{\"type\":\"literal\",\"value\":\"";
+        os << Conversions::unpack_tensor<float>(oid);
+        os << "\",\"datatype\":\"" << MDBExtensions::Type::TENSOR_FLOAT_IRI << "\"}";
+        break;
+    }
+    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
+    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
+    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+        os << "{\"type\":\"literal\",\"value\":\"";
+        os << Conversions::unpack_tensor<double>(oid);
+        os << "\",\"datatype\":\"" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << "\"}";
         break;
     }
     case RDF_OID::Type::NULL_ID: {

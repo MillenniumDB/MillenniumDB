@@ -21,6 +21,12 @@ public:
     // Where the result will be stored
     std::unique_ptr<BindingExpr> tmp;
 
+    // Has to be true while visiting something inside of an aggregation
+    // and be false otherwise
+    bool inside_aggregation = false;
+
+    bool at_root = true; // The visitor is currently at the root node
+
     // This constructor is used to visit expressions that must not have aggregations or group variables.
     ExprToBindingExpr() :
         bic(nullptr)
@@ -57,5 +63,50 @@ public:
     void visit(ExprSubtraction&) override;
     void visit(ExprMultiplication&) override;
     void visit(ExprDivision&) override;
+    void visit(ExprAbs&) override;
+    void visit(ExprModulo&) override;
+    void visit(ExprSin&) override;
+    void visit(ExprCos&) override;
+    void visit(ExprTan&) override;
+    void visit(ExprCot&) override;
+    void visit(ExprSinh&) override;
+    void visit(ExprCosh&) override;
+    void visit(ExprTanh&) override;
+    void visit(ExprAsin&) override;
+    void visit(ExprAcos&) override;
+    void visit(ExprAtan&) override;
+    void visit(ExprDegrees&) override;
+    void visit(ExprRadians&) override;
+    void visit(ExprLog&) override;
+    void visit(ExprLog10&) override;
+    void visit(ExprLn&) override;
+    void visit(ExprExp&) override;
+    void visit(ExprPower&) override;
+    void visit(ExprSqrt&) override;
+    void visit(ExprFloor&) override;
+    void visit(ExprCeil&) override;
+    void visit(ExprLength&) override;
+    void visit(ExprSubStr&) override;
+    void visit(ExprFold&) override;
+    void visit(ExprSingleTrim&) override;
+    void visit(ExprMultiTrim&) override;
+    void visit(ExprNormalize&) override;
+    void visit(ExprNullIf&) override;
+    void visit(ExprCoalesce&) override;
+    void visit(ExprSimpleCase&) override;
+    void visit(ExprSearchedCase&) override;
+    void visit(ExprCast&) override;
+
+    void visit(ExprAggCountAll&) override;
+    void visit(ExprAggCount&) override;
+    void visit(ExprAggAvg&) override;
+    void visit(ExprAggMax&) override;
+    void visit(ExprAggMin&) override;
+    void visit(ExprAggSum&) override;
+    void visit(ExprAggStddevPop&) override;
+    void visit(ExprAggStddevSamp&) override;
+    void visit(ExprAggCollect&) override;
+    void visit(ExprAggPercentileCont&) override;
+    void visit(ExprAggPercentileDisc&) override;
 };
 } // namespace GQL

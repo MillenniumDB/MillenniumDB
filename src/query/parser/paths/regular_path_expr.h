@@ -36,6 +36,14 @@ enum class PathSemantic {
     ANY_SHORTEST_SIMPLE,
     ANY_SHORTEST_TRAILS,
     ANY_SHORTEST_WALKS,
+    SHORTEST_K_ACYCLIC,
+    SHORTEST_K_SIMPLE,
+    SHORTEST_K_TRAILS,
+    SHORTEST_K_WALKS,
+    SHORTEST_K_GROUPS_ACYCLIC,
+    SHORTEST_K_GROUPS_SIMPLE,
+    SHORTEST_K_GROUPS_TRAILS,
+    SHORTEST_K_GROUPS_WALKS,
     DEFAULT,
 };
 
@@ -58,6 +66,14 @@ namespace Paths {
             case PathSemantic::ANY_SHORTEST_SIMPLE: return "ANY_SHORTEST_SIMPLE";
             case PathSemantic::ANY_SHORTEST_TRAILS: return "ANY_SHORTEST_TRAILS";
             case PathSemantic::ANY_SHORTEST_WALKS: return "ANY_SHORTEST_WALKS";
+            case PathSemantic::SHORTEST_K_ACYCLIC: return "SHORTEST_K_ACYCLIC";
+            case PathSemantic::SHORTEST_K_SIMPLE: return "SHORTEST_K_SIMPLE";
+            case PathSemantic::SHORTEST_K_TRAILS: return "SHORTEST_K_TRAILS";
+            case PathSemantic::SHORTEST_K_WALKS: return "SHORTEST_K_WALKS";
+            case PathSemantic::SHORTEST_K_GROUPS_ACYCLIC: return "SHORTEST_K_GROUPS_ACYCLIC";
+            case PathSemantic::SHORTEST_K_GROUPS_SIMPLE: return "SHORTEST_K_GROUPS_SIMPLE";
+            case PathSemantic::SHORTEST_K_GROUPS_TRAILS: return "SHORTEST_K_GROUPS_TRAILS";
+            case PathSemantic::SHORTEST_K_GROUPS_WALKS: return "SHORTEST_K_GROUPS_WALKS";
             case PathSemantic::DEFAULT: return "DEFAULT";
             default: return "UNDECLARED PATH SEMANTIC";
         }

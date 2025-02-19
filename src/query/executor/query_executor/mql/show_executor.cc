@@ -27,6 +27,8 @@ ShowExecutor<ret, type>::ShowExecutor()
 template<ReturnType ret, OpShow::Type type>
 uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
 {
+    constexpr char delim = ret == ReturnType::CSV ? ',' : '\t';
+
     uint64_t res { 0 };
 
     // Header
@@ -37,12 +39,7 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
     }
 
     while (it != projection_vars.cend()) {
-        if constexpr (ret == ReturnType::CSV) {
-            os << ',';
-        } else {
-            static_assert(ret == ReturnType::TSV);
-            os << '\t';
-        }
+        os << delim;
         os << get_query_ctx().get_var_name(*it);
         ++it;
     }
@@ -50,35 +47,17 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
 
     if constexpr (type == OpShow::Type::TENSOR_STORE) {
         assert(projection_vars.size() == 3);
-        const auto tensor_store_names = tensor_store_manager.get_tensor_store_names();
-        res = tensor_store_names.size();
-        for (const auto& name : tensor_store_names) {
+        auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
+        const auto& name2metadata = tensor_store_manager.get_name2metadata();
+        res = name2metadata.size();
+        for (const auto& [name, metadata] : name2metadata) {
             TensorStore* tensor_store;
-            [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(
-                name,
-                &tensor_store
-            );
-            assert(found);
+            [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(name, &tensor_store);
+            assert(found && "TensorStore not found");
             os << '"' << name << '"';
-
-            if constexpr (ret == ReturnType::CSV) {
-                os << ',';
-            } else if constexpr (ret == ReturnType::TSV) {
-                os << '\t';
-            } else {
-                throw std::runtime_error("Invalid ReturnType");
-            }
-
+            os << delim;
             os << tensor_store->tensors_dim();
-
-            if constexpr (ret == ReturnType::CSV) {
-                os << ',';
-            } else if constexpr (ret == ReturnType::TSV) {
-                os << '\t';
-            } else {
-                throw std::runtime_error("Invalid ReturnType");
-            }
-
+            os << delim;
             os << tensor_store->size();
             os << '\n';
         }
@@ -86,7 +65,6 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
         assert(projection_vars.size() == 4);
         const auto& name2metadata = quad_model.catalog.text_search_index_manager.get_name2metadata();
         res = name2metadata.size();
-        constexpr char delim = ret == ReturnType::CSV ? ',' : '\t';
         for (const auto& [name, metadata] : name2metadata) {
             os << '"' << name << '"';
             os << delim;
@@ -109,13 +87,7 @@ void ShowExecutor<ret, type>::analyze(std::ostream& os, bool /*print_stats*/, in
 {
     os << std::string(indent, ' ');
     os << "ShowExecutor(";
-    if constexpr (type == OpShow::Type::TENSOR_STORE) {
-        os << "TENSOR_STORE";
-    } else if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
-        os << "TEXT_SEARCH_INDEX";
-    } else {
-        throw std::runtime_error("Unhandled Show::Type");
-    }
+    os << OpShow::get_type_string(type);
     os << ")\n";
 }
 

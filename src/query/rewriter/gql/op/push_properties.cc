@@ -7,13 +7,18 @@ using namespace GQL;
 void PushProperties::visit(OpReturn& op_return)
 {
     op_return.op->accept_visitor(*this);
-    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op_return.return_items));
+    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op_return.return_items), op_return.distinct);
 }
 
 void PushProperties::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOrderBy>(std::move(tmp), std::move(op_order_by.items), std::move(op_order_by.ascending_order), std::move(op_order_by.null_order));
+    tmp = std::make_unique<OpOrderBy>(
+        std::move(tmp),
+        std::move(op_order_by.items),
+        std::move(op_order_by.ascending_order),
+        std::move(op_order_by.null_order)
+    );
 }
 
 void PushProperties::visit(OpGraphPatternList& op_graph_pattern_list)
@@ -97,20 +102,40 @@ void PushProperties::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         patterns.push_back(std::move(tmp));
     }
 
-    if (!properties.empty()) {
-        patterns.push_back(std::make_unique<OpProperty>(properties));
+    tmp = std::make_unique<OpBasicGraphPattern>(std::move(patterns));
+}
+
+void PushProperties::visit(OpLinearPattern& op_linear_pattern)
+{
+    std::vector<std::unique_ptr<Op>> patterns;
+
+    for (auto& pattern : op_linear_pattern.patterns) {
+        pattern->accept_visitor(*this);
+        patterns.push_back(std::move(tmp));
     }
 
-    tmp = std::make_unique<OpBasicGraphPattern>(std::move(patterns));
+    for (auto& property : properties) {
+        if (vars_in_linear_pattern.count(property.object)) {
+            patterns.push_back(std::make_unique<OpProperty>(property));
+        }
+    }
+
+    tmp = std::make_unique<OpLinearPattern>(
+        std::move(patterns),
+        std::move(op_linear_pattern.start),
+        std::move(op_linear_pattern.end)
+    );
 }
 
 void PushProperties::visit(OpNode& op)
 {
+    vars_in_linear_pattern.insert(op.id);
     tmp = op.clone();
 }
 
 void PushProperties::visit(OpEdge& op)
 {
+    vars_in_linear_pattern.insert(op.id);
     tmp = op.clone();
 }
 

@@ -32,6 +32,7 @@ K_IS: I S;
 K_FALSE: 'false';
 K_FLOAT: F L O A T;
 K_GROUP: G R O U P;
+K_GROUPS: G R O U P S;
 K_IDENTITY: I D E N T I T Y;
 K_LABELS: L A B E L S;
 K_LABEL: L A B E L;
@@ -83,8 +84,8 @@ K_WS_SPLIT_PUNCT: W S '_' S P L I T '_' P U N C T;
 TRUE_PROP: ':' 'true';
 FALSE_PROP: ':' 'false';
 
-ANON_ID: '_a' [1-9][0-9]*;
-EDGE_ID: '_e' [1-9][0-9]*;
+ANON_ID: '_a' [0-9]+;
+EDGE_ID: '_e' [0-9]+;
 
 KEY: '.' [A-Za-z] [A-Za-z0-9_]*;
 TYPE: ':' [A-Za-z] [A-Za-z0-9_]*;

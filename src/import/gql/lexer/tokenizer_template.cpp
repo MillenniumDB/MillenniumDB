@@ -6,7 +6,7 @@
 #include "system/string_manager.h"
 
 /*!max:re2c*/
-static const size_t GQLTokenizer_SIZE = StringManager::STRING_BLOCK_SIZE;
+static const size_t GQLTokenizer_SIZE = StringManager::MAX_STRING_SIZE;
 
 GQLTokenizer::GQLTokenizer() :
     _str(new char[GQLTokenizer_SIZE + YYMAXFILL]),

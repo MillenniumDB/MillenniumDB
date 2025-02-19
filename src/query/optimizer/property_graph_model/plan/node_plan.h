@@ -38,5 +38,6 @@ public:
 
 private:
     const VarId node_id;
+    bool node_assigned = false;
 };
 } // namespace GQL

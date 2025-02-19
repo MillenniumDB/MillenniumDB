@@ -23,10 +23,12 @@ public:
 
     std::unique_ptr<Op> op;
     std::vector<Item> return_items;
+    bool distinct;
 
-    OpReturn(std::unique_ptr<Op> op, std::vector<Item>&& return_items) :
+    OpReturn(std::unique_ptr<Op> op, std::vector<Item>&& return_items, bool distinct) :
         op(std::move(op)),
-        return_items(std::move(return_items))
+        return_items(std::move(return_items)),
+        distinct(distinct)
     { }
 
     virtual std::unique_ptr<Op> clone() const override
@@ -36,7 +38,7 @@ public:
         for (auto& item : return_items) {
             return_items_clone.emplace_back(item.expr->clone(), item.alias);
         }
-        return std::make_unique<OpReturn>(op->clone(), std::move(return_items_clone));
+        return std::make_unique<OpReturn>(op->clone(), std::move(return_items_clone), distinct);
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -76,7 +78,7 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return {};
+        return op->get_safe_vars();
     }
 
     std::set<VarId> get_fixable_vars() const override

@@ -29,8 +29,7 @@
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_or.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_regex.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_subtraction.h"
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_tensor_distance_from_expr.h"
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_tensor_distance_from_tensor.h"
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_tensor_distance.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_minus.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_plus.h"
 #include "query/parser/expr/mql_exprs.h"
@@ -374,29 +373,18 @@ void ExprToBindingExpr::visit(ExprRegex& expr)
 
 void ExprToBindingExpr::visit(ExprTensorDistance& expr)
 {
-    expr.expr->accept_visitor(*this);
-    auto expr_ = std::move(tmp);
+    expr.lhs_expr->accept_visitor(*this);
+    auto lhs_expr = std::move(tmp);
 
-    if (expr.expr_ref != nullptr) {
-        // Both expressions
-        expr.expr_ref->accept_visitor(*this);
-        auto expr_ref = std::move(tmp);
-
-        tmp = std::make_unique<BindingExprTensorDistanceFromExpr>(
-            expr.tensor_store_name,
-            expr.metric_type,
-            std::move(expr_),
-            std::move(expr_ref)
-        );
-        return;
-    }
+    expr.rhs_expr->accept_visitor(*this);
+    auto rhs_expr = std::move(tmp);
 
     // Expression and tensor
-    tmp = std::make_unique<BindingExprTensorDistanceFromTensor>(
+    tmp = std::make_unique<BindingExprTensorDistance>(
         expr.tensor_store_name,
         expr.metric_type,
-        std::move(expr_),
-        std::move(expr.tensor_ref)
+        std::move(lhs_expr),
+        std::move(rhs_expr)
     );
 }
 

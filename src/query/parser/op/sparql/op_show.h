@@ -6,9 +6,19 @@ namespace SPARQL {
 
 class OpShow : public Op {
 public:
-    enum Type : uint8_t {
-        TEXT_SEARCH_INDEX,
+    enum class Type : uint8_t {
+        TEXT_SEARCH_INDEX
     };
+
+    static std::string get_type_string(Type type)
+    {
+        switch (type) {
+        case Type::TEXT_SEARCH_INDEX:
+            return "TEXT_SEARCH_INDEX";
+        default:
+            return "UNKNOWN";
+        }
+    }
 
     Type type;
 
@@ -49,17 +59,10 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        return os << "OpShow(" << type << ")\n";
+        os << "OpShow(";
+        os << OpShow::get_type_string(type);
+        return os << ")\n";
     }
 };
-} // namespace SPARQL
 
-inline std::ostream& operator<<(std::ostream& os, const SPARQL::OpShow::Type& type)
-{
-    switch (type) {
-    case SPARQL::OpShow::Type::TEXT_SEARCH_INDEX:
-        return os << "TEXT_SEARCH_INDEX";
-    default:
-        return os << "UNKNOWN_SHOW_TYPE";
-    }
-}
+} // namespace SPARQL

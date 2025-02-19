@@ -8,6 +8,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 
 namespace SPARQL {
 
@@ -42,6 +43,9 @@ static std::set<std::string> known_datatypes = {
     "http://www.w3.org/2001/XMLSchema#unsignedShort",
     "http://www.w3.org/2001/XMLSchema#unsignedInt",
     "http://www.w3.org/2001/XMLSchema#unsignedLong",
+
+    MDBExtensions::Type::TENSOR_FLOAT_IRI,
+    MDBExtensions::Type::TENSOR_DOUBLE_IRI,
 };
 
 class BindingExprEquals : public BindingExpr {
@@ -140,6 +144,28 @@ public:
                 return ObjectId::get_null();
             }
             return SPARQL::Conversions::pack_bool(res);
+        }
+
+        // Handle tensors
+        if (lhs_generic_type == RDF_OID::GenericType::TENSOR
+            && rhs_generic_type == RDF_OID::GenericType::TENSOR) {
+            const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
+            switch (optype) {
+            case Conversions::OPTYPE_TENSOR_FLOAT: {
+                const auto lhs = Conversions::to_tensor<float>(lhs_oid);
+                const auto rhs = Conversions::to_tensor<float>(rhs_oid);
+                const auto cmp = Tensor<float>::compare(lhs, rhs);
+                return SPARQL::Conversions::pack_bool(cmp == 0);
+            }
+            case Conversions::OPTYPE_TENSOR_DOUBLE: {
+                const auto lhs = Conversions::to_tensor<double>(lhs_oid);
+                const auto rhs = Conversions::to_tensor<double>(rhs_oid);
+                const auto cmp = Tensor<double>::compare(lhs, rhs);
+                return SPARQL::Conversions::pack_bool(cmp == 0);
+            }
+            default:
+                throw std::runtime_error("This should never happen.");
+            }
         }
 
         // Next we handle objects of the same type

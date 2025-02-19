@@ -95,6 +95,14 @@ public:
             return GQL::Conversions::pack_bool(true);
         }
 
+        if (lhs_generic_type == GQL_OID::GenericType::BOOL
+            && rhs_generic_type == GQL_OID::GenericType::BOOL)
+        {
+            auto lhs = GQL::Conversions::to_boolean(lhs_oid);
+            auto rhs = GQL::Conversions::to_boolean(rhs_oid);
+            return GQL::Conversions::pack_bool(lhs == rhs);
+        }
+
         // If both types are numeric we need to do a numeric comparison
         if (lhs_generic_type == GQL_OID::GenericType::NUMERIC
             && rhs_generic_type == GQL_OID::GenericType::NUMERIC)

@@ -174,4 +174,224 @@ public:
     {
         tmp = expr.clone();
     }
+
+    void visit(ExprAbs& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprModulo& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCos& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprTan& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCot& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSinh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCosh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprTanh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAsin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAcos& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAtan& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprDegrees& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprRadians& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprLog& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprLog10& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprLn& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprExp& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprPower& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSqrt& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprFloor& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCeil& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprLength& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSubStr& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprFold& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSingleTrim& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprMultiTrim& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprNormalize& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprNullIf& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCoalesce& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSimpleCase& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprSearchedCase& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprCast& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggCountAll& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggCount& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggAvg& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggMax& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggMin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggSum& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggStddevPop& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggStddevSamp& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggCollect& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggPercentileCont& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(ExprAggPercentileDisc& expr)
+    {
+        tmp = expr.clone();
+    }
 };

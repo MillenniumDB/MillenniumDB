@@ -12,6 +12,7 @@
 #include "import/disk_vector.h"
 #include "import/external_string.h"
 #include "misc/istream.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
 #include "third_party/robin_hood/robin_hood.h"
 #include "third_party/serd/reader.h"
 #include "third_party/serd/serd.h"
@@ -41,7 +42,7 @@ public:
         equal_so(db_folder + "/tmp_equal_so"),
         equal_po(db_folder + "/tmp_equal_po")
     {
-        buffer_iri = new char[StringManager::STRING_BLOCK_SIZE];
+        buffer_iri = new char[StringManager::MAX_STRING_SIZE];
     }
 
     ~OnDiskImport()
@@ -57,7 +58,11 @@ public:
     // True if any element of the current triple has errors
     bool triple_has_errors;
 
-    void start_import(MDBIstream& in, const std::string& prefixes_filename);
+    void start_import(
+        MDBIstream& in,
+        const std::string& prefixes_filename,
+        std::vector<std::string>& input_files
+    );
 
     void handle_subject(const SerdNode* subject);
 
@@ -182,83 +187,113 @@ private:
         }
     }
 
-    void save_object_id_literal_datatype(const SerdNode* object, const SerdNode* datatype)
+    void save_object_id_unsupported_datatype(const char* str, uint64_t str_size, const char* dt)
     {
-        auto object_str = reinterpret_cast<const char*>(object->buf);
-        auto object_size = object->n_bytes;
-
-        auto datatype_str = reinterpret_cast<const char*>(datatype->buf);
-
-        const char* xml_schema = "http://www.w3.org/2001/XMLSchema#";
-        auto const xml_schema_len = std::strlen(xml_schema);
-
-        bool is_xml_schema = false;
-        if (std::strlen(datatype_str) > xml_schema_len) {
-            is_xml_schema = std::memcmp(datatype_str, xml_schema, xml_schema_len) == 0;
+        const uint64_t datatype_id = get_datatype_id(dt);
+        if (str_size <= ObjectId::STR_DT_INLINE_BYTES) {
+            object_id = Conversions::pack_string_datatype_inline(datatype_id, str);
+            return;
         }
+        object_id.id = get_or_create_external_id(str, str_size) | ObjectId::MASK_STRING_DATATYPE
+                     | (datatype_id << Conversions::TMP_SHIFT);
+    }
 
-        if (!is_xml_schema) {
-            uint64_t datatype_id = get_datatype_id(datatype_str);
-            if (object_size <= ObjectId::STR_DT_INLINE_BYTES) {
-                object_id = Conversions::pack_string_datatype_inline(datatype_id, object_str);
-            } else {
-                object_id.id = get_or_create_external_id(object_str, object_size)
-                             | ObjectId::MASK_STRING_DATATYPE | (datatype_id << Conversions::TMP_SHIFT);
-            }
+    template<typename T>
+    void try_save_tensor(const char* str, const char* dt)
+    {
+        bool error;
+        const auto tensor = Tensor<T>::from_literal(str, &error);
+        if (error) {
+            object_id = save_ill_typed(reader->source.cur.line, str, dt);
             return;
         }
 
-        auto xsd_suffix = datatype_str + xml_schema_len;
+        if (tensor.empty()) {
+            object_id.id = tensor.get_inline_mask();
+            return;
+        }
 
-        // Supported datatypes
+        const auto bytes = reinterpret_cast<const char*>(tensor.data());
+        const auto bytes_size = sizeof(T) * tensor.size();
+        const auto str_id = get_or_create_external_id(bytes, bytes_size);
+        object_id.id = Tensor<T>::get_external_mask() | str_id;
+    }
+
+    void try_save_object_id_mdbtype(const char* str, uint64_t str_size, const char* dt)
+    {
+        namespace MDBType = MDBExtensions::Type;
+        const char* mdbtype_suffix = dt + MDBType::TYPE_PREFIX_IRI.size();
+
+        // Supported mdb datatypes
+        // mdbtype:tensorFloat
+        if (strcmp(mdbtype_suffix, MDBType::TENSOR_FLOAT_SUFFIX_IRI.c_str()) == 0) {
+            try_save_tensor<float>(str, dt);
+        }
+        // mdbtype:tensorDouble
+        else if (strcmp(mdbtype_suffix, MDBType::TENSOR_DOUBLE_SUFFIX_IRI.c_str()) == 0)
+        {
+            try_save_tensor<double>(str, dt);
+        }
+        // Unsupported datatypes are stored as literals with datatype
+        else
+        {
+            save_object_id_unsupported_datatype(str, str_size, dt);
+        }
+    }
+
+    void try_save_object_id_xsdtype(const char* str, uint64_t str_size, const char* dt) {
+        constexpr std::string_view XML_SCHEMA = "http://www.w3.org/2001/XMLSchema#";
+        const auto xsd_suffix = dt + XML_SCHEMA.size();
+
+        // Supported xsd datatypes
         // DateTime: xsd:dateTime
         if (strcmp(xsd_suffix, "dateTime") == 0) {
-            object_id.id = DateTime::from_dateTime(object_str);
+            object_id.id = DateTime::from_dateTime(str);
             if (object_id.is_null()) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Date: xsd:date
         else if (strcmp(xsd_suffix, "date") == 0)
         {
-            object_id.id = DateTime::from_date(object_str);
+            object_id.id = DateTime::from_date(str);
             if (object_id.is_null()) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Date: xsd:time
         else if (strcmp(xsd_suffix, "time") == 0)
         {
-            object_id.id = DateTime::from_time(object_str);
+            object_id.id = DateTime::from_time(str);
             if (object_id.is_null()) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Date: xsd:dateTimeStamp
         else if (strcmp(xsd_suffix, "dateTimeStamp") == 0)
         {
-            object_id.id = DateTime::from_dateTimeStamp(object_str);
+            object_id.id = DateTime::from_dateTimeStamp(str);
             if (object_id.is_null()) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // String: xsd:string
         else if (strcmp(xsd_suffix, "string") == 0)
         {
-            if (object_size <= RDF_OID::MAX_INLINE_LEN_STRING) {
-                object_id = Conversions::pack_string_xsd_inline(object_str);
+            if (str_size <= RDF_OID::MAX_INLINE_LEN_STRING) {
+                object_id = Conversions::pack_string_xsd_inline(str);
             } else {
-                object_id.id = get_or_create_external_id(object_str, object_size) | ObjectId::MASK_STRING_XSD;
+                object_id.id = get_or_create_external_id(str, str_size) | ObjectId::MASK_STRING_XSD;
             }
         }
         // Decimal: xsd:decimal
         else if (strcmp(xsd_suffix, "decimal") == 0)
         {
             bool error;
-            Decimal dec(object_str, &error);
+            Decimal dec(str, &error);
 
             if (error) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             } else {
                 object_id.id = dec.to_internal();
                 if (object_id.is_null()) {
@@ -272,25 +307,25 @@ private:
         else if (strcmp(xsd_suffix, "float") == 0)
         {
             try {
-                float f = std::stof(object_str);
+                float f = std::stof(str);
                 object_id = Conversions::pack_float(f);
             } catch (const std::out_of_range& e) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             } catch (const std::invalid_argument& e) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Double: xsd:double
         else if (strcmp(xsd_suffix, "double") == 0)
         {
             try {
-                double d = std::stod(object_str);
+                double d = std::stod(str);
                 const char* chars = reinterpret_cast<const char*>(&d);
                 object_id.id = get_or_create_external_id(chars, sizeof(d)) | ObjectId::MASK_DOUBLE;
             } catch (const std::out_of_range& e) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             } catch (const std::invalid_argument& e) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Signed Integer: xsd:integer, xsd:long, xsd:int, xsd:short and xsd:byte
@@ -307,33 +342,55 @@ private:
                  || strcmp(xsd_suffix, "unsignedByte") == 0)
         {
             bool int_parser_error;
-            object_id = handle_integer_string(object_str, &int_parser_error);
+            object_id = handle_integer_string(str, &int_parser_error);
             if (int_parser_error) {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // xsd:boolean
         else if (strcmp(xsd_suffix, "boolean") == 0)
         {
-            if (strcmp(object_str, "true") == 0 || strcmp(object_str, "1") == 0) {
+            if (strcmp(str, "true") == 0 || strcmp(str, "1") == 0) {
                 object_id = Conversions::pack_bool(true);
-            } else if (strcmp(object_str, "false") == 0 || strcmp(object_str, "0") == 0) {
+            } else if (strcmp(str, "false") == 0 || strcmp(str, "0") == 0) {
                 object_id = Conversions::pack_bool(false);
             } else {
-                object_id = save_ill_typed(reader->source.cur.line, object_str, datatype_str);
+                object_id = save_ill_typed(reader->source.cur.line, str, dt);
             }
         }
         // Unsupported datatypes are stored as literals with datatype
         else
         {
-            uint64_t datatype_id = get_datatype_id(datatype_str);
-            if (object_size <= ObjectId::STR_DT_INLINE_BYTES) {
-                object_id = Conversions::pack_string_datatype_inline(datatype_id, object_str);
-            } else {
-                object_id.id = get_or_create_external_id(object_str, object_size)
-                             | ObjectId::MASK_STRING_DATATYPE | (datatype_id << Conversions::TMP_SHIFT);
-            }
+            save_object_id_unsupported_datatype(str, str_size, dt);
         }
+    }
+
+    void save_object_id_literal_datatype(const SerdNode* object, const SerdNode* datatype)
+    {
+        namespace MDBType = MDBExtensions::Type;
+
+        const auto str = reinterpret_cast<const char*>(object->buf);
+        const auto str_size = object->n_bytes;
+
+        const auto dt = reinterpret_cast<const char*>(datatype->buf);
+        const auto dt_size = datatype->n_bytes;
+
+        if (dt_size > MDBType::TYPE_PREFIX_IRI.size()
+            && strncmp(dt, MDBType::TYPE_PREFIX_IRI.c_str(), MDBType::TYPE_PREFIX_IRI.size()) == 0)
+        {
+            try_save_object_id_mdbtype(str, str_size, dt);
+            return;
+        }
+
+        constexpr std::string_view XML_SCHEMA = "http://www.w3.org/2001/XMLSchema#";
+        if (dt_size > XML_SCHEMA.size()
+            && strncmp(dt, XML_SCHEMA.data(), XML_SCHEMA.size()) == 0) {
+                try_save_object_id_xsdtype(str, str_size, dt);
+            return;
+        }
+
+        // Unsupported datatypes are stored as literals with datatype
+        return save_object_id_unsupported_datatype(str, str_size, dt);
     }
 
     void save_object_id_literal_lang(const SerdNode* object, const SerdNode* lang)
@@ -509,7 +566,7 @@ private:
     uint64_t get_or_create_external_id(const char* str, size_t str_len)
     {
         // reserving extra space for writing the string to search
-        bool strings_full = external_strings_end + StringManager::STRING_BLOCK_SIZE
+        bool strings_full = external_strings_end + StringManager::MAX_STRING_SIZE
                           > external_strings_capacity;
 
         // encode str_len inside external_strings
@@ -529,9 +586,9 @@ private:
                 external_strings_end += str_len + bytes_for_len;
 
                 // if there is no enough space left in the block for the next string
-                // we align external_strings_end to StringManager::STRING_BLOCK_SIZE
-                size_t remaining_in_block = StringManager::STRING_BLOCK_SIZE
-                                          - (external_strings_end % StringManager::STRING_BLOCK_SIZE);
+                // we align external_strings_end to StringManager::BLOCK_SIZE
+                size_t remaining_in_block = StringManager::BLOCK_SIZE
+                                          - (external_strings_end % StringManager::BLOCK_SIZE);
                 if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
                     external_strings_end += remaining_in_block;
                 }

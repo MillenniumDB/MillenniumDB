@@ -260,7 +260,7 @@ SIMPLE: ('S'|'s')('I'|'i')('M'|'m')('P'|'p')('L'|'l')('E'|'e');
 ACYCLIC: ('A'|'a')('C'|'c')('Y'|'y')('C'|'c')('L'|'l')('I'|'i')('C'|'c');
 WALKS: ('W'|'w')('A'|'a')('L'|'l')('K'|'k')('S'|'s');
 
-// Already defined before: WITH
+// Already defined before: CREATE, WITH
 IDENTITY: ('I'|'i')('D'|'d')('E'|'e')('N'|'n')('T'|'t')('I'|'i')('T'|'t')('Y'|'y');
 INDEX: ('I'|'i')('N'|'n')('D'|'d')('E'|'e')('X'|'x');
 NFKD_CASEFOLD: ('N'|'n')('F'|'f')('K'|'k')('D'|'d')('_')('C'|'c')('A'|'a')('S'|'s')('E'|'e')('F'|'f')('O'|'o')('L'|'l')('D'|'d');

@@ -9,7 +9,7 @@ namespace GQL {
 
 class ExtractLabelsFromExpr : public ExprVisitor {
 public:
-    std::vector<std::unique_ptr<Op>> labels;
+    std::vector<LabelOpId> labels;
     std::unique_ptr<Expr> tmp;
 
     void clear_labels()
@@ -37,12 +37,12 @@ public:
 
     void visit(ExprHasNodeLabel& expr)
     {
-        labels.push_back(std::make_unique<OpNodeLabel>(expr.node_id, expr.label_id));
+        labels.emplace_back(std::make_unique<OpNodeLabel>(expr.node_id, expr.label_id), expr.node_id);
     }
 
     void visit(ExprHasEdgeLabel& expr)
     {
-        labels.push_back(std::make_unique<OpEdgeLabel>(expr.edge_id, expr.label_id));
+        labels.emplace_back(std::make_unique<OpEdgeLabel>(expr.edge_id, expr.label_id), expr.edge_id);
     }
 
     void visit(ExprNot& expr)
@@ -131,6 +131,226 @@ public:
     }
 
     void visit(GQL::ExprDivision& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAbs& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprModulo& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCos& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprTan& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCot& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSinh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCosh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprTanh& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAsin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAcos& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAtan& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprDegrees& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprRadians& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprLog& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprLog10& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprLn& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprExp& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprPower& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSqrt& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprFloor& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCeil& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprLength& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSubStr& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprFold& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSingleTrim& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprMultiTrim& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprNormalize& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprNullIf& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCoalesce& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSimpleCase& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprSearchedCase& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprCast& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggCountAll& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggCount& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggAvg& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggMax& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggMin& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggSum& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggStddevPop& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggStddevSamp& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggCollect& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggPercentileCont& expr)
+    {
+        tmp = expr.clone();
+    }
+
+    void visit(GQL::ExprAggPercentileDisc& expr)
     {
         tmp = expr.clone();
     }

@@ -178,7 +178,8 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
             replace_setted_var(path.from),
             replace_setted_var(path.to),
             *path.path,
-            path.semantic
+            path.semantic,
+            path.K
         ));
     }
 
@@ -456,7 +457,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
             std::move(group_saved_vars),
             std::move(group_vars_vector),
             std::move(ascending),
-            &MQL::Comparisons::compare
+            &OrderBy::internal_compare
         );
     }
 

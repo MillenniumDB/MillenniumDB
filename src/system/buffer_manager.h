@@ -108,6 +108,8 @@ public:
 
     UPage& append_unversioned_page(FileId file_id) noexcept;
 
+    UPage& get_or_append_unversioned_page(FileId file_id, uint64_t page_number) noexcept;
+
     // write all dirty pages to disk
     void flush();
 

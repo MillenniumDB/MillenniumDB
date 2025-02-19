@@ -54,7 +54,11 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        std::set<VarId> res = op->get_safe_vars();
+        if (path_var_id.has_value()) {
+            res.insert(path_var_id.value());
+        }
+        return res;
     }
 
     std::set<VarId> get_fixable_vars() const override

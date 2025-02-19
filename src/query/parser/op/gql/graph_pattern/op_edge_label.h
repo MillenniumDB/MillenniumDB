@@ -27,7 +27,7 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        return {};
+        return { edge_id };
     }
 
     std::set<VarId> get_scope_vars() const override
@@ -37,7 +37,7 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        return { edge_id };
     }
 
     std::set<VarId> get_fixable_vars() const override

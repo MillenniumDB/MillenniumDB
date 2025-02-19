@@ -183,19 +183,9 @@ void ExprPrinter::visit(ExprTensorDistance& expr)
     os << "TENSOR_DISTANCE(";
     os << expr.tensor_store_name;
     os << ", ";
-    expr.expr->accept_visitor(*this);
+    expr.lhs_expr->accept_visitor(*this);
     os << ", ";
-    if (expr.expr_ref != nullptr) {
-        expr.expr_ref->accept_visitor(*this);
-    } else {
-        os << '[';
-        os << expr.tensor_ref[0];
-        for (std::size_t i = 0; i < expr.tensor_ref.size(); ++i) {
-            os << ", ";
-            os << expr.tensor_ref[i];
-        }
-        os << ']';
-    }
+    expr.rhs_expr->accept_visitor(*this);
     os << ", ";
     os << expr.metric_type;
     os << ')';

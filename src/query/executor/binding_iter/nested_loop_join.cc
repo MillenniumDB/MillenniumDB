@@ -1,9 +1,5 @@
 #include "nested_loop_join.h"
 
-#include <algorithm>
-
-#include "query/executor/binding_iter/empty_binding_iter.h"
-
 void NestedLoopJoin::_begin(Binding& parent_binding_) {
     this->parent_binding = &parent_binding_;
 

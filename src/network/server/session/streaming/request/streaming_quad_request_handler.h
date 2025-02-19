@@ -56,9 +56,7 @@ public:
         response_writer->write_update_success(
             parser_duration_ms.count(),
             optimizer_duration_ms.count(),
-            execution_duration_ms.count(),
-            update_executor.get_graph_update_data(),
-            update_executor.get_tensor_update_data()
+            execution_duration_ms.count()
         );
 
         response_writer->flush();

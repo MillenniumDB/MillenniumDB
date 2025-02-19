@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <vector>
 
@@ -16,7 +17,7 @@ constexpr std::chrono::seconds DEFAULT_TIMEOUT = std::chrono::seconds(10);
 constexpr auto VTENSOR_FRAME_POOL_SIZE_BYTES = 1024 * 1024; // 1MB
 
 // Insert
-bool test_insert_tensors()
+bool test_insert_tensors(TensorStoreManager& tensor_store_manager)
 {
     constexpr auto name = "test_insert";
     constexpr auto tensors_dim = 32;
@@ -81,7 +82,7 @@ bool test_insert_tensors()
     return true;
 }
 
-bool test_remove_tensors()
+bool test_remove_tensors(TensorStoreManager& tensor_store_manager)
 {
     constexpr auto name = "test_remove";
     constexpr auto tensors_dim = 32;
@@ -202,7 +203,7 @@ bool test_remove_tensors()
     return true;
 }
 
-bool test_persistance()
+bool test_persistance([[maybe_unused]] TensorStoreManager& tensor_store_manager)
 {
     // This will not use the TensorStoreManager interface, this is just trying to check
     // that the TensorStore can be persisted in disk correctly
@@ -215,9 +216,7 @@ bool test_persistance()
 
     { // Create, load and do some modifications to the TensorStore
 
-        TensorStore::create(DB_DIRECTORY, name, tensors_dim);
-
-        auto tensor_store = TensorStore::load(DB_DIRECTORY, name, VTENSOR_FRAME_POOL_SIZE_BYTES);
+        auto tensor_store = TensorStore::create(name, tensors_dim, VTENSOR_FRAME_POOL_SIZE_BYTES);
 
         { // Insert -1 in every position
             auto version_scope = buffer_manager.init_version_editable();
@@ -264,7 +263,7 @@ bool test_persistance()
     }
 
     { // Load the TensorStore again
-        auto tensor_store = TensorStore::load(DB_DIRECTORY, name, VTENSOR_FRAME_POOL_SIZE_BYTES);
+        auto tensor_store = TensorStore::load(name, VTENSOR_FRAME_POOL_SIZE_BYTES);
 
         // Check size
         if (tensor_store->size() != num_tensors - (num_tensors / 2)) {
@@ -310,7 +309,7 @@ bool test_persistance()
 
 int main()
 {
-    uint64_t load_strings = StringManager::DEFAULT_LOAD_STR;
+    uint64_t load_strings = StringManager::DEFAULT_STATIC_BUFFER;
     uint64_t versioned_pages_buffer = BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE;
     uint64_t private_pages_buffer = BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE;
     uint64_t max_threads = 1;
@@ -320,31 +319,37 @@ int main()
     FileManager::init(DB_DIRECTORY);
     BufferManager::init(versioned_pages_buffer, private_pages_buffer, load_strings, max_threads);
     TmpManager::init(max_threads);
-    TensorStoreManager::init(DB_DIRECTORY, VTENSOR_FRAME_POOL_SIZE_BYTES);
+
 
     {
-        QueryContext qc;
-        QueryContext::set_query_ctx(&qc);
+        TensorStoreManager tsm;
+        tsm.init();
 
-        using TestFunction = bool();
+        {
+            QueryContext qc;
+            QueryContext::set_query_ctx(&qc);
 
-        std::vector<TestFunction*> tests = { &test_insert_tensors, &test_remove_tensors, &test_persistance };
+            using TestFunction = bool(TensorStoreManager&);
 
-        for (uint64_t i = 0; i < tests.size(); ++i) {
-            try {
-                if (!tests[i]()) {
-                    std::cerr << "Test #" << i << " failed" << std::endl;
+            std::vector<TestFunction*> tests = { &test_insert_tensors,
+                                                 &test_remove_tensors,
+                                                 &test_persistance };
+
+            for (uint64_t i = 0; i < tests.size(); ++i) {
+                try {
+                    if (!tests[i](tsm)) {
+                        std::cerr << "Test #" << i << " failed" << std::endl;
+                        return EXIT_FAILURE;
+                    }
+                    std::cout << "Test #" << i << " passed" << std::endl;
+                } catch (const std::exception& e) {
+                    std::cerr << "Test #" << i << " failed due to an exception: " << e.what() << std::endl;
                     return EXIT_FAILURE;
                 }
-                std::cout << "Test #" << i << " passed" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "Test #" << i << " failed due to an exception: " << e.what() << std::endl;
-                return EXIT_FAILURE;
             }
         }
     }
 
-    tensor_store_manager.~TensorStoreManager();
     tmp_manager.~TmpManager();
     buffer_manager.~BufferManager();
     file_manager.~FileManager();

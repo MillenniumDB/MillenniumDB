@@ -59,7 +59,11 @@ public:
 
     std::set<VarId> get_safe_vars() const override
     {
-        return get_all_vars();
+        std::set<VarId> res;
+        for (auto& pattern : patterns) {
+            res.merge(pattern->get_safe_vars());
+        }
+        return res;
     }
 
     std::set<VarId> get_fixable_vars() const override

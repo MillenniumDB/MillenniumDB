@@ -14,18 +14,22 @@ enum class CastType {
     xsd_integer,
     xsd_dateTime,
     xsd_string,
+    mdbtype_tensorFloat,
+    mdbtype_tensorDouble
 };
 
 inline std::string cast_type_to_string(CastType cast_type) {
     switch (cast_type) {
-        case CastType::xsd_boolean:  return "xsd:boolean";
-        case CastType::xsd_double:   return "xsd:double";
-        case CastType::xsd_float:    return "xsd:float";
-        case CastType::xsd_decimal:  return "xsd:decimal";
-        case CastType::xsd_integer:  return "xsd:integer";
-        case CastType::xsd_dateTime: return "xsd:dateTime";
-        case CastType::xsd_string:   return "xsd:string";
-        default: return "Invalid CastType";
+        case CastType::xsd_boolean:          return "xsd:boolean";
+        case CastType::xsd_double:           return "xsd:double";
+        case CastType::xsd_float:            return "xsd:float";
+        case CastType::xsd_decimal:          return "xsd:decimal";
+        case CastType::xsd_integer:          return "xsd:integer";
+        case CastType::xsd_dateTime:         return "xsd:dateTime";
+        case CastType::xsd_string:           return "xsd:string";
+        case CastType::mdbtype_tensorFloat:  return "mdbtype:tensorFloat";
+        case CastType::mdbtype_tensorDouble: return "mdbtype:tensorDouble";
+        default:                             return "Invalid CastType";
     }
 }
 
