@@ -105,7 +105,7 @@ A **graph pattern** is defined as follows:
 - If `GP1` and `GP2` are **graph patterns**, `GP1 OPTIONAL { GP2 }` is a **graph pattern**
 
 # WHERE Statement
-A query may not have a WHERE statement. The WHERE statement filters the results obtained by the MATCH statement according to certain **Expression**. All results that not evaluate the given expression into `true` are filtered out.
+A query may not have a WHERE statement. The WHERE statement filters the results obtained by the MATCH statement according to certain **Expression**. **Node patterns** can be filtered by writing `?x == (Foo)`. All results that not evaluate the given expression into `true` are filtered out.
 
 # ORDER BY Statement
 A query may not have a ORDER BY statement. You can specify how the order works with the keywords `ASC` and `DESC` after each element. If the order is not specified the default is `ASC`.
