@@ -77,6 +77,13 @@ void HttpGQLSession::run(std::unique_ptr<HttpGQLSession> obj)
 
     auto&& [query, response_type] = GQL::RequestParser::parse_query(obj->request);
 
+    if (query.empty()) {
+        response_ostream << "HTTP/1.1 400 Bad Request\r\n"
+                            "Content-Type: text/plain\r\n\r\n"
+                         << "Empty query. Use HTTP POST to send a GQL query.";
+        return;
+    }
+
     if (!obj->server.authorize(request_type, auth_token)) {
         response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
         return;

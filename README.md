@@ -210,7 +210,9 @@ build/Release/bin/mdb-server data/example-rdf-database
 
 Execute a Query
 --------------------------------------------------------------------------------
-Go to http://localhost:4321/
+Go to http://localhost:4321/ to use the built-in web interface.
+The HTTP endpoint on port 1234 only accepts queries sent via `POST`.
+Opening `http://localhost:1234/` directly will return a **400 Bad Request** message.
 
 Remove the Database
 --------------------------------------------------------------------------------
