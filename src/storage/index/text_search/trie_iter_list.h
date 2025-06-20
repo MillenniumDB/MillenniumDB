@@ -3,6 +3,7 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <cstdint>
 
 namespace TextSearch {
 
