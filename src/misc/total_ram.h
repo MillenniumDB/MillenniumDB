@@ -36,7 +36,7 @@ inline uint64_t get_total_ram()
     struct sysinfo system_info;
     if (sysinfo(&system_info) != 0) {
         // Error reading the system info
-        return;
+        return 0;
     }
 
     return system_info.totalram;
