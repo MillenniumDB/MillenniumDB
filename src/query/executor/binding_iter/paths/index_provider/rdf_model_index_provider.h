@@ -1,4 +1,5 @@
 #include "query/executor//binding_iter/paths/index_provider/path_index.h"
+
 #include <unordered_map>
 
 namespace Paths {
@@ -33,5 +34,9 @@ public:
 
     // for fixed start node
     std::unique_ptr<EdgeIter> get_iter(uint64_t type_id, bool inverse, uint64_t node_id) override;
+
+    std::unique_ptr<EdgeIter> get_outgoing(uint64_t node_id) override;
+
+    std::unique_ptr<EdgeIter> get_incoming(uint64_t node_id) override;
 };
 } // namespace Paths

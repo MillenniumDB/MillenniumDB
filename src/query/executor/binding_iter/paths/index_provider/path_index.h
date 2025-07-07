@@ -41,6 +41,12 @@ public:
     // Calling before the first next() or after the iterator is at_end() gives undefined behaviour
     virtual uint64_t get_reached_node() = 0;
 
+    // Obtain predicate node of the current edge
+    // Calling before the first next() or after the iterator is at_end() gives undefined behaviour
+    virtual uint64_t get_predicate() {
+        throw std::runtime_error("get_predicates method is not supported!");
+    }
+
     // get_edge is supported only for quad_model
     virtual uint64_t get_edge() {
         throw std::runtime_error("get_edge method is not supported!");
@@ -79,6 +85,10 @@ public:
     // Get iterator for a transition defined by an edge type and direction, given the current node
     virtual std::unique_ptr<EdgeIter> get_iter(uint64_t type_id, bool inverse) = 0;
 
+    virtual std::unique_ptr<EdgeIter> get_outgoing(uint64_t node_id) = 0;
+
+    virtual std::unique_ptr<EdgeIter> get_incoming(uint64_t node_id) = 0;
+
     // Check if a node exists in the database (using B+Tree)
     virtual bool node_exists(uint64_t node_id) = 0;
 };
@@ -115,18 +125,28 @@ private:
 
     size_t reached_node_idx;
 
+    size_t predicate_idx;
+
     // Whether the iterator is finished or not
     bool finished = false;
 
 public:
-    BTreeIndexIterator(BptIter<N>&& iter, size_t starting_node_idx, size_t reached_node_idx) :
-        iter              (std::move(iter)),
-        starting_node_idx (starting_node_idx),
-        reached_node_idx  (reached_node_idx) { }
+    BTreeIndexIterator(
+        BptIter<N>&& iter,
+        size_t starting_node_idx,
+        size_t reached_node_idx,
+        size_t predicate_idx
+    ) :
+        iter(std::move(iter)),
+        starting_node_idx(starting_node_idx),
+        reached_node_idx(reached_node_idx),
+        predicate_idx(predicate_idx)
+    { }
 
     // Interface
     uint64_t get_starting_node() override;
     uint64_t get_reached_node() override;
+    uint64_t get_predicate() override;
     uint64_t get_edge() override;
     bool next() override;
     bool at_end() override;

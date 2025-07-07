@@ -13,7 +13,8 @@ std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_btree_iter(uint64_t type_id
     return std::make_unique<BTreeIndexIterator<3>>(
         rdf_model.pos->get_range(interruption_requested, min_ids, max_ids),
         starting_node_index,
-        reached_node_index
+        reached_node_index,
+        0
     );
 }
 
@@ -27,7 +28,8 @@ std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_btree_iter(uint64_t type_id
         return std::make_unique<BTreeIndexIterator<3>>(
             rdf_model.pos->get_range(interruption_requested, min_ids, max_ids),
             1,
-            2
+            2,
+            0
         );
     } else {
         Record<3> min_ids = {node_id, type_id, 0};
@@ -35,11 +37,35 @@ std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_btree_iter(uint64_t type_id
         return std::make_unique<BTreeIndexIterator<3>>(
             rdf_model.spo->get_range(interruption_requested, min_ids, max_ids),
             0,
-            2
+            2,
+            1
         );
     }
 }
 
+std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_outgoing(uint64_t node_id)
+{
+    Record<3> min_ids = { node_id, 0, 0 };
+    Record<3> max_ids = { node_id, UINT64_MAX, UINT64_MAX };
+    return std::make_unique<BTreeIndexIterator<3>>(
+        rdf_model.spo->get_range(interruption_requested, min_ids, max_ids),
+        0,
+        2,
+        1
+    );
+}
+
+std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_incoming(uint64_t node_id)
+{
+    Record<3> min_ids = { node_id, 0, 0 };
+    Record<3> max_ids = { node_id, UINT64_MAX, UINT64_MAX };
+    return std::make_unique<BTreeIndexIterator<3>>(
+        rdf_model.osp->get_range(interruption_requested, min_ids, max_ids),
+        1,
+        0,
+        2
+    );
+}
 
 std::unique_ptr<EdgeIter> RdfModelIndexProvider::get_iter(uint64_t type_id, bool inverse) {
     if (inverse) {

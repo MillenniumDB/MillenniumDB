@@ -20,13 +20,15 @@ std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_btree_iter(uint64_t type_i
         return std::make_unique<BTreeIndexIterator<4>>(
             quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids),
             1,
-            2
+            2,
+            0
         );
     } else {
         return std::make_unique<BTreeIndexIterator<4>>(
             quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids),
             1,
-            2
+            2,
+            0
         );
     }
 }
@@ -42,15 +44,41 @@ std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_btree_iter(uint64_t type_i
         return std::make_unique<BTreeIndexIterator<4>>(
             quad_model.type_to_from_edge->get_range(interruption_requested, min_ids, max_ids),
             1,
-            2
+            2,
+            0
         );
     } else {
         return std::make_unique<BTreeIndexIterator<4>>(
             quad_model.type_from_to_edge->get_range(interruption_requested, min_ids,max_ids),
             1,
-            2
+            2,
+            0
         );
     }
+}
+
+std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_outgoing(uint64_t node_id)
+{
+    Record<4> min_ids = { node_id, 0, 0, 0 };
+    Record<4> max_ids = { node_id, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+    return std::make_unique<BTreeIndexIterator<4>>(
+        quad_model.from_to_type_edge->get_range(interruption_requested, min_ids, max_ids),
+        0,
+        1,
+        2
+    );
+}
+
+std::unique_ptr<EdgeIter> QuadModelIndexProvider::get_incoming(uint64_t node_id)
+{
+    Record<4> min_ids = { node_id, 0, 0, 0 };
+    Record<4> max_ids = { node_id, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+    return std::make_unique<BTreeIndexIterator<4>>(
+        quad_model.to_type_from_edge->get_range(interruption_requested, min_ids, max_ids),
+        0,
+        2,
+        1
+    );
 }
 
 
