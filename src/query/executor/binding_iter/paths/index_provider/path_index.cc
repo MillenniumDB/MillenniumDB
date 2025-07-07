@@ -16,6 +16,11 @@ uint64_t BTreeIndexIterator<N>::get_reached_node() {
     return (*current)[reached_node_idx];
 }
 
+template<size_t N>
+uint64_t BTreeIndexIterator<N>::get_predicate() {
+    return (*current)[predicate_idx];
+}
+
 template<>
 uint64_t BTreeIndexIterator<3>::get_edge() {
     return 0;
