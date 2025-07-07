@@ -1,0 +1,3 @@
+MATCH (x:Person)
+WHERE x.age > 10
+RETURN x.name

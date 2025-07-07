@@ -1,27 +1,34 @@
 #include "dfs_check.h"
 
-#include <cassert>
-
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllTrails;
 
-void DFSCheck::_begin(Binding& _parent_binding) {
+void DFSCheck::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        start_object_id,
+        ObjectId(),
+        ObjectId(),
+        false,
+        nullptr
+    );
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-bool DFSCheck::_next() {
+bool DFSCheck::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -50,8 +57,8 @@ bool DFSCheck::_next() {
         // A state was reached
         if (state_reached != nullptr) {
             // Check if new path is solution
-            if (automaton.is_final_state[state_reached->automaton_state] &&
-                state_reached->node_id == end_object_id)
+            if (automaton.is_final_state[state_reached->automaton_state]
+                && state_reached->node_id == end_object_id)
             {
                 auto path_id = path_manager.set_path(state_reached, path_var);
                 parent_binding->add(path_var, path_id);
@@ -66,8 +73,8 @@ bool DFSCheck::_next() {
     return false;
 }
 
-
-SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state) {
+SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (current_state.iter->at_end()) {
         // Check if automaton state has transitions
@@ -80,7 +87,8 @@ SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state) {
     // Iterate over the remaining transitions of current_state
     // Don't start from the beginning, resume where it left thanks to state transition + iter (pipeline)
     while (current_state.transition < automaton.from_to_connections[current_state.automaton_state].size()) {
-        auto& transition = automaton.from_to_connections[current_state.automaton_state][current_state.transition];
+        auto& transition = automaton
+                               .from_to_connections[current_state.automaton_state][current_state.transition];
 
         // Iterate over records and return trails
         while (current_state.iter->next()) {
@@ -98,7 +106,8 @@ SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state) {
                 ObjectId(current_state.iter->get_edge()),
                 transition.type_id,
                 transition.inverse,
-                &current_state);
+                &current_state
+            );
         }
 
         // Construct new iter with the next transition (if there exists one)
@@ -110,8 +119,8 @@ SearchStateDFS* DFSCheck::expand_neighbors(SearchStateDFS& current_state) {
     return nullptr;
 }
 
-
-void DFSCheck::_reset() {
+void DFSCheck::_reset()
+{
     // Empty open
     stack<SearchStateDFS> empty;
     open.swap(empty);
@@ -121,13 +130,30 @@ void DFSCheck::_reset() {
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        start_object_id,
+        ObjectId(),
+        ObjectId(),
+        false,
+        nullptr
+    );
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-void DFSCheck::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void DFSCheck::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllTrails::DFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

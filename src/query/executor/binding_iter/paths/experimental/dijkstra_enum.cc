@@ -3,10 +3,9 @@
 #include <cassert>
 
 #include "graph_models/quad_model/quad_model.h"
-#include "system/path_manager.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/record.h"
+#include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::Any;
@@ -14,10 +13,11 @@ using namespace Paths::Any;
 // Evaluate data checks for a specific object
 bool DijkstraEnum::eval_data_check(
     uint64_t obj,
-    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks)
+    vector<tuple<Operators, ObjectId, ObjectId>>& property_checks
+)
 {
     // Perform all data checks in transition
-    for (auto& property_check: property_checks) {
+    for (auto& property_check : property_checks) {
         // Extract tuple <operator,key,value>
         auto op = get<0>(property_check);
         auto key_id = get<1>(property_check).id;
@@ -35,7 +35,8 @@ bool DijkstraEnum::eval_data_check(
         auto prop_iter = quad_model.object_key_value->get_range(
             &get_query_ctx().thread_info.interruption_requested,
             Record<3>(min_prop_ids),
-            Record<3>(max_prop_ids));
+            Record<3>(max_prop_ids)
+        );
         auto prop_record = prop_iter.next();
 
         // Perform specific data check
@@ -46,7 +47,7 @@ bool DijkstraEnum::eval_data_check(
                 continue;
             } else if (op == Operators::NOT_EQ && record_value_id != value_id) {
                 continue;
-            } else {  // Data check fails
+            } else { // Data check fails
                 return false;
             }
         } else {
@@ -57,8 +58,8 @@ bool DijkstraEnum::eval_data_check(
     return true;
 }
 
-
-void DijkstraEnum::_begin(Binding& _parent_binding) {
+void DijkstraEnum::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
@@ -67,20 +68,16 @@ void DijkstraEnum::_begin(Binding& _parent_binding) {
 
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
-
         // Perform all data checks in transition
         bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
 
         // All the data checks succeeded
         if (check_succeeded) {
-            auto state_inserted = visited.emplace(t.to,
-                                                  start_object_id,
-                                                  nullptr,
-                                                  false,
-                                                  ObjectId::get_null());
+            auto state_inserted = visited
+                                      .emplace(t.to, start_object_id, nullptr, false, ObjectId::get_null());
 
             // Inserted_state.second = true if first time visiting state
-            if (state_inserted.second) {  // State was actually inserted
+            if (state_inserted.second) { // State was actually inserted
                 // Add new queue state to open
                 open.push(DijkstraQueueState(state_inserted.first.operator->(), 0));
             }
@@ -93,16 +90,18 @@ void DijkstraEnum::_begin(Binding& _parent_binding) {
     max_ids[3] = 0xFFFFFFFFFFFFFFFF;
 }
 
-
-bool DijkstraEnum::_next() {
+bool DijkstraEnum::_next()
+{
     // Check if first state is final
     if (first_next) {
         const auto queue_state = open.top();
 
         // Check if node is valid
-        auto node_iter = quad_model.nodes->get_range(&get_query_ctx().thread_info.interruption_requested,
-                                                     Record<1>({queue_state.state->node_id.id}),
-                                                     Record<1>({queue_state.state->node_id.id}));
+        auto node_iter = quad_model.nodes->get_range(
+            &get_query_ctx().thread_info.interruption_requested,
+            Record<1>({ queue_state.state->node_id.id }),
+            Record<1>({ queue_state.state->node_id.id })
+        );
         // Return false if node does not exist in db
         if (node_iter.next() == nullptr) {
             open.pop();
@@ -146,26 +145,25 @@ bool DijkstraEnum::_next() {
     return false;
 }
 
-
-inline int64_t parse_cost(uint64_t oid) {
-    auto mask        = oid & ObjectId::TYPE_MASK;
+inline int64_t parse_cost(uint64_t oid)
+{
+    auto mask = oid & ObjectId::TYPE_MASK;
     // auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
     switch (mask) {
-        case ObjectId::MASK_POSITIVE_INT : {
-            int64_t i = oid & 0x00FF'FFFF'FFFF'FFFFUL;
-            return i;
-        }
-         default : {
-            throw LogicException("Assuming non-negative costs.");
-        }
+    case ObjectId::MASK_POSITIVE_INT: {
+        int64_t i = oid & 0x00FF'FFFF'FFFF'FFFFUL;
+        return i;
+    }
+    default: {
+        throw LogicException("Assuming non-negative costs.");
+    }
     }
 }
 
-
-robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
+boost::unordered_node_set<SearchStateDijkstra, std::hash<SearchStateDijkstra>>::iterator
     DijkstraEnum::expand_neighbors(const SearchStateDijkstra* current_state)
 {
-    if (iter.is_null()) {  // The first time a state is explored
+    if (iter.is_null()) { // The first time a state is explored
         current_edge_transition = 0;
         current_data_transition = 0;
 
@@ -180,7 +178,8 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
     // Iterate over state edge transitions
     while (current_edge_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
         // Current transition
-        auto& transition = automaton.from_to_connections[current_state->automaton_state][current_edge_transition];
+        auto& transition = automaton
+                               .from_to_connections[current_state->automaton_state][current_edge_transition];
 
         // Iterate over states connected to this one
         if (current_data_transition == 0) {
@@ -189,7 +188,7 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
         while (child_record != nullptr) {
             // Perform data checks for the edge transition
             bool edge_succeeded = true;
-            if (current_data_transition == 0) {  // Avoid performing data checks repeatedly for the same edge
+            if (current_data_transition == 0) { // Avoid performing data checks repeatedly for the same edge
                 edge_succeeded = eval_data_check((*child_record)[3], transition.property_checks);
 
                 // Get projection for edge cost
@@ -206,7 +205,8 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
                     auto prop_iter = quad_model.object_key_value->get_range(
                         &get_query_ctx().thread_info.interruption_requested,
                         Record<3>(min_prop_ids),
-                        Record<3>(max_prop_ids));
+                        Record<3>(max_prop_ids)
+                    );
                     auto prop_record = prop_iter.next();
 
                     // Check cost
@@ -222,7 +222,9 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
             }
 
             // Perform all data checks in transition if edge data check has succeeded
-            while (edge_succeeded && current_data_transition < automaton.from_to_connections[transition.to].size()) {
+            while (edge_succeeded
+                   && current_data_transition < automaton.from_to_connections[transition.to].size())
+            {
                 // Current data transition
                 auto& data_transition = automaton.from_to_connections[transition.to][current_data_transition];
                 current_data_transition++;
@@ -239,11 +241,12 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
                         current_state,
                         transition.inverse,
                         transition.type_id,
-                        current_state->cost + edge_cost);
+                        current_state->cost + edge_cost
+                    );
                     auto inserted_state = visited.insert(next_state_key);
 
                     // Inserted_state.second = true if first time visiting state
-                    if (inserted_state.second) {  // State was actually inserted
+                    if (inserted_state.second) { // State was actually inserted
                         // Return pointer to new state in visited
                         return inserted_state.first;
                     } else {
@@ -269,7 +272,7 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
         }
 
         // Construct new iter
-        current_edge_transition++;  // Expand next transition from this state if it exists
+        current_edge_transition++; // Expand next transition from this state if it exists
         if (current_edge_transition < automaton.from_to_connections[current_state->automaton_state].size()) {
             set_iter(current_state);
             assert(current_data_transition == 0);
@@ -280,10 +283,11 @@ robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
     return visited.end();
 }
 
-
-void DijkstraEnum::set_iter(const SearchStateDijkstra* current_state) {
+void DijkstraEnum::set_iter(const SearchStateDijkstra* current_state)
+{
     // Gets current transition object from automaton
-    const auto& transition = automaton.from_to_connections[current_state->automaton_state][current_edge_transition];
+    const auto& transition = automaton.from_to_connections[current_state->automaton_state]
+                                                          [current_edge_transition];
 
     // Gets iter from correct bpt with transition.inverse
     if (transition.inverse) {
@@ -291,23 +295,27 @@ void DijkstraEnum::set_iter(const SearchStateDijkstra* current_state) {
         max_ids[0] = current_state->node_id.id;
         min_ids[1] = transition.type_id.id;
         max_ids[1] = transition.type_id.id;
-        iter = quad_model.to_type_from_edge->get_range(&get_query_ctx().thread_info.interruption_requested,
-                                                       Record<4>(min_ids),
-                                                       Record<4>(max_ids));
+        iter = quad_model.to_type_from_edge->get_range(
+            &get_query_ctx().thread_info.interruption_requested,
+            Record<4>(min_ids),
+            Record<4>(max_ids)
+        );
     } else {
         min_ids[0] = transition.type_id.id;
         max_ids[0] = transition.type_id.id;
         min_ids[1] = current_state->node_id.id;
         max_ids[1] = current_state->node_id.id;
-        iter = quad_model.type_from_to_edge->get_range(&get_query_ctx().thread_info.interruption_requested,
-                                                       Record<4>(min_ids),
-                                                       Record<4>(max_ids));
+        iter = quad_model.type_from_to_edge->get_range(
+            &get_query_ctx().thread_info.interruption_requested,
+            Record<4>(min_ids),
+            Record<4>(max_ids)
+        );
     }
     idx_searches++;
 }
 
-
-void DijkstraEnum::_reset() {
+void DijkstraEnum::_reset()
+{
     // Empty open and visited
     priority_queue<DijkstraQueueState, vector<DijkstraQueueState>, DijkstraQueueStateComp> empty;
     open.swap(empty);
@@ -322,28 +330,19 @@ void DijkstraEnum::_reset() {
 
     // Obtain states connected with the start state
     for (auto& t : automaton.from_to_connections[automaton.get_start()]) {
-
         // Perform all data checks in transition
         bool check_succeeded = eval_data_check(start_object_id.id, t.property_checks);
 
         // All the data checks succeeded
         if (check_succeeded) {
-            auto state_inserted = visited.emplace(t.to,
-                                                  start_object_id,
-                                                  nullptr,
-                                                  false,
-                                                  ObjectId::get_null());
+            auto state_inserted = visited
+                                      .emplace(t.to, start_object_id, nullptr, false, ObjectId::get_null());
 
             // Inserted_state.second = true if first time visiting state
-            if (state_inserted.second) {  // State was actually inserted
+            if (state_inserted.second) { // State was actually inserted
                 // Add new queue state to open
                 open.push(DijkstraQueueState(state_inserted.first.operator->(), 0));
             }
         }
     }
-}
-
-
-void DijkstraEnum::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
 }

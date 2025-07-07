@@ -21,9 +21,11 @@ public:
 
     BindingExprCast(CastType cast_type, std::unique_ptr<BindingExpr> expr) :
         cast_type(cast_type),
-        expr     (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto oid = expr->eval(binding);
         if (oid.is_null()) {
             return oid;
@@ -111,7 +113,7 @@ public:
             case CastType::mdbtype_tensorFloat: {
                 const auto str = Conversions::to_lexical_str(oid);
                 bool error;
-                const auto tensor = Tensor<float>::from_literal(str, &error);
+                const auto tensor = tensor::Tensor<float>::from_literal(str, &error);
                 if (error) {
                     return ObjectId::get_null();
                 }
@@ -120,13 +122,14 @@ public:
             case CastType::mdbtype_tensorDouble: {
                 const auto str = Conversions::to_lexical_str(oid);
                 bool error;
-                const auto tensor = Tensor<double>::from_literal(str, &error);
+                const auto tensor = tensor::Tensor<double>::from_literal(str, &error);
                 if (error) {
                     return ObjectId::get_null();
                 }
                 return Conversions::pack_tensor<double>(tensor);
             }
-            default: return ObjectId::get_null();
+            default:
+                return ObjectId::get_null();
             }
         }
         case RDF_OID::GenericSubType::FLOAT: {
@@ -141,23 +144,23 @@ public:
             }
             case CastType::xsd_decimal: {
                 float f = Conversions::unpack_float(oid);
-                Decimal dec(0);
+                Decimal dec;
                 switch (std::fpclassify(f)) {
-                    case FP_NORMAL: {
-                        dec = Decimal::from_float(f);
-                        break;
-                    }
-                    case FP_ZERO: {
-                        // decimal is already 0
-                        break;
-                    }
-                    case FP_INFINITE:
-                    case FP_NAN:
-                    case FP_SUBNORMAL: {
-                        return ObjectId::get_null();
-                    }
-                    default:
-                        return ObjectId::get_null();
+                case FP_NORMAL: {
+                    dec = Decimal(f);
+                    break;
+                }
+                case FP_ZERO: {
+                    // decimal is already 0
+                    break;
+                }
+                case FP_INFINITE:
+                case FP_NAN:
+                case FP_SUBNORMAL: {
+                    return ObjectId::get_null();
+                }
+                default:
+                    return ObjectId::get_null();
                 }
                 return Conversions::pack_decimal(dec);
             }
@@ -186,23 +189,23 @@ public:
                 return oid;
             case CastType::xsd_decimal: {
                 double d = Conversions::unpack_double(oid);
-                Decimal dec(0);
+                Decimal dec;
                 switch (std::fpclassify(d)) {
-                    case FP_NORMAL: {
-                        dec = Decimal::from_double(d);
-                        break;
-                    }
-                    case FP_ZERO: {
-                        // decimal is already 0
-                        break;
-                    }
-                    case FP_INFINITE:
-                    case FP_NAN:
-                    case FP_SUBNORMAL: {
-                        return ObjectId::get_null();
-                    }
-                    default:
-                        return ObjectId::get_null();
+                case FP_NORMAL: {
+                    dec = Decimal(d);
+                    break;
+                }
+                case FP_ZERO: {
+                    // decimal is already 0
+                    break;
+                }
+                case FP_INFINITE:
+                case FP_NAN:
+                case FP_SUBNORMAL: {
+                    return ObjectId::get_null();
+                }
+                default:
+                    return ObjectId::get_null();
                 }
                 return Conversions::pack_decimal(dec);
             }
@@ -221,7 +224,8 @@ public:
         }
         case RDF_OID::GenericSubType::DECIMAL: {
             switch (cast_type) {
-            case CastType::xsd_string: return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
+            case CastType::xsd_string:
+                return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
             case CastType::xsd_float: {
                 float flt = Conversions::unpack_decimal(oid).to_float();
                 return Conversions::pack_float(flt);
@@ -291,7 +295,7 @@ public:
                 return Conversions::pack_float(flt);
             }
             case CastType::xsd_double: {
-               double dbl = oid == Conversions::pack_bool(true) ? 1.0 : 0.0;
+                double dbl = oid == Conversions::pack_bool(true) ? 1.0 : 0.0;
                 return Conversions::pack_double(dbl);
             }
             case CastType::xsd_decimal: {
@@ -299,7 +303,7 @@ public:
                 Decimal dec(num);
                 return Conversions::pack_decimal(dec);
             }
-            case CastType::xsd_integer:{
+            case CastType::xsd_integer: {
                 int64_t num = oid == Conversions::pack_bool(true) ? 1 : 0;
                 return Conversions::pack_int(num);
             }
@@ -351,11 +355,13 @@ public:
                 return ObjectId::get_null();
             }
         }
-        default: return ObjectId::get_null();
+        default:
+            return ObjectId::get_null();
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

@@ -30,12 +30,10 @@ are not performed or delayed. For example this is used in the StringHash.
 
 #include <boost/unordered/unordered_flat_map.hpp>
 
-// #include "query/query_context.h"
 #include "storage/file_id.h"
 #include "storage/page/private_page.h"
 #include "storage/page/unversioned_page.h"
 #include "storage/page/versioned_page.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 class BufferManager {
 public:
@@ -47,32 +45,41 @@ public:
 
         VersionScope(uint64_t start_version, bool is_editable) :
             start_version(start_version),
-            is_editable(is_editable) { }
+            is_editable(is_editable)
+        { }
 
         ~VersionScope();
     };
 
-    static constexpr uint64_t DEFAULT_VERSIONED_PAGES_BUFFER_SIZE   = 1024 * 1024 * 1024; // 1 GB
+    static constexpr uint64_t DEFAULT_VERSIONED_PAGES_BUFFER_SIZE = 1024 * 1024 * 1024; // 1 GB
 
     // each worker will have this buffer size
-    static constexpr uint64_t DEFAULT_PRIVATE_PAGES_BUFFER_SIZE     = 1024 * 1024 *   64; // 64 MB
+    static constexpr uint64_t DEFAULT_PRIVATE_PAGES_BUFFER_SIZE = 1024 * 1024 * 64; // 64 MB
 
-    static constexpr uint64_t DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE = 1024 * 1024 *  128; // 128 MB
+    static constexpr uint64_t DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE = 1024 * 1024 * 128; // 128 MB
 
-    static_assert(DEFAULT_VERSIONED_PAGES_BUFFER_SIZE % VPage::SIZE == 0,
-                  "DEFAULT_VERSIONED_PAGES_BUFFER_SIZE should be multiple of VPage::SIZE");
-    static_assert(DEFAULT_PRIVATE_PAGES_BUFFER_SIZE % PPage::SIZE == 0,
-                  "DEFAULT_PRIVATE_PAGES_BUFFER_SIZE should be multiple of PPage::SIZE");
-    static_assert(DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE % UPage::SIZE == 0,
-                  "DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE should be multiple of UPage::SIZE");
+    static_assert(
+        DEFAULT_VERSIONED_PAGES_BUFFER_SIZE % VPage::SIZE == 0,
+        "DEFAULT_VERSIONED_PAGES_BUFFER_SIZE should be multiple of VPage::SIZE"
+    );
+    static_assert(
+        DEFAULT_PRIVATE_PAGES_BUFFER_SIZE % PPage::SIZE == 0,
+        "DEFAULT_PRIVATE_PAGES_BUFFER_SIZE should be multiple of PPage::SIZE"
+    );
+    static_assert(
+        DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE % UPage::SIZE == 0,
+        "DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE should be multiple of UPage::SIZE"
+    );
 
     ~BufferManager();
 
     // necessary to be called before first usage
-    static void init(uint64_t versioned_page_buffer_size_in_bytes,
-                     uint64_t private_page_buffer_pool_size_per_worker_in_bytes,
-                     uint64_t unversioned_page_buffer_size_in_bytes,
-                     uint64_t workers);
+    static void init(
+        uint64_t versioned_page_buffer_size_in_bytes,
+        uint64_t private_page_buffer_pool_size_per_worker_in_bytes,
+        uint64_t unversioned_page_buffer_size_in_bytes,
+        uint64_t workers
+    );
 
     // returns true if page is not the result version
     bool need_edit_version(const VPage& page);
@@ -115,26 +122,31 @@ public:
 
     // increases the count of objects using the page. When you get a page using the methods of the buffer manager
     // the page is already pinned, so you shouldn't call this method unless you want to pin the page more than once
-    void pin(VPage& page) {
+    void pin(VPage& page)
+    {
         page.pin();
     }
 
-    void pin(UPage& page) {
+    void pin(UPage& page)
+    {
         page.pin();
     }
 
     // reduces the count of objects using the page. Should be called when a object using the page is destroyed.
-    inline void unpin(VPage& page) noexcept {
+    inline void unpin(VPage& page) noexcept
+    {
         page.unpin();
     }
 
     // reduces the count of objects using the page. Should be called when a object using the page is destroyed.
-    inline void unpin(PPage& page) noexcept {
+    inline void unpin(PPage& page) noexcept
+    {
         page.unpin();
     }
 
-     // reduces the count of objects using the page. Should be called when a object using the page is destroyed.
-    inline void unpin(UPage& page) noexcept {
+    // reduces the count of objects using the page. Should be called when a object using the page is destroyed.
+    inline void unpin(UPage& page) noexcept
+    {
         page.unpin();
     }
 
@@ -213,11 +225,7 @@ private:
     std::vector<uint64_t> pp_clocks;
 
     // used to search the index in the `pp_pool` of a certain private page
-    std::vector<boost::unordered_flat_map<
-        TmpPageId,
-        PPage*,
-        TmpPageId::Hasher
-    >> pp_map;
+    std::vector<boost::unordered_flat_map<TmpPageId, PPage*, TmpPageId::Hasher>> pp_map;
 
     struct TmpFileInfo {
         uint32_t logical_size;
@@ -225,9 +233,10 @@ private:
         int fd;
 
         TmpFileInfo() :
-            logical_size (0),
-            real_size (0),
-            fd (-1) { }
+            logical_size(0),
+            real_size(0),
+            fd(-1)
+        { }
     };
 
     // tmp_info[i] is a list with the info of each temporal file from worker i
@@ -252,14 +261,15 @@ private:
     std::mutex up_mutex;
 
     // used to search the index in the up_pool of a certain unversioned page
-    robin_hood::unordered_flat_map<PageId, UPage*> up_map;
-
+    boost::unordered_flat_map<PageId, UPage*, PageId::Hasher> up_map;
 
     ////////////////////// PRIVATE METHODS //////////////////////
-    BufferManager(uint64_t versioned_page_buffer_pool_size,
-                  uint64_t private_page_buffer_pool_size_per_worker,
-                  uint64_t unversioned_page_pool_size,
-                  uint64_t workers);
+    BufferManager(
+        uint64_t versioned_page_buffer_pool_size,
+        uint64_t private_page_buffer_pool_size_per_worker,
+        uint64_t unversioned_page_pool_size,
+        uint64_t workers
+    );
 
     // returns an unpinned page from vp_pool
     VPage& get_vpage_available();

@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN x.value1, x.value1 IS NOT NULL AS null_value

@@ -3,7 +3,7 @@
 
 #include "query/optimizer/quad_model/binding_iter_constructor.h"
 #include "query/optimizer/quad_model/expr_property_types_visitor.h"
-#include "query/parser/expr/mql_exprs.h"
+#include "query/parser/expr/mql/exprs.h"
 
 using namespace MQL;
 

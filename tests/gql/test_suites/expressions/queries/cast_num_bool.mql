@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN CAST(1 AS BOOL) AS case_value

@@ -1,5 +1,0 @@
-http://www.wikidata.org/entity/
-http://www.wikidata.org/prop/direct/
-http://www.
-http://
-https://

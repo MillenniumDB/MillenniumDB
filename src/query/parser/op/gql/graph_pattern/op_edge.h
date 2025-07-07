@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
@@ -19,14 +17,27 @@ public:
     VarId from;
     VarId to;
     VarId id;
+    VarId direction_var;
     EdgeType type;
     std::string type_text;
 
-    OpEdge(VarId from, VarId to, VarId edge, EdgeType type) :
+    // Represents the direction in the query: LEFT, RIGHT OR UNDIRECTED
+    std::optional<ObjectId> direction;
+
+    OpEdge(
+        VarId from,
+        VarId to,
+        VarId edge,
+        VarId direction_var,
+        EdgeType type,
+        std::optional<ObjectId> direction = std::nullopt
+    ) :
         from(from),
         to(to),
         id(edge),
-        type(type)
+        direction_var(direction_var),
+        type(type),
+        direction(direction)
     {
         switch (type) {
         case Directed:
@@ -67,26 +78,11 @@ public:
         return { id };
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return { id };
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        std::map<VarId, std::unique_ptr<GQL::VarType>> res;
-        res[id] = std::make_unique<Edge>();
-        return res;
+        std::map<VarId, GQL::VarType> result;
+        result[id] = VarType(VarType::Edge);
+        return result;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

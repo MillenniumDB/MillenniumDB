@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "graph_models/gql/conversions.h"
-#include "query/exceptions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
@@ -22,34 +21,24 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto optype = GQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
+        auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
 
         if (rhs == 0) {
-                return ObjectId::get_null();
-            }
+            return ObjectId::get_null();
+        }
 
         switch (optype) {
-        case GQL::Conversions::OPTYPE_INTEGER: {
-            auto rhs = GQL::Conversions::to_integer(rhs_oid);
-            auto lhs = GQL::Conversions::to_integer(lhs_oid);
-            return GQL::Conversions::pack_int(lhs % rhs);
+        case Conversions::OpType::INTEGER: {
+            auto rhs = Conversions::to_integer(rhs_oid);
+            auto lhs = Conversions::to_integer(lhs_oid);
+            return Conversions::pack_int(lhs % rhs);
         }
-        case GQL::Conversions::OPTYPE_DECIMAL: {
-            auto rhs = GQL::Conversions::to_decimal(rhs_oid);
-            auto lhs = GQL::Conversions::to_decimal(lhs_oid);
-            return GQL::Conversions::pack_decimal(lhs % rhs);
-        }
-        case GQL::Conversions::OPTYPE_FLOAT: {
-            return ObjectId::get_null();
-        }
-        case GQL::Conversions::OPTYPE_DOUBLE: {
-            return ObjectId::get_null();
-        }
-        case GQL::Conversions::OPTYPE_INVALID: {
-            return ObjectId::get_null();
-        }
+        case Conversions::OpType::DECIMAL:
+        case Conversions::OpType::FLOAT:
+        case Conversions::OpType::DOUBLE:
+        case Conversions::OpType::INVALID:
         default:
-            throw LogicException("This should never happen");
+            return ObjectId::get_null();
         }
     }
 

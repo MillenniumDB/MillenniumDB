@@ -7,7 +7,7 @@
 namespace GQL {
 class PathMode {
 public:
-    enum Prefix {
+    enum Selector {
         ALL,
         ANY,
         ALL_SHORTEST,
@@ -16,7 +16,7 @@ public:
         SHORTEST_GROUP_COUNT,
     };
 
-    enum Mode {
+    enum Restrictor {
         WALK,
         TRAIL,
         SIMPLE,
@@ -24,13 +24,13 @@ public:
         DEFAULT,
     };
 
-    Prefix prefix = ANY;
-    Mode mode = DEFAULT;
+    Selector selector = ALL;
+    Restrictor restrictor = DEFAULT;
     uint64_t path_count = 1;
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const
     {
-        std::map<Prefix, std::string> prefix_to_str = {
+        std::map<Selector, std::string> selector_to_str = {
             {                  ALL,                  "ALL" },
             {                  ANY,                  "ANY" },
             {         ALL_SHORTEST,         "ALL_SHORTEST" },
@@ -39,7 +39,7 @@ public:
             { SHORTEST_GROUP_COUNT, "SHORTEST_GROUP_COUNT" },
         };
 
-        std::map<Mode, std::string> mode_to_str = {
+        std::map<Restrictor, std::string> prefix_to_str = {
             {    WALK,    "WALK" },
             {   TRAIL,   "TRAIL" },
             {  SIMPLE,  "SIMPLE" },
@@ -48,9 +48,9 @@ public:
         };
 
         os << std::string(indent, ' ');
-        os << "Mode(" << prefix_to_str[prefix] << ", ";
+        os << "Mode(" << selector_to_str[selector] << ", ";
         os << path_count << ", ";
-        os << mode_to_str[mode] << ")";
+        os << prefix_to_str[restrictor] << ")";
         return os;
     }
 };

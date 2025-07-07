@@ -129,7 +129,7 @@ MillenniumDB supports two database formats: RDF and QuadModel. A RDF database ca
 Creating a Database
 --------------------------------------------------------------------------------
 ```bash
-build/Release/bin/mdb-import <data-file> <db-directory> [--prefixes <prefixes-file>]
+build/Release/bin/mdb import <data-file> <db-directory> [--prefixes <prefixes-file>]
 ```
 - `<data-file>` is the path to the file containing the data to import, using the [Turtle](https://www.w3.org/TR/turtle/) format for RDF, or [QuadModel Format](doc/quad_model/data_model.md#import-format) for Property Graphs.
 - `<db-directory>` is the path of the directory where the new database will be created.
@@ -154,7 +154,7 @@ We implement the typical client/server model, so in order to query a database, y
 ### Run the Server
 To run the server use the following command, passing the `<db-directory>` where the database was created:
 ```bash
-build/Release/bin/mdb-server <db-directory>
+build/Release/bin/mdb server <db-directory>
 ```
 
 **IMPORTANT:** we supposing you execute the server from the root directory of this repository (`MDB_HOME`). If you execute the server from another directory, the web server won't be available unless set the environment variable `MDB_BROWSER` is `$MDB_HOME/browser`.
@@ -195,7 +195,7 @@ Create an Example Database
 --------------------------------------------------------------------------------
 From the repository root directory run the following command to create the example database:
 ```bash
-build/Release/bin/mdb-import data/example-rdf-database.ttl data/example-rdf-database
+build/Release/bin/mdb import data/example-rdf-database.ttl data/example-rdf-database
 ```
 That should have created the directory `data/example-rdf-database` containing a database initialized with the data from `data/example-rdf-database.ttl`.
 
@@ -204,7 +204,7 @@ Launch the Server
 --------------------------------------------------------------------------------
 The server can now be launched with the previously created database:
 ```
-build/Release/bin/mdb-server data/example-rdf-database
+build/Release/bin/mdb server data/example-rdf-database
 ```
 
 
@@ -239,7 +239,7 @@ Creating a Database
 Put any `.ttl` files into the `data` directory and from the repository root directory run:
 ```bash
 docker run --rm --volume "$PWD"/data:/data mdb \
-    mdb-import \
+    mdb import \
     /data/example-rdf-database.ttl \
     /data/example-rdf-database
 ```
@@ -254,7 +254,7 @@ Running a Server
 To run the server with the previously created database use:
 ```bash
 docker run --rm --volume "$PWD"/data:/data -p 1234:1234 -p 4321:4321 mdb \
-    mdb-server /data/example-rdf-database
+    mdb server /data/example-rdf-database
 ```
 
 

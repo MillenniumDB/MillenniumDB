@@ -4,7 +4,7 @@
 
 #include "query/var_id.h"
 #include "query/query_context.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 
 namespace SPARQL {
 
@@ -26,6 +26,7 @@ public:
     void visit(OpGraph&)                override;
     void visit(OpGroupBy&)              override;
     void visit(OpHaving&)               override;
+    void visit(OpProcedure&)            override;
     void visit(OpSelect&)               override;
     void visit(OpSequence&)             override;
     void visit(OpAsk&)                  override;

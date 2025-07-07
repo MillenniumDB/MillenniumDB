@@ -1,0 +1,2 @@
+MATCH (Joe)=[SHORTEST 5 GROUPS ACYCLIC ?p :follows*/:works?]=>(?x)
+RETURN ?p

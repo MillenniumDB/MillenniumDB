@@ -1,0 +1,2 @@
+MATCH (p:Person {name: "1"})
+RETURN (p.name = "1" AND p.name <> "2") AS result

@@ -1,0 +1,2 @@
+MATCH (a: L1)((b: L2))
+RETURN a, b

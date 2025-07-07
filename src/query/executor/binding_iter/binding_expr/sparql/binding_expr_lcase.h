@@ -11,7 +11,7 @@ namespace SPARQL {
 class BindingExprLCase : public BindingExpr {
 private:
     static std::string lcase(const std::string& str) {
-        return Transliterator::get_instance()->lowercase(str);
+        return Transliterator::lowercase(str);
     }
 
 public:

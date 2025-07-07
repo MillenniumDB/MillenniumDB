@@ -1,0 +1,2 @@
+MATCH (a)~>((b:Company)|(c:Person)) | (a:Company)
+RETURN *

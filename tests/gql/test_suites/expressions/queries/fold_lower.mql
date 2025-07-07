@@ -1,0 +1,2 @@
+MATCH (x: StringNode)
+RETURN x.word, LOWER(x.word) AS minusculas

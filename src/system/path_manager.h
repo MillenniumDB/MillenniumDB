@@ -1,8 +1,5 @@
 #pragma once
 
-#include <mutex>
-#include <queue>
-#include <thread>
 #include <vector>
 
 #include "graph_models/object_id.h"
@@ -22,7 +19,6 @@
 #include "query/executor/binding_iter/paths/shortest_k_groups/trails/search_state.h"
 #include "query/executor/binding_iter/paths/shortest_k_groups/walks/search_state.h"
 #include "query/var_id.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 /*
 PathManager manages the conversion from Path to ObjectId and ObjectId to Path.

@@ -6,11 +6,12 @@
 #include <string>
 
 #include "graph_models/common/datatypes/datetime.h"
-#include "graph_models/common/datatypes/tensor.h"
+#include "graph_models/common/datatypes/decimal.h"
+#include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/object_id.h"
 #include "query/exceptions.h"
-#include "query/query_context.h"
 #include "system/string_manager.h"
+#include "system/tensor_manager.h"
 #include "system/tmp_manager.h"
 
 namespace Common { namespace Conversions {
@@ -72,6 +73,37 @@ inline ObjectId pack_float(float f)
     return ObjectId(oid);
 }
 
+inline ObjectId pack_decimal(Decimal dec)
+{
+    if (dec.can_inline()) {
+        return ObjectId(ObjectId::MASK_DECIMAL_INLINED | dec.serialize_inlined());
+    }
+
+    char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
+    dec.serialize_extern(dec_buffer);
+    auto str_id = string_manager.get_bytes_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE);
+    uint64_t oid;
+    if (str_id != ObjectId::MASK_NOT_FOUND) {
+        oid = ObjectId::MASK_DECIMAL_EXTERN | str_id;
+    } else {
+        oid = ObjectId::MASK_DECIMAL_TMP | tmp_manager.get_bytes_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE);
+    }
+    return ObjectId(oid);
+}
+
+inline ObjectId pack_double(double dbl)
+{
+    uint64_t oid;
+    auto bytes = reinterpret_cast<const char*>(reinterpret_cast<const char*>(&dbl));
+    auto bytes_id = string_manager.get_bytes_id(bytes, sizeof(double));
+    if (bytes_id != ObjectId::MASK_NOT_FOUND) {
+        oid = ObjectId::MASK_DOUBLE_EXTERN | bytes_id;
+    } else {
+        oid = ObjectId::MASK_DOUBLE_TMP | tmp_manager.get_bytes_id(bytes, sizeof(double));
+    }
+    return ObjectId(oid);
+}
+
 inline float unpack_float(ObjectId oid)
 {
     assert(oid.get_type() == ObjectId::MASK_FLOAT);
@@ -113,6 +145,52 @@ inline double unpack_double(ObjectId oid)
     return dbl;
 }
 
+/*
+Steps to evaluate an expression:
+    - Calculate the datatype the operation should use (calculate_optype)
+    - unpack operands (unpack_x)
+    - convert operands to previously calculated datatype
+    - evaluate operation
+    - pack result (pack_x)
+
+Type promotion and type substitution order:
+    integer -> decimal -> float (-> double)
+
+Conversion:
+    int64_t -> Decimal (Decimal constructor)
+    int64_t -> float (cast)
+    Decimal -> float (Decimal member function)
+*/
+
+inline Decimal unpack_decimal_inlined(ObjectId oid)
+{
+    assert(oid.get_type() == ObjectId::MASK_DECIMAL_INLINED);
+    return Decimal::from_inlined(oid.get_value());
+}
+
+inline Decimal unpack_decimal(ObjectId oid)
+{
+    switch (oid.get_type()) {
+    case ObjectId::MASK_DECIMAL_INLINED:
+        return unpack_decimal_inlined(oid);
+    case ObjectId::MASK_DECIMAL_EXTERN: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        char buffer[Decimal::EXTERN_BUFFER_SIZE];
+        string_manager.print_to_buffer(buffer, external_id);
+        return Decimal::from_external(buffer);
+    }
+
+    case ObjectId::MASK_DECIMAL_TMP: {
+        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        char buffer[Decimal::EXTERN_BUFFER_SIZE];
+        tmp_manager.print_to_buffer(buffer, external_id);
+        return Decimal::from_external(buffer);
+    }
+    default:
+        throw LogicException("Called unpack_decimal with incorrect ObjectId type, this should never happen");
+    }
+}
+
 constexpr ObjectId pack_date(const DateTime& dt)
 {
     return ObjectId(dt.id);
@@ -128,45 +206,89 @@ constexpr uint64_t get_path_id(ObjectId oid)
     return oid.id & 0x00FF'FFFF'FFFF'FFFFUL;
 }
 
-template<typename T>
-inline ObjectId pack_tensor(const Tensor<T>& tensor)
+// The order, int < dec < flt < ...tensors < inv is important
+enum class OpType {
+    INTEGER = 0x01,
+    DECIMAL = 0x02,
+    FLOAT = 0x03,
+    DOUBLE = 0x04,
+    TENSOR_FLOAT = 0x05,
+    TENSOR_DOUBLE = 0x06,
+    INVALID = 0x07,
+};
+
+/**
+ *  @brief Calculates the generic datatypes of the operand in an expression.
+ *  @param oid ObjectId of the operand involved in an expression.
+ *  @return generic numeric datatype of the operand or OPTYPE_INVALID if oid is not numeric
+ */
+inline OpType calculate_optype(ObjectId oid)
 {
-    if (tensor.empty()) {
-        return ObjectId(Tensor<T>::get_inline_mask());
+    switch (oid.get_sub_type()) {
+    case ObjectId::MASK_INT:
+        return OpType::INTEGER;
+    case ObjectId::MASK_DECIMAL:
+        return OpType::DECIMAL;
+    case ObjectId::MASK_FLOAT:
+        return OpType::FLOAT;
+    case ObjectId::MASK_DOUBLE:
+        return OpType::DOUBLE;
+    case ObjectId::MASK_TENSOR_FLOAT:
+        return OpType::TENSOR_FLOAT;
+    case ObjectId::MASK_TENSOR_DOUBLE:
+        return OpType::TENSOR_FLOAT;
+    default:
+        return OpType::INVALID;
     }
+}
 
-    const auto bytes = reinterpret_cast<const char*>(tensor.data());
-    const auto bytes_size = sizeof(T) * tensor.size();
-    const auto str_id = string_manager.get_bytes_id(bytes, bytes_size);
-    if (str_id != ObjectId::MASK_NOT_FOUND) {
-        return ObjectId(Tensor<T>::get_external_mask() | str_id);
-    }
-
-    return ObjectId(Tensor<T>::get_tmp_mask() | tmp_manager.get_bytes_id(bytes, bytes_size));
+/**
+ *  @brief Calculates the datatype that should be used for expression evaluation.
+ *  @param oid1 ObjectId of the first operand.
+ *  @param oid2 ObjectId of the second operand.
+ *  @return datatype that should be used or OPTYPE_INVALID if not both operands are numeric.
+ */
+inline OpType calculate_optype(ObjectId oid1, ObjectId oid2)
+{
+    auto optype1 = calculate_optype(oid1);
+    auto optype2 = calculate_optype(oid2);
+    return std::max(optype1, optype2);
 }
 
 template<typename T>
-inline Tensor<T> unpack_tensor(ObjectId oid)
+inline ObjectId pack_tensor(const tensor::Tensor<T>& tensor)
+{
+    if (tensor.empty()) {
+        return ObjectId(tensor::Tensor<T>::get_inline_mask());
+    }
+
+    const auto bytes = reinterpret_cast<const char*>(tensor.data());
+    const auto num_bytes = sizeof(T) * tensor.size();
+
+    const uint64_t tensor_id = tensor_manager.get_id(bytes, num_bytes);
+    if (tensor_id != ObjectId::MASK_NOT_FOUND) {
+        return ObjectId(tensor::Tensor<T>::get_external_mask() | tensor_id);
+    }
+
+    return ObjectId(tensor::Tensor<T>::get_tmp_mask() | tmp_manager.get_bytes_id(bytes, num_bytes));
+}
+
+template<typename T>
+inline tensor::Tensor<T> unpack_tensor(ObjectId oid)
 {
     // No need to handle tensor construction errors in runtime as they would be an implementation fault and they
     // should never happen
     switch (oid.get_type()) {
-    case Tensor<T>::get_inline_mask(): {
-        return Tensor<T>();
+    case tensor::Tensor<T>::get_inline_mask(): {
+        return tensor::Tensor<T>();
     }
-    case Tensor<T>::get_external_mask(): {
-        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        auto buffer = get_query_ctx().get_buffer1();
-        const auto size = string_manager.print_to_buffer(buffer, external_id);
-        bool error;
-        return Tensor<T>::from_external(buffer, size, &error);
+    case tensor::Tensor<T>::get_external_mask(): {
+        return tensor_manager.get_tensor<T>(oid);
     }
-    case Tensor<T>::get_tmp_mask(): {
-        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        auto buffer = get_query_ctx().get_buffer1();
-        const auto size = tmp_manager.print_to_buffer(buffer, external_id);
-        bool error;
-        return Tensor<T>::from_external(buffer, size, &error);
+    case tensor::Tensor<T>::get_tmp_mask(): {
+        const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        const std::string& tensor_bytes = tmp_manager.get_str(tmp_id);
+        return tensor::Tensor<T>::from_bytes(tensor_bytes.data(), tensor_bytes.size());
     }
     default:
         throw LogicException("Called unpack_tensor with incorrect ObjectId type, this should never happen");
@@ -174,41 +296,110 @@ inline Tensor<T> unpack_tensor(ObjectId oid)
 }
 
 template<typename T>
-inline Tensor<T> to_tensor(ObjectId oid)
+inline tensor::Tensor<T> to_tensor(ObjectId oid)
 {
     switch (oid.get_type()) {
-    case Tensor<float>::get_inline_mask():
-    case Tensor<float>::get_external_mask():
-    case Tensor<float>::get_tmp_mask(): {
-        if constexpr (std::is_same_v<T, float>) {
-            // Prevent unnecessary copy
-            return Common::Conversions::unpack_tensor<float>(oid);
-        }
+    case tensor::Tensor<float>::get_inline_mask():
+    case tensor::Tensor<float>::get_external_mask():
+    case tensor::Tensor<float>::get_tmp_mask(): {
         const auto tensor = Common::Conversions::unpack_tensor<float>(oid);
-        std::vector<T, AlignedAllocator<T>> casted_data;
-        casted_data.resize(tensor.size());
-        for (std::size_t i = 0; i < tensor.size(); ++i) {
-            casted_data[i] = static_cast<T>(tensor[i]);
+        if constexpr (std::is_same_v<T, float>) {
+            // Prevent unnecessary cast
+            return tensor;
         }
-        return Tensor<T>(std::move(casted_data));
+        return tensor.cast<T>();
     }
-    case Tensor<double>::get_inline_mask():
-    case Tensor<double>::get_external_mask():
-    case Tensor<double>::get_tmp_mask(): {
-        if constexpr (std::is_same_v<T, double>) {
-            // Prevent unnecessary copy
-            return Common::Conversions::unpack_tensor<double>(oid);
-        }
+    case tensor::Tensor<double>::get_inline_mask():
+    case tensor::Tensor<double>::get_external_mask():
+    case tensor::Tensor<double>::get_tmp_mask(): {
         const auto tensor = Common::Conversions::unpack_tensor<double>(oid);
-        std::vector<T, AlignedAllocator<T>> casted_data;
-        casted_data.resize(tensor.size());
-        for (std::size_t i = 0; i < tensor.size(); ++i) {
-            casted_data[i] = static_cast<T>(tensor[i]);
+        if constexpr (std::is_same_v<T, double>) {
+            // Prevent unnecessary cast
+            return tensor;
         }
-        return Tensor<T>(std::move(casted_data));
+        return tensor.cast<T>();
     }
     default:
         throw LogicException("Called to_tensor with incorrect ObjectId type, this should never happen");
     }
 }
+
+/**
+ *  @brief Converts an ObjectId to int64_t if permitted.
+ *  @param oid ObjectId to convert.
+ *  @return an int64_t representing the ObjectId.
+ *  @throws LogicException if the ObjectId has no permitted type.
+ */
+inline int64_t to_integer(ObjectId oid)
+{
+    switch (oid.get_sub_type()) {
+    case ObjectId::MASK_INT:
+        return unpack_int(oid);
+    default:
+        throw LogicException("Called to_integer with incorrect ObjectId type, this should never happen");
+    }
+}
+
+/**
+ *  @brief Converts an ObjectId to Decimal if permitted.
+ *  @param oid ObjectId to convert.
+ *  @return a Decimal representing the ObjectId.
+ *  @throws LogicException if the ObjectId has no permitted type.
+ */
+inline Decimal to_decimal(ObjectId oid)
+{
+    switch (oid.get_sub_type()) {
+    case ObjectId::MASK_INT:
+        return Decimal(unpack_int(oid));
+    case ObjectId::MASK_DECIMAL:
+        return unpack_decimal(oid);
+    default:
+        throw LogicException("Called to_decimal with incorrect ObjectId type, this should never happen");
+    }
+}
+
+/**
+ *  @brief Converts an ObjectId to float if permitted.
+ *  @param oid ObjectId to convert.
+ *  @return a float representing the ObjectId.
+ *  @throws LogicException if the ObjectId has no permitted type.
+ */
+inline float to_float(ObjectId oid)
+{
+    switch (oid.get_sub_type()) {
+    case ObjectId::MASK_INT:
+        return unpack_int(oid);
+    case ObjectId::MASK_DECIMAL:
+        return unpack_decimal(oid).to_float();
+    case ObjectId::MASK_FLOAT:
+        return unpack_float(oid);
+    case ObjectId::MASK_DOUBLE:
+        return unpack_double(oid);
+    default:
+        throw LogicException("Called to_float with incorrect ObjectId type, this should never happen");
+    }
+}
+
+/**
+ *  @brief Converts an ObjectId to double if permitted.
+ *  @param oid ObjectId to convert.
+ *  @return a double representing the ObjectId.
+ *  @throws LogicException if the ObjectId has no permitted type.
+ */
+inline double to_double(ObjectId oid)
+{
+    switch (oid.get_sub_type()) {
+    case ObjectId::MASK_INT:
+        return unpack_int(oid);
+    case ObjectId::MASK_DECIMAL:
+        return unpack_decimal(oid).to_double();
+    case ObjectId::MASK_FLOAT:
+        return unpack_float(oid);
+    case ObjectId::MASK_DOUBLE:
+        return unpack_double(oid);
+    default:
+        throw LogicException("Called to_double with incorrect ObjectId type, this should never happen");
+    }
+}
+
 }} // namespace Common::Conversions

@@ -1,0 +1,4 @@
+MATCH (x)
+FILTER x:Person
+MATCH -[x]->
+RETURN *

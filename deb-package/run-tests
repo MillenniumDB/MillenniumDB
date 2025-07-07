@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e; set -u; set -o pipefail
+BLUE='\033[0;34m'; RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m';
+
+# Remove SPARQL tmp dir
+[[ -d tests/sparql/tmp/ ]] && rm -r tests/sparql/tmp/
+
+# Remove MQL tmp dir
+[[ -d tests/mql/tmp/ ]] && rm -r tests/mql/tmp/
+
+# Run SPARQL integration tests
+printf "${BLUE}SPARQL INTEGRATION TESTS${NC}\n"
+venv/bin/python3 tests/sparql/scripts/test.py \
+    --executable mdb \
+
+# Run MQL integration tests
+printf "${BLUE}MQL INTEGRATION TESTS${NC}\n"
+venv/bin/python3 tests/mql/scripts/test.py \
+    --executable mdb \

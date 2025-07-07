@@ -105,6 +105,24 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
     case ObjectId::MASK_PATH:
     case ObjectId::MASK_EDGE:
         return lhs_unmasked_id - rhs_unmasked_id;
+    case ObjectId::MASK_TENSOR: {
+        const auto optype = Conversions::calculate_optype(lhs, rhs);
+        switch (optype) {
+        case Conversions::OpType::TENSOR_FLOAT: {
+            const auto lhs_value = Conversions::to_tensor<float>(lhs);
+            const auto rhs_value = Conversions::to_tensor<float>(rhs);
+            return tensor::Tensor<float>::compare(lhs_value, rhs_value);
+        }
+        case Conversions::OpType::TENSOR_DOUBLE: {
+            const auto lhs_value = Conversions::to_tensor<double>(lhs);
+            const auto rhs_value = Conversions::to_tensor<double>(rhs);
+            return tensor::Tensor<double>::compare(lhs_value, rhs_value);
+        }
+        default: {
+            throw LogicException("This should never happen");
+        }
+        }
+    }
     default:
         throw std::logic_error(
             "Unmanaged generic mask in Quad Comparisons " + std::to_string(lhs_generic_type)

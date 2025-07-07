@@ -436,7 +436,7 @@ EXP
    : 'EXP'
    ;
 
-FALSE
+K_FALSE
    : 'FALSE'
    ;
 
@@ -1024,7 +1024,7 @@ TRIM
    : 'TRIM'
    ;
 
-TRUE
+K_TRUE
    : 'TRUE'
    ;
 

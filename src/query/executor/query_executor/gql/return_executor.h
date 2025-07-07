@@ -1,5 +1,6 @@
 #pragma once
 
+#include "query/executor/binding_iter.h"
 #include "query/executor/query_executor/query_executor.h"
 
 namespace GQL {

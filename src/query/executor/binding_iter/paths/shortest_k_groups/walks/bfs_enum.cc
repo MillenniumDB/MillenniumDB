@@ -13,16 +13,13 @@ using namespace Paths::ShortestKGroupsWalks;
 void BFSEnum::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 void BFSEnum::_reset()
 {
     // empty all structs
-    while(!open.empty()) {
+    while (!open.empty()) {
         open.pop();
     }
     visited.clear();
@@ -32,27 +29,19 @@ void BFSEnum::_reset()
     groups_counts.clear();
     pending_finals.clear();
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
-void BFSEnum::expand_first_state(ObjectId start)
+void BFSEnum::expand_first_state()
 {
+    // Add starting states to open and visited
+    ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+
     iter = make_unique<NullIndexIterator>();
     current_solution = nullptr;
 
-    auto start_iter_transition = iter_arena.add(
-        nullptr,
-        false,
-        ObjectId::get_null()
-    );
-    auto state_inserted = visited.emplace(
-        start,
-        automaton.start_state,
-        0,
-        start_iter_transition
-    );
+    auto start_iter_transition = iter_arena.add(nullptr, false, ObjectId::get_null());
+    auto state_inserted = visited.emplace(start_oid, automaton.start_state, 0, start_iter_transition);
     open.push(state_inserted.first.operator->());
 
     // Check if first state is final
@@ -66,21 +55,15 @@ void BFSEnum::expand_first_state(ObjectId start)
 
     // Starting state is solution
     if (automaton.is_final_state[automaton.start_state]) {
-        auto solution_iter_transition = iter_arena.add(
-            nullptr,
-            false,
-            ObjectId::get_null()
-        );
+        auto solution_iter_transition = iter_arena.add(nullptr, false, ObjectId::get_null());
         pending_finals.insert(current_state->node_id.id);
-        solutions.insert({
-            current_state->node_id.id,
-            Solution(
-                state_inserted.first.operator->(),
-                solution_iter_transition,
-                1, // num_groups
-                0  // last_group_len
-            )
-        });
+        solutions.insert({ current_state->node_id.id,
+                           Solution(
+                               state_inserted.first.operator->(),
+                               solution_iter_transition,
+                               1, // num_groups
+                               0 // last_group_len
+                           ) });
     }
 }
 
@@ -155,20 +138,13 @@ Solution* BFSEnum::expand_neighbors(const SearchState& current_state)
             NodeState current_ns(current_state.node_id.id, transition.from);
             NodeState reached_ns(reached_node, transition.to);
 
-            SearchState next_state(
-                ObjectId(reached_node),
-                transition.to,
-                current_state.distance + 1
-            );
+            SearchState next_state(ObjectId(reached_node), transition.to, current_state.distance + 1);
 
             auto visited_search = visited.find(next_state);
             if (visited_search != visited.end()) {
                 auto reached_state = visited_search.operator->();
-                auto new_iter_transition = iter_arena.add(
-                    &current_state,
-                    transition.inverse,
-                    transition.type_id
-                );
+                auto new_iter_transition = iter_arena
+                                               .add(&current_state, transition.inverse, transition.type_id);
                 reached_state->path_iter.add(new_iter_transition);
 
                 // Check if path is solution
@@ -203,21 +179,21 @@ Solution* BFSEnum::expand_neighbors(const SearchState& current_state)
                     }
                 } else {
                     // groups count will be updated below
-                    groups_counts.insert({reached_ns, GroupsInfo(0, 0)});
+                    groups_counts.insert({ reached_ns, GroupsInfo(0, 0) });
                 }
 
-                auto new_iter_transition = iter_arena.add(
-                    &current_state,
-                    transition.inverse,
-                    transition.type_id
-                );
+                auto new_iter_transition = iter_arena
+                                               .add(&current_state, transition.inverse, transition.type_id);
                 // Add state to visited and open and keep going unless it's an optimal final state
-                auto reached_state = visited.emplace(
-                    ObjectId(reached_node),
-                    transition.to,
-                    current_state.distance + 1,
-                    new_iter_transition
-                ).first.operator->();
+                auto reached_state = visited
+                                         .emplace(
+                                             ObjectId(reached_node),
+                                             transition.to,
+                                             current_state.distance + 1,
+                                             new_iter_transition
+                                         )
+                                         .first.
+                                     operator->();
                 open.push(reached_state);
 
                 // update groups info
@@ -246,7 +222,7 @@ Solution* BFSEnum::expand_neighbors(const SearchState& current_state)
                             // case 2:
                             solution_found.num_groups++;
                             solution_found.last_group_len = reached_state->distance;
-                            if (solution_found.num_groups == K+1) {
+                            if (solution_found.num_groups == K + 1) {
                                 return &solution_found;
                             }
                             auto solution_iter_transition = iter_arena.add(
@@ -264,10 +240,10 @@ Solution* BFSEnum::expand_neighbors(const SearchState& current_state)
                             transition.type_id
                         );
                         pending_finals.insert(reached_state->node_id.id);
-                        solutions.insert({
-                            reached_node,
-                            Solution(reached_state, solution_iter_transition, 1, reached_state->distance)
-                        });
+                        solutions.insert(
+                            { reached_node,
+                              Solution(reached_state, solution_iter_transition, 1, reached_state->distance) }
+                        );
                     }
                 }
             }
@@ -282,7 +258,15 @@ Solution* BFSEnum::expand_neighbors(const SearchState& current_state)
     return nullptr;
 }
 
-void BFSEnum::accept_visitor(BindingIterVisitor& visitor)
+void BFSEnum::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKGroupsWalks::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

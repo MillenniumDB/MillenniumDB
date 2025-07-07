@@ -1,0 +1,2 @@
+MATCH (x: StringNode)
+RETURN x.word, CHAR_LENGTH(x.word) AS largo

@@ -79,6 +79,8 @@ private:
     char* buffer1;
     char* buffer2;
 
+    std::map<VarId, ObjectId> edge_directions;
+
 public:
     QueryContext()
     {
@@ -208,6 +210,10 @@ public:
 
     bool is_internal(VarId var) {
         return var_ctx.var_names[var.id][0] == '.';
+    }
+
+    bool is_blank(VarId var) {
+        return var_ctx.var_names[var.id].find("_:") == 0;
     }
 
     static inline thread_local QueryContext* _query_ctx;

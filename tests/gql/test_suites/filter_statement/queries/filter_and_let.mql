@@ -1,0 +1,4 @@
+MATCH (x)
+LET name = "N1"
+FILTER x.name = name
+RETURN x

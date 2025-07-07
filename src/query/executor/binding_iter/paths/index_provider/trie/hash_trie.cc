@@ -1,9 +1,8 @@
 #include "hash_trie.h"
 
-#include <map>
+// #include <map>
 
 using namespace std;
-
 
 void HashTrie::insert(uint64_t prefix, uint64_t data) {
     // Check if prefix is already in the tree

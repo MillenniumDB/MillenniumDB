@@ -3,9 +3,6 @@
 #include <memory>
 #include <queue>
 
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
-
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
@@ -32,7 +29,7 @@ private:
     // its value is setted in begin() and reset()
     ObjectId end_object_id;
 
-    // struct with all simple paths
+    // struct with all trail paths
     Arena<PathState> visited;
 
     // Queue for BFS
@@ -44,9 +41,12 @@ private:
     // The index of the transition being currently explored
     uint_fast32_t current_transition;
 
-    SolutionInfo solution;
+    // contains last solution seen
+    const PathState* solution;
 
-    bool first_state_is_solution;
+    uint64_t last_depth;
+
+    uint64_t num_groups;
 
 public:
     // Statistics
@@ -71,7 +71,7 @@ public:
     // Explore neighbors searching for a solution.
     bool expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 
@@ -96,6 +96,6 @@ public:
     }
 
 private:
-    void expand_first_state(ObjectId start);
+    void expand_first_state();
 };
 }} // namespace Paths::ShortestKGroupsTrails

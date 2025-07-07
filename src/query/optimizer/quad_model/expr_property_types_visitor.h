@@ -1,57 +1,54 @@
 #pragma once
 
-#include <optional>
-
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/optimizer/quad_model/binding_iter_constructor.h"
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/expr_visitor.h"
+#include "query/parser/expr/mql/expr_visitor.h"
 
-
+namespace MQL {
 class ExprPropertyTypes : public ExprVisitor {
 private:
-    MQL::BindingIterConstructor* bic;
+    BindingIterConstructor* bic;
 
 public:
-    ExprPropertyTypes(MQL::BindingIterConstructor* _bic) :
+    ExprPropertyTypes(BindingIterConstructor* _bic) :
         bic(_bic)
     { }
-
 
     // result of visitors.
     // var_with_propertyId, type_bitmap
     std::unique_ptr<std::unordered_map<uint64_t, uint64_t>> propId_and_bitmap;
 
+    void visit(ExprIs&) override;
+    void visit(ExprAnd&) override;
+    void visit(ExprOr&) override;
 
-    void visit(MQL::ExprIs&) override;
-    void visit(MQL::ExprAnd&) override;
-    void visit(MQL::ExprOr&) override;
+    virtual void visit(ExprVar&) override { }
+    virtual void visit(ExprVarProperty&) override { }
+    virtual void visit(ExprConstant&) override { }
+    virtual void visit(ExprAddition&) override { }
+    virtual void visit(ExprDivision&) override { }
+    virtual void visit(ExprModulo&) override { }
+    virtual void visit(ExprMultiplication&) override { }
+    virtual void visit(ExprSubtraction&) override { }
+    virtual void visit(ExprUnaryMinus&) override { }
+    virtual void visit(ExprUnaryPlus&) override { }
+    virtual void visit(ExprEquals&) override { }
+    virtual void visit(ExprGreaterOrEquals&) override { }
+    virtual void visit(ExprGreater&) override { }
+    virtual void visit(ExprLessOrEquals&) override { }
+    virtual void visit(ExprLess&) override { }
+    virtual void visit(ExprNotEquals&) override { }
+    virtual void visit(ExprNot&) override { }
 
-    virtual void visit(MQL::ExprVar&) override { }
-    virtual void visit(MQL::ExprVarProperty&) override { }
-    virtual void visit(MQL::ExprConstant&) override { }
-    virtual void visit(MQL::ExprAddition&) override { }
-    virtual void visit(MQL::ExprDivision&) override { }
-    virtual void visit(MQL::ExprModulo&) override { }
-    virtual void visit(MQL::ExprMultiplication&) override { }
-    virtual void visit(MQL::ExprSubtraction&) override { }
-    virtual void visit(MQL::ExprUnaryMinus&) override { }
-    virtual void visit(MQL::ExprUnaryPlus&) override { }
-    virtual void visit(MQL::ExprEquals&) override { }
-    virtual void visit(MQL::ExprGreaterOrEquals&) override { }
-    virtual void visit(MQL::ExprGreater&) override { }
-    virtual void visit(MQL::ExprLessOrEquals&) override { }
-    virtual void visit(MQL::ExprLess&) override { }
-    virtual void visit(MQL::ExprNotEquals&) override { }
-    virtual void visit(MQL::ExprNot&) override { }
-
-    virtual void visit(MQL::ExprAggAvg&) override { }
-    virtual void visit(MQL::ExprAggCountAll&) override { }
-    virtual void visit(MQL::ExprAggCount&) override { }
-    virtual void visit(MQL::ExprAggMax&) override { }
-    virtual void visit(MQL::ExprAggMin&) override { }
-    virtual void visit(MQL::ExprAggSum&) override { }
-    virtual void visit(MQL::ExprRegex&) override { }
-    virtual void visit(MQL::ExprTensorDistance&) override { }
-    virtual void visit(MQL::ExprTextSearch&) override { }
+    virtual void visit(ExprAggAvg&) override { }
+    virtual void visit(ExprAggCountAll&) override { }
+    virtual void visit(ExprAggCount&) override { }
+    virtual void visit(ExprAggMax&) override { }
+    virtual void visit(ExprAggMin&) override { }
+    virtual void visit(ExprAggSum&) override { }
+    virtual void visit(ExprRegex&) override { }
+    virtual void visit(ExprCosineSimilarity&) override { }
+    virtual void visit(ExprCosineDistance&) override { }
+    virtual void visit(ExprManhattanDistance&) override { }
+    virtual void visit(ExprEuclideanDistance&) override { }
 };
+} // namespace MQL

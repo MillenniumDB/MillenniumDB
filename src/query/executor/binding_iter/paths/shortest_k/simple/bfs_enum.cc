@@ -11,12 +11,7 @@ template<bool CYCLIC>
 void BFSEnum<CYCLIC>::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-    iter = make_unique<NullIndexIterator>();
-    reached_final_states = nullptr;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 template<bool CYCLIC>
@@ -26,20 +21,22 @@ void BFSEnum<CYCLIC>::_reset()
     queue<SearchState> empty;
     open.swap(empty);
     visited.clear();
-    iter = make_unique<NullIndexIterator>();
-    reached_final_states = nullptr;
     solutions.clear();
     pending_finals.clear();
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 template<bool CYCLIC>
-void BFSEnum<CYCLIC>::expand_first_state(ObjectId start)
+void BFSEnum<CYCLIC>::expand_first_state()
 {
-    auto start_node_visited = visited.add(start, ObjectId(), false, nullptr);
+    iter = make_unique<NullIndexIterator>();
+    reached_final_states = nullptr;
+
+    // Add starting states to open and visited
+    ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+
+    auto start_node_visited = visited.add(start_oid, ObjectId(), false, nullptr);
     open.emplace(start_node_visited, automaton.start_state);
 
     // Check if first state is final
@@ -132,9 +129,7 @@ std::vector<const PathState*>* BFSEnum<CYCLIC>::expand_neighbors(const SearchSta
                 if (repeats_node(current_state.path_state, reached_node)) {
                     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()]
                                                               : start.get_OID();
-                    if (!automaton.is_final_state[transition.to]
-                        || reached_node != start_object_id)
-                    {
+                    if (!automaton.is_final_state[transition.to] || reached_node != start_object_id) {
                         continue;
                     }
                     add_to_open = false;
@@ -184,9 +179,17 @@ std::vector<const PathState*>* BFSEnum<CYCLIC>::expand_neighbors(const SearchSta
 }
 
 template<bool CYCLIC>
-void BFSEnum<CYCLIC>::accept_visitor(BindingIterVisitor& visitor)
+void BFSEnum<CYCLIC>::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKSimple::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }
 
 template class Paths::ShortestKSimple::BFSEnum<true>;

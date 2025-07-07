@@ -35,31 +35,23 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitCreateIndexQuery(SparqlUpdateParser::CreateIndexQueryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitCreateIndexOptions(SparqlUpdateParser::CreateIndexOptionsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitCreateIndexOption(SparqlUpdateParser::CreateIndexOptionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitInsertData(SparqlUpdateParser::InsertDataContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitDeleteData(SparqlUpdateParser::DeleteDataContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitCreateTextIndex(SparqlUpdateParser::CreateTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNormalizeTextIndex(SparqlUpdateParser::NormalizeTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNormalizeType(SparqlUpdateParser::NormalizeTypeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTokenizeTextIndex(SparqlUpdateParser::TokenizeTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTokenizeType(SparqlUpdateParser::TokenizeTypeContext *ctx) override {
     return visitChildren(ctx);
   }
 

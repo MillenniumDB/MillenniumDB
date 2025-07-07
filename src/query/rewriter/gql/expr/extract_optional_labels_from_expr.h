@@ -1,10 +1,7 @@
 #pragma once
 
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/expr/gql_exprs.h"
+#include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/graph_pattern/op_opt_labels.h"
-#include "query/parser/op/gql/graph_pattern/op_property.h"
 
 using namespace GQL;
 
@@ -12,10 +9,11 @@ class ExtractVarWithLabelsFromExpr : public ExprVisitor {
 public:
     std::set<OptLabel> vars;
     bool negation = false;
+    bool or = false;
 
     void visit(ExprHasNodeLabel& expr)
     {
-        if (!negation) {
+        if (!negation && !or) {
             return;
         }
         std::string var_name = get_query_ctx().get_var_name(expr.node_id);
@@ -41,14 +39,24 @@ public:
         }
     }
 
+    void visit(ExprOr& expr) {
+        bool previous_or = or;
+
+        for (auto& expr : expr.exprs) {
+            or = true;
+            expr->accept_visitor(*this);
+        }
+        or = previous_or;
+    }
+
     void visit(ExprNot& expr) {
         negation = !negation;
         expr.expr->accept_visitor(*this);
         negation = !negation;
     }
 
-    void visit(ExprOr&) { }
     void visit(ExprAddition&) { }
+    void visit(ExprWildcardLabel&) { }
     void visit(ExprGreater&) { }
     void visit(ExprXor&) { }
     void visit(ExprConcat&) { }

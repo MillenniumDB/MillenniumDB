@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.degrees_value, DEGREES(x.in_value) AS degreestransformation

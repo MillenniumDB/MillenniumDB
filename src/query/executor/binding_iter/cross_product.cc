@@ -1,8 +1,7 @@
 #include "cross_product.h"
 
-#include <cassert>
-
-void CrossProduct::_begin(Binding& _parent_binding) {
+void CrossProduct::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
     lhs->begin(_parent_binding);
     if (lhs->next()) {
@@ -13,8 +12,8 @@ void CrossProduct::_begin(Binding& _parent_binding) {
     }
 }
 
-
-bool CrossProduct::_next() {
+bool CrossProduct::_next()
+{
     while (true) {
         if (rhs_iter != nullptr && rhs_iter->next()) {
             return true;
@@ -28,8 +27,8 @@ bool CrossProduct::_next() {
     }
 }
 
-
-void CrossProduct::_reset() {
+void CrossProduct::_reset()
+{
     rhs->reset();
     lhs->reset();
 
@@ -40,13 +39,18 @@ void CrossProduct::_reset() {
     }
 }
 
-
-void CrossProduct::assign_nulls() {
+void CrossProduct::assign_nulls()
+{
     rhs->assign_nulls();
     lhs->assign_nulls();
 }
 
-
-void CrossProduct::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void CrossProduct::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "CrossProduct()\n";
+    lhs->print(os, indent + 2, stats);
+    rhs->print(os, indent + 2, stats);
 }

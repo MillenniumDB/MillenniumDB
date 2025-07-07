@@ -115,13 +115,14 @@ void HttpGQLSession::execute_readonly_query(
         auto logical_plan = create_readonly_logical_plan(query);
         physical_plan = create_readonly_physical_plan(*logical_plan, response_type);
     } catch (const QueryParsingException& e) {
-        logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
-                                << e.what();
+        std::string msg = "Query Parsing Exception. Line " + std::to_string(e.line)
+                        + ", col: " + std::to_string(e.column) + ": " + e.what();
+        logger(Category::Error) << msg;
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
+           << std::string(msg);
         return;
     } catch (const QueryException& e) {
         logger(Category::Error) << "Query Exception: " << e.what();
@@ -230,6 +231,10 @@ void HttpGQLSession::execute_readonly_query_plan(
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
         logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
+    } catch (const std::exception& e) {
+        logger(Category::Error) << "Unexpected Exception: " << e.what();
+    } catch (...) {
+        logger(Category::Error) << "Unknown exception";
     }
 }
 

@@ -7,7 +7,8 @@
 
 using std::vector;
 
-void LeapfrogJoin::_begin(Binding& _parent_binding) {
+void LeapfrogJoin::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
 
     // initialize iters_for_var
@@ -43,8 +44,8 @@ void LeapfrogJoin::_begin(Binding& _parent_binding) {
     }
 }
 
-
-bool LeapfrogJoin::_next() {
+bool LeapfrogJoin::_next()
+{
     if (MDB_unlikely(*leapfrog_iters[0]->interruption_requested)) {
         throw InterruptedException();
     }
@@ -92,7 +93,7 @@ bool LeapfrogJoin::_next() {
         } else {
             // We are in a previous intersection, so we need to move the last iterator forward
             // to avoid having the same intersection
-            while (level >= 0 && !iters_for_var[level][iters_for_var[level].size() -  1]->next()) {
+            while (level >= 0 && !iters_for_var[level][iters_for_var[level].size() - 1]->next()) {
                 up();
             }
         }
@@ -100,8 +101,8 @@ bool LeapfrogJoin::_next() {
     return false;
 }
 
-
-void LeapfrogJoin::_reset() {
+void LeapfrogJoin::_reset()
+{
     bool open_terms = true;
     for (auto& lf_iter : leapfrog_iters) {
         if (!lf_iter->open_terms(*parent_binding)) {
@@ -115,17 +116,17 @@ void LeapfrogJoin::_reset() {
     }
 }
 
-
-void LeapfrogJoin::up() {
-    assert (level >= 0);
+void LeapfrogJoin::up()
+{
+    assert(level >= 0);
     for (uint_fast32_t i = 0; i < iters_for_var[level].size(); i++) {
         iters_for_var[level][i]->up();
     }
     level--;
 }
 
-
-void LeapfrogJoin::down() {
+void LeapfrogJoin::down()
+{
     assert(level < enumeration_level);
     level++;
 
@@ -153,8 +154,8 @@ void LeapfrogJoin::down() {
     }
 }
 
-
-bool LeapfrogJoin::find_intersection_for_current_level() {
+bool LeapfrogJoin::find_intersection_for_current_level()
+{
     uint_fast32_t p = 0;
 
     auto min = iters_for_var[level][p]->get_key();
@@ -185,14 +186,40 @@ bool LeapfrogJoin::find_intersection_for_current_level() {
     return true;
 }
 
-
-void LeapfrogJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void LeapfrogJoin::assign_nulls() {
+void LeapfrogJoin::assign_nulls()
+{
     for (uint_fast32_t lvl = 0; lvl < var_order.size(); lvl++) {
         parent_binding->add(var_order[lvl], ObjectId::get_null());
+    }
+}
+
+void LeapfrogJoin::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+           << " reset: " << stat_reset << " results: " << results << " seeks: " << seeks << "]\n";
+    }
+    os << std::string(indent, ' ') << "LeapfrogJoin(";
+    if (enumeration_level > 0) {
+        os << var_order[0];
+    }
+    for (int i = 1; i < enumeration_level; i++) {
+        os << " " << var_order[i];
+    }
+    os << ")\n";
+
+    for (auto& iter : leapfrog_iters) {
+        os << std::string(indent + 2, ' ') << iter->get_iter_name() << "(ranges:";
+        for (auto& range : iter->initial_ranges) {
+            os << " ";
+            range->print(os);
+        }
+        for (auto& var : iter->get_intersection_vars()) {
+            os << " " << var;
+        }
+        for (auto& var : iter->get_enumeration_vars()) {
+            os << " " << var;
+        }
+        os << ")\n";
     }
 }

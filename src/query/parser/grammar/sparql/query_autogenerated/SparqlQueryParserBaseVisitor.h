@@ -435,6 +435,18 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitProcedure(SparqlQueryParser::ProcedureContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitProcedureArguments(SparqlQueryParser::ProcedureArgumentsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitProcedureBindings(SparqlQueryParser::ProcedureBindingsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitRegexExpression(SparqlQueryParser::RegexExpressionContext *ctx) override {
     return visitChildren(ctx);
   }

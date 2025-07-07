@@ -1,8 +1,6 @@
 #include "node_plan.h"
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/object_enum.h"
-#include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
-#include "query/executor/binding_iter/union.h"
 #include "query/executor/binding_iter/single_result_binding_iter.h"
 
 using namespace GQL;

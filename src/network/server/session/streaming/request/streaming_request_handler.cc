@@ -4,6 +4,7 @@
 #include "misc/trim.h"
 #include "network/exceptions.h"
 #include "network/server/protocol.h"
+#include "query/exceptions.h"
 #include "query/query_context.h"
 
 using namespace MDBServer;
@@ -53,13 +54,13 @@ void StreamingRequestHandler::handle_run(const std::string& query)
         auto current_logical_plan = create_logical_plan(query);
         parser_duration_ms = get_duration(parser_start);
 
-        if (!current_logical_plan->read_only()) {
-            execute_update(*current_logical_plan, *readonly_version_scope);
+        if (is_update(current_logical_plan)) {
+            execute_update(current_logical_plan, *readonly_version_scope);
             return;
         }
 
         auto optimizer_start = std::chrono::system_clock::now();
-        auto current_physical_plan = create_readonly_physical_plan(*current_logical_plan);
+        auto current_physical_plan = create_readonly_physical_plan(current_logical_plan);
         optimizer_duration_ms = get_duration(optimizer_start);
 
         logger.log(Category::PhysicalPlan, [&](std::ostream& os) {
@@ -151,4 +152,15 @@ void StreamingRequestHandler::handle_cancel()
     }
 
     response_writer->flush();
+}
+
+bool StreamingRequestHandler::is_update(const OpUptr& uptr) {
+    if (std::holds_alternative<std::unique_ptr<GQL::Op>>(uptr)) {
+        return false;
+    } else if (std::holds_alternative<std::unique_ptr<MQL::Op>>(uptr)) {
+        return !std::get<std::unique_ptr<MQL::Op>>(uptr)->read_only();
+    } else if (std::holds_alternative<std::unique_ptr<SPARQL::Op>>(uptr)) {
+        return false;
+    }
+    return false;
 }

@@ -8,7 +8,7 @@
 #include "query/exceptions.h"
 #include "query/query_context.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 #include "network/sparql/response_type.h"
 

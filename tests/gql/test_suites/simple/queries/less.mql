@@ -1,0 +1,3 @@
+MATCH (n:Person)-[:Knows]->(m:Person)
+WHERE n.age < m.age
+RETURN n.name AS name1, m.name AS name2

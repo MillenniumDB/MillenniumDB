@@ -109,27 +109,27 @@ public:
         {
             auto optype = GQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
-            case GQL::Conversions::OPTYPE_INTEGER: {
+            case GQL::Conversions::OpType::INTEGER: {
                 auto lhs = GQL::Conversions::to_integer(lhs_oid);
                 auto rhs = GQL::Conversions::to_integer(rhs_oid);
                 return GQL::Conversions::pack_bool(lhs == rhs);
             }
-            case GQL::Conversions::OPTYPE_DECIMAL: {
+            case GQL::Conversions::OpType::DECIMAL: {
                 auto lhs = GQL::Conversions::to_decimal(lhs_oid);
                 auto rhs = GQL::Conversions::to_decimal(rhs_oid);
                 return GQL::Conversions::pack_bool(lhs == rhs);
             }
-            case GQL::Conversions::OPTYPE_FLOAT: {
+            case GQL::Conversions::OpType::FLOAT: {
                 auto lhs = GQL::Conversions::to_float(lhs_oid);
                 auto rhs = GQL::Conversions::to_float(rhs_oid);
                 return GQL::Conversions::pack_bool(lhs == rhs);
             }
-            case GQL::Conversions::OPTYPE_DOUBLE: {
+            case GQL::Conversions::OpType::DOUBLE: {
                 auto lhs = GQL::Conversions::to_double(lhs_oid);
                 auto rhs = GQL::Conversions::to_double(rhs_oid);
                 return GQL::Conversions::pack_bool(lhs == rhs);
             }
-            case GQL::Conversions::OPTYPE_INVALID: {
+            case GQL::Conversions::OpType::INVALID: {
                 return ObjectId::get_null();
             }
             default:

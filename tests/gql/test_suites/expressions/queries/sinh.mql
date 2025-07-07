@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.sinh_value, SINH(x.in_value) AS senoh

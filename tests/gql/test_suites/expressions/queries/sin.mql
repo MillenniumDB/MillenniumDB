@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.sin_value, SIN(x.in_value) AS seno

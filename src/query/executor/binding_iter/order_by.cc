@@ -6,7 +6,7 @@ using namespace std;
 
 OrderBy::OrderBy(
     unique_ptr<BindingIter> child_iter,
-    const set<VarId>& saved_vars,
+    set<VarId>&& saved_vars,
     vector<VarId>&& order_vars,
     vector<bool>&& ascending,
     int64_t (*_compare)(ObjectId, ObjectId)
@@ -89,11 +89,6 @@ void OrderBy::assign_nulls()
     }
 }
 
-void OrderBy::accept_visitor(BindingIterVisitor& visitor)
-{
-    visitor.visit(*this);
-}
-
 void OrderBy::merge_sort()
 {
     // Iterative merge sort implementation. Run to merge are a power of two
@@ -145,4 +140,37 @@ void OrderBy::merge_sort()
 std::unique_ptr<TupleCollectionPage> OrderBy::get_run(PPage& run_page)
 {
     return make_unique<TupleCollectionPage>(run_page, order_info, compare);
+}
+
+void OrderBy::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "OrderBy(order_vars: ";
+    auto first = true;
+    for (size_t i = 0; i < order_info.ascending.size(); i++) {
+        if (first)
+            first = false;
+        else
+            os << " ";
+        if (order_info.ascending[i])
+            os << "ASC ";
+        else
+            os << "DESC ";
+        os << order_info.saved_vars[i];
+    }
+
+    os << ", saved_vars: ";
+    first = true;
+    for (auto var : order_info.saved_vars) {
+        if (first)
+            first = false;
+        else
+            os << " ";
+        os << var;
+    }
+
+    os << ")\n";
+    child_iter->print(os, indent + 2, stats);
 }

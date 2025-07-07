@@ -1,0 +1,2 @@
+MATCH p = ANY SHORTEST (a)->(b {name:"N1"})((c)<-(d))+
+RETURN p

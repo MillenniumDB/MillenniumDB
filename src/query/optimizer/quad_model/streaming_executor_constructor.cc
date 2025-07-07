@@ -108,40 +108,31 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
 
 void StreamingExecutorConstructor::visit(OpReturn& op_return)
 {
-    BindingIterConstructor visitor(set_vars);
+    BindingIterConstructor visitor;
     op_return.accept_visitor(visitor);
 
     std::vector<VarId> projection_vars;
     projection_vars.reserve(op_return.projection.size());
-    for (const auto& [var_id, _] : op_return.projection) {
-        projection_vars.emplace_back(var_id);
+    for (const auto& [_, var] : op_return.projection) {
+        projection_vars.emplace_back(var);
     }
 
     path_manager.begin(std::move(visitor.begin_at_left));
 
     executor = std::make_unique<MQL::ReturnStreamingExecutor>(
         std::move(visitor.tmp),
-        std::move(set_vars),
         std::move(projection_vars)
     );
-}
-
-void StreamingExecutorConstructor::visit(OpSet& op_set)
-{
-    for (auto& set_item : op_set.set_items) {
-        set_vars.insert(set_item);
-    }
-    op_set.op->accept_visitor(*this);
 }
 
 void StreamingExecutorConstructor::visit(OpShow& op_show)
 {
     switch (op_show.type) {
-    case MQL::OpShow::Type::TENSOR_STORE:
-        executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::TENSOR_STORE>>();
+    case MQL::OpShow::Type::HNSW_INDEX:
+        executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::HNSW_INDEX>>();
         break;
-    case MQL::OpShow::Type::TEXT_SEARCH_INDEX:
-        executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
+    case MQL::OpShow::Type::TEXT_INDEX:
+        executor = std::make_unique<MQL::ShowStreamingExecutor<MQL::OpShow::Type::TEXT_INDEX>>();
         break;
     default:
         throw NotSupportedException("MQL::StreamingExecutorConstructor::visit(OpShow&): Unhandled SHOW");

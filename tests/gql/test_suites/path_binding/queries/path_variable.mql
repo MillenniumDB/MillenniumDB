@@ -1,0 +1,2 @@
+MATCH p = (src {_id:"N0"}) ->{0,10} (:Book)
+RETURN p

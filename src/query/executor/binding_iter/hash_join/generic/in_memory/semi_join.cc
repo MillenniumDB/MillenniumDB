@@ -11,35 +11,35 @@ using namespace HashJoin::Generic::InMemory;
 SemiJoin::SemiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    lhs               (std::move(_lhs)),
-    rhs               (std::move(_rhs)),
-    join_vars         (std::move(_join_vars)),
-    lhs_vars          (std::move(_lhs_vars)),
-    rhs_vars          (std::move(_rhs_vars)),
-    N                 (join_vars.size()),
-    lhs_key_start     (new uint64_t[N]),
-    lhs_key           (Key(lhs_key_start, N))
+    lhs(std::move(_lhs)),
+    rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    lhs_key_start(new uint64_t[N]),
+    lhs_key(Key(lhs_key_start, N))
 {
     key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
     key_chunk_index = 0;
 }
 
-
-SemiJoin::~SemiJoin() {
+SemiJoin::~SemiJoin()
+{
     // Avoid mem leaks
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](lhs_key_start);
+    delete[] (lhs_key_start);
 }
 
-
-void SemiJoin::_begin(Binding& _parent_binding) {
+void SemiJoin::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
     rhs_binding = make_unique<Binding>(parent_binding->size);
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -50,8 +50,8 @@ void SemiJoin::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
-bool SemiJoin::_next() {
+bool SemiJoin::_next()
+{
     while (lhs->next()) {
         for (size_t i = 0; i < N; i++) {
             lhs_key.start[i] = (*lhs_binding)[join_vars[i]].id;
@@ -70,8 +70,8 @@ bool SemiJoin::_next() {
     return false;
 }
 
-
-void SemiJoin::_reset() {
+void SemiJoin::_reset()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -100,8 +100,8 @@ void SemiJoin::_reset() {
     build_hash_table();
 }
 
-
-void SemiJoin::assign_nulls() {
+void SemiJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -115,13 +115,8 @@ void SemiJoin::assign_nulls() {
     lhs->assign_nulls();
 }
 
-
-void SemiJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void SemiJoin::build_hash_table() {
+void SemiJoin::build_hash_table()
+{
     // Avoid ask for space to a new key in each iteration
     auto key_pointer = new uint64_t[N];
     Key key(key_pointer, N);
@@ -149,5 +144,5 @@ void SemiJoin::build_hash_table() {
             }
         }
     }
-    delete[](key_pointer);
+    delete[] (key_pointer);
 }

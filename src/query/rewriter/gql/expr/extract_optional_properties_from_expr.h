@@ -1,9 +1,7 @@
 #pragma once
 
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/expr/gql_exprs.h"
-#include "query/parser/op/gql/graph_pattern/op_property.h"
+#include "query/parser/expr/gql/exprs.h"
+#include "query/parser/op/gql/graph_pattern/op_optional_properties.h"
 
 using namespace GQL;
 
@@ -358,6 +356,7 @@ public:
     void visit(ExprTerm&) { }
     void visit(ExprHasNodeLabel&) { }
     void visit(ExprHasEdgeLabel&) { }
+    void visit(ExprWildcardLabel&) { }
     void visit(ExprVar&) { }
     void visit(ExprIs&) { }
 };

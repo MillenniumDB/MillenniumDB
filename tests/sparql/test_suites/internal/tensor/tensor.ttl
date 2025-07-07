@@ -1,0 +1,22 @@
+@prefix : <https://example.com/>             .
+@prefix mdbtype: <https://mdb.imfd.cl/type#> .
+
+:emptyFloat  :empty "[]"^^mdbtype:tensorFloat  .
+:emptyDouble :empty "[]"^^mdbtype:tensorDouble .
+
+
+:minkowski1 :minkowski "[-10.000000, -10.000000, -10.000000, -10.000000, -10.000000]"^^mdbtype:tensorDouble .
+:minkowski2 :minkowski "[-1.000000, -1.000000, -1.000000, -1.000000, -1.000000]"^^mdbtype:tensorDouble      .
+:minkowski3 :minkowski "[-0.100000, -0.100000, -0.100000, -0.100000, -0.100000]"^^mdbtype:tensorDouble      .
+:minkowski4 :minkowski "[0.000000, 0.000000, 0.000000, 0.000000, 0.000000]"^^mdbtype:tensorDouble           .
+:minkowski5 :minkowski "[0.100000, 0.100000, 0.100000, 0.100000, 0.100000]"^^mdbtype:tensorDouble           .
+:minkowski6 :minkowski "[1.000000, 1.000000, 1.000000, 1.000000, 1.000000]"^^mdbtype:tensorDouble           .
+:minkowski7 :minkowski "[10.000000, 10.000000, 10.000000, 10.000000, 10.000000]"^^mdbtype:tensorDouble      .
+
+:cosine1 :cosine "[1.000000, 0.000000]"^^mdbtype:tensorDouble  .
+:cosine2 :cosine "[0.809017, 0.587785]"^^mdbtype:tensorDouble  .
+:cosine3 :cosine "[0.500000, 0.866025]"^^mdbtype:tensorDouble  .
+:cosine4 :cosine "[0.000000, 1.000000]"^^mdbtype:tensorDouble  .
+:cosine5 :cosine "[-0.500000, 0.866025]"^^mdbtype:tensorDouble .
+:cosine6 :cosine "[-0.809017, 0.587785]"^^mdbtype:tensorDouble .
+:cosine7 :cosine "[-1.000000, 0.000000]"^^mdbtype:tensorDouble .

@@ -1,0 +1,6 @@
+MATCH (x: CaseNode)
+RETURN CASE x.value1
+    WHEN >=5 THEN "Pass"
+    ELSE "Fail"
+    END
+AS case_value

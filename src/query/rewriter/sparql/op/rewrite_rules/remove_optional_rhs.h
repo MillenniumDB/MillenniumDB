@@ -3,7 +3,7 @@
 #include <cassert>
 #include <memory>
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 #include "rewrite_rule.h"
 

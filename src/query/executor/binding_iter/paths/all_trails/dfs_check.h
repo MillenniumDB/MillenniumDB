@@ -52,7 +52,7 @@ public:
     // Get next state of interest
     SearchStateDFS* expand_neighbors(SearchStateDFS& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     void _reset() override;
     bool _next() override;

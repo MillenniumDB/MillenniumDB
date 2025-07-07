@@ -3,8 +3,8 @@
 #include <memory>
 #include <queue>
 
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"
@@ -27,7 +27,7 @@ private:
     // Attributes determined in begin
     Binding* parent_binding;
 
-    // struct with all simple paths
+    // struct with all trail paths
     Arena<PathState> visited;
 
     // Queue for BFS
@@ -39,7 +39,7 @@ private:
     // The index of the transition being currently explored
     uint_fast32_t current_transition;
 
-    boost::unordered_map<uint64_t, std::vector<const PathState*>> solutions;
+    boost::unordered_flat_map<uint64_t, std::vector<const PathState*>> solutions;
 
     uint_fast32_t enumerating_result_i;
 
@@ -48,7 +48,7 @@ private:
     std::vector<const PathState*>* reached_final_states;
 
     // save the node id of the reached path solution
-    boost::unordered_set<uint64_t> pending_finals;
+    boost::unordered_flat_set<uint64_t> pending_finals;
 
 public:
     // Statistics
@@ -72,7 +72,7 @@ public:
 
     std::vector<const PathState*>* expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 

@@ -25,38 +25,35 @@ public:
         auto optype = GQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
 
         switch (optype) {
-        case GQL::Conversions::OPTYPE_INTEGER: {
-            // In SPARQL-1.1 integer division is done using decimals, and the result is a decimal
+        case GQL::Conversions::OpType::INTEGER: {
             auto rhs = GQL::Conversions::to_decimal(rhs_oid);
-            if (rhs == 0) {
+            if (rhs.is_zero()) {
                 return ObjectId::get_null();
             }
             auto lhs = GQL::Conversions::to_decimal(lhs_oid);
             return GQL::Conversions::pack_decimal(lhs / rhs);
         }
-        case GQL::Conversions::OPTYPE_DECIMAL: {
+        case GQL::Conversions::OpType::DECIMAL: {
             auto rhs = GQL::Conversions::to_decimal(rhs_oid);
-            if (rhs == 0) {
+            if (rhs.is_zero()) {
                 return ObjectId::get_null();
             }
             auto lhs = GQL::Conversions::to_decimal(lhs_oid);
             return GQL::Conversions::pack_decimal(lhs / rhs);
         }
-        case GQL::Conversions::OPTYPE_FLOAT: {
+        case GQL::Conversions::OpType::FLOAT: {
             auto lhs = GQL::Conversions::to_float(lhs_oid);
             auto rhs = GQL::Conversions::to_float(rhs_oid);
             // Division by zero, etc is handle by the floating point implementation.
-            // SPARQL 1.1 follows IEEE 754-2008.
             return GQL::Conversions::pack_float(lhs / rhs);
         }
-        case GQL::Conversions::OPTYPE_DOUBLE: {
+        case GQL::Conversions::OpType::DOUBLE: {
             auto lhs = GQL::Conversions::to_double(lhs_oid);
             auto rhs = GQL::Conversions::to_double(rhs_oid);
             // Division by zero, etc is handle by the floating point implementation.
-            // SPARQL 1.1 follows IEEE 754-2008.
             return GQL::Conversions::pack_double(lhs / rhs);
         }
-        case GQL::Conversions::OPTYPE_INVALID: {
+        case GQL::Conversions::OpType::INVALID: {
             return ObjectId::get_null();
         }
         default:

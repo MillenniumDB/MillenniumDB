@@ -16,11 +16,10 @@
 
 #include "antlr4-runtime.h"
 
-class Expr;
-
 using SparqlParser = SparqlQueryParser;
 
 namespace SPARQL {
+class Expr;
 
 class QueryVisitor : public SparqlQueryParserBaseVisitor {
 public:
@@ -41,7 +40,6 @@ private:
     std::vector<std::unique_ptr<Expr>> select_variables_expressions;
     std::vector<OpTriple>              current_triples;
     std::vector<OpPath>                current_paths;
-    std::vector<OpTextSearchIndex>     current_text_searches;
 
     // filter of the current group graph pattern
     std::stack<std::vector<std::unique_ptr<Expr>>> current_filters;
@@ -86,10 +84,6 @@ private:
         std::string new_var_name = "_:.b" + std::to_string(new_bnode_id);
         return get_query_ctx().get_or_create_var(new_var_name);
     }
-
-    // Converts an Object{Path}Context to a vector of Ids
-    template <typename ContextTraits>
-    std::vector<Id> parse_context_as_procedure_args(typename ContextTraits::ContextType* ctx);
 
     // Helper to convert the nodes of a IriOrFunctionContext or a FunctionCallContext to a function expression. It assumes
     // that the argListCtx is not nullptr
@@ -179,5 +173,7 @@ public:
     virtual std::any visitFilter(SparqlParser::FilterContext*) override;
     virtual std::any visitBuiltInCall(SparqlParser::BuiltInCallContext*) override;
     virtual std::any visitFunctionCall(SparqlParser::FunctionCallContext*) override;
+
+    virtual std::any visitProcedure(SparqlParser::ProcedureContext*) override;
 };
 }

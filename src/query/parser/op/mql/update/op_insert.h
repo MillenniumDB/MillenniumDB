@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 #include "query/parser/op/mql/graph_pattern/op_basic_graph_pattern.h"
 
 namespace MQL {
@@ -26,18 +26,6 @@ public:
     }
 
     std::set<VarId> get_all_vars() const override {
-        return { };
-    }
-
-    std::set<VarId> get_scope_vars() const override {
-        return { };
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        return { };
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
         return { };
     }
 

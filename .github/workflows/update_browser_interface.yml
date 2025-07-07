@@ -1,0 +1,56 @@
+# This actions fetch the latest commit in MillenniumDB/MillenniumDB-browser at its main branch,
+# builds the application and commit/push the new built application to this repository at 
+# /browser directory.
+
+name: Update browser interface
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout to MillenniumDB/MillenniumDB-browser
+        uses: actions/checkout@v4
+        with: 
+          repository: MillenniumDB/MillenniumDB-browser
+          ref: main
+      - name: Setup Node 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Install dependencies
+        run: npm install
+      - name: Build application
+        run: npm run build
+        env:
+          # This is the URL that the MillenniumDB server will be running
+          VITE_MDB_SERVER_URL: ws://localhost:1234
+          VITE_APP_BASE_URL: /
+      - name: Upload dist/ as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-dist
+          path: dist/
+
+  update:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout to this repository
+        uses: actions/checkout@v4
+      - name: Delete current browser/
+        run: rm -rf browser/
+      - name: Download browser-dist artifact at browser/
+        uses: actions/download-artifact@v4
+        with:
+          name: browser-dist
+          path: browser/
+      - name: Commit changes on browser/
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: 'browser/'
+          commit_message: 'Action: Update browser interface'

@@ -1,14 +1,13 @@
 #pragma once
 
-#include <memory>
 #include <queue>
+
+#include <boost/unordered/unordered_node_set.hpp>
 
 #include "query/executor/binding_iter.h"
 #include "query/parser/paths/automaton/rdpq_automaton.h"
 #include "query/executor/binding_iter/paths/experimental/search_state_dijkstra.h"
-#include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths { namespace Any {
 
@@ -36,7 +35,7 @@ private:
     std::array<uint64_t, 4> max_ids;
 
     // Structs for Dijkstra
-    robin_hood::unordered_node_set<SearchStateDijkstra> visited;
+    boost::unordered_node_set<SearchStateDijkstra, std::hash<SearchStateDijkstra>> visited;
     // open stores a pointer to a SearchStateDijkstra stored in visited
     // that allows to avoid use visited.find to get a pointer and
     // use the state extracted of the open directly.
@@ -72,7 +71,7 @@ public:
         end           (end),
         automaton     (automaton) { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     void _reset() override;
     bool _next() override;

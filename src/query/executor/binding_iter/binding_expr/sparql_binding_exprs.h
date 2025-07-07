@@ -65,6 +65,7 @@
 #include "query/executor/binding_iter/binding_expr/sparql/binding_expr_unary_plus.h"  // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/sparql/binding_expr_year.h"        // IWYU pragma: export
 
+#include "query/executor/binding_iter/binding_expr/sparql/binding_expr_cosine_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/sparql/binding_expr_cosine_similarity.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/sparql/binding_expr_dot.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/sparql/binding_expr_euclidean_distance.h" // IWYU pragma: export

@@ -7,8 +7,9 @@
 using namespace std;
 using namespace Paths::AllSimple;
 
-template <bool CYCLIC>
-void BFSEnum<CYCLIC>::_begin(Binding& _parent_binding) {
+template<bool CYCLIC>
+void BFSEnum<CYCLIC>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -19,9 +20,9 @@ void BFSEnum<CYCLIC>::_begin(Binding& _parent_binding) {
     open.emplace(start_node_visited, automaton.start_state);
 }
 
-
-template <bool CYCLIC>
-bool BFSEnum<CYCLIC>::_next() {
+template<bool CYCLIC>
+bool BFSEnum<CYCLIC>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -61,9 +62,9 @@ bool BFSEnum<CYCLIC>::_next() {
     return false;
 }
 
-
-template <bool CYCLIC>
-const PathState* BFSEnum<CYCLIC>::expand_neighbors(const SearchState& current_state) {
+template<bool CYCLIC>
+const PathState* BFSEnum<CYCLIC>::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -85,22 +86,27 @@ const PathState* BFSEnum<CYCLIC>::expand_neighbors(const SearchState& current_st
             if (!is_simple_path(current_state.path_state, ObjectId(iter->get_reached_node()))) {
                 // If path can be cyclic, return solution only when the new node is the starting node and is also final
                 if (CYCLIC && automaton.is_final_state[transition.to]) {
-                    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+                    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()]
+                                                              : start.get_OID();
                     if (ObjectId(iter->get_reached_node()) == start_object_id) {
-                        return visited.add(ObjectId(iter->get_reached_node()),
-                                           transition.type_id,
-                                           transition.inverse,
-                                           current_state.path_state);
+                        return visited.add(
+                            ObjectId(iter->get_reached_node()),
+                            transition.type_id,
+                            transition.inverse,
+                            current_state.path_state
+                        );
                     }
                 }
                 continue;
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
             // Add new state to open
             auto reached_state = &open.emplace(new_visited_ptr, transition.to);
 
@@ -119,9 +125,9 @@ const PathState* BFSEnum<CYCLIC>::expand_neighbors(const SearchState& current_st
     return nullptr;
 }
 
-
-template <bool CYCLIC>
-void BFSEnum<CYCLIC>::_reset() {
+template<bool CYCLIC>
+void BFSEnum<CYCLIC>::_reset()
+{
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -135,12 +141,19 @@ void BFSEnum<CYCLIC>::_reset() {
     open.emplace(start_node_visited, automaton.start_state);
 }
 
-
-template <bool CYCLIC>
-void BFSEnum<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+template<bool CYCLIC>
+void BFSEnum<CYCLIC>::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllSimple::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }
-
 
 template class Paths::AllSimple::BFSEnum<true>;
 template class Paths::AllSimple::BFSEnum<false>;

@@ -1,0 +1,2 @@
+MATCH (Paris)<=[SHORTEST 5 GROUPS WALKS ?p :follows*/:works?]=(Joe)
+RETURN ?p

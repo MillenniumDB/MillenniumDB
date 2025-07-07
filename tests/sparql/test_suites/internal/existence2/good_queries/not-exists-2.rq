@@ -1,0 +1,16 @@
+PREFIX : <http://example.com/>
+
+SELECT ?x ?xLabel ?xLang ?xLangIndex {
+    ?x :label "Popocatépetl"@en .
+    ?x :label ?xLabel .
+    BIND ( lang(?xLabel) AS ?xLang )
+    VALUES ( ?xLang ?xLangIndex ) {
+        ( 'en' 1 ) ( 'de' 2 ) ('ru' 3 ) ( 'jp' 4 )
+    }
+    FILTER NOT EXISTS {
+        BIND ( lang(?xLabel) AS ?xLang1 )
+        VALUES ( ?xLang1 ?xLangIndex1 ) {
+            ( 'en' 1 ) ( 'mul' 2 ) ('ru' 3 ) ( 'jp' 4 )
+        }
+    }
+}

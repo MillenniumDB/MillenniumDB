@@ -140,10 +140,18 @@ update:
     // | create
      insertData
     | deleteData
-    | createTextIndex
+    | createIndexQuery
     // | deleteWhere
     // | modify
     ;
+
+createIndexQuery:
+    CREATE ALPHANUMERIC_IDENTIFIER INDEX string WITH createIndexOptions;
+
+createIndexOptions:
+    '{' (createIndexOption (',' createIndexOption)*)? '}';
+
+createIndexOption: string '=' graphTerm;
 
 // load
 //     : LOAD SILENT? iri (INTO graphRef)?
@@ -180,16 +188,6 @@ insertData
 deleteData
     : DELETE DATA quadData
     ;
-
-createTextIndex
-    : CREATE TEXT INDEX string ON iri (WITH normalizeTextIndex? tokenizeTextIndex)?
-    ;
-
-normalizeTextIndex: NORMALIZE normalizeType;
-normalizeType: IDENTITY | NFKD_CASEFOLD;
-
-tokenizeTextIndex: TOKENIZE tokenizeType;
-tokenizeType: IDENTITY | WS_SPLIT_PUNCT | WS_RM_PUNCT | WS_KEEP_PUNCT;
 
 // deleteWhere
 //     : DELETE WHERE quadPattern
@@ -664,7 +662,7 @@ numericLiteralNegative
     ;
 
 booleanLiteral
-    : TRUE | FALSE
+    : K_TRUE | K_FALSE
     ;
 
 string

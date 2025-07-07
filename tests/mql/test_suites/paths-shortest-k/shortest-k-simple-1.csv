@@ -1,0 +1,12 @@
+p
+[(Joe)]
+[(Joe)-[:follows]->(John)-[:follows]->(Joe)]
+[(Joe)-[:follows]->(Lily)]
+[(Joe)-[:follows]->(Paul)]
+[(Joe)-[:follows]->(Lily)-[:follows]->(Jane)-[:works]->(Paris)]
+[(Joe)-[:follows]->(Paul)-[:follows]->(Anne)-[:works]->(Paris)]
+[(Joe)-[:follows]->(Paul)-[:follows]->(Jane)-[:works]->(Paris)]
+[(Joe)-[:follows]->(Paul)-[:follows]->(Anne)]
+[(Joe)-[:follows]->(John)]
+[(Joe)-[:follows]->(Lily)-[:follows]->(Jane)]
+[(Joe)-[:follows]->(Paul)-[:follows]->(Jane)]

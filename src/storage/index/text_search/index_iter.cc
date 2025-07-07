@@ -17,8 +17,9 @@ bool IndexIter::next() {
         if (record == nullptr) {
             bpt_iter = nullptr;
         } else {
-            auto [node_id, score, table_pointer_] = decompress((*record)[0], (*record)[1]);
+            auto [node_id, score_, table_pointer_] = decompress((*record)[0], (*record)[1]);
             table_pointer = table_pointer_;
+            score = score_;
             return true;
         }
     }
@@ -47,6 +48,10 @@ bool IndexIter::next() {
 
 uint64_t IndexIter::get_table_pointer() const {
     return table_pointer;
+}
+
+uint64_t IndexIter::get_score() const {
+    return score;
 }
 
 

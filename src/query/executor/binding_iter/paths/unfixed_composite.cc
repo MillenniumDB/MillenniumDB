@@ -1,10 +1,9 @@
 #include "unfixed_composite.h"
 
-#include <cassert>
-
 using namespace Paths;
 
-bool UnfixedComposite::set_next_starting_node() {
+bool UnfixedComposite::set_next_starting_node()
+{
     while (true) {
         while (!iter->next()) {
             current_start_transition++;
@@ -27,8 +26,8 @@ bool UnfixedComposite::set_next_starting_node() {
     }
 }
 
-
-void UnfixedComposite::_begin(Binding& _parent_binding) {
+void UnfixedComposite::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
 
     auto type_id = start_transitions[current_start_transition].type_id.id;
@@ -44,8 +43,8 @@ void UnfixedComposite::_begin(Binding& _parent_binding) {
     child_iter->begin(_parent_binding);
 }
 
-
-bool UnfixedComposite::_next() {
+bool UnfixedComposite::_next()
+{
     while (current_start_transition < start_transitions.size()) {
         if (child_iter->next()) {
             return true;
@@ -61,8 +60,8 @@ bool UnfixedComposite::_next() {
     return false;
 }
 
-
-void UnfixedComposite::_reset() {
+void UnfixedComposite::_reset()
+{
     visited.clear();
 
     current_start_transition = 0;
@@ -81,7 +80,17 @@ void UnfixedComposite::_reset() {
     child_iter->reset();
 }
 
+void UnfixedComposite::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::UnfixedComposite(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 
-void UnfixedComposite::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+    child_iter->print(os, indent + 2, stats);
 }

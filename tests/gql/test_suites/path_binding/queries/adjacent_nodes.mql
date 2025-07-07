@@ -1,0 +1,2 @@
+MATCH (a)->(b)(b2)->(c)
+RETURN a,b,b2,c

@@ -1,0 +1,2 @@
+MATCH (p:Person {name: "2"})
+RETURN p.name || "_suffix" AS result

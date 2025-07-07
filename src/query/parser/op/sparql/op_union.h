@@ -1,12 +1,11 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <vector>
 
 #include "misc/set_operations.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 class OpUnion : public Op {

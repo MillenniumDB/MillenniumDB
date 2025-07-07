@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstring>
-#include <functional>
 #include <type_traits>
 
 #include "storage/file_id.h"
@@ -13,17 +12,6 @@ struct PageId {
     PageId(FileId file_id, uint32_t page_number) :
         file_id     (file_id),
         page_number (page_number) { }
-
-    // needed to allow std::map having PageId as key
-    // bool operator<(const PageId& other) const {
-    //     if (this->file_id < other.file_id) {
-    //         return true;
-    //     } else if (other.file_id < this->file_id) {
-    //         return false;
-    //     } else {
-    //         return this->page_number < other.page_number;
-    //     }
-    // }
 
     // needed to allow std::unordered_map having PageId as key
     bool operator==(const PageId& other) const {
@@ -57,20 +45,6 @@ struct TmpPageId {
             return k.id ^ (k.page_number << 2);
         }
     };
-};
-
-template<>
-struct std::hash<PageId> {
-    std::size_t operator()(PageId const& k) const noexcept {
-        return k.file_id.id | (k.page_number << 6);
-    }
-};
-
-template<>
-struct std::hash<TmpPageId> {
-    std::size_t operator()(TmpPageId const& k) const noexcept {
-        return k.id ^ (k.page_number << 2);
-    }
 };
 
 static_assert(std::is_trivially_copyable<PageId>::value);

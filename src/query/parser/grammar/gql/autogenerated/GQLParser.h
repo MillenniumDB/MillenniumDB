@@ -32,48 +32,49 @@ public:
     DESCENDING = 88, DESTINATION = 89, DETACH = 90, DIFFERENT = 91, DIRECTED = 92, 
     DISTINCT = 93, DOUBLE = 94, DROP = 95, DURATION = 96, DURATION_BETWEEN = 97, 
     ELEMENT = 98, ELEMENT_ID = 99, ELEMENTS = 100, ELSE = 101, END = 102, 
-    EXCEPT = 103, EXISTS = 104, EXP = 105, FALSE = 106, FILTER = 107, FINISH = 108, 
-    FIRST = 109, FLOAT = 110, FLOAT128 = 111, FLOAT16 = 112, FLOAT256 = 113, 
-    FLOAT32 = 114, FLOAT64 = 115, FLOOR = 116, FOR = 117, FROM = 118, GRAPH = 119, 
-    GROUP = 120, GROUPS = 121, HAVING = 122, HOME_GRAPH = 123, HOME_PROPERTY_GRAPH = 124, 
-    HOME_SCHEMA = 125, I_DONT_KNOW_1 = 126, I_DONT_KNOW_2 = 127, I_DONT_KNOW_3 = 128, 
-    I_DONT_KNOW_4 = 129, I_DONT_KNOW_5 = 130, IF = 131, IN = 132, INSERT = 133, 
-    INT = 134, INT8 = 135, INT16 = 136, INT32 = 137, INT64 = 138, INT128 = 139, 
-    INT256 = 140, INTEGER = 141, INTEGER8 = 142, INTEGER16 = 143, INTEGER32 = 144, 
-    INTEGER64 = 145, INTEGER128 = 146, INTEGER256 = 147, INTERSECT = 148, 
-    IS = 149, KEEP = 150, LABEL = 151, LABELED = 152, LABELS = 153, LAST = 154, 
-    LEADING = 155, LEFT = 156, LET = 157, LIKE = 158, LIMIT = 159, LIST = 160, 
-    LN = 161, LOCAL = 162, LOCAL_DATETIME = 163, LOCAL_TIME = 164, LOCAL_TIMESTAMP = 165, 
-    LOG = 166, LOG10 = 167, LOWER = 168, LTRIM = 169, MATCH = 170, MAX = 171, 
-    MIN = 172, MOD = 173, NEXT = 174, NFC = 175, NFD = 176, NFKC = 177, 
-    NFKD = 178, NO = 179, NODETACH = 180, NORMALIZE = 181, NORMALIZED = 182, 
-    NOT = 183, NULL_ = 184, NULLIF = 185, NULLS = 186, OCTET_LENGTH = 187, 
-    OF = 188, OFFSET = 189, SKIP_ = 190, ONLY = 191, OPEN = 192, OPTIONAL = 193, 
-    OR = 194, ORDER = 195, ORDINALITY = 196, OTHERWISE = 197, PARAMETER = 198, 
-    PARAMETERS = 199, PATH = 200, PATH_LENGTH = 201, PATHS = 202, PERCENTILE_CONT = 203, 
-    PERCENTILE_DISC = 204, POWER = 205, PRECISION = 206, PROPERTY = 207, 
-    PROPERTY_EXISTS = 208, RADIANS = 209, READ = 210, REAL = 211, RECORD = 212, 
-    REMOVE = 213, REPEATABLE = 214, REPLACE = 215, RESET = 216, RETURN = 217, 
-    ROLLBACK = 218, RTRIM = 219, RIGHT = 220, SAME = 221, SCHEMA = 222, 
-    SELECT = 223, SESSION = 224, SET = 225, SHORTEST = 226, SIGNED = 227, 
-    SIMPLE = 228, SIN = 229, SINH = 230, SMALL = 231, SMALLINT = 232, SOURCE = 233, 
-    SQRT = 234, START = 235, STDDEV_POP = 236, STDDEV_SAMP = 237, STRING = 238, 
-    SUM = 239, TABLE = 240, TAN = 241, TANH = 242, TEMP = 243, THEN = 244, 
-    TIME = 245, TIMESTAMP = 246, TIMEZONE = 247, TO = 248, TRAIL = 249, 
-    TRAILING = 250, TRANSACTION = 251, TRIM = 252, TRUE = 253, TYPE = 254, 
-    TYPED = 255, UBIGINT = 256, UINT = 257, UINT128 = 258, UINT16 = 259, 
-    UINT256 = 260, UINT32 = 261, UINT64 = 262, UINT8 = 263, UNDIRECTED = 264, 
-    UNION = 265, UNKNOWN = 266, UNSIGNED = 267, UPPER = 268, USE = 269, 
-    USMALLINT = 270, VALUE = 271, VARBINARY = 272, VARCHAR = 273, VARIABLE = 274, 
-    WALK = 275, WHEN = 276, WHERE = 277, WITH = 278, WITHOUT = 279, WRITE = 280, 
-    XOR = 281, YIELD = 282, ZONE = 283, ZONED = 284, ZONED_DATETIME = 285, 
-    ZONED_TIME = 286, INTERVAL_DAY = 287, INTERVAL_WEEK = 288, INTERVAL_MONTH = 289, 
-    INTERVAL_YEAR = 290, EDGE_SYNONYM = 291, EDGES_SYNONYM = 292, NODE_SYNONYM = 293, 
-    KEY_WORD = 294, RESERVED_WORD = 295, PRE_RESERVED_WORD = 296, NON_RESERVED_WORD = 297, 
-    MULTISET_ALTERNATION_OPERATOR = 298, CONCATENATION_OPERATOR = 299, DOUBLE_COLON = 300, 
-    DOUBLE_PERIOD = 301, GREATER_THAN_OR_EQUALS_OPERATOR = 302, LEFT_MINUS_RIGHT = 303, 
-    LEFT_MINUS_SLASH = 304, LEFT_TILDE_SLASH = 305, LESS_THAN_OR_EQUALS_OPERATOR = 306, 
-    MINUS_SLASH = 307, NOT_EQUALS_OPERATOR = 308, RIGHT_ARROW = 309, SLASH_MINUS_RIGHT = 310, 
+    EXCEPT = 103, EXISTS = 104, EXP = 105, K_FALSE = 106, FILTER = 107, 
+    FINISH = 108, FIRST = 109, FLOAT = 110, FLOAT128 = 111, FLOAT16 = 112, 
+    FLOAT256 = 113, FLOAT32 = 114, FLOAT64 = 115, FLOOR = 116, FOR = 117, 
+    FROM = 118, GRAPH = 119, GROUP = 120, GROUPS = 121, HAVING = 122, HOME_GRAPH = 123, 
+    HOME_PROPERTY_GRAPH = 124, HOME_SCHEMA = 125, I_DONT_KNOW_1 = 126, I_DONT_KNOW_2 = 127, 
+    I_DONT_KNOW_3 = 128, I_DONT_KNOW_4 = 129, I_DONT_KNOW_5 = 130, IF = 131, 
+    IN = 132, INSERT = 133, INT = 134, INT8 = 135, INT16 = 136, INT32 = 137, 
+    INT64 = 138, INT128 = 139, INT256 = 140, INTEGER = 141, INTEGER8 = 142, 
+    INTEGER16 = 143, INTEGER32 = 144, INTEGER64 = 145, INTEGER128 = 146, 
+    INTEGER256 = 147, INTERSECT = 148, IS = 149, KEEP = 150, LABEL = 151, 
+    LABELED = 152, LABELS = 153, LAST = 154, LEADING = 155, LEFT = 156, 
+    LET = 157, LIKE = 158, LIMIT = 159, LIST = 160, LN = 161, LOCAL = 162, 
+    LOCAL_DATETIME = 163, LOCAL_TIME = 164, LOCAL_TIMESTAMP = 165, LOG = 166, 
+    LOG10 = 167, LOWER = 168, LTRIM = 169, MATCH = 170, MAX = 171, MIN = 172, 
+    MOD = 173, NEXT = 174, NFC = 175, NFD = 176, NFKC = 177, NFKD = 178, 
+    NO = 179, NODETACH = 180, NORMALIZE = 181, NORMALIZED = 182, NOT = 183, 
+    NULL_ = 184, NULLIF = 185, NULLS = 186, OCTET_LENGTH = 187, OF = 188, 
+    OFFSET = 189, SKIP_ = 190, ONLY = 191, OPEN = 192, OPTIONAL = 193, OR = 194, 
+    ORDER = 195, ORDINALITY = 196, OTHERWISE = 197, PARAMETER = 198, PARAMETERS = 199, 
+    PATH = 200, PATH_LENGTH = 201, PATHS = 202, PERCENTILE_CONT = 203, PERCENTILE_DISC = 204, 
+    POWER = 205, PRECISION = 206, PROPERTY = 207, PROPERTY_EXISTS = 208, 
+    RADIANS = 209, READ = 210, REAL = 211, RECORD = 212, REMOVE = 213, REPEATABLE = 214, 
+    REPLACE = 215, RESET = 216, RETURN = 217, ROLLBACK = 218, RTRIM = 219, 
+    RIGHT = 220, SAME = 221, SCHEMA = 222, SELECT = 223, SESSION = 224, 
+    SET = 225, SHORTEST = 226, SIGNED = 227, SIMPLE = 228, SIN = 229, SINH = 230, 
+    SMALL = 231, SMALLINT = 232, SOURCE = 233, SQRT = 234, START = 235, 
+    STDDEV_POP = 236, STDDEV_SAMP = 237, STRING = 238, SUM = 239, TABLE = 240, 
+    TAN = 241, TANH = 242, TEMP = 243, THEN = 244, TIME = 245, TIMESTAMP = 246, 
+    TIMEZONE = 247, TO = 248, TRAIL = 249, TRAILING = 250, TRANSACTION = 251, 
+    TRIM = 252, K_TRUE = 253, TYPE = 254, TYPED = 255, UBIGINT = 256, UINT = 257, 
+    UINT128 = 258, UINT16 = 259, UINT256 = 260, UINT32 = 261, UINT64 = 262, 
+    UINT8 = 263, UNDIRECTED = 264, UNION = 265, UNKNOWN = 266, UNSIGNED = 267, 
+    UPPER = 268, USE = 269, USMALLINT = 270, VALUE = 271, VARBINARY = 272, 
+    VARCHAR = 273, VARIABLE = 274, WALK = 275, WHEN = 276, WHERE = 277, 
+    WITH = 278, WITHOUT = 279, WRITE = 280, XOR = 281, YIELD = 282, ZONE = 283, 
+    ZONED = 284, ZONED_DATETIME = 285, ZONED_TIME = 286, INTERVAL_DAY = 287, 
+    INTERVAL_WEEK = 288, INTERVAL_MONTH = 289, INTERVAL_YEAR = 290, EDGE_SYNONYM = 291, 
+    EDGES_SYNONYM = 292, NODE_SYNONYM = 293, KEY_WORD = 294, RESERVED_WORD = 295, 
+    PRE_RESERVED_WORD = 296, NON_RESERVED_WORD = 297, MULTISET_ALTERNATION_OPERATOR = 298, 
+    CONCATENATION_OPERATOR = 299, DOUBLE_COLON = 300, DOUBLE_PERIOD = 301, 
+    GREATER_THAN_OR_EQUALS_OPERATOR = 302, LEFT_MINUS_RIGHT = 303, LEFT_MINUS_SLASH = 304, 
+    LEFT_TILDE_SLASH = 305, LESS_THAN_OR_EQUALS_OPERATOR = 306, MINUS_SLASH = 307, 
+    NOT_EQUALS_OPERATOR = 308, RIGHT_ARROW = 309, SLASH_MINUS_RIGHT = 310, 
     SLASH_TILDE_RIGHT = 311, TILDE_RIGHT_ARROW = 312, TILDE_SLASH = 313, 
     DOUBLE_SOLIDUS = 314, ESCAPED_CHARACTER = 315, ESCAPED_REVERSE_SOLIDUS = 316, 
     ESCAPED_QUOTE = 317, ESCAPED_DOUBLE_QUOTE = 318, ESCAPED_GRAVE_ACCENT = 319, 
@@ -287,7 +288,7 @@ public:
     RuleTrimSpecification = 503, RuleNormalForm = 504, RuleListValueConstructor = 505, 
     RuleRecordValueConstructor = 506, RuleField = 507, RulePathValueConstructor = 508, 
     RuleUnsignedLiteral = 509, RuleGeneralLiteral = 510, RuleListLiteral = 511, 
-    RuleRecordLiteral = 512, RuleRecordFieldLiteral = 513
+    RuleRecordLiteral = 512, RuleRecordFieldLiteral = 513, RuleKeyword = 514
   };
 
   explicit GQLParser(antlr4::TokenStream *input);
@@ -820,7 +821,8 @@ public:
   class GeneralLiteralContext;
   class ListLiteralContext;
   class RecordLiteralContext;
-  class RecordFieldLiteralContext; 
+  class RecordFieldLiteralContext;
+  class KeywordContext; 
 
   class  RootContext : public antlr4::ParserRuleContext {
   public:
@@ -1787,6 +1789,7 @@ public:
     LabelNameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     IdentifierContext *identifier();
+    KeywordContext *keyword();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1813,6 +1816,7 @@ public:
     PropertyNameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     IdentifierContext *identifier();
+    KeywordContext *keyword();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1826,6 +1830,7 @@ public:
     FieldNameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     IdentifierContext *identifier();
+    KeywordContext *keyword();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1973,6 +1978,7 @@ public:
     BindingVariableContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     IdentifierContext *identifier();
+    KeywordContext *keyword();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -2003,8 +2009,8 @@ public:
   public:
     BooleanLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *TRUE();
-    antlr4::tree::TerminalNode *FALSE();
+    antlr4::tree::TerminalNode *K_TRUE();
+    antlr4::tree::TerminalNode *K_FALSE();
     antlr4::tree::TerminalNode *UNKNOWN();
 
 
@@ -8475,8 +8481,8 @@ public:
   public:
     TruthValueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *TRUE();
-    antlr4::tree::TerminalNode *FALSE();
+    antlr4::tree::TerminalNode *K_TRUE();
+    antlr4::tree::TerminalNode *K_FALSE();
     antlr4::tree::TerminalNode *UNKNOWN();
 
 
@@ -9429,6 +9435,286 @@ public:
   };
 
   RecordFieldLiteralContext* recordFieldLiteral();
+
+  class  KeywordContext : public antlr4::ParserRuleContext {
+  public:
+    KeywordContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ABS();
+    antlr4::tree::TerminalNode *ACOS();
+    antlr4::tree::TerminalNode *ACYCLIC();
+    antlr4::tree::TerminalNode *ALL();
+    antlr4::tree::TerminalNode *ALL_DIFFERENT();
+    antlr4::tree::TerminalNode *AND();
+    antlr4::tree::TerminalNode *ANY();
+    antlr4::tree::TerminalNode *ARRAY();
+    antlr4::tree::TerminalNode *AS();
+    antlr4::tree::TerminalNode *ASC();
+    antlr4::tree::TerminalNode *ASCENDING();
+    antlr4::tree::TerminalNode *ASIN();
+    antlr4::tree::TerminalNode *AT();
+    antlr4::tree::TerminalNode *ATAN();
+    antlr4::tree::TerminalNode *AVG();
+    antlr4::tree::TerminalNode *BIG();
+    antlr4::tree::TerminalNode *BIGINT();
+    antlr4::tree::TerminalNode *BINARY();
+    antlr4::tree::TerminalNode *BINDING();
+    antlr4::tree::TerminalNode *BINDINGS();
+    antlr4::tree::TerminalNode *BOOL();
+    antlr4::tree::TerminalNode *BOOLEAN();
+    antlr4::tree::TerminalNode *BOTH();
+    antlr4::tree::TerminalNode *BTRIM();
+    antlr4::tree::TerminalNode *BY();
+    antlr4::tree::TerminalNode *BYTE_LENGTH();
+    antlr4::tree::TerminalNode *BYTES();
+    antlr4::tree::TerminalNode *CALL();
+    antlr4::tree::TerminalNode *CASE();
+    antlr4::tree::TerminalNode *CAST();
+    antlr4::tree::TerminalNode *CEIL();
+    antlr4::tree::TerminalNode *CEILING();
+    antlr4::tree::TerminalNode *CHAR_LENGTH();
+    antlr4::tree::TerminalNode *CHARACTER_LENGTH();
+    antlr4::tree::TerminalNode *CHARACTERISTICS();
+    antlr4::tree::TerminalNode *CLOSE();
+    antlr4::tree::TerminalNode *COALESCE();
+    antlr4::tree::TerminalNode *COLLECT();
+    antlr4::tree::TerminalNode *COMMIT();
+    antlr4::tree::TerminalNode *CONNECTING();
+    antlr4::tree::TerminalNode *COPY();
+    antlr4::tree::TerminalNode *COS();
+    antlr4::tree::TerminalNode *COSH();
+    antlr4::tree::TerminalNode *COT();
+    antlr4::tree::TerminalNode *COUNT();
+    antlr4::tree::TerminalNode *CREATE();
+    antlr4::tree::TerminalNode *CURRENT_DATE();
+    antlr4::tree::TerminalNode *CURRENT_GRAPH();
+    antlr4::tree::TerminalNode *CURRENT_PROPERTY_GRAPH();
+    antlr4::tree::TerminalNode *CURRENT_SCHEMA();
+    antlr4::tree::TerminalNode *CURRENT_TIME();
+    antlr4::tree::TerminalNode *CURRENT_TIMESTAMP();
+    antlr4::tree::TerminalNode *CURRENT_USER();
+    antlr4::tree::TerminalNode *DATE();
+    antlr4::tree::TerminalNode *DATETIME();
+    antlr4::tree::TerminalNode *DEC();
+    antlr4::tree::TerminalNode *DECIMAL();
+    antlr4::tree::TerminalNode *DEGREES();
+    antlr4::tree::TerminalNode *DELETE();
+    antlr4::tree::TerminalNode *DESC();
+    antlr4::tree::TerminalNode *DESCENDING();
+    antlr4::tree::TerminalNode *DESTINATION();
+    antlr4::tree::TerminalNode *DETACH();
+    antlr4::tree::TerminalNode *DIFFERENT();
+    antlr4::tree::TerminalNode *DIRECTED();
+    antlr4::tree::TerminalNode *DISTINCT();
+    antlr4::tree::TerminalNode *DOUBLE();
+    antlr4::tree::TerminalNode *DROP();
+    antlr4::tree::TerminalNode *DURATION();
+    antlr4::tree::TerminalNode *DURATION_BETWEEN();
+    antlr4::tree::TerminalNode *ELEMENT();
+    antlr4::tree::TerminalNode *ELEMENT_ID();
+    antlr4::tree::TerminalNode *ELEMENTS();
+    antlr4::tree::TerminalNode *ELSE();
+    antlr4::tree::TerminalNode *END();
+    antlr4::tree::TerminalNode *EXCEPT();
+    antlr4::tree::TerminalNode *EXISTS();
+    antlr4::tree::TerminalNode *EXP();
+    antlr4::tree::TerminalNode *K_FALSE();
+    antlr4::tree::TerminalNode *FILTER();
+    antlr4::tree::TerminalNode *FINISH();
+    antlr4::tree::TerminalNode *FIRST();
+    antlr4::tree::TerminalNode *FLOAT();
+    antlr4::tree::TerminalNode *FLOAT128();
+    antlr4::tree::TerminalNode *FLOAT16();
+    antlr4::tree::TerminalNode *FLOAT256();
+    antlr4::tree::TerminalNode *FLOAT32();
+    antlr4::tree::TerminalNode *FLOAT64();
+    antlr4::tree::TerminalNode *FLOOR();
+    antlr4::tree::TerminalNode *FOR();
+    antlr4::tree::TerminalNode *FROM();
+    antlr4::tree::TerminalNode *GRAPH();
+    antlr4::tree::TerminalNode *GROUP();
+    antlr4::tree::TerminalNode *GROUPS();
+    antlr4::tree::TerminalNode *HAVING();
+    antlr4::tree::TerminalNode *HOME_GRAPH();
+    antlr4::tree::TerminalNode *HOME_PROPERTY_GRAPH();
+    antlr4::tree::TerminalNode *HOME_SCHEMA();
+    antlr4::tree::TerminalNode *I_DONT_KNOW_1();
+    antlr4::tree::TerminalNode *I_DONT_KNOW_2();
+    antlr4::tree::TerminalNode *I_DONT_KNOW_3();
+    antlr4::tree::TerminalNode *I_DONT_KNOW_4();
+    antlr4::tree::TerminalNode *I_DONT_KNOW_5();
+    antlr4::tree::TerminalNode *IF();
+    antlr4::tree::TerminalNode *IN();
+    antlr4::tree::TerminalNode *INSERT();
+    antlr4::tree::TerminalNode *INT();
+    antlr4::tree::TerminalNode *INT8();
+    antlr4::tree::TerminalNode *INT16();
+    antlr4::tree::TerminalNode *INT32();
+    antlr4::tree::TerminalNode *INT64();
+    antlr4::tree::TerminalNode *INT128();
+    antlr4::tree::TerminalNode *INT256();
+    antlr4::tree::TerminalNode *INTEGER();
+    antlr4::tree::TerminalNode *INTEGER8();
+    antlr4::tree::TerminalNode *INTEGER16();
+    antlr4::tree::TerminalNode *INTEGER32();
+    antlr4::tree::TerminalNode *INTEGER64();
+    antlr4::tree::TerminalNode *INTEGER128();
+    antlr4::tree::TerminalNode *INTEGER256();
+    antlr4::tree::TerminalNode *INTERSECT();
+    antlr4::tree::TerminalNode *IS();
+    antlr4::tree::TerminalNode *KEEP();
+    antlr4::tree::TerminalNode *LABEL();
+    antlr4::tree::TerminalNode *LABELED();
+    antlr4::tree::TerminalNode *LABELS();
+    antlr4::tree::TerminalNode *LAST();
+    antlr4::tree::TerminalNode *LEADING();
+    antlr4::tree::TerminalNode *LEFT();
+    antlr4::tree::TerminalNode *LET();
+    antlr4::tree::TerminalNode *LIKE();
+    antlr4::tree::TerminalNode *LIMIT();
+    antlr4::tree::TerminalNode *LIST();
+    antlr4::tree::TerminalNode *LN();
+    antlr4::tree::TerminalNode *LOCAL();
+    antlr4::tree::TerminalNode *LOCAL_DATETIME();
+    antlr4::tree::TerminalNode *LOCAL_TIME();
+    antlr4::tree::TerminalNode *LOCAL_TIMESTAMP();
+    antlr4::tree::TerminalNode *LOG();
+    antlr4::tree::TerminalNode *LOG10();
+    antlr4::tree::TerminalNode *LOWER();
+    antlr4::tree::TerminalNode *LTRIM();
+    antlr4::tree::TerminalNode *MATCH();
+    antlr4::tree::TerminalNode *MAX();
+    antlr4::tree::TerminalNode *MIN();
+    antlr4::tree::TerminalNode *MOD();
+    antlr4::tree::TerminalNode *NEXT();
+    antlr4::tree::TerminalNode *NFC();
+    antlr4::tree::TerminalNode *NFD();
+    antlr4::tree::TerminalNode *NFKC();
+    antlr4::tree::TerminalNode *NFKD();
+    antlr4::tree::TerminalNode *NO();
+    antlr4::tree::TerminalNode *NODETACH();
+    antlr4::tree::TerminalNode *NORMALIZE();
+    antlr4::tree::TerminalNode *NORMALIZED();
+    antlr4::tree::TerminalNode *NOT();
+    antlr4::tree::TerminalNode *NULL_();
+    antlr4::tree::TerminalNode *NULLIF();
+    antlr4::tree::TerminalNode *NULLS();
+    antlr4::tree::TerminalNode *OCTET_LENGTH();
+    antlr4::tree::TerminalNode *OF();
+    antlr4::tree::TerminalNode *OFFSET();
+    antlr4::tree::TerminalNode *SKIP_();
+    antlr4::tree::TerminalNode *ONLY();
+    antlr4::tree::TerminalNode *OPEN();
+    antlr4::tree::TerminalNode *OPTIONAL();
+    antlr4::tree::TerminalNode *OR();
+    antlr4::tree::TerminalNode *ORDER();
+    antlr4::tree::TerminalNode *ORDINALITY();
+    antlr4::tree::TerminalNode *OTHERWISE();
+    antlr4::tree::TerminalNode *PARAMETER();
+    antlr4::tree::TerminalNode *PARAMETERS();
+    antlr4::tree::TerminalNode *PATH();
+    antlr4::tree::TerminalNode *PATH_LENGTH();
+    antlr4::tree::TerminalNode *PATHS();
+    antlr4::tree::TerminalNode *PERCENTILE_CONT();
+    antlr4::tree::TerminalNode *PERCENTILE_DISC();
+    antlr4::tree::TerminalNode *POWER();
+    antlr4::tree::TerminalNode *PRECISION();
+    antlr4::tree::TerminalNode *PROPERTY();
+    antlr4::tree::TerminalNode *PROPERTY_EXISTS();
+    antlr4::tree::TerminalNode *RADIANS();
+    antlr4::tree::TerminalNode *READ();
+    antlr4::tree::TerminalNode *REAL();
+    antlr4::tree::TerminalNode *RECORD();
+    antlr4::tree::TerminalNode *REMOVE();
+    antlr4::tree::TerminalNode *REPEATABLE();
+    antlr4::tree::TerminalNode *REPLACE();
+    antlr4::tree::TerminalNode *RESET();
+    antlr4::tree::TerminalNode *RETURN();
+    antlr4::tree::TerminalNode *ROLLBACK();
+    antlr4::tree::TerminalNode *RTRIM();
+    antlr4::tree::TerminalNode *RIGHT();
+    antlr4::tree::TerminalNode *SAME();
+    antlr4::tree::TerminalNode *SCHEMA();
+    antlr4::tree::TerminalNode *SELECT();
+    antlr4::tree::TerminalNode *SESSION();
+    antlr4::tree::TerminalNode *SET();
+    antlr4::tree::TerminalNode *SHORTEST();
+    antlr4::tree::TerminalNode *SIGNED();
+    antlr4::tree::TerminalNode *SIMPLE();
+    antlr4::tree::TerminalNode *SIN();
+    antlr4::tree::TerminalNode *SINH();
+    antlr4::tree::TerminalNode *SMALL();
+    antlr4::tree::TerminalNode *SMALLINT();
+    antlr4::tree::TerminalNode *SOURCE();
+    antlr4::tree::TerminalNode *SQRT();
+    antlr4::tree::TerminalNode *START();
+    antlr4::tree::TerminalNode *STDDEV_POP();
+    antlr4::tree::TerminalNode *STDDEV_SAMP();
+    antlr4::tree::TerminalNode *STRING();
+    antlr4::tree::TerminalNode *SUM();
+    antlr4::tree::TerminalNode *TABLE();
+    antlr4::tree::TerminalNode *TAN();
+    antlr4::tree::TerminalNode *TANH();
+    antlr4::tree::TerminalNode *TEMP();
+    antlr4::tree::TerminalNode *THEN();
+    antlr4::tree::TerminalNode *TIME();
+    antlr4::tree::TerminalNode *TIMESTAMP();
+    antlr4::tree::TerminalNode *TIMEZONE();
+    antlr4::tree::TerminalNode *TO();
+    antlr4::tree::TerminalNode *TRAIL();
+    antlr4::tree::TerminalNode *TRAILING();
+    antlr4::tree::TerminalNode *TRANSACTION();
+    antlr4::tree::TerminalNode *TRIM();
+    antlr4::tree::TerminalNode *K_TRUE();
+    antlr4::tree::TerminalNode *TYPE();
+    antlr4::tree::TerminalNode *TYPED();
+    antlr4::tree::TerminalNode *UBIGINT();
+    antlr4::tree::TerminalNode *UINT();
+    antlr4::tree::TerminalNode *UINT128();
+    antlr4::tree::TerminalNode *UINT16();
+    antlr4::tree::TerminalNode *UINT256();
+    antlr4::tree::TerminalNode *UINT32();
+    antlr4::tree::TerminalNode *UINT64();
+    antlr4::tree::TerminalNode *UINT8();
+    antlr4::tree::TerminalNode *UNDIRECTED();
+    antlr4::tree::TerminalNode *UNION();
+    antlr4::tree::TerminalNode *UNKNOWN();
+    antlr4::tree::TerminalNode *UNSIGNED();
+    antlr4::tree::TerminalNode *UPPER();
+    antlr4::tree::TerminalNode *USE();
+    antlr4::tree::TerminalNode *USMALLINT();
+    antlr4::tree::TerminalNode *VALUE();
+    antlr4::tree::TerminalNode *VARBINARY();
+    antlr4::tree::TerminalNode *VARCHAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *WALK();
+    antlr4::tree::TerminalNode *WHEN();
+    antlr4::tree::TerminalNode *WHERE();
+    antlr4::tree::TerminalNode *WITH();
+    antlr4::tree::TerminalNode *WITHOUT();
+    antlr4::tree::TerminalNode *WRITE();
+    antlr4::tree::TerminalNode *XOR();
+    antlr4::tree::TerminalNode *YIELD();
+    antlr4::tree::TerminalNode *ZONE();
+    antlr4::tree::TerminalNode *ZONED();
+    antlr4::tree::TerminalNode *ZONED_DATETIME();
+    antlr4::tree::TerminalNode *ZONED_TIME();
+    antlr4::tree::TerminalNode *INTERVAL_DAY();
+    antlr4::tree::TerminalNode *INTERVAL_WEEK();
+    antlr4::tree::TerminalNode *INTERVAL_MONTH();
+    antlr4::tree::TerminalNode *INTERVAL_YEAR();
+    antlr4::tree::TerminalNode *EDGE_SYNONYM();
+    antlr4::tree::TerminalNode *EDGES_SYNONYM();
+    antlr4::tree::TerminalNode *NODE_SYNONYM();
+    antlr4::tree::TerminalNode *KEY_WORD();
+    antlr4::tree::TerminalNode *PRE_RESERVED_WORD();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  KeywordContext* keyword();
 
 
   bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;

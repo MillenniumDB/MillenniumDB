@@ -2,7 +2,8 @@
 
 using namespace std;
 
-void LeapfrogEdgeTableIter::down() {
+void LeapfrogEdgeTableIter::down()
+{
     level++;
     if (level == 0) {
         auto record = edge_table[0];
@@ -13,8 +14,8 @@ void LeapfrogEdgeTableIter::down() {
     }
 }
 
-
-bool LeapfrogEdgeTableIter::next() {
+bool LeapfrogEdgeTableIter::next()
+{
     if (level == 0) {
         auto edge_value = (current_tuple[0] + 1) & ObjectId::VALUE_MASK;
         auto record = edge_table[edge_value - 1];
@@ -32,8 +33,8 @@ bool LeapfrogEdgeTableIter::next() {
     }
 }
 
-
-bool LeapfrogEdgeTableIter::seek(uint64_t key) {
+bool LeapfrogEdgeTableIter::seek(uint64_t key)
+{
     if (level == 0) {
         // level == 0 implies initial_ranges is empty
         // check if key is an edge
@@ -59,8 +60,8 @@ bool LeapfrogEdgeTableIter::seek(uint64_t key) {
     }
 }
 
-
-bool LeapfrogEdgeTableIter::open_terms(Binding& input_binding) {
+bool LeapfrogEdgeTableIter::open_terms(Binding& input_binding)
+{
     // cout << "LeapfrogEdgeTableIter::open_terms\n";
     if (initial_ranges.empty()) {
         // initialize with first edge if it exists
@@ -104,8 +105,8 @@ bool LeapfrogEdgeTableIter::open_terms(Binding& input_binding) {
     }
 }
 
-
-bool LeapfrogEdgeTableIter::next_enumeration(Binding& binding) {
+bool LeapfrogEdgeTableIter::next_enumeration(Binding& binding)
+{
     if (level == -1) {
         current_edge_enum++;
         auto record = edge_table[current_edge_enum - 1];
@@ -118,8 +119,10 @@ bool LeapfrogEdgeTableIter::next_enumeration(Binding& binding) {
             enum_tuple[2] = (*record)[permutation[1]];
             enum_tuple[3] = (*record)[permutation[2]];
             for (size_t i = 0; i < enumeration_vars.size(); i++) {
-                binding.add(enumeration_vars[i],
-                            ObjectId(enum_tuple[initial_ranges.size() + intersection_vars.size() + i]));
+                binding.add(
+                    enumeration_vars[i],
+                    ObjectId(enum_tuple[initial_ranges.size() + intersection_vars.size() + i])
+                );
             }
             return true;
         }
@@ -128,8 +131,10 @@ bool LeapfrogEdgeTableIter::next_enumeration(Binding& binding) {
             return false;
         } else {
             for (size_t i = 0; i < enumeration_vars.size(); i++) {
-                binding.add(enumeration_vars[i],
-                            ObjectId(current_tuple[initial_ranges.size() + intersection_vars.size() + i]));
+                binding.add(
+                    enumeration_vars[i],
+                    ObjectId(current_tuple[initial_ranges.size() + intersection_vars.size() + i])
+                );
             }
             current_edge_enum++;
             return true;
@@ -137,13 +142,13 @@ bool LeapfrogEdgeTableIter::next_enumeration(Binding& binding) {
     }
 }
 
-
-void LeapfrogEdgeTableIter::begin_enumeration() {
+void LeapfrogEdgeTableIter::begin_enumeration()
+{
     saved_edge_enum = (current_tuple[0] & ObjectId::VALUE_MASK) - 1;
     current_edge_enum = saved_edge_enum;
 }
 
-
-void LeapfrogEdgeTableIter::reset_enumeration() {
+void LeapfrogEdgeTableIter::reset_enumeration()
+{
     current_edge_enum = saved_edge_enum;
 }

@@ -3,6 +3,7 @@
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "query/exceptions.h"
+#include "query/executor/binding_iter/empty_binding_iter.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_check.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_enum.h"
 #include "query/executor/binding_iter/paths/all_shortest_walks/bfs_check.h"
@@ -382,6 +383,11 @@ bool PathPlan::subject_is_better_start_direction() const {
 
 
 std::unique_ptr<BindingIter> PathPlan::get_binding_iter() const {
+    // border case with nullable paths and empty database, example at test
+    // tests/sparql/test_suites/sparql11/property-path/values_and_path.rq
+    if (rdf_model.catalog.get_triples_count() == 0) {
+        return std::make_unique<EmptyBindingIter>();
+    }
     if (subject_assigned) {
         if (object_assigned) {
             auto star_at_subject = subject_is_better_start_direction();

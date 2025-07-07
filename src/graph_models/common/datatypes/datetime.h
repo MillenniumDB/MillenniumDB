@@ -74,6 +74,11 @@ public:
     static uint64_t from_dateTime(const std::string& str, bool* error) noexcept;
     static uint64_t from_dateTimeStamp(const std::string& str) noexcept;
 
+    static uint64_t from_zoned_time(const std::string& str) noexcept;
+    static uint64_t from_local_time(const std::string& str) noexcept;
+    static uint64_t from_zoned_datetime(const std::string& str) noexcept;
+    static uint64_t from_local_datetime(const std::string& str) noexcept;
+
     bool equal(const DateTime& rhs, bool* error) const noexcept;
 
 

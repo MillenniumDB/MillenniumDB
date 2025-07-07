@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cassert>
-
 #include "graph_models/object_id.h"
 #include "query/var_id.h"
 

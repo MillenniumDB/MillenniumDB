@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.atan_value, ATAN(x.in_value) AS arctangente

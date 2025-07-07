@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/gql/op_visitor.h"
 #include "query/rewriter/gql/op/rewrite_rules/rewrite_rule.h"
 
 namespace GQL {
@@ -44,6 +44,7 @@ public:
         rules.clear();
     }
 
+    void visit(OpQueryStatements&) override;
     void visit(OpGraphPattern&) override;
     void visit(OpGraphPatternList&) override;
     void visit(OpBasicGraphPattern&) override;
@@ -52,6 +53,9 @@ public:
     void visit(OpReturn&) override;
     void visit(OpOrderBy&) override;
 
+    void visit(OpLet&) override { }
+    void visit(OpFilterStatement&) override { }
+    void visit(OpOrderByStatement&) override { }
     void visit(OpFilter&) override;
     void visit(OpOptProperties&) override;
     void visit(OpPathUnion&) override;

@@ -23,6 +23,8 @@ void RewriteRuleVisitor::visit(OpOptional& op_optional) {
 
 void RewriteRuleVisitor::visit(OpBasicGraphPattern&) { }
 
+void RewriteRuleVisitor::visit(OpProcedure&) { }
+
 void RewriteRuleVisitor::visit(OpEmpty&) {
 }
 

@@ -1,1 +1,0 @@
-MATCH (?x {value IS STRING OR FLOAT OR INTEGER, value IS BOOL}) RETURN ?x, ?x.value

@@ -1,22 +1,23 @@
 #include "show_executor.h"
 
 #include "graph_models/quad_model/quad_model.h"
-#include "storage/index/tensor_store/tensor_store.h"
-#include "storage/index/tensor_store/tensor_store_manager.h"
-#include "storage/index/text_search/text_search_index_manager.h"
+#include "storage/index/text_search/text_index_manager.h"
 
 using namespace MQL;
 
 template<ReturnType ret, OpShow::Type type>
 ShowExecutor<ret, type>::ShowExecutor()
 {
-    if constexpr (type == OpShow::Type::TENSOR_STORE) {
+    if constexpr (type == OpShow::Type::HNSW_INDEX) {
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("name"));
-        projection_vars.emplace_back(get_query_ctx().get_or_create_var("tensors_dim"));
-        projection_vars.emplace_back(get_query_ctx().get_or_create_var("num_entries"));
-    } else if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("property"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("metric"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("dimension"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("max_edges"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("max_candidates"));
+    } else if constexpr (type == OpShow::Type::TEXT_INDEX) {
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("name"));
-        projection_vars.emplace_back(get_query_ctx().get_or_create_var("predicate"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("property"));
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("normalization"));
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("tokenization"));
     } else {
@@ -45,25 +46,29 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
     }
     os << '\n';
 
-    if constexpr (type == OpShow::Type::TENSOR_STORE) {
-        assert(projection_vars.size() == 3);
-        auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
-        const auto& name2metadata = tensor_store_manager.get_name2metadata();
-        res = name2metadata.size();
+    if constexpr (type == OpShow::Type::HNSW_INDEX) {
+        assert(projection_vars.size() == 6);
+        auto& hnsw_index_manager = quad_model.catalog.hnsw_index_manager;
+        const auto name2metadata = hnsw_index_manager.get_name2metadata();
         for (const auto& [name, metadata] : name2metadata) {
-            TensorStore* tensor_store;
-            [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(name, &tensor_store);
-            assert(found && "TensorStore not found");
+            auto* hnsw_index_ptr = hnsw_index_manager.get_hnsw_index(name);
+            auto& params = hnsw_index_ptr->get_params();
             os << '"' << name << '"';
             os << delim;
-            os << tensor_store->tensors_dim();
+            os << '"' << metadata.predicate << '"';
             os << delim;
-            os << tensor_store->size();
+            os << '"' << metadata.metric_type << '"';
+            os << delim;
+            os << params.dimensions;
+            os << delim;
+            os << params.M;
+            os << delim;
+            os << params.ef_construction;
             os << '\n';
         }
-    } else if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
+    } else if constexpr (type == OpShow::Type::TEXT_INDEX) {
         assert(projection_vars.size() == 4);
-        const auto& name2metadata = quad_model.catalog.text_search_index_manager.get_name2metadata();
+        const auto name2metadata = quad_model.catalog.text_index_manager.get_name2metadata();
         res = name2metadata.size();
         for (const auto& [name, metadata] : name2metadata) {
             os << '"' << name << '"';
@@ -91,7 +96,8 @@ void ShowExecutor<ret, type>::analyze(std::ostream& os, bool /*print_stats*/, in
     os << ")\n";
 }
 
-template class MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TENSOR_STORE>;
-template class MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TENSOR_STORE>;
-template class MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>;
-template class MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>;
+template class MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::HNSW_INDEX>;
+template class MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TEXT_INDEX>;
+
+template class MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::HNSW_INDEX>;
+template class MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TEXT_INDEX>;

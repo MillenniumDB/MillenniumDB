@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 

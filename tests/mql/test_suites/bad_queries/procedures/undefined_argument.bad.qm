@@ -1,0 +1,2 @@
+CALL HNSW_TOP_K(?a, ?b, ?c, ?d)
+RETURN *

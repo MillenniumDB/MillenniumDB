@@ -7,7 +7,7 @@ namespace TextSearch {
 OrderedIter::OrderedIter(std::unique_ptr<IndexIter> index_iter) :
     first_file_id(buffer_manager.get_tmp_file_id()),
     second_file_id(buffer_manager.get_tmp_file_id()),
-    order_info({VarId(0)},{true},{})
+    order_info({VarId(0)}, {true}, {VarId(1)})
 {
     total_pages = 0;
     run = get_run(buffer_manager.get_ppage(first_file_id, total_pages));
@@ -22,8 +22,12 @@ OrderedIter::OrderedIter(std::unique_ptr<IndexIter> index_iter) :
             run->reset();
         }
 
-        ObjectId oid(index_iter->get_table_pointer());
-        run->add(&oid);
+        ObjectId oids[2] = {
+            ObjectId(index_iter->get_table_pointer()),
+            ObjectId(index_iter->get_score())
+        };
+        // ObjectId oid(index_iter->get_table_pointer());
+        run->add(oids);
     }
     run->sort();
     total_pages++;
@@ -43,6 +47,10 @@ OrderedIter::~OrderedIter()
 uint64_t OrderedIter::get_table_pointer() const
 {
     return table_pointer;
+}
+
+uint64_t OrderedIter::get_score() const {
+    return score;
 }
 
 void OrderedIter::reset()
@@ -68,7 +76,9 @@ bool OrderedIter::next()
         page_position = 0;
     }
 
-    table_pointer = run->get(page_position)->id;
+    const ObjectId* oids = run->get(page_position);
+    table_pointer = oids[0].id;
+    score = oids[1].id;
 
     page_position++;
     return true;

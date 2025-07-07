@@ -2,18 +2,25 @@
 
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "storage/index/text_search/text_search_index_manager.h"
+#include "storage/index/text_search/text_index_manager.h"
 
 #include <stdexcept>
 
 using namespace SPARQL;
 
-template<ResponseType res, OpShow::Type type>
-ShowExecutor<res, type>::ShowExecutor()
+template<ResponseType ret, OpShow::Type type>
+ShowExecutor<ret, type>::ShowExecutor()
 {
-    if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
+    if constexpr (type == OpShow::Type::HNSW_INDEX) {
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("name"));
-        projection_vars.emplace_back(get_query_ctx().get_or_create_var("predicate"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("property"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("metric"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("dimension"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("max_edges"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("max_candidates"));
+    } else if constexpr (type == OpShow::Type::TEXT_INDEX) {
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("name"));
+        projection_vars.emplace_back(get_query_ctx().get_or_create_var("property"));
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("normalization"));
         projection_vars.emplace_back(get_query_ctx().get_or_create_var("tokenization"));
     } else {
@@ -21,12 +28,12 @@ ShowExecutor<res, type>::ShowExecutor()
     }
 }
 
-template<ResponseType res, OpShow::Type type>
-uint64_t ShowExecutor<res, type>::execute(std::ostream& os)
+template<ResponseType ret, OpShow::Type type>
+uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
 {
-    constexpr char delim = res == ResponseType::CSV ? ',' : '\t';
+    constexpr char delim = ret == ResponseType::CSV ? ',' : '\t';
 
-    uint64_t num_res { 0 };
+    uint64_t res { 0 };
 
     // Header
     auto it = projection_vars.cbegin();
@@ -36,10 +43,10 @@ uint64_t ShowExecutor<res, type>::execute(std::ostream& os)
     }
 
     while (it != projection_vars.cend()) {
-        if constexpr (res == ResponseType::CSV) {
+        if constexpr (ret == ResponseType::CSV) {
             os << ',';
         } else {
-            static_assert(res == ResponseType::TSV);
+            static_assert(ret == ResponseType::TSV);
             os << '\t';
         }
         os << get_query_ctx().get_var_name(*it);
@@ -47,25 +54,45 @@ uint64_t ShowExecutor<res, type>::execute(std::ostream& os)
     }
     os << '\n';
 
-    if constexpr (type == OpShow::Type::TEXT_SEARCH_INDEX) {
+    if constexpr (type == OpShow::Type::HNSW_INDEX) {
+        assert(projection_vars.size() == 6);
+        auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;
+        const auto name2metadata = hnsw_index_manager.get_name2metadata();
+        for (const auto& [name, metadata] : name2metadata) {
+            auto* hnsw_index_ptr = hnsw_index_manager.get_hnsw_index(name);
+            auto& params = hnsw_index_ptr->get_params();
+            os << '"' << name << '"';
+            os << delim;
+            os << '<' << metadata.predicate << '>';
+            os << delim;
+            os << '"' << metadata.metric_type << '"';
+            os << delim;
+            os << params.dimensions;
+            os << delim;
+            os << params.M;
+            os << delim;
+            os << params.ef_construction;
+            os << '\n';
+        }
+    } else if constexpr (type == OpShow::Type::TEXT_INDEX) {
         assert(projection_vars.size() == 4);
-        const auto& name2metadata = rdf_model.catalog.text_search_index_manager.get_name2metadata();
-        num_res = name2metadata.size();
+        const auto name2metadata = rdf_model.catalog.text_index_manager.get_name2metadata();
+        res = name2metadata.size();
         for (const auto& [name, metadata] : name2metadata) {
             os << '"' << name << '"';
             os << delim;
-            os << '"' << metadata.predicate << '"';
+            os << '<' << metadata.predicate << '>';
             os << delim;
-            os << '"' << to_string(metadata.normalization_type) << '"';
+            os << '"' << metadata.normalization_type << '"';
             os << delim;
-            os << '"' << to_string(metadata.tokenization_type) << '"';
+            os << '"' << metadata.tokenization_type << '"';
             os << '\n';
         }
     } else {
         throw std::runtime_error("Unhandled Show::Type");
     }
 
-    return num_res;
+    return res;
 }
 
 template<ResponseType res, OpShow::Type type>
@@ -77,5 +104,8 @@ void ShowExecutor<res, type>::analyze(std::ostream& os, bool /*print_stats*/, in
     os << ")\n";
 }
 
-template class SPARQL::ShowExecutor<ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>;
-template class SPARQL::ShowExecutor<ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>;
+template class SPARQL::ShowExecutor<ResponseType::CSV, OpShow::Type::HNSW_INDEX>;
+template class SPARQL::ShowExecutor<ResponseType::CSV, OpShow::Type::TEXT_INDEX>;
+
+template class SPARQL::ShowExecutor<ResponseType::TSV, OpShow::Type::HNSW_INDEX>;
+template class SPARQL::ShowExecutor<ResponseType::TSV, OpShow::Type::TEXT_INDEX>;

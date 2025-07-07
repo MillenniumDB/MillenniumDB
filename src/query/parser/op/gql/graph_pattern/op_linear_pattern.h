@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
@@ -53,40 +53,21 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        std::set<VarId> res;
-        for (auto& pattern : patterns) {
-            res.merge(pattern->get_safe_vars());
-        }
-        return res;
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<VarType>> get_var_types() const override
-    {
-        std::map<VarId, std::unique_ptr<VarType>> types_map;
+        std::map<VarId, VarType> result;
 
         for (auto& pattern : patterns) {
             for (auto& [var, type] : pattern->get_var_types()) {
-                if (types_map.count(var) && *types_map[var] != *type) {
+                if (result.count(var) && result[var] != type) {
                     throw QuerySemanticException(
                         "Variable \"" + get_query_ctx().get_var_name(var) + "\" has more than one type."
                     );
                 }
-                types_map[var] = std::move(type);
+                result[var] = type;
             }
         }
-        return types_map;
+        return result;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

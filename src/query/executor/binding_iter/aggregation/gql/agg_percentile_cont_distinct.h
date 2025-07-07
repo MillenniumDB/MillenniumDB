@@ -1,27 +1,36 @@
 #pragma once
 
-#include "query/exceptions.h"
+#include <algorithm>
+
 #include "graph_models/gql/conversions.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
-#include <algorithm>
+#include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace GQL {
 class AggPercentileContDistinct : public Agg {
 public:
-using Agg::Agg;
+    using Agg::Agg;
 
-    AggPercentileContDistinct(VarId var_id, std::unique_ptr<BindingExpr> expr, std::unique_ptr<BindingExpr> percentile) :
-        Agg (var_id, std::move(expr)),
-        percentile (std::move(percentile)),
-        hash_table(1) { }
+    AggPercentileContDistinct(
+        VarId var_id,
+        std::unique_ptr<BindingExpr> expr,
+        std::unique_ptr<BindingExpr> percentile
+    ) :
+        Agg(var_id, std::move(expr)),
+        percentile(std::move(percentile)),
+        hash_table(1)
+    { }
 
-    void begin() override {
+    void begin() override
+    {
         hash_table.reset();
         values.clear();
     }
 
-    void process() override {
+    void process() override
+    {
         auto oid = expr->eval(*binding);
         if (oid.is_valid()) {
             oid_vec[0] = oid;
@@ -32,7 +41,8 @@ using Agg::Agg;
     }
 
     // indicates the end of a group
-    ObjectId get() override {
+    ObjectId get() override
+    {
         if (values.empty()) {
             return ObjectId::get_null();
         }
@@ -59,7 +69,8 @@ using Agg::Agg;
         return Conversions::pack_double(result);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print_to_ostream(std::ostream& os) const override
+    {
         os << "PERCENTILE_CONT(DISTINCT ";
         BindingExprPrinter printer(os);
         percentile->accept_visitor(printer);
@@ -77,6 +88,6 @@ private:
     DistinctBindingHash hash_table;
 
     // Vector to pass oid to the hash table
-    std::vector<ObjectId> oid_vec{1};
+    std::vector<ObjectId> oid_vec { 1 };
 };
 } // namespace GQL

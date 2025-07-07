@@ -1,7 +1,6 @@
 #pragma once
 
-#include "query/query_context.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/mql/expr.h"
 
 namespace MQL {
 class ExprVar : public Expr {

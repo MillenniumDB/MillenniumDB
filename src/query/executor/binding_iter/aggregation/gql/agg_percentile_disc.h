@@ -1,10 +1,11 @@
 #pragma once
 
-#include "query/exceptions.h"
+#include <algorithm>
+
 #include "graph_models/gql/conversions.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
-#include <algorithm>
 
 namespace GQL {
 //Returns the discrete percentile value from the ordered dataset.
@@ -16,17 +17,24 @@ namespace GQL {
 //ISO IEC 39075-2024 subchapter 20.9
 class AggPercentileDisc : public Agg {
 public:
-using Agg::Agg;
+    using Agg::Agg;
 
-    AggPercentileDisc(VarId var_id, std::unique_ptr<BindingExpr> expr, std::unique_ptr<BindingExpr> percentile) :
-        Agg (var_id, std::move(expr)),
-        percentile (std::move(percentile)) { }
+    AggPercentileDisc(
+        VarId var_id,
+        std::unique_ptr<BindingExpr> expr,
+        std::unique_ptr<BindingExpr> percentile
+    ) :
+        Agg(var_id, std::move(expr)),
+        percentile(std::move(percentile))
+    { }
 
-    void begin() override {
+    void begin() override
+    {
         values.clear();
     }
 
-    void process() override {
+    void process() override
+    {
         auto oid = expr->eval(*binding);
         if (oid.is_valid()) {
             values.push_back(oid);
@@ -34,7 +42,8 @@ using Agg::Agg;
     }
 
     // indicates the end of a group
-    ObjectId get() override {
+    ObjectId get() override
+    {
         if (values.empty()) {
             return ObjectId::get_null();
         }
@@ -55,13 +64,14 @@ using Agg::Agg;
             return Conversions::to_double(a) < Conversions::to_double(b);
         });
 
-        size_t index = static_cast<size_t>(std::floor(1+ percentile_value * (values.size() - 1)));
+        size_t index = static_cast<size_t>(std::floor(1 + percentile_value * (values.size() - 1)));
         index = std::min(index - 1, values.size() - 1);
 
         return values[index];
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print_to_ostream(std::ostream& os) const override
+    {
         os << "PERCENTILE_DISC(";
         BindingExprPrinter printer(os);
         percentile->accept_visitor(printer);

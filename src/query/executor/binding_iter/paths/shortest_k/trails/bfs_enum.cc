@@ -176,7 +176,15 @@ std::vector<const PathState*>* BFSEnum::expand_neighbors(const SearchState& curr
     return nullptr;
 }
 
-void BFSEnum::accept_visitor(BindingIterVisitor& visitor)
+void BFSEnum::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKTrails::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

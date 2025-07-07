@@ -18,9 +18,9 @@ public:
         auto oid = expr->eval(*binding);
         auto type = Conversions::calculate_optype(oid);
 
-        if (type == Conversions::OPTYPE_INTEGER) {
+        if (type == Conversions::OpType::INTEGER) {
             sum += Conversions::unpack_int(oid);
-        } else if (type == Conversions::OPTYPE_FLOAT) {
+        } else if (type == Conversions::OpType::FLOAT) {
             sum += Conversions::to_float(oid);
         } else {
             // Ignore

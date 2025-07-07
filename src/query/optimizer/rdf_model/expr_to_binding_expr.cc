@@ -8,7 +8,7 @@
 #include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_exprs.h"
-#include "query/parser/expr/sparql_exprs.h"
+#include "query/parser/expr/sparql/exprs.h"
 #include "query/optimizer/rdf_model/binding_iter_constructor.h"
 
 using namespace std;
@@ -124,7 +124,7 @@ void ExprToBindingExpr::visit(ExprUnaryPlus& expr_unary_plus) {
     tmp = make_unique<BindingExprUnaryPlus>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprMultiplication& expr_multiplication) {
+void ExprToBindingExpr::visit(ExprMultiplication& expr_multiplication) {
     at_root = false;
     expr_multiplication.lhs->accept_visitor(*this);
     auto lhs = std::move(tmp);
@@ -135,7 +135,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprMultiplication& expr_multiplication) {
     tmp = make_unique<BindingExprMultiplication>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprDivision& expr_division) {
+void ExprToBindingExpr::visit(ExprDivision& expr_division) {
     at_root = false;
     expr_division.lhs->accept_visitor(*this);
     auto lhs = std::move(tmp);
@@ -146,7 +146,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprDivision& expr_division) {
     tmp = make_unique<BindingExprDivision>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprAddition& expr_addition) {
+void ExprToBindingExpr::visit(ExprAddition& expr_addition) {
     at_root = false;
     expr_addition.lhs->accept_visitor(*this);
     auto lhs = std::move(tmp);
@@ -157,7 +157,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprAddition& expr_addition) {
     tmp = make_unique<BindingExprAddition>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSubtraction& expr_subtraction) {
+void ExprToBindingExpr::visit(ExprSubtraction& expr_subtraction) {
     at_root = false;
     expr_subtraction.lhs->accept_visitor(*this);
     auto lhs = std::move(tmp);
@@ -234,11 +234,10 @@ void ExprToBindingExpr::visit(ExprGreaterOrEqual& expr_greater_or_equal) {
     tmp = make_unique<BindingExprGreaterOrEqual>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprNotExists& expr_not_exists) {
+void ExprToBindingExpr::visit(ExprNotExists& expr_not_exists) {
     at_root = false;
     BindingIterConstructor binding_iter_visitor;
     if (bic != nullptr) {
-        binding_iter_visitor.possible_assigned_vars = bic->possible_assigned_vars;
         binding_iter_visitor.safe_assigned_vars = bic->safe_assigned_vars;
     }
 
@@ -251,12 +250,11 @@ void ExprToBindingExpr::visit(SPARQL::ExprNotExists& expr_not_exists) {
 }
 
 
-void ExprToBindingExpr::visit(SPARQL::ExprExists& expr_exists) {
+void ExprToBindingExpr::visit(ExprExists& expr_exists) {
     at_root = false;
 
     BindingIterConstructor binding_iter_visitor;
     if (bic != nullptr) {
-        binding_iter_visitor.possible_assigned_vars = bic->possible_assigned_vars;
         binding_iter_visitor.safe_assigned_vars = bic->safe_assigned_vars;
     }
 
@@ -313,7 +311,7 @@ void ExprToBindingExpr::visit(ExprAbs& expr_abs) {
     tmp = make_unique<BindingExprAbs>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprBound& expr_bound) {
+void ExprToBindingExpr::visit(ExprBound& expr_bound) {
     at_root = false;
     tmp = make_unique<BindingExprBound>(expr_bound.var);
 }
@@ -381,7 +379,7 @@ void ExprToBindingExpr::visit(ExprFloor& expr_floor) {
     tmp = make_unique<BindingExprFloor>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprCoalesce& expr_coalesce) {
+void ExprToBindingExpr::visit(ExprCoalesce& expr_coalesce) {
     at_root = false;
     std::vector<std::unique_ptr<BindingExpr>> expr_list;
     for (auto& expr : expr_coalesce.exprs) {
@@ -392,7 +390,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprCoalesce& expr_coalesce) {
     tmp = make_unique<BindingExprCoalesce>(std::move(expr_list));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprConcat& expr_concat) {
+void ExprToBindingExpr::visit(ExprConcat& expr_concat) {
     at_root = false;
      std::vector<std::unique_ptr<BindingExpr>> expr_list;
     for (auto& expr : expr_concat.exprs) {
@@ -414,7 +412,7 @@ void ExprToBindingExpr::visit(ExprContains& expr_contains) {
     tmp = make_unique<BindingExprContains>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprDatatype& expr_datatype) {
+void ExprToBindingExpr::visit(ExprDatatype& expr_datatype) {
     at_root = false;
     expr_datatype.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -422,7 +420,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprDatatype& expr_datatype) {
     tmp = make_unique<BindingExprDatatype>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprDay& expr_month) {
+void ExprToBindingExpr::visit(ExprDay& expr_month) {
     at_root = false;
     expr_month.expr->accept_visitor(*this);
 
@@ -431,7 +429,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprDay& expr_month) {
     tmp = make_unique<BindingExprDay>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprEncodeForUri& expr_encode_for_uri) {
+void ExprToBindingExpr::visit(ExprEncodeForUri& expr_encode_for_uri) {
     at_root = false;
     expr_encode_for_uri.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -439,7 +437,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprEncodeForUri& expr_encode_for_uri) {
     tmp = make_unique<BindingExprEncodeForUri>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprHours& expr_hours) {
+void ExprToBindingExpr::visit(ExprHours& expr_hours) {
     at_root = false;
     expr_hours.expr->accept_visitor(*this);
 
@@ -448,7 +446,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprHours& expr_hours) {
     tmp = make_unique<BindingExprHours>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIf& expr_if) {
+void ExprToBindingExpr::visit(ExprIf& expr_if) {
     at_root = false;
     expr_if.expr1->accept_visitor(*this);
     auto expr_cond = std::move(tmp);
@@ -462,7 +460,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIf& expr_if) {
     tmp = make_unique<BindingExprIf>(std::move(expr_cond), std::move(expr_then), std::move(expr_else));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIRI& expr_iri) {
+void ExprToBindingExpr::visit(ExprIRI& expr_iri) {
     at_root = false;
     expr_iri.expr->accept_visitor(*this);
 
@@ -471,7 +469,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIRI& expr_iri) {
     tmp = make_unique<BindingExprIRI>(std::move(expr), expr_iri.base_iri);
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIsBlank& expr_is_blank) {
+void ExprToBindingExpr::visit(ExprIsBlank& expr_is_blank) {
     at_root = false;
     expr_is_blank.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -479,7 +477,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIsBlank& expr_is_blank) {
     tmp = make_unique<BindingExprIsBlank>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIsIRI& expr_is_iri) {
+void ExprToBindingExpr::visit(ExprIsIRI& expr_is_iri) {
     at_root = false;
     expr_is_iri.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -487,7 +485,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIsIRI& expr_is_iri) {
     tmp = make_unique<BindingExprIsIRI>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIsLiteral& expr_is_literal) {
+void ExprToBindingExpr::visit(ExprIsLiteral& expr_is_literal) {
     at_root = false;
     expr_is_literal.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -495,7 +493,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIsLiteral& expr_is_literal) {
     tmp = make_unique<BindingExprIsLiteral>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIsNumeric& expr_is_numeric) {
+void ExprToBindingExpr::visit(ExprIsNumeric& expr_is_numeric) {
     at_root = false;
     expr_is_numeric.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -503,7 +501,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIsNumeric& expr_is_numeric) {
     tmp = make_unique<BindingExprIsNumeric>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprIsURI& expr_is_uri) {
+void ExprToBindingExpr::visit(ExprIsURI& expr_is_uri) {
     at_root = false;
     expr_is_uri.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -512,7 +510,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprIsURI& expr_is_uri) {
     tmp = make_unique<BindingExprIsIRI>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprLang& expr_lang) {
+void ExprToBindingExpr::visit(ExprLang& expr_lang) {
     at_root = false;
     expr_lang.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -531,7 +529,7 @@ void ExprToBindingExpr::visit(ExprLangMatches& expr_lang_matches) {
     tmp = make_unique<BindingExprLangMatches>(std::move(expr1), std::move(expr2));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprLCase& expr_lcase) {
+void ExprToBindingExpr::visit(ExprLCase& expr_lcase) {
     at_root = false;
     expr_lcase.expr->accept_visitor(*this);
 
@@ -540,7 +538,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprLCase& expr_lcase) {
     tmp = make_unique<BindingExprLCase>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprMD5& expr_md5) {
+void ExprToBindingExpr::visit(ExprMD5& expr_md5) {
     at_root = false;
     expr_md5.expr->accept_visitor(*this);
 
@@ -549,7 +547,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprMD5& expr_md5) {
     tmp = make_unique<BindingExprMD5>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprMinutes& expr_minutes) {
+void ExprToBindingExpr::visit(ExprMinutes& expr_minutes) {
     at_root = false;
     expr_minutes.expr->accept_visitor(*this);
 
@@ -558,7 +556,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprMinutes& expr_minutes) {
     tmp = make_unique<BindingExprMinutes>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprMonth& expr_month) {
+void ExprToBindingExpr::visit(ExprMonth& expr_month) {
     at_root = false;
     expr_month.expr->accept_visitor(*this);
 
@@ -567,7 +565,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprMonth& expr_month) {
     tmp = make_unique<BindingExprMonth>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprNow&) {
+void ExprToBindingExpr::visit(ExprNow&) {
     at_root = false;
     // Each invocation of the NOW function returns exactly the same value.
     std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
@@ -579,7 +577,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprNow&) {
     tmp = make_unique<BindingExprTerm>(oid);
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprRand&) {
+void ExprToBindingExpr::visit(ExprRand&) {
     at_root = false;
     // Each invocation of the RAND function returns a new value.
     double dbl = get_query_ctx().get_rand();
@@ -587,7 +585,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprRand&) {
     tmp = make_unique<BindingExprTerm>(Conversions::pack_double(dbl));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSameTerm& expr_same_term) {
+void ExprToBindingExpr::visit(ExprSameTerm& expr_same_term) {
     at_root = false;
     expr_same_term.lhs->accept_visitor(*this);
     auto lhs = std::move(tmp);
@@ -598,7 +596,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSameTerm& expr_same_term) {
     tmp = make_unique<BindingExprSameTerm>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSeconds& expr_seconds) {
+void ExprToBindingExpr::visit(ExprSeconds& expr_seconds) {
     at_root = false;
     expr_seconds.expr->accept_visitor(*this);
 
@@ -607,7 +605,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSeconds& expr_seconds) {
     tmp = make_unique<BindingExprSeconds>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSHA1& expr_sha1) {
+void ExprToBindingExpr::visit(ExprSHA1& expr_sha1) {
     at_root = false;
     expr_sha1.expr->accept_visitor(*this);
 
@@ -616,7 +614,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSHA1& expr_sha1) {
     tmp = make_unique<BindingExprSHA1>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSHA256& expr_sha256) {
+void ExprToBindingExpr::visit(ExprSHA256& expr_sha256) {
     at_root = false;
     expr_sha256.expr->accept_visitor(*this);
 
@@ -625,7 +623,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSHA256& expr_sha256) {
     tmp = make_unique<BindingExprSHA256>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSHA384& expr_sha384) {
+void ExprToBindingExpr::visit(ExprSHA384& expr_sha384) {
     at_root = false;
     expr_sha384.expr->accept_visitor(*this);
 
@@ -634,7 +632,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSHA384& expr_sha384) {
     tmp = make_unique<BindingExprSHA384>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSHA512& expr_sha512) {
+void ExprToBindingExpr::visit(ExprSHA512& expr_sha512) {
     at_root = false;
     expr_sha512.expr->accept_visitor(*this);
 
@@ -717,7 +715,7 @@ void ExprToBindingExpr::visit(ExprStrStarts& expr_str_starts) {
     tmp = make_unique<BindingExprStrStarts>(std::move(lhs), std::move(rhs));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprStrUUID&) {
+void ExprToBindingExpr::visit(ExprStrUUID&) {
     at_root = false;
     // Each invocation of the STRUUID function returns a new value.
     boost::uuids::random_generator uuid_generator;
@@ -727,7 +725,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprStrUUID&) {
     tmp = make_unique<BindingExprTerm>(Conversions::pack_string_simple(uuid_str));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprStr& expr_str) {
+void ExprToBindingExpr::visit(ExprStr& expr_str) {
     at_root = false;
     expr_str.expr->accept_visitor(*this);
     auto expr = std::move(tmp);
@@ -735,7 +733,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprStr& expr_str) {
     tmp = make_unique<BindingExprStr>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprURI& expr_uri) {
+void ExprToBindingExpr::visit(ExprURI& expr_uri) {
     at_root = false;
     expr_uri.expr->accept_visitor(*this);
 
@@ -745,7 +743,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprURI& expr_uri) {
     tmp = make_unique<BindingExprIRI>(std::move(expr), expr_uri.base_iri);
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprSubStr& expr_substr) {
+void ExprToBindingExpr::visit(ExprSubStr& expr_substr) {
     at_root = false;
     expr_substr.expr1->accept_visitor(*this);
     auto expr_str = std::move(tmp);
@@ -762,7 +760,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprSubStr& expr_substr) {
     }
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprTimezone& expr_timezone) {
+void ExprToBindingExpr::visit(ExprTimezone& expr_timezone) {
     at_root = false;
     expr_timezone.expr->accept_visitor(*this);
 
@@ -771,7 +769,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprTimezone& expr_timezone) {
     tmp = make_unique<BindingExprTimezone>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprTZ& expr_tz) {
+void ExprToBindingExpr::visit(ExprTZ& expr_tz) {
     at_root = false;
     expr_tz.expr->accept_visitor(*this);
 
@@ -780,7 +778,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprTZ& expr_tz) {
     tmp = make_unique<BindingExprTZ>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprUCase& expr_ucase) {
+void ExprToBindingExpr::visit(ExprUCase& expr_ucase) {
     at_root = false;
     expr_ucase.expr->accept_visitor(*this);
 
@@ -789,7 +787,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprUCase& expr_ucase) {
     tmp = make_unique<BindingExprUCase>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprUUID&) {
+void ExprToBindingExpr::visit(ExprUUID&) {
     at_root = false;
     // Each invocation of the UUID function returns a new value.
     boost::uuids::random_generator uuid_generator;
@@ -799,7 +797,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprUUID&) {
     tmp = make_unique<BindingExprTerm>(Conversions::pack_iri(uuid_str));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprYear& expr_year) {
+void ExprToBindingExpr::visit(ExprYear& expr_year) {
     at_root = false;
     expr_year.expr->accept_visitor(*this);
 
@@ -808,7 +806,7 @@ void ExprToBindingExpr::visit(SPARQL::ExprYear& expr_year) {
     tmp = make_unique<BindingExprYear>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprCast& expr_cast) {
+void ExprToBindingExpr::visit(ExprCast& expr_cast) {
     at_root = false;
     expr_cast.expr->accept_visitor(*this);
 
@@ -817,7 +815,20 @@ void ExprToBindingExpr::visit(SPARQL::ExprCast& expr_cast) {
     tmp = make_unique<BindingExprCast>(expr_cast.cast_type, std::move(expr));
 }
 
-void ExprToBindingExpr::visit(SPARQL::ExprCosineSimilarity& expr_cosine_similarity)
+void ExprToBindingExpr::visit(ExprCosineDistance& expr_cosine_distance)
+{
+    at_root = false;
+    expr_cosine_distance.lhs->accept_visitor(*this);
+    auto lhs = std::move(tmp);
+
+    expr_cosine_distance.rhs->accept_visitor(*this);
+    auto rhs = std::move(tmp);
+
+    tmp = make_unique<BindingExprCosineDistance>(std::move(lhs), std::move(rhs));
+}
+
+
+void ExprToBindingExpr::visit(ExprCosineSimilarity& expr_cosine_similarity)
 {
     at_root = false;
     expr_cosine_similarity.lhs->accept_visitor(*this);
@@ -989,8 +1000,6 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args) {
     }
 
     bic->aggregations.insert({var, std::move(agg)});
-
-    // auto agg_ptr = static_cast<AggType*>(bic->aggregations.at(var).get());
 
     tmp = make_unique<BindingExprVar>(var);
 

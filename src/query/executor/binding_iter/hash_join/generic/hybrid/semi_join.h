@@ -8,7 +8,6 @@
 #include "query/executor/binding_iter/hash_join/value.h"
 #include "query/executor/binding_iter/hash_join/materialize_iter.h"
 #include "query/executor/binding_iter/hash_join/generic/base.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace HashJoin { namespace Generic { namespace Hybrid {
 class SemiJoin : public BindingIter {
@@ -23,7 +22,7 @@ public:
 
     ~SemiJoin();
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     bool _next() override;
     void _reset() override;

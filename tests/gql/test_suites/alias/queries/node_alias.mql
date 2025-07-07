@@ -1,0 +1,2 @@
+MATCH (x:L1)(y:L2)
+RETURN x, y

@@ -6,11 +6,10 @@
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/parser/op/op.h"
-
-class Expr;
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
+class Expr;
 
 struct JoinVars {
     // Safe variables from parent before evaluating lhs or rhs.
@@ -43,9 +42,6 @@ struct JoinVars {
 
     // variables that are safe after evaluating lhs.
     std::set<VarId> after_left_safe_vars;
-
-    // variables that are possibly assigned after evaluating lhs.
-    std::set<VarId> after_left_possible_assigned_vars;
 };
 
 class BindingIterConstructor : public OpVisitor {
@@ -57,10 +53,6 @@ public:
 
     // For path_manager to print in the correct direction
     std::vector<bool> begin_at_left;
-
-    // All variables that are assigned in the current scope
-    // but the optimizer doesn't know the value (e.g. OPTIONALS)
-    std::set<VarId> possible_assigned_vars;
 
     // The subset of possible assigned vars that always have a non-null value while visiting
     // the current operator and should be fixed in its leaf operators such as IndexScan or Values.
@@ -117,6 +109,7 @@ public:
     void visit(OpDescribe&)          override;
     void visit(OpConstruct&)         override;
     void visit(OpBasicGraphPattern&) override;
+    void visit(OpProcedure&)         override;
     void visit(OpFilter&)            override;
     void visit(OpOptional&)          override;
     void visit(OpUnion&)             override;

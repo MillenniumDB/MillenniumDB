@@ -1,16 +1,14 @@
 #pragma once
 
 #include <array>
-#include <memory>
 #include <queue>
-#include <variant>
+
+#include <boost/unordered/unordered_node_set.hpp>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/search_state_dijkstra.h"
-#include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "query/parser/paths/automaton/rdpq_automaton.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths { namespace Any {
 /*
@@ -21,11 +19,11 @@ To assure optimality for the shortest paths, the results are returned only after
 class DijkstraEnum : public BindingIter {
 private:
     // Attributes determined in the constructor
-    VarId         path_var;
-    Id            start;
-    VarId         end;
+    VarId path_var;
+    Id start;
+    VarId end;
     RDPQAutomaton automaton;
-    ObjectId      cost_key;  // Key for the property value that generates the cost
+    ObjectId cost_key; // Key for the property value that generates the cost
 
     // Attributes determined in begin
     Binding* parent_binding;
@@ -36,7 +34,7 @@ private:
     std::array<uint64_t, 4> max_ids;
 
     // Structs for Dijkstra
-    robin_hood::unordered_node_set<SearchStateDijkstra> visited;
+    boost::unordered_node_set<SearchStateDijkstra, std::hash<SearchStateDijkstra>> visited;
     // open stores a pointer to a SearchStateDijkstra stored in visited
     // that allows to avoid use visited.find to get a pointer and
     // use the state extracted of the open directly.
@@ -60,8 +58,8 @@ private:
     );
 
     // Obtain the next state to add to open or to update (if it exists)
-    robin_hood::unordered_node_set<SearchStateDijkstra>::iterator
-      expand_neighbors(const SearchStateDijkstra* current_state);
+    boost::unordered_node_set<SearchStateDijkstra, std::hash<SearchStateDijkstra>>::iterator
+        expand_neighbors(const SearchStateDijkstra* current_state);
 
     // Set iter attribute that obtains all states that are connected with
     // the current_state through a specific edge transition
@@ -71,23 +69,20 @@ public:
     // Statistics
     uint_fast32_t idx_searches = 0;
 
-    DijkstraEnum(
-        VarId                          path_var,
-        Id                             start,
-        VarId                          end,
-        RDPQAutomaton                  automaton
-    ) :
-        path_var      (path_var),
-        start         (start),
-        end           (end),
-        automaton     (automaton) { }
+    DijkstraEnum(VarId path_var, Id start, VarId end, RDPQAutomaton automaton) :
+        path_var(path_var),
+        start(start),
+        end(end),
+        automaton(automaton)
+    { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     void _reset() override;
     bool _next() override;
 
-    void assign_nulls() override {
+    void assign_nulls() override
+    {
         parent_binding->add(end, ObjectId::get_null());
         parent_binding->add(path_var, ObjectId::get_null());
     }

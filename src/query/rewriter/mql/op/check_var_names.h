@@ -1,50 +1,51 @@
 #pragma once
 
-#include <set>
-#include <vector>
-#include "query/id.h"
+#include <boost/container/flat_set.hpp>
 
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/id.h"
+#include "query/parser/expr/mql/expr_visitor.h"
+#include "query/parser/op/mql/op_visitor.h"
 #include "query/var_id.h"
 
 namespace MQL {
 /**
- * Will throw an exception if undeclared variables are used inside of
- * RETURN, WHERE, ORDER BY, GROUP BY
+ * Will throw an exception if:
+ *   - undeclared variables are used where it is not supposed
+ *   - unjoinable variables are joined
+ *   - return alias vars are used in other place
  */
 class CheckVarNames : public OpVisitor {
 private:
-    std::set<VarId> declared_vars;
-    std::set<VarId> unjoinable_vars;
-    std::set<VarId> return_vars;
+    template<typename T>
+    using SetType = boost::container::flat_set<T>;
+
+    SetType<VarId> declared_vars;   // all declared variables
+    SetType<VarId> unjoinable_vars; // variables that must not be joined (e.g. path variable)
+    SetType<VarId> alias_vars;      // e.g. RETURN 1 + 1 AS ?alias
+
+    void insert_joinable_var(VarId var);
+    void insert_unjoinable_var(VarId var);
 
 public:
-    std::vector<OpProperty> optional_properties;
-    std::set<Id> used_properties;
-
-    CheckVarNames(
-        std::vector<OpProperty>         optional_properties
-    ) :
-        optional_properties     (optional_properties) { }
+    SetType<Id> used_properties;
 
     void visit(OpBasicGraphPattern&) override;
+    void visit(OpCall&) override;
+    void visit(OpLet&) override;
     void visit(OpGroupBy&) override;
     void visit(OpOptional&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
-    void visit(OpSet&) override;
+    void visit(OpSequence&) override;
     void visit(OpWhere&) override;
 
-    void visit(OpCreateTensorStore&) override { }
-    void visit(OpCreateTextSearchIndex&) override { }
-    void visit(OpDeleteTensors&) override { }
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
     void visit(OpDescribe&) override { }
     void visit(OpDisjointTerm&) override { }
     void visit(OpDisjointVar&) override { }
     void visit(OpEdge&) override { }
     void visit(OpInsert&) override { }
-    void visit(OpInsertTensors&) override { }
     void visit(OpLabel&) override { }
     void visit(OpPath&) override { }
     void visit(OpProperty&) override { }
@@ -53,18 +54,22 @@ public:
 
 class CheckVarNamesExpr : public ExprVisitor {
 public:
-    std::set<VarId>& declared_vars;
-    std::set<VarId>& unjoinable_vars;
-    std::set<VarId>& return_vars;
+    template<typename T>
+    using SetType = boost::container::flat_set<T>;
+
+    SetType<VarId>& declared_vars;
+    SetType<VarId>& unjoinable_vars;
+    SetType<VarId>& alias_vars;
 
     CheckVarNamesExpr(
-        std::set<VarId>& declared_vars,
-        std::set<VarId>& unjoinable_vars,
-        std::set<VarId>& return_vars
+        SetType<VarId>& declared_vars,
+        SetType<VarId>& unjoinable_vars,
+        SetType<VarId>& alias_vars
     ) :
-        declared_vars   (declared_vars),
-        unjoinable_vars (unjoinable_vars),
-        return_vars     (return_vars) { }
+        declared_vars(declared_vars),
+        unjoinable_vars(unjoinable_vars),
+        alias_vars(alias_vars)
+    { }
 
     void visit(ExprConstant&) override { }
     void visit(ExprVar&) override;
@@ -87,8 +92,10 @@ public:
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
     void visit(ExprRegex&) override;
-    void visit(ExprTensorDistance&) override;
-    void visit(ExprTextSearch&) override;
+    void visit(ExprCosineSimilarity&) override;
+    void visit(ExprCosineDistance&) override;
+    void visit(ExprManhattanDistance&) override;
+    void visit(ExprEuclideanDistance&) override;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;

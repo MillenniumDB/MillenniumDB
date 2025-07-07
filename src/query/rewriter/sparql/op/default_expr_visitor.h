@@ -1,7 +1,7 @@
 #pragma once
 
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/expr/sparql_exprs.h"
+#include "query/parser/expr/sparql/expr_visitor.h"
+#include "query/parser/expr/sparql/exprs.h"
 
 namespace SPARQL {
 class DefaultExprVisitor : public ExprVisitor {
@@ -377,6 +377,26 @@ public:
 
     virtual void visit(ExprSum& e) override {
         e.expr->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprEuclideanDistance& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprManhattanDistance& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprCosineSimilarity& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
+    }
+
+    virtual void visit(ExprCosineDistance& e) override {
+        e.lhs->accept_visitor(*this);
+        e.rhs->accept_visitor(*this);
     }
 };
 } // namespace SPARQL

@@ -1,0 +1,2 @@
+MATCH ((a:Company)<-|(b)~(c)~) ((d {age:10})|(d {age:30}))
+RETURN *

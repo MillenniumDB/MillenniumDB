@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.exponential_exp, EXP(x.exp_value) AS exponential

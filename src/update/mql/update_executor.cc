@@ -4,17 +4,13 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
-#include "query/parser/op/mql/update/op_create_tensor_store.h"
-#include "query/parser/op/mql/update/op_create_text_search_index.h"
-#include "query/parser/op/mql/update/op_delete_tensors.h"
+#include "query/parser/op/mql/update/op_create_hnsw_index.h"
+#include "query/parser/op/mql/update/op_create_text_index.h"
 #include "query/parser/op/mql/update/op_insert.h"
-#include "query/parser/op/mql/update/op_insert_tensors.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/random_access_table/random_access_table.h"
-#include "storage/index/tensor_store/tensor_store.h"
-#include "storage/index/tensor_store/tensor_store_manager.h"
-#include "storage/index/text_search/text_search_index.h"
-#include "storage/index/text_search/text_search_index_manager.h"
+#include "storage/index/text_search/text_index.h"
+#include "storage/index/text_search/text_index_manager.h"
 
 using namespace MQL;
 
@@ -33,10 +29,17 @@ void UpdateExecutor::execute(Op& op)
 bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
 {
     if (oid.is_tmp()) {
-        // we need to materialize the string
-        auto tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        auto& str = tmp_manager.get_str(tmp_id);
-        auto new_external_id = string_manager.get_or_create(str.data(), str.size());
+        const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        const auto& tmp_str = tmp_manager.get_str(tmp_id);
+
+        const uint64_t gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
+
+        uint64_t new_external_id;
+        if (gen_t == ObjectId::MASK_TENSOR) {
+            new_external_id = tensor_manager.get_or_create_id(tmp_str.data(), tmp_str.size());
+        } else {
+            new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
+        }
 
         oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
     }
@@ -45,13 +48,16 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
 
 void UpdateExecutor::visit(OpInsert& op)
 {
-    // Store all the inserts and deletes that will be necessary for the text search index
-    // There could be inserts because when a existing property is inserted, it will be replaced
-    const auto& predicate2names = quad_model.catalog.text_search_index_manager.get_predicate2names();
-    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
-        text_search_index_name2deletes;
-    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
-        text_search_index_name2inserts;
+    // Store all the inserts and deletes (for replace) that will be necessary for the indexes
+    using Name2InsertsMap = boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>;
+
+    const auto& text_index_predicate2names = quad_model.catalog.text_index_manager.get_predicate2names();
+    Name2InsertsMap text_index_name2inserts;
+    Name2InsertsMap text_index_name2deletes;
+
+    const auto& hnsw_index_predicate2names = quad_model.catalog.hnsw_index_manager.get_predicate2names();
+    Name2InsertsMap hnsw_index_name2inserts;
+    Name2InsertsMap hnsw_index_name2deletes;
 
     auto& bgp = *op.bgp;
 
@@ -64,7 +70,7 @@ void UpdateExecutor::visit(OpInsert& op)
         }
         bool is_new_node = quad_model.nodes->insert({ node.id });
         if (is_new_node) {
-            ++quad_model.catalog.identifiable_nodes_count;
+            ++quad_model.catalog.nodes_count;
             ++graph_update_data.new_nodes;
         }
     }
@@ -157,7 +163,7 @@ void UpdateExecutor::visit(OpInsert& op)
 
         bool is_new_node_type = quad_model.nodes->insert({ type.id });
         if (is_new_node_type) {
-            quad_model.catalog.identifiable_nodes_count++;
+            quad_model.catalog.nodes_count++;
         }
 
         assigned_edges.insert({ op_edge.edge.get_var(), edge });
@@ -211,13 +217,25 @@ void UpdateExecutor::visit(OpInsert& op)
 
             ++graph_update_data.overwritten_properties;
 
-            if (!predicate2names.empty()) {
+            // Overwrite the old value in the indexes
+            if (!text_index_predicate2names.empty()) {
                 const auto predicate_str = MQL::Conversions::unpack_string(key);
-                auto it = predicate2names.find(predicate_str);
-                if (it != predicate2names.end()) {
+                const auto it = text_index_predicate2names.find(predicate_str);
+                if (it != text_index_predicate2names.end()) {
                     for (const auto& name : it->second) {
-                        text_search_index_name2deletes[name].emplace_back(node, (*existing_record)[2]);
-                        text_search_index_name2inserts[name].emplace_back(node, value);
+                        text_index_name2deletes[name].emplace_back(node, (*existing_record)[2]);
+                        text_index_name2inserts[name].emplace_back(node, value);
+                    }
+                }
+            }
+
+            if (!hnsw_index_predicate2names.empty()) {
+                const auto predicate_str = MQL::Conversions::unpack_string(key);
+                const auto it = hnsw_index_predicate2names.find(predicate_str);
+                if (it != hnsw_index_predicate2names.end()) {
+                    for (const auto& name : it->second) {
+                        hnsw_index_name2deletes[name].emplace_back(node, (*existing_record)[2]);
+                        hnsw_index_name2inserts[name].emplace_back(node, value);
                     }
                 }
             }
@@ -229,175 +247,154 @@ void UpdateExecutor::visit(OpInsert& op)
 
             ++graph_update_data.new_properties;
 
-            if (!predicate2names.empty()) {
+            // Insert into the indexes
+            if (!text_index_predicate2names.empty()) {
                 const auto predicate_str = MQL::Conversions::unpack_string(key);
-                auto it = predicate2names.find(predicate_str);
-                if (it != predicate2names.end()) {
+                const auto it = text_index_predicate2names.find(predicate_str);
+                if (it != text_index_predicate2names.end()) {
                     for (const auto& name : it->second) {
-                        text_search_index_name2inserts[name].emplace_back(node, value);
+                        text_index_name2inserts[name].emplace_back(node, value);
+                    }
+                }
+            }
+
+            if (!hnsw_index_predicate2names.empty()) {
+                const auto predicate_str = MQL::Conversions::unpack_string(key);
+                const auto it = hnsw_index_predicate2names.find(predicate_str);
+                if (it != hnsw_index_predicate2names.end()) {
+                    for (const auto& name : it->second) {
+                        hnsw_index_name2inserts[name].emplace_back(node, value);
                     }
                 }
             }
         }
     }
 
-    // Execute text search index updates, starting with deletes
-    TextSearch::TextSearchIndex* text_search_index;
-
-    for (const auto& [name, deletes] : text_search_index_name2deletes) {
-        [[maybe_unused]] const auto found = quad_model.catalog.text_search_index_manager
-                                                .get_text_search_index(name, &text_search_index);
-        assert(found && "Text search index not found");
+    // Execute index updates, starting with deletes
+    // DELETES
+    for (const auto& [name, deletes] : text_index_name2deletes) {
+        auto* text_index_ptr = quad_model.catalog.text_index_manager.get_text_index(name);
+        assert(text_index_ptr != nullptr && "Text index not found");
 
         uint_fast32_t removed_elements { 0 };
         uint_fast32_t removed_tokens { 0 };
         for (const auto& [node, value] : deletes) {
-            const auto current_deleted_tokens = text_search_index->remove_single(node, value);
+            const auto current_deleted_tokens = text_index_ptr->remove_single(node, value);
             if (current_deleted_tokens > 0) {
                 ++removed_elements;
                 removed_tokens += current_deleted_tokens;
             }
         }
 
-        TextSearchIndexUpdateData tsi_update;
-        tsi_update.text_search_index_name = name;
-        tsi_update.removed_elements = removed_elements;
-        tsi_update.removed_tokens = removed_tokens;
-        insert_text_search_index_update_data(std::move(tsi_update));
+        TextIndexUpdateData text_index_update_data;
+        text_index_update_data.index_name = name;
+        text_index_update_data.removed_elements = removed_elements;
+        text_index_update_data.removed_tokens = removed_tokens;
+        insert_text_index_update_data(std::move(text_index_update_data));
     }
 
-    for (const auto& [name, inserts] : text_search_index_name2inserts) {
-        [[maybe_unused]] const auto found = quad_model.catalog.text_search_index_manager
-                                                .get_text_search_index(name, &text_search_index);
-        assert(found && "Text search index not found");
+    for (const auto& [name, deletes] : hnsw_index_name2deletes) {
+        auto* hnsw_index_ptr = quad_model.catalog.hnsw_index_manager.get_hnsw_index(name);
+        assert(hnsw_index_ptr != nullptr && "Text index not found");
+
+        uint_fast32_t removed_elements { 0 };
+        for (const auto& [node, value] : deletes) {
+            if (hnsw_index_ptr->remove_single(node, value)) {
+                ++removed_elements;
+            }
+        }
+
+        HNSWIndexUpdateData hnsw_index_update_data;
+        hnsw_index_update_data.index_name = name;
+        hnsw_index_update_data.removed_elements = removed_elements;
+        insert_hnsw_index_update_data(std::move(hnsw_index_update_data));
+    }
+
+    // INSERTS
+    for (const auto& [name, inserts] : text_index_name2inserts) {
+        auto* text_index_ptr = quad_model.catalog.text_index_manager.get_text_index(name
+        );
+        assert(text_index_ptr != nullptr && "Text index not found");
 
         uint_fast32_t inserted_elements { 0 };
         uint_fast32_t inserted_tokens { 0 };
         for (const auto& [node, value] : inserts) {
-            const auto current_inserted_tokens = text_search_index->index_single(node, value);
+            const auto current_inserted_tokens = text_index_ptr->index_single(node, value);
             if (current_inserted_tokens > 0) {
                 ++inserted_elements;
                 inserted_tokens += current_inserted_tokens;
             }
         }
 
-        TextSearchIndexUpdateData tsi_update;
-        tsi_update.text_search_index_name = name;
-        tsi_update.inserted_elements = inserted_elements;
-        tsi_update.inserted_tokens = inserted_tokens;
-        insert_text_search_index_update_data(std::move(tsi_update));
+        TextIndexUpdateData text_index_update_data;
+        text_index_update_data.index_name = name;
+        text_index_update_data.inserted_elements = inserted_elements;
+        text_index_update_data.inserted_tokens = inserted_tokens;
+        insert_text_index_update_data(std::move(text_index_update_data));
     }
-}
 
-void UpdateExecutor::visit(OpInsertTensors& op)
-{
-    assert(!op.inserts.empty());
-    assert(
-        std::all_of(
-            op.inserts.begin(),
-            op.inserts.end(),
-            [&](const auto& insert) -> bool {
-                return std::get<1>(insert).size() == std::get<1>(op.inserts[0]).size();
+    for (const auto& [name, inserts] : hnsw_index_name2inserts) {
+        auto* hnsw_index_ptr = quad_model.catalog.hnsw_index_manager.get_hnsw_index(name
+        );
+        assert(hnsw_index_ptr != nullptr && "Text index not found");
+
+        uint_fast32_t inserted_elements { 0 };
+        uint_fast32_t inserted_tokens { 0 };
+        for (const auto& [node, value] : inserts) {
+            if (hnsw_index_ptr->index_single<true>(node, value)) {
+                ++inserted_elements;
             }
-        )
-        && "Tensors must not come with different sizes at this point!"
-    );
-
-    auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
-    TensorStore* tensor_store;
-    [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(
-        op.tensor_store_name,
-        &tensor_store
-    );
-    assert(found && "TensorStore not found");
-
-    TensorStoreUpdateData ts_update {};
-    ts_update.tensor_store_name = op.tensor_store_name;
-
-    for (const auto& insert : op.inserts) {
-        // Insert node if it does not exist
-        auto node = std::get<0>(insert);
-        auto original_node = node;
-        if (transform_if_tmp(node)) {
-            created_ids.insert({ original_node, node });
-        }
-        bool is_new_node = quad_model.nodes->insert({ node.id });
-        if (is_new_node) {
-            quad_model.catalog.identifiable_nodes_count++;
         }
 
-        // Insert into tensor store
-        const bool new_key = tensor_store->insert(node, std::get<1>(insert).data());
-        if (new_key) {
-            ++ts_update.inserted_tensors;
-        } else {
-            ++ts_update.overwritten_tensors;
-        }
+        TextIndexUpdateData text_index_update_data;
+        text_index_update_data.index_name = name;
+        text_index_update_data.inserted_elements = inserted_elements;
+        text_index_update_data.inserted_tokens = inserted_tokens;
+        insert_text_index_update_data(std::move(text_index_update_data));
     }
-
-    insert_tensor_store_update_data(std::move(ts_update));
 }
 
-void UpdateExecutor::visit(OpDeleteTensors& op)
+void UpdateExecutor::visit(OpCreateHNSWIndex& op)
 {
-    assert(!op.deletes.empty());
-
-    auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
-    TensorStore* tensor_store;
-    [[maybe_unused]] const bool found = tensor_store_manager.get_tensor_store(
-        op.tensor_store_name,
-        &tensor_store
-    );
-    assert(found && "TensorStore not found");
-
-    TensorStoreUpdateData ts_update {};
-    ts_update.tensor_store_name = op.tensor_store_name;
-
-    for (const auto& object_id : op.deletes) {
-        const bool removed = tensor_store->remove(object_id);
-        if (removed) {
-            ++ts_update.removed_tensors;
-        }
-    }
-
-    insert_tensor_store_update_data(std::move(ts_update));
-}
-
-void UpdateExecutor::visit(OpCreateTensorStore& op)
-{
-    assert(op.tensors_dim > 0);
-
     try {
-        auto& tensor_store_manager = quad_model.catalog.tensor_store_manager;
-        tensor_store_manager.create_tensor_store(op.tensor_store_name, op.tensors_dim);
+        auto& hnsw_index_manager = quad_model.catalog.hnsw_index_manager;
+        const auto& [inserted_elements] = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::QUAD>(
+            op.index_name,
+            op.property,
+            op.dimension,
+            op.max_edges,
+            op.max_candidates,
+            op.metric_type
+        );
 
-        TensorStoreUpdateData ts_update {};
-        ts_update.tensor_store_name = op.tensor_store_name;
-        ts_update.created = true;
-        insert_tensor_store_update_data(std::move(ts_update));
+        HNSWIndexUpdateData hnsw_index_update_data;
+        hnsw_index_update_data.index_name = op.index_name;
+        hnsw_index_update_data.created = true;
+        hnsw_index_update_data.inserted_elements = inserted_elements;
+        insert_hnsw_index_update_data(std::move(hnsw_index_update_data));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
     }
 }
 
-void UpdateExecutor::visit(OpCreateTextSearchIndex& op)
+void UpdateExecutor::visit(OpCreateTextIndex& op)
 {
     try {
-        auto& text_search_index_manager = quad_model.catalog.text_search_index_manager;
-        const auto& [inserted_elements, inserted_tokens] = text_search_index_manager.create_text_search_index(
-            op.text_search_index_name,
+        auto& text_index_manager = quad_model.catalog.text_index_manager;
+        const auto& [inserted_elements, inserted_tokens] = text_index_manager.create_text_search_index(
+            op.index_name,
             op.property,
             op.normalize_type,
             op.tokenize_type
         );
 
-        TextSearchIndexUpdateData tsi_update;
-        tsi_update.text_search_index_name = op.text_search_index_name;
-        tsi_update.created = true;
-        tsi_update.inserted_elements = inserted_elements;
-        tsi_update.inserted_tokens = inserted_tokens;
-        insert_text_search_index_update_data(std::move(tsi_update));
+        TextIndexUpdateData text_index_update_data;
+        text_index_update_data.index_name = op.index_name;
+        text_index_update_data.created = true;
+        text_index_update_data.inserted_elements = inserted_elements;
+        text_index_update_data.inserted_tokens = inserted_tokens;
+        insert_text_index_update_data(std::move(text_index_update_data));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
@@ -414,18 +411,18 @@ void UpdateExecutor::print_stats(std::ostream& os)
         has_changes = true;
     }
 
-    if (!name2text_search_index_update_data.empty()) {
-        os << "TextSearchIndex updates:\n";
-        for (const auto& [_, tsi_update] : name2text_search_index_update_data) {
-            os << "  " << tsi_update << '\n';
+    if (!name2text_index_update_data.empty()) {
+        os << "Text Index updates:\n";
+        for (const auto& [_, text_index_update] : name2text_index_update_data) {
+            os << "  " << text_index_update << '\n';
         }
         has_changes = true;
     }
 
-    if (!name2tensor_store_update_data.empty()) {
-        os << "TensorStore updates:\n";
-        for (const auto& [_, ts_update] : name2tensor_store_update_data) {
-            os << "  " << ts_update << '\n';
+    if (!name2hnsw_index_update_data.empty()) {
+        os << "HNSW Index updates:\n";
+        for (const auto& [_, hnsw_index_update] : name2hnsw_index_update_data) {
+            os << "  " << hnsw_index_update << '\n';
         }
         has_changes = true;
     }
@@ -435,11 +432,11 @@ void UpdateExecutor::print_stats(std::ostream& os)
     }
 }
 
-void UpdateExecutor::insert_text_search_index_update_data(TextSearchIndexUpdateData&& data)
+void UpdateExecutor::insert_text_index_update_data(TextIndexUpdateData&& data)
 {
-    auto it = name2text_search_index_update_data.find(data.text_search_index_name);
-    if (it == name2text_search_index_update_data.end()) {
-        name2text_search_index_update_data.emplace(data.text_search_index_name, std::move(data));
+    auto it = name2text_index_update_data.find(data.index_name);
+    if (it == name2text_index_update_data.end()) {
+        name2text_index_update_data.emplace(data.index_name, std::move(data));
     } else {
         it->second.inserted_elements += data.inserted_elements;
         it->second.inserted_tokens += data.inserted_tokens;
@@ -448,14 +445,13 @@ void UpdateExecutor::insert_text_search_index_update_data(TextSearchIndexUpdateD
     }
 }
 
-void UpdateExecutor::insert_tensor_store_update_data(TensorStoreUpdateData&& data)
+void UpdateExecutor::insert_hnsw_index_update_data(HNSWIndexUpdateData&& data)
 {
-    auto it = name2tensor_store_update_data.find(data.tensor_store_name);
-    if (it == name2tensor_store_update_data.end()) {
-        name2tensor_store_update_data.emplace(data.tensor_store_name, std::move(data));
+    auto it = name2hnsw_index_update_data.find(data.index_name);
+    if (it == name2hnsw_index_update_data.end()) {
+        name2hnsw_index_update_data.emplace(data.index_name, std::move(data));
     } else {
-        it->second.inserted_tensors += data.inserted_tensors;
-        it->second.overwritten_tensors += data.overwritten_tensors;
-        it->second.removed_tensors += data.removed_tensors;
+        it->second.inserted_elements += data.inserted_elements;
+        it->second.removed_elements += data.removed_elements;
     }
 }

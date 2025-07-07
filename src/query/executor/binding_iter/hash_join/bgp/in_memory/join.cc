@@ -13,17 +13,17 @@ template<std::size_t N>
 Join<N>::Join(
     unique_ptr<BindingIter> _build_rel,
     unique_ptr<BindingIter> _probe_rel,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _build_vars,
-    vector<VarId>&&         _probe_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _build_vars,
+    vector<VarId>&& _probe_vars
 ) :
-    probe_rel         (std::move(_probe_rel)),
-    build_rel         (std::move(_build_rel)),
-    join_vars         (std::move(_join_vars)),
-    build_vars        (std::move(_build_vars)),
-    probe_vars        (std::move(_probe_vars)),
-    probe_key         (Key<N>(pk_start)),
-    last_probe_key    (Key<N>(last_pk_start))
+    probe_rel(std::move(_probe_rel)),
+    build_rel(std::move(_build_rel)),
+    join_vars(std::move(_join_vars)),
+    build_vars(std::move(_build_vars)),
+    probe_vars(std::move(_probe_vars)),
+    probe_key(Key<N>(pk_start)),
+    last_probe_key(Key<N>(last_pk_start))
 {
     // Size of data row:  build attr  + 1 (one space to reserve next pointer)
     data_chunk = new uint64_t[(build_vars.size() + 1) * PPage::SIZE];
@@ -38,25 +38,24 @@ Join<N>::Join(
     key_chunks_dir.push_back(key_chunk);
     // Set chunk index in 0
     key_chunk_index = 0;
-
 }
 
-
 template<std::size_t N>
-Join<N>::~Join() {
+Join<N>::~Join()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
 
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
 }
 
-
 template<std::size_t N>
-void Join<N>::_begin(Binding& _parent_binding) {
+void Join<N>::_begin(Binding& _parent_binding)
+{
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -72,9 +71,9 @@ void Join<N>::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
 template<std::size_t N>
-bool Join<N>::_next() {
+bool Join<N>::_next()
+{
     while (true) {
         // If enumerating_rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -85,8 +84,7 @@ bool Join<N>::_next() {
             // Update enumerating row to next value
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[build_vars.size()];
             return true;
-        }
-        else {
+        } else {
             // If enumerating rows is nullptr ask for the next probe relation row
             // if has an entry in the hash table
             if (probe_rel->next()) {
@@ -113,17 +111,16 @@ bool Join<N>::_next() {
                         last_probe_key.start[i] = probe_key.start[i];
                     }
                 }
-            }
-            else {
+            } else {
                 return false;
             }
         }
     }
 }
 
-
 template<std::size_t N>
-void Join<N>::_reset() {
+void Join<N>::_reset()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -164,22 +161,16 @@ void Join<N>::_reset() {
     build_hash_table();
 }
 
-
 template<std::size_t N>
-void Join<N>::assign_nulls() {
+void Join<N>::assign_nulls()
+{
     build_rel->assign_nulls();
     probe_rel->assign_nulls();
 }
 
-
 template<std::size_t N>
-void Join<N>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-template<std::size_t N>
-void Join<N>::build_hash_table() {
+void Join<N>::build_hash_table()
+{
     auto data_tuple_size = build_vars.size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -209,7 +200,7 @@ void Join<N>::build_hash_table() {
         }
         // Store data
         for (size_t i = 0; i < build_vars.size(); i++) {
-            data_chunk[start_data_index + i] =  (*parent_binding)[build_vars[i]].id;
+            data_chunk[start_data_index + i] = (*parent_binding)[build_vars[i]].id;
         }
         // Set last data value as a null pointer
         auto casted_chunk = reinterpret_cast<uint64_t**>(data_chunk);
@@ -244,10 +235,7 @@ void Join<N>::build_hash_table() {
             }
 
             // Try to create a new entry in the hash table
-            auto iterator = hash_table.emplace(key,
-                                               Value(data_pointer,
-                                                     data_pointer)
-                                    );
+            auto iterator = hash_table.emplace(key, Value(data_pointer, data_pointer));
             // If the key already has been inserted, iterator.second = false
             if (!(iterator.second)) {
                 // If the key already exists, get the value of the hash table
@@ -262,7 +250,6 @@ void Join<N>::build_hash_table() {
         }
     }
 }
-
 
 template class HashJoin::BGP::InMemory::Join<2>;
 template class HashJoin::BGP::InMemory::Join<3>;

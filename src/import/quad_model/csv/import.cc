@@ -1,15 +1,23 @@
 #include "import.h"
+
+#include <cctype>
+
+#include "graph_models/inliner.h"
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
-#include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "storage/index/random_access_table/edge_table_mem_import.h"
-#include <cctype>
 
 using namespace Import::QuadModel::CSV;
 
-OnDiskImport::OnDiskImport(const std::string& db_folder, uint64_t buffer_size) :
-    buffer_size(buffer_size),
+OnDiskImport::OnDiskImport(
+    const std::string& db_folder,
+    uint64_t strings_buffer_size,
+    uint64_t tensors_buffer_size,
+    char list_separator
+) :
+    strings_buffer_size(strings_buffer_size),
+    tensors_buffer_size(tensors_buffer_size),
     db_folder(db_folder),
     catalog(QuadCatalog("catalog.dat")),
     declared_nodes(db_folder + "/tmp_declared_nodes"),
@@ -23,7 +31,7 @@ OnDiskImport::OnDiskImport(const std::string& db_folder, uint64_t buffer_size) :
 {
     state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     create_automata();
-    label_splitter = ';'; // TODO: Make this modifiable in the constructor
+    label_splitter = list_separator;
 }
 
 OnDiskImport::~OnDiskImport()
@@ -32,68 +40,156 @@ OnDiskImport::~OnDiskImport()
 }
 
 void OnDiskImport::start_import(
-    std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes,
-    std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges
+    std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes,
+    std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges
 )
 {
     auto start = std::chrono::system_clock::now();
+    auto import_start = start;
 
-    external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
-    if (external_strings == nullptr)
-        FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
+    pending_declared_nodes = std::make_unique<DiskVector<1>>(
+        db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX
+    );
+    pending_labels = std::make_unique<DiskVector<2>>(db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX);
+    pending_properties = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX
+    );
+    pending_edges = std::make_unique<DiskVector<4>>(db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX);
 
-    Import::ExternalString::strings = external_strings;
-    external_strings_capacity = buffer_size;
-    external_strings_end = 0;
-    assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
+    // Initialize external helper
+    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+
+    // We save the headers first, so that the keys are never temporal
+    save_headers(in_nodes);
+    save_headers(in_edges);
 
     // First, import nodes to the database. After that, import relationships
     parse_node_files(in_nodes);
     parse_edge_files(in_edges);
 
-    // Write external strings file
-    std::fstream strings_file;
-    strings_file.open(db_folder + "/strings.dat", std::ios::out | std::ios::binary);
-    strings_file.write(external_strings, external_strings_end);
-    uint64_t last_str_pos = strings_file.tellp();
+    print_duration("Parsing", start);
 
-    external_strings_set.clear();
+    // initial flush
+    external_helper->flush_to_disk();
 
-    {
-        char* string_buffer = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
-        );
+    { // process pending files
+        pending_declared_nodes->finish_appends();
+        pending_labels->finish_appends();
+        pending_properties->finish_appends();
+        pending_edges->finish_appends();
 
-        StringsHashBulkOnDiskImport string_hash(
-            db_folder + "/str_hash",
-            external_strings,
-            external_strings_capacity
-        );
-        strings_file.close();
-        strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(0, strings_file.beg);
-        uint64_t current_pos = 0;
+        int i = 0;
+        while (true) {
+            const auto total_pending = pending_declared_nodes->get_total_tuples()
+                                     + pending_labels->get_total_tuples()
+                                     + pending_properties->get_total_tuples()
+                                     + pending_edges->get_total_tuples();
+            if (total_pending == 0) {
+                break;
+            }
+            std::cout << "total pending: " << total_pending << std::endl;
 
-        // Read all strings one by one and add them to the StringHash
-        while (current_pos < last_str_pos) {
-            auto remaining_in_block = StringManager::BLOCK_SIZE - (current_pos % StringManager::BLOCK_SIZE);
+            auto old_pending_declared_nodes = std::move(pending_declared_nodes);
+            auto old_pending_labels = std::move(pending_labels);
+            auto old_pending_properties = std::move(pending_properties);
+            auto old_pending_edges = std::move(pending_edges);
 
-            if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-                current_pos += remaining_in_block;
-                strings_file.read(string_buffer, remaining_in_block);
+            pending_declared_nodes = std::make_unique<DiskVector<1>>(
+                db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_labels = std::make_unique<DiskVector<2>>(
+                db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_properties = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_edges = std::make_unique<DiskVector<4>>(
+                db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX + std::to_string(i)
+            );
+            ++i;
+
+            // advance pending variables for current iteration
+            external_helper->advance_pending();
+            external_helper->clear_sets();
+
+            old_pending_declared_nodes->begin_tuple_iter();
+            while (old_pending_declared_nodes->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_declared_nodes->next_tuple();
+
+                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+
+                try_save_declared_node(id1);
             }
 
-            auto str_len = read_str(strings_file, string_buffer);
-            string_hash.create_id(string_buffer, current_pos, str_len);
-            current_pos = strings_file.tellg();
+            old_pending_labels->begin_tuple_iter();
+            while (old_pending_labels->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_labels->next_tuple();
+
+                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+                auto label_id = external_helper->resolve_id(pending_tuple[1]);
+
+                try_save_label(id1, label_id);
+            }
+
+            old_pending_properties->begin_tuple_iter();
+            while (old_pending_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_properties->next_tuple();
+
+                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+                auto key_id = pending_tuple[1];
+                auto value_id = external_helper->resolve_id(pending_tuple[2]);
+
+                try_save_property(id1, key_id, value_id);
+            }
+
+            old_pending_edges->begin_tuple_iter();
+            while (old_pending_edges->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_edges->next_tuple();
+
+                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+                auto id2 = external_helper->resolve_id(pending_tuple[1]);
+                auto type_id = external_helper->resolve_id(pending_tuple[2]);
+                auto edge_id = pending_tuple[3]; // always inlined
+
+                try_save_quad(id1, id2, type_id, edge_id);
+            }
+
+            // write out new data
+            external_helper->flush_to_disk();
+            // close and delete the old pending files
+            external_helper->clean_up_old();
+
+            // close and delete old pending file
+            pending_declared_nodes->finish_appends();
+            pending_labels->finish_appends();
+            pending_properties->finish_appends();
+            pending_edges->finish_appends();
+
+            old_pending_declared_nodes->skip_indexing(); // will close and remove file
+            old_pending_labels->skip_indexing(); // will close and remove file
+            old_pending_properties->skip_indexing(); // will close and remove file
+            old_pending_edges->skip_indexing(); // will close and remove file
         }
 
-        strings_file.close();
-        MDB_ALIGNED_FREE(string_buffer);
+        // process pending finished, clean up the last pending file
+        pending_declared_nodes->skip_indexing();
+        pending_labels->skip_indexing();
+        pending_properties->skip_indexing();
+        pending_edges->skip_indexing();
     }
 
-    char* const buffer = external_strings;
-    buffer_size = external_strings_capacity;
+    // delete all unnecessary files and free-up memory
+    external_helper->clean_up();
+
+    print_duration("Process strings and tensors", start);
+
+    external_helper->build_disk_hash();
+
+    print_duration("Write strings and tensors hashes", start);
+
+    // we reuse the buffer for external strings in the B+trees creation
+    char* const buffer = external_helper->buffer;
+    const auto buffer_size = external_helper->buffer_size;
 
     declared_nodes.finish_appends();
     labels.finish_appends();
@@ -104,8 +200,8 @@ void OnDiskImport::start_import(
     equal_to_type.finish_appends();
     equal_from_to_type.finish_appends();
 
-    {
-        boost::unordered_flat_set<uint64_t> nodes_set;
+    { // Append undeclared nodes (being on an edge)
+        std::unordered_set<uint64_t> nodes_set;
 
         declared_nodes.begin_tuple_iter();
         while (declared_nodes.has_next_tuple()) {
@@ -129,34 +225,33 @@ void OnDiskImport::start_import(
                 declared_nodes.push_back({ tuple[2] });
             }
         }
-
+        // declared_nodes.finish_appends() its called twice, no problem with that
         declared_nodes.finish_appends();
-        catalog.identifiable_nodes_count = nodes_set.size();
+        catalog.nodes_count = nodes_set.size();
     }
+    print_duration("Write table", start);
 
     declared_nodes.start_indexing(buffer, buffer_size, { 0 });
     labels.start_indexing(buffer, buffer_size, { 0, 1 });
     properties.start_indexing(buffer, buffer_size, { 0, 1, 2 });
     edges.start_indexing(buffer, buffer_size, { 0, 1, 2, 3 });
+    equal_from_to_type.start_indexing(buffer, buffer_size, { 0, 1 });
     equal_from_to.start_indexing(buffer, buffer_size, { 0, 1, 2 });
     equal_from_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
-    equal_to_type.start_indexing(buffer, buffer_size, { 0, 1 });
-    equal_from_to_type.start_indexing(buffer, buffer_size, { 0, 1 });
+    equal_to_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
 
-    // Nodes
-    {
+    { // Nodes B+Tree
         size_t COL_NODE = 0;
         NoStat<1> no_stat;
 
         declared_nodes.create_bpt(db_folder + "/nodes", { COL_NODE }, no_stat);
     }
 
-    // Labels
-    {
+    { // Labels B+Tree
         size_t COL_NODE = 0, COL_LABEL = 1;
 
         NoStat<2> no_stat;
-        LabelStat label_stat;
+        DictCountStat<2> label_stat;
 
         labels.create_bpt(db_folder + "/node_label", { COL_NODE, COL_LABEL }, no_stat);
 
@@ -164,11 +259,10 @@ void OnDiskImport::start_import(
         catalog.label_count = label_stat.all;
         label_stat.end();
 
-        catalog.label2total_count = std::move(label_stat.map_label_count);
+        catalog.label2total_count = std::move(label_stat.dict);
     }
 
-    // Properties
-    {
+    { // Properties B+Tree
         size_t COL_OBJ = 0, COL_KEY = 1, COL_VALUE = 2;
 
         NoStat<3> no_stat;
@@ -183,24 +277,31 @@ void OnDiskImport::start_import(
         catalog.key2total_count = std::move(prop_stat.map_key_count);
     }
 
-    // Edges
-    {
+    { // Quad B+Trees
         size_t COL_FROM = 0, COL_TO = 1, COL_TYPE = 2, COL_EDGE = 3;
 
         NoStat<4> no_stat;
         AllStat<4> all_stat;
+        DictCountStat<4> dict_count_stat;
 
         edges
             .create_bpt(db_folder + "/from_to_type_edge", { COL_FROM, COL_TO, COL_TYPE, COL_EDGE }, all_stat);
         catalog.edge_count = all_stat.all;
 
         edges.create_bpt(db_folder + "/to_type_from_edge", { COL_TO, COL_TYPE, COL_FROM, COL_EDGE }, no_stat);
-        edges.create_bpt(db_folder + "/type_from_to_edge", { COL_TYPE, COL_FROM, COL_TO, COL_EDGE }, no_stat);
+
+        edges.create_bpt(
+            db_folder + "/type_from_to_edge",
+            { COL_TYPE, COL_FROM, COL_TO, COL_EDGE },
+            dict_count_stat
+        );
+
         edges.create_bpt(db_folder + "/type_to_from_edge", { COL_TYPE, COL_TO, COL_FROM, COL_EDGE }, no_stat);
+
+        catalog.type2total_count = std::move(dict_count_stat.dict);
     }
 
-    // From=To=Type edge
-    {
+    { // FROM=TO=TYPE EDGE
         size_t COL_FROM_TO_TYPE = 0, COL_EDGE = 1;
 
         DictCountStat<2> stat;
@@ -209,11 +310,10 @@ void OnDiskImport::start_import(
         catalog.equal_from_to_type_count = stat.all;
 
         stat.end();
-        catalog.type2equal_from_to_count = std::move(stat.dict);
+        catalog.type2equal_from_to_type_count = std::move(stat.dict);
     }
 
-    // From=To type edge
-    {
+    { // FROM=TO TYPE EDGE
         size_t COL_FROM_TO = 0, COL_TYPE = 1, COL_EDGE = 2;
 
         NoStat<3> no_stat;
@@ -221,21 +321,20 @@ void OnDiskImport::start_import(
 
         DictCountStat<3> stat;
         equal_from_to
-            .create_bpt(db_folder + "/equal_from_to_inverted", { COL_FROM_TO, COL_TYPE, COL_EDGE }, stat);
+            .create_bpt(db_folder + "/equal_from_to_inverted", { COL_TYPE, COL_FROM_TO, COL_EDGE }, stat);
         stat.end();
 
         catalog.equal_from_to_count = stat.all;
         catalog.type2equal_from_to_count = std::move(stat.dict);
     }
 
-    // From=Type to edge
-    {
+    { // FROM=TYPE TO EDGE
         size_t COL_FROM_TYPE = 0, COL_TO = 1, COL_EDGE = 2;
 
         DictCountStat<3> stat;
         equal_from_type.create_bpt(db_folder + "/equal_from_type", { COL_FROM_TYPE, COL_TO, COL_EDGE }, stat);
         stat.end();
-        catalog.equal_from_to_type_count = stat.all;
+        catalog.equal_from_type_count = stat.all;
         catalog.type2equal_from_type_count = std::move(stat.dict);
 
         NoStat<3> no_stat;
@@ -246,33 +345,34 @@ void OnDiskImport::start_import(
         );
     }
 
-    //To=Type from edge
-    {
-        size_t COL_FROM_TYPE = 0, COL_TO = 1, COL_EDGE = 2;
+    { // TO=TYPE FROM EDGE
+        size_t COL_TO_TYPE = 0, COL_FROM = 1, COL_EDGE = 2;
 
         DictCountStat<3> stat;
-        equal_from_type.create_bpt(db_folder + "/equal_to_type", { COL_FROM_TYPE, COL_TO, COL_EDGE }, stat);
+        equal_to_type.create_bpt(db_folder + "/equal_to_type", { COL_TO_TYPE, COL_FROM, COL_EDGE }, stat);
         stat.end();
-        catalog.equal_from_to_type_count = stat.all;
-        catalog.type2equal_from_type_count = std::move(stat.dict);
+        catalog.equal_to_type_count = stat.all;
+        catalog.type2equal_to_type_count = std::move(stat.dict);
 
         NoStat<3> no_stat;
-        equal_from_type
-            .create_bpt(db_folder + "/equal_to_type_inverted", { COL_TO, COL_FROM_TYPE, COL_EDGE }, no_stat);
+        equal_to_type
+            .create_bpt(db_folder + "/equal_to_type_inverted", { COL_FROM, COL_TO_TYPE, COL_EDGE }, no_stat);
     }
-
+    // calling finish_indexing() closes and removes the file.
     declared_nodes.finish_indexing();
-    labels.finish_indexing();
     properties.finish_indexing();
+    labels.finish_indexing();
     edges.finish_indexing();
+    equal_from_to_type.finish_indexing();
     equal_from_to.finish_indexing();
     equal_from_type.finish_indexing();
     equal_to_type.finish_indexing();
-    equal_from_to_type.finish_indexing();
-    MDB_ALIGNED_FREE(external_strings);
+
+    print_duration("Write B+tree indexes", start);
 
     catalog.print(std::cout);
-    print_duration("Total import time", start);
+
+    print_duration("Total Import", import_start);
 }
 
 void OnDiskImport::print_error()
@@ -313,62 +413,38 @@ std::vector<std::string> OnDiskImport::split(const std::string& input, const std
     return tokens;
 }
 
-uint64_t OnDiskImport::get_or_create_external_string_id(const std::string& str)
+void OnDiskImport::save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& files)
 {
-    while (external_strings_end
-        + str.size()
-        + StringManager::MIN_PAGE_REMAINING_BYTES
-        + StringManager::MAX_LEN_BYTES
-        + 1 >= external_strings_capacity)
-    {
-        // Duplicate buffer
-        char* new_external_strings = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(external_strings_capacity * 2)
-        );
-        std::memcpy(new_external_strings, external_strings, external_strings_capacity);
-        external_strings_capacity *= 2;
+    for (auto& in_file : files) {
+        lexer.begin(*in_file);
 
-        MDB_ALIGNED_FREE(external_strings);
-        external_strings = new_external_strings;
-        ExternalString::strings = external_strings;
-    }
+        while (auto token = lexer.get_token()) {
+            if (token == Token::ENDLINE || token == Token::END_OF_FILE) {
+                break;
+            }
+            if (token != Token::STRING && token != Token::UNQUOTED_STRING) {
+                continue;
+            }
 
-    // Encode length
-    auto bytes_for_len = StringManager::write_encoded_strlen(
-        &external_strings[external_strings_end],
-        str.size());
+            std::vector<std::string> split_col = split(lexer.str, ":");
 
-    // copy string
-    std::memcpy(
-        &external_strings[external_strings_end] + bytes_for_len,
-        str.data(),
-        str.size());
-
-    ExternalString s(external_strings_end);
-    auto found = external_strings_set.find(s);
-    if (found == external_strings_set.end()) {
-        external_strings_set.insert(s);
-        external_strings_end += str.size() + bytes_for_len;
-
-        size_t remaining_in_block = StringManager::BLOCK_SIZE
-                                    - (external_strings_end % StringManager::BLOCK_SIZE);
-        if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-            external_strings_end += remaining_in_block;
+            for (auto str : split_col) {
+                if (str.size() >= 8) {
+                    external_helper->get_or_create_external_string_id(str.c_str(), str.size());
+                }
+            }
         }
-
-        return s.offset;
-    } else {
-        return found->offset;
+        in_file->rewind();
     }
 }
 
-void OnDiskImport::parse_node_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes)
+void OnDiskImport::parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes)
 {
     std::cout << "Importing nodes\n";
     for (auto& in_file : in_nodes) {
         current_state = State::START_HEADER_NODES;
         lexer.begin(*in_file);
-        std::cout << "Reading file " << in_file->filenames[in_file->filename_index] << std::endl;
+        std::cout << "Reading file " << in_file->filename << std::endl;
 
         while (auto token = lexer.get_token()) {
             current_token = token;
@@ -376,20 +452,20 @@ void OnDiskImport::parse_node_files(std::vector<std::unique_ptr<MDBIstreamFiles>
         }
 
         if (current_token != Token::ENDLINE && current_token != Token::END_OF_FILE) {
-            save_node_to_disk();
+            process_node_line();
         }
 
         reset_automata();
     }
 }
 
-void OnDiskImport::parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges)
+void OnDiskImport::parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges)
 {
     std::cout << "Importing edges\n";
     for (auto& in_file : in_edges) {
         current_state = State::START_HEADER_EDGES;
         lexer.begin(*in_file);
-        std::cout << "Reading file " << in_file->filenames[in_file->filename_index] << std::endl;
+        std::cout << "Reading file " << in_file->filename << std::endl;
 
         while (auto token = lexer.get_token()) {
             current_token = token;
@@ -397,7 +473,7 @@ void OnDiskImport::parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFiles>
         }
 
         if (current_token != Token::ENDLINE && current_token != Token::END_OF_FILE) {
-            save_edge_to_disk();
+            save_edge_line();
         }
 
         reset_automata();
@@ -498,14 +574,15 @@ void OnDiskImport::save_header_column()
             new_column_type = CSVType::UNDEFINED;
     }
     uint64_t new_column_key_id;
-    if (split_new_col[0].size() < 8)
-        new_column_key_id = Inliner::inline_string(split_new_col[0].c_str())
-                          | ObjectId::MASK_STRING_SIMPLE_INLINED;
-    else
-        new_column_key_id = get_or_create_external_string_id(split_new_col[0])
-                          | ObjectId::MASK_STRING_SIMPLE_EXTERN;
+    std::string& col = split_new_col[0];
+    if (col.size() < 8)
+        new_column_key_id = Inliner::inline_string(col.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+    else {
+        new_column_key_id = external_helper->get_or_create_external_string_id(col.data(), col.size())
+                          | ObjectId::MASK_STRING_SIMPLE;
+    }
 
-    columns.push_back(CSVColumn(new_column_type, split_new_col[0], new_column_key_id));
+    columns.emplace_back(new_column_type, col, new_column_key_id);
 }
 
 void OnDiskImport::verify_anon()
@@ -592,72 +669,70 @@ void OnDiskImport::save_empty_body_column_to_buffer()
     current_column++;
 }
 
-void OnDiskImport::save_node_to_disk()
+void OnDiskImport::process_node_line()
 {
+    CSVColumn& id_col = columns[column_with_id];
     uint64_t node_id;
     if (anonymous_nodes) {
-        node_id = current_id | ObjectId::MASK_ANON_INLINED;
-        declared_nodes.push_back({ node_id });
-    } else if (!anonymous_nodes && columns[column_with_id].value_size == 0) {
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+    } else if (id_col.value_size == 0) {
         print_error_msg("No ID was given for the node. It will be saved as an anonymous node");
-        node_id = current_id | ObjectId::MASK_ANON_INLINED;
-        declared_nodes.push_back({ node_id });
-    } else {
-        if (global_ids) {
-            // If a node with the same ID exists, do not save.
-            if (csvid_global.contains(columns[column_with_id].value_str)) {
-                std::string error_msg = "Duplicated ID \"";
-                error_msg += columns[column_with_id].value_str;
-                error_msg += "\". Node will not be saved.";
-                print_error_msg(error_msg);
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+    } else if (global_ids) {
+        // If a node with the same ID exists, do not save.
+        if (csvid_global.contains(id_col.value_str)) {
+            std::string error_msg = "Duplicated ID \"";
+            error_msg += id_col.value_str;
+            error_msg += "\". Node will not be saved.";
+            print_error_msg(error_msg);
 
-                go_to_next_line();
+            go_to_next_line();
 
-                return;
-            }
-            // Using global IDs
-            bool is_number = true;
-            for (int char_idx = 0; char_idx < (int) columns[column_with_id].value_size; char_idx++) {
-                if (!std::isdigit(columns[column_with_id].value_str[char_idx]))
-                    is_number = false;
-            }
-
-            if (is_number) {
-                node_id = try_parse_int(columns[column_with_id].value_str);
-            } else {
-                normalize_string_literal(columns[column_with_id]);
-                if (columns[column_with_id].value_size < 8)
-                    node_id = Inliner::inline_string(columns[column_with_id].value_str)
-                            | ObjectId::MASK_NAMED_NODE_INLINED;
-                else
-                    node_id = get_or_create_external_string_id(columns[column_with_id].value_str)
-                            | ObjectId::MASK_NAMED_NODE_EXTERN;
-            }
-
-            declared_nodes.push_back({ node_id });
-            csvid_global.insert({ columns[column_with_id].value_str, node_id });
-        } else {
-            // Using IDs inside the scope of a group
-            node_id = current_id | ObjectId::MASK_ANON_INLINED;
-            if (csvid_groups[current_group_idx].contains(columns[column_with_id].value_str)) {
-                std::string error_msg = "Duplicated ID \"";
-                error_msg += columns[column_with_id].value_str;
-                error_msg += "\" inside group \"";
-                error_msg += current_group;
-                error_msg += "\". Node will not be saved.";
-
-                go_to_next_line();
-
-                print_error_msg(error_msg);
-                return;
-            }
-            declared_nodes.push_back({ node_id });
-            csvid_groups[current_group_idx].insert({ columns[column_with_id].value_str, node_id });
+            return;
         }
+        // Using global IDs
+        bool is_number = true;
+        for (int char_idx = 0; char_idx < (int) id_col.value_size; char_idx++) {
+            if (!std::isdigit(id_col.value_str[char_idx])) {
+                is_number = false;
+                break;
+            }
+        }
+
+        if (is_number) {
+            node_id = try_parse_int(id_col.value_str);
+        } else {
+            normalize_string_literal(id_col);
+            if (id_col.value_size < 8)
+                node_id = Inliner::inline_string(id_col.value_str) | ObjectId::MASK_NAMED_NODE_INLINED;
+            else
+                node_id = external_helper->get_or_create_external_string_id(
+                              id_col.value_str,
+                              id_col.value_size
+                          )
+                        | ObjectId::MASK_NAMED_NODE;
+        }
+        csvid_global.insert({ id_col.value_str, node_id });
+    } else {
+        // Using IDs inside the scope of a group
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+        if (csvid_groups[current_group_idx].contains(id_col.value_str)) {
+            std::string error_msg = "Duplicated ID \"";
+            error_msg += id_col.value_str;
+            error_msg += "\" inside group \"";
+            error_msg += current_group;
+            error_msg += "\". Node will not be saved.";
+
+            go_to_next_line();
+
+            print_error_msg(error_msg);
+            return;
+        }
+        csvid_groups[current_group_idx].insert({ id_col.value_str, node_id });
     }
+    try_save_declared_node(node_id);
 
     for (auto& col : columns) {
-        // TODO: Handle empty properties (do not add)
         if (col.value_size == 0)
             continue;
         switch (col.type) {
@@ -672,10 +747,11 @@ void OnDiskImport::save_node_to_disk()
                 if (col.value_size < 8) {
                     label_id = Inliner::inline_string(label.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
                 } else {
-                    label_id = get_or_create_external_string_id(label) | ObjectId::MASK_STRING_SIMPLE_EXTERN;
+                    label_id = external_helper->get_or_create_external_string_id(label.data(), label.size())
+                             | ObjectId::MASK_STRING_SIMPLE;
                 }
 
-                labels.push_back({ node_id, label_id });
+                try_save_label(node_id, label_id);
             }
             break;
         }
@@ -686,20 +762,20 @@ void OnDiskImport::save_node_to_disk()
             if (col.value_size < 8)
                 value_id = Inliner::inline_string(col.value_str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
             else
-                value_id = get_or_create_external_string_id(col.value_str)
-                         | ObjectId::MASK_STRING_SIMPLE_EXTERN;
+                value_id = external_helper->get_or_create_external_string_id(col.value_str, col.value_size)
+                         | ObjectId::MASK_STRING_SIMPLE;
 
-            properties.push_back({ node_id, col.key_id, value_id });
+            try_save_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            properties.push_back({ node_id, col.key_id, value_id });
+            try_save_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            properties.push_back({ node_id, col.key_id, value_id });
+            try_save_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATE: {
@@ -710,7 +786,7 @@ void OnDiskImport::save_node_to_disk()
                 print_error_msg(error);
                 break;
             }
-            properties.push_back({ node_id, col.key_id, value_id });
+            try_save_property(node_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATETIME: {
@@ -721,7 +797,7 @@ void OnDiskImport::save_node_to_disk()
                 print_error_msg(error);
                 break;
             }
-            properties.push_back({ node_id, col.key_id, value_id });
+            try_save_property(node_id, col.key_id, value_id);
             break;
         }
 
@@ -731,11 +807,10 @@ void OnDiskImport::save_node_to_disk()
         }
     }
 
-    current_id++;
     go_to_next_line();
 }
 
-void OnDiskImport::save_edge_to_disk()
+void OnDiskImport::save_edge_line()
 {
     if (columns[column_with_type].value_size == 0) {
         print_error_msg("The edge does not have a type and it is required. The edge will not be saved");
@@ -747,8 +822,11 @@ void OnDiskImport::save_edge_to_disk()
         type_id = Inliner::inline_string(columns[column_with_type].value_str)
                 | ObjectId::MASK_NAMED_NODE_INLINED;
     else
-        type_id = get_or_create_external_string_id(columns[column_with_type].value_str)
-                | ObjectId::MASK_NAMED_NODE_EXTERN;
+        type_id = external_helper->get_or_create_external_string_id(
+                      columns[column_with_type].value_str,
+                      columns[column_with_type].value_size
+                  )
+                | ObjectId::MASK_NAMED_NODE;
 
     if (columns[column_with_id_from].value_size == 0 || columns[column_with_id_to].value_size == 0) {
         print_error_msg("The edge has missing IDs and they are required. The edge will not be saved");
@@ -756,7 +834,7 @@ void OnDiskImport::save_edge_to_disk()
         return;
     }
 
-    uint64_t id_node_from, id_node_to;
+    uint64_t from_id, to_id;
     if (current_group_idx_from == -1) {
         // Using global scope of ids.
         if (!csvid_global.contains(columns[column_with_id_from].value_str)) {
@@ -769,7 +847,7 @@ void OnDiskImport::save_edge_to_disk()
 
             return;
         }
-        id_node_from = csvid_global[columns[column_with_id_from].value_str];
+        from_id = csvid_global[columns[column_with_id_from].value_str];
     } else {
         // Using a group of ids.
         if (!csvid_groups[current_group_idx_from].contains(columns[column_with_id_from].value_str)) {
@@ -784,7 +862,7 @@ void OnDiskImport::save_edge_to_disk()
 
             return;
         }
-        id_node_from = csvid_groups[current_group_idx_from][columns[column_with_id_from].value_str];
+        from_id = csvid_groups[current_group_idx_from][columns[column_with_id_from].value_str];
     }
 
     if (current_group_idx_to == -1) {
@@ -799,7 +877,7 @@ void OnDiskImport::save_edge_to_disk()
 
             return;
         }
-        id_node_to = csvid_global[columns[column_with_id_to].value_str];
+        to_id = csvid_global[columns[column_with_id_to].value_str];
     } else {
         // Using a group of ids.
         if (!csvid_groups[current_group_idx_to].contains(columns[column_with_id_to].value_str)) {
@@ -814,42 +892,22 @@ void OnDiskImport::save_edge_to_disk()
 
             return;
         }
-        id_node_to = csvid_groups[current_group_idx_to][columns[column_with_id_to].value_str];
+        to_id = csvid_groups[current_group_idx_to][columns[column_with_id_to].value_str];
     }
 
     uint64_t edge_id = edge_count++ | ObjectId::MASK_EDGE;
 
-    edges.push_back({ id_node_from, id_node_to, type_id, edge_id });
-    ++catalog.type2total_count[type_id];
-
-    if (id_node_from == id_node_to) {
-        equal_from_to.push_back({ id_node_from, type_id, edge_id });
-
-        if (id_node_from == type_id) {
-            equal_from_to_type.push_back({ id_node_from, edge_id });
-        }
-    }
-    if (id_node_from == type_id) {
-        equal_from_type.push_back({ id_node_from, id_node_to, edge_id });
-    }
-    if (id_node_to == type_id) {
-        equal_to_type.push_back({ id_node_from, id_node_to, edge_id });
-    }
+    try_save_quad(from_id, to_id, type_id, edge_id);
 
     for (auto& col : columns) {
         if (col.value_size == 0)
             continue;
         switch (col.type) {
         // START_ID, END_ID and TYPE should do nothing
-        case CSVType::START_ID: {
+        case CSVType::START_ID:
+        case CSVType::END_ID:
+        case CSVType::TYPE:
             break;
-        }
-        case CSVType::END_ID: {
-            break;
-        }
-        case CSVType::TYPE: {
-            break;
-        }
         case CSVType::LABEL: {
             print_error_msg("Labels are not supported in QuadModel. Skipping");
             break;
@@ -861,20 +919,20 @@ void OnDiskImport::save_edge_to_disk()
             if (col.value_size < 8)
                 value_id = Inliner::inline_string(col.value_str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
             else
-                value_id = get_or_create_external_string_id(col.value_str)
-                         | ObjectId::MASK_STRING_SIMPLE_EXTERN;
+                value_id = external_helper->get_or_create_external_string_id(col.value_str, col.value_size)
+                         | ObjectId::MASK_STRING_SIMPLE;
 
-            properties.push_back({ edge_id, col.key_id, value_id });
+            try_save_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::INT: {
             uint64_t value_id = try_parse_int(col.value_str);
-            properties.push_back({ edge_id, col.key_id, value_id });
+            try_save_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DECIMAL: {
             uint64_t value_id = try_parse_float(col.value_str);
-            properties.push_back({ edge_id, col.key_id, value_id });
+            try_save_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATE: {
@@ -885,7 +943,7 @@ void OnDiskImport::save_edge_to_disk()
                 print_error_msg(error);
                 break;
             }
-            properties.push_back({ edge_id, col.key_id, value_id });
+            try_save_property(edge_id, col.key_id, value_id);
             break;
         }
         case CSVType::DATETIME: {
@@ -896,7 +954,7 @@ void OnDiskImport::save_edge_to_disk()
                 print_error_msg(error);
                 break;
             }
-            properties.push_back({ edge_id, col.key_id, value_id });
+            try_save_property(edge_id, col.key_id, value_id);
             break;
         }
 
@@ -932,4 +990,62 @@ void OnDiskImport::normalize_string_literal(CSVColumn& col)
     }
 
     UnicodeEscape::normalize_string(read_ptr, write_ptr, end, col.value_size);
+}
+
+void OnDiskImport::try_save_declared_node(uint64_t node_id)
+{
+    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_declared_nodes->push_back({ node_id });
+    } else {
+        declared_nodes.push_back({ node_id });
+    }
+}
+
+void OnDiskImport::try_save_label(uint64_t node_id, uint64_t label_id)
+{
+    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (label_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_labels->push_back({ node_id, label_id });
+    } else {
+        labels.push_back({ node_id, label_id });
+    }
+}
+
+void OnDiskImport::try_save_property(uint64_t id1, uint64_t key_id, uint64_t value_id)
+{
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_properties->push_back({ id1, key_id, value_id });
+    } else {
+        properties.push_back({ id1, key_id, value_id });
+    }
+}
+
+void OnDiskImport::try_save_quad(uint64_t from_id, uint64_t to_id, uint64_t type_id, uint64_t edge_id)
+{
+    if ((from_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (to_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (type_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_edges->push_back({ from_id, to_id, type_id, edge_id });
+        return;
+    }
+
+    edges.push_back({ from_id, to_id, type_id, edge_id });
+
+    if (from_id == to_id) {
+        equal_from_to.push_back({ from_id, type_id, edge_id });
+
+        if (from_id == type_id) {
+            equal_from_to_type.push_back({ from_id, edge_id });
+        }
+    }
+    if (from_id == type_id) {
+        equal_from_type.push_back({ from_id, to_id, edge_id });
+    }
+    if (to_id == type_id) {
+        equal_to_type.push_back({ from_id, to_id, edge_id });
+    }
 }

@@ -1,13 +1,11 @@
 #include "property_type_plan.h"
 
-#include <cassert>
-
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/scan_ranges/assigned_var.h"
+#include "query/executor/binding_iter/scan_ranges/range_type.h"
 #include "query/executor/binding_iter/scan_ranges/term.h"
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
-#include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
 
@@ -83,7 +81,7 @@ double PropertyTypePlan::estimate_cost() const
 double PropertyTypePlan::estimate_output_size() const
 {
     const auto total_objects = static_cast<double>(
-        quad_model.catalog.identifiable_nodes_count + quad_model.catalog.edge_count
+        quad_model.catalog.nodes_count + quad_model.catalog.edge_count
     );
 
     const auto total_properties = static_cast<double>(quad_model.catalog.properties_count);

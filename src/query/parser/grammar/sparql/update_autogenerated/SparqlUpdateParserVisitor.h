@@ -29,19 +29,15 @@ public:
 
     virtual std::any visitUpdate(SparqlUpdateParser::UpdateContext *context) = 0;
 
+    virtual std::any visitCreateIndexQuery(SparqlUpdateParser::CreateIndexQueryContext *context) = 0;
+
+    virtual std::any visitCreateIndexOptions(SparqlUpdateParser::CreateIndexOptionsContext *context) = 0;
+
+    virtual std::any visitCreateIndexOption(SparqlUpdateParser::CreateIndexOptionContext *context) = 0;
+
     virtual std::any visitInsertData(SparqlUpdateParser::InsertDataContext *context) = 0;
 
     virtual std::any visitDeleteData(SparqlUpdateParser::DeleteDataContext *context) = 0;
-
-    virtual std::any visitCreateTextIndex(SparqlUpdateParser::CreateTextIndexContext *context) = 0;
-
-    virtual std::any visitNormalizeTextIndex(SparqlUpdateParser::NormalizeTextIndexContext *context) = 0;
-
-    virtual std::any visitNormalizeType(SparqlUpdateParser::NormalizeTypeContext *context) = 0;
-
-    virtual std::any visitTokenizeTextIndex(SparqlUpdateParser::TokenizeTextIndexContext *context) = 0;
-
-    virtual std::any visitTokenizeType(SparqlUpdateParser::TokenizeTypeContext *context) = 0;
 
     virtual std::any visitQuadData(SparqlUpdateParser::QuadDataContext *context) = 0;
 

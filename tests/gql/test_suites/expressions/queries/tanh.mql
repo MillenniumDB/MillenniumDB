@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.tanh_value, TANH(x.in_value) AS tangenteh

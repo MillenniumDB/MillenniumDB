@@ -2,14 +2,14 @@
 
 #include <cassert>
 
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllSimple;
 
-template <bool CYCLIC>
-void BFSCheck<CYCLIC>::_begin(Binding& _parent_binding) {
+template<bool CYCLIC>
+void BFSCheck<CYCLIC>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -23,9 +23,9 @@ void BFSCheck<CYCLIC>::_begin(Binding& _parent_binding) {
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-template <bool CYCLIC>
-bool BFSCheck<CYCLIC>::_next() {
+template<bool CYCLIC>
+bool BFSCheck<CYCLIC>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -42,12 +42,12 @@ bool BFSCheck<CYCLIC>::_next() {
             if (automaton.is_final_state[automaton.start_state]) {
                 auto path_id = path_manager.set_path(current_state.path_state, path_var);
                 parent_binding->add(path_var, path_id);
-                if (!CYCLIC) {  // Acyclic can only have this trivial solution when start node = end node
+                if (!CYCLIC) { // Acyclic can only have this trivial solution when start node = end node
                     queue<SearchState> empty;
                     open.swap(empty);
                 }
                 return true;
-            } else if (!CYCLIC) {  // Acyclic can't have any more solutions when start node = end node
+            } else if (!CYCLIC) { // Acyclic can't have any more solutions when start node = end node
                 queue<SearchState> empty;
                 open.swap(empty);
                 return false;
@@ -73,9 +73,9 @@ bool BFSCheck<CYCLIC>::_next() {
     return false;
 }
 
-
-template <bool CYCLIC>
-const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_state) {
+template<bool CYCLIC>
+const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -97,13 +97,18 @@ const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_s
             if (!is_simple_path(current_state.path_state, ObjectId(iter->get_reached_node()))) {
                 // If path can be cyclic, return solution only when the new node is the starting node and is also final
                 if (CYCLIC && automaton.is_final_state[transition.to]) {
-                    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+                    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()]
+                                                              : start.get_OID();
                     // This case only happens if the starting node and end node are the same
-                    if (start_object_id == end_object_id && ObjectId(iter->get_reached_node()) == start_object_id) {
-                        return visited.add(ObjectId(iter->get_reached_node()),
-                                           transition.type_id,
-                                           transition.inverse,
-                                           current_state.path_state);
+                    if (start_object_id == end_object_id
+                        && ObjectId(iter->get_reached_node()) == start_object_id)
+                    {
+                        return visited.add(
+                            ObjectId(iter->get_reached_node()),
+                            transition.type_id,
+                            transition.inverse,
+                            current_state.path_state
+                        );
                     }
                 }
                 continue;
@@ -113,19 +118,23 @@ const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_s
             if (ObjectId(iter->get_reached_node()) == end_object_id) {
                 // Return only if it's a solution, never expand
                 if (automaton.is_final_state[transition.to]) {
-                    return visited.add(ObjectId(iter->get_reached_node()),
-                                       transition.type_id,
-                                       transition.inverse,
-                                       current_state.path_state);
+                    return visited.add(
+                        ObjectId(iter->get_reached_node()),
+                        transition.type_id,
+                        transition.inverse,
+                        current_state.path_state
+                    );
                 }
                 continue;
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
             // Add new state to open
             open.emplace(new_visited_ptr, transition.to);
         }
@@ -139,9 +148,9 @@ const PathState* BFSCheck<CYCLIC>::expand_neighbors(const SearchState& current_s
     return nullptr;
 }
 
-
-template <bool CYCLIC>
-void BFSCheck<CYCLIC>::_reset() {
+template<bool CYCLIC>
+void BFSCheck<CYCLIC>::_reset()
+{
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -158,12 +167,19 @@ void BFSCheck<CYCLIC>::_reset() {
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-template <bool CYCLIC>
-void BFSCheck<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+template<bool CYCLIC>
+void BFSCheck<CYCLIC>::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllSimple::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }
-
 
 template class Paths::AllSimple::BFSCheck<true>;
 template class Paths::AllSimple::BFSCheck<false>;

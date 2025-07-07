@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <variant>
 #include <ostream>
 
 #include "query/executor/binding.h"

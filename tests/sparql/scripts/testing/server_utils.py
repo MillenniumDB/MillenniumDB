@@ -10,7 +10,7 @@ from http.client import RemoteDisconnected
 from io import TextIOWrapper
 from pathlib import Path
 from subprocess import Popen
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from urllib.error import URLError
 
 from SPARQLWrapper import SPARQLWrapper
@@ -37,7 +37,7 @@ from .types import (
 )
 
 
-def create_db(create_db_executable: Path, rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
+def create_db(executable: Path, rdf_file: Optional[Path], prefixes_file: Optional[Path] = None):
     if rdf_file is None:
         rdf_file = EMPTY_DB_DATA
 
@@ -51,7 +51,7 @@ def create_db(create_db_executable: Path, rdf_file: Optional[Path], prefixes_fil
     if db_dir.exists():
         log(Level.WARNING, f'Database "{db_dir.relative_to(TESTING_DBS_DIR)}" already exists')
     else:
-        cmd: List[str] = [str(create_db_executable), str(rdf_file), str(db_dir)]
+        cmd: list[str] = [str(executable), "import", str(rdf_file), str(db_dir)]
         if prefixes_file is not None:
             if not prefixes_file.is_file():
                 log(Level.ERROR, f"File not found {prefixes_file}")
@@ -70,7 +70,7 @@ def create_db(create_db_executable: Path, rdf_file: Optional[Path], prefixes_fil
 __log_file: TextIOWrapper | None = None
 
 
-def start_server(server_executable: Path, db_dir: Path):
+def start_server(executable: Path, db_dir: Path):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     address = (HOST, PORT)
 
@@ -91,7 +91,7 @@ def start_server(server_executable: Path, db_dir: Path):
 
     __log_file = log_path.open(mode="a+", encoding="utf-8")
 
-    cmd: List[str] = [str(server_executable), str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
+    cmd: list[str] = [str(executable), "server", str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
     server_process = subprocess.Popen(cmd, stdout=__log_file, stderr=__log_file)
 
     # Wait for server initialization

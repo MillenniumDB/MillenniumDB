@@ -10,18 +10,18 @@ using namespace HashJoin::Generic::InMemory;
 LeftJoin::LeftJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    lhs               (std::move(_lhs)),
-    rhs               (std::move(_rhs)),
-    join_vars         (std::move(_join_vars)),
-    lhs_vars          (std::move(_lhs_vars)),
-    rhs_vars          (std::move(_rhs_vars)),
-    N                 (join_vars.size()),
-    pk_start          (new uint64_t[N]),
-    probe_key         (Key(pk_start, N))
+    lhs(std::move(_lhs)),
+    rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     data_chunk = new uint64_t[(rhs_vars.size() + 1) * PPage::SIZE];
     data_chunks_dir.push_back(data_chunk);
@@ -32,20 +32,20 @@ LeftJoin::LeftJoin(
     key_chunk_index = 0;
 }
 
-
-LeftJoin::~LeftJoin() {
+LeftJoin::~LeftJoin()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
+    delete[] (pk_start);
 }
 
-
-void LeftJoin::_begin(Binding& _parent_binding) {
+void LeftJoin::_begin(Binding& _parent_binding)
+{
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -59,8 +59,8 @@ void LeftJoin::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
-bool LeftJoin::_next() {
+bool LeftJoin::_next()
+{
     while (true) {
         // If enumerating_rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -72,8 +72,7 @@ bool LeftJoin::_next() {
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[rhs_vars.size()];
             found_not_nulls++;
             return true;
-        }
-        else {
+        } else {
             if (lhs->next()) {
                 for (size_t i = 0; i < N; i++) {
                     probe_key.start[i] = (*lhs_binding)[join_vars[i]].id;
@@ -102,8 +101,8 @@ bool LeftJoin::_next() {
     }
 }
 
-
-void LeftJoin::_reset() {
+void LeftJoin::_reset()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -142,8 +141,8 @@ void LeftJoin::_reset() {
     build_hash_table();
 }
 
-
-void LeftJoin::assign_nulls() {
+void LeftJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -157,13 +156,8 @@ void LeftJoin::assign_nulls() {
     lhs->assign_nulls();
 }
 
-
-void LeftJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void LeftJoin::build_hash_table() {
+void LeftJoin::build_hash_table()
+{
     auto data_tuple_size = rhs_vars.size() + 1;
 
     // Only to avoid seg fault in fist iteration due to IdHashWrapper comparision
@@ -191,7 +185,7 @@ void LeftJoin::build_hash_table() {
         }
         // Store data
         for (size_t i = 0; i < rhs_vars.size(); i++) {
-            data_chunk[start_data_index + i] =  (*rhs_binding)[rhs_vars[i]].id;
+            data_chunk[start_data_index + i] = (*rhs_binding)[rhs_vars[i]].id;
         }
         // Set last data value as a null pointer
         auto casted_chunk = reinterpret_cast<uint64_t**>(data_chunk);
@@ -226,10 +220,7 @@ void LeftJoin::build_hash_table() {
             }
 
             // Try to create a new entry in the hash table
-            auto iterator = hash_table.emplace(key,
-                                               Value(data_pointer,
-                                                     data_pointer)
-                                    );
+            auto iterator = hash_table.emplace(key, Value(data_pointer, data_pointer));
             // If the key already has been inserted, iterator.second = false
             if (!(iterator.second)) {
                 // If the key already exists, get the value of the hash table
@@ -243,6 +234,6 @@ void LeftJoin::build_hash_table() {
             last_key.start = key.start;
         }
     }
-    delete[](dummy_last_key);
-    delete[](key_pointer);
+    delete[] (dummy_last_key);
+    delete[] (key_pointer);
 }

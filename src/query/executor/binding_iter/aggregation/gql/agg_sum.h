@@ -1,7 +1,7 @@
 #pragma once
 
-#include "graph_models/gql/conversions.h"
 #include "graph_models/common/datatypes/decimal.h"
+#include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
 
@@ -9,56 +9,58 @@ namespace GQL {
 class AggSum : public Agg {
 public:
     using Agg::Agg;
-    void begin() override {
+    void begin() override
+    {
         sum_integer = 0;
-        sum_decimal = Decimal(0);
+        sum_decimal = Decimal();
         sum_float = 0;
         sum_double = 0;
 
-        type = Conversions::OPTYPE_INTEGER;
+        type = Conversions::OpType::INTEGER;
     }
 
-    void process() override {
-        if (type == Conversions::OPTYPE_INVALID) {
+    void process() override
+    {
+        if (type == Conversions::OpType::INVALID) {
             return;
         }
 
         auto oid = expr->eval(*binding);
         auto op_type = Conversions::calculate_optype(oid);
 
-        if (op_type == Conversions::OPTYPE_INVALID) {
-            type = Conversions::OPTYPE_INVALID;
+        if (op_type == Conversions::OpType::INVALID) {
+            type = Conversions::OpType::INVALID;
             return;
         }
 
         if (op_type > type) {
-            if (op_type == Conversions::OPTYPE_DECIMAL) {
+            if (op_type == Conversions::OpType::DECIMAL) {
                 sum_decimal = Decimal(sum_integer);
-                type = Conversions::OPTYPE_DECIMAL;
-            } else if (op_type == Conversions::OPTYPE_FLOAT) {
-                if (type == Conversions::OPTYPE_INTEGER) {
+                type = Conversions::OpType::DECIMAL;
+            } else if (op_type == Conversions::OpType::FLOAT) {
+                if (type == Conversions::OpType::INTEGER) {
                     sum_float = sum_integer;
                 } else {
                     sum_float = sum_decimal.to_float();
                 }
-                type = Conversions::OPTYPE_FLOAT;
+                type = Conversions::OpType::FLOAT;
             } else {
-                if (type == Conversions::OPTYPE_INTEGER) {
+                if (type == Conversions::OpType::INTEGER) {
                     sum_double = sum_integer;
-                } else if (type == Conversions::OPTYPE_DECIMAL) {
+                } else if (type == Conversions::OpType::DECIMAL) {
                     sum_double = sum_decimal.to_double();
                 } else {
                     sum_double = sum_float;
                 }
-                type = Conversions::OPTYPE_DOUBLE;
+                type = Conversions::OpType::DOUBLE;
             }
         }
 
-        if (type == Conversions::OPTYPE_INTEGER) {
+        if (type == Conversions::OpType::INTEGER) {
             sum_integer += Conversions::unpack_int(oid);
-        } else if (type == Conversions::OPTYPE_DECIMAL) {
+        } else if (type == Conversions::OpType::DECIMAL) {
             sum_decimal = sum_decimal + Conversions::to_decimal(oid);
-        } else if (type == Conversions::OPTYPE_FLOAT) {
+        } else if (type == Conversions::OpType::FLOAT) {
             sum_float += Conversions::to_float(oid);
         } else {
             sum_double += Conversions::to_double(oid);
@@ -66,21 +68,23 @@ public:
     }
 
     // indicates the end of a group
-    ObjectId get() override {
-        if (type == Conversions::OPTYPE_INTEGER) {
+    ObjectId get() override
+    {
+        if (type == Conversions::OpType::INTEGER) {
             return Conversions::pack_int(sum_integer);
-        } else if (type == Conversions::OPTYPE_DECIMAL) {
+        } else if (type == Conversions::OpType::DECIMAL) {
             return Conversions::pack_decimal(sum_decimal);
-        } else if (type == Conversions::OPTYPE_FLOAT) {
+        } else if (type == Conversions::OpType::FLOAT) {
             return Conversions::pack_float(sum_float);
-        } else if (type == Conversions::OPTYPE_DOUBLE) {
+        } else if (type == Conversions::OpType::DOUBLE) {
             return Conversions::pack_double(sum_double);
         } else {
             return ObjectId::get_null();
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print_to_ostream(std::ostream& os) const override
+    {
         os << "SUM(";
         BindingExprPrinter printer(os);
         expr->accept_visitor(printer);
@@ -89,11 +93,11 @@ public:
     }
 
 private:
-    uint_fast8_t type;
+    Conversions::OpType type;
 
     int64_t sum_integer;
     Decimal sum_decimal;
-    float   sum_float;
-    double  sum_double;
+    float sum_float;
+    double sum_double;
 };
 } // namespace GQL

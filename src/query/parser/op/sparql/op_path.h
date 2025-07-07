@@ -1,7 +1,7 @@
 #pragma once
 
 #include "query/id.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 #include "query/parser/paths/regular_path_expr.h"
 
 namespace SPARQL {

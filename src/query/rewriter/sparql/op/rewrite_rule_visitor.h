@@ -3,7 +3,7 @@
 #include <set>
 #include <memory>
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 #include "query/rewriter/sparql/op/rewrite_rules/rewrite_rule.h"
 
@@ -63,6 +63,7 @@ public:
     void visit(OpConstruct&)            override;
     void visit(OpDescribe&)             override;
     void visit(OpBasicGraphPattern&)    override;
+    void visit(OpProcedure&)            override;
     void visit(OpEmpty&)                override;
     void visit(OpFilter&)               override;
     void visit(OpJoin&)                 override;

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include <sstream>
 
 namespace UnicodeEscape {
 inline bool is_hex(char byte)

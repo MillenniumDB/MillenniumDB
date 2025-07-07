@@ -4,10 +4,36 @@
 
 using namespace GQL;
 
+void AddLinearPatterns::visit(OpQueryStatements& op_statements)
+{
+    std::vector<std::unique_ptr<Op>> new_ops;
+    for (auto& op : op_statements.ops) {
+        op->accept_visitor(*this);
+        new_ops.push_back(std::move(tmp));
+    }
+    tmp = std::make_unique<OpQueryStatements>(std::move(new_ops));
+}
+
 void AddLinearPatterns::visit(OpReturn& op_return)
 {
     op_return.op->accept_visitor(*this);
-    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op_return.return_items), op_return.distinct);
+    tmp = std::make_unique<OpReturn>(
+        std::move(tmp),
+        std::move(op_return.return_items),
+        op_return.distinct,
+        std::move(op_return.op_order_by)
+    );
+}
+
+void AddLinearPatterns::visit(OpOrderByStatement& op_order_by)
+{
+    tmp = std::make_unique<OpOrderByStatement>(
+        std::move(op_order_by.items),
+        std::move(op_order_by.ascending_order),
+        std::move(op_order_by.null_order),
+        op_order_by.offset,
+        op_order_by.limit
+    );
 }
 
 void AddLinearPatterns::visit(OpOrderBy& op_order_by)
@@ -17,7 +43,9 @@ void AddLinearPatterns::visit(OpOrderBy& op_order_by)
         std::move(tmp),
         std::move(op_order_by.items),
         std::move(op_order_by.ascending_order),
-        std::move(op_order_by.null_order)
+        std::move(op_order_by.null_order),
+        op_order_by.offset,
+        op_order_by.limit
     );
 }
 
@@ -34,7 +62,7 @@ void AddLinearPatterns::visit(OpGraphPatternList& op_graph_pattern_list)
 void AddLinearPatterns::visit(OpGraphPattern& op_graph_pattern)
 {
     op_graph_pattern.op->accept_visitor(*this);
-    tmp = std::make_unique<OpGraphPattern>(std::move(tmp), op_graph_pattern.mode);
+    tmp = std::make_unique<OpGraphPattern>(std::move(tmp), op_graph_pattern.mode, op_graph_pattern.path_var_id);
     linear_pattern = None;
 }
 
@@ -74,6 +102,7 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
             break;
         case Edge:
             linear_patterns.push_back(std::move(tmp));
+            consecutive_nodes_found = false;
             break;
         case None:
             if (!linear_patterns.empty()) {
@@ -84,6 +113,7 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
                 ));
             }
             new_patterns.push_back(std::move(tmp));
+            consecutive_nodes_found = false;
         }
 
         if (linear_pattern == Node) {
@@ -139,12 +169,18 @@ void AddLinearPatterns::visit(OpRepetition& op_repetition)
 {
     op_repetition.op->accept_visitor(*this);
     tmp = std::make_unique<OpRepetition>(std::move(tmp), op_repetition.lower, op_repetition.upper);
+    linear_pattern = None;
 }
 
 void AddLinearPatterns::visit(OpOptProperties& op_opt_properties)
 {
     op_opt_properties.op->accept_visitor(*this);
     tmp = std::make_unique<OpOptProperties>(std::move(tmp), op_opt_properties.properties);
+}
+
+void AddLinearPatterns::visit(OpLet& op_let)
+{
+    tmp = std::make_unique<OpLet>(std::move(op_let.items));
 }
 
 void AddLinearPatterns::visit(OpProperty& op)
@@ -160,4 +196,9 @@ void AddLinearPatterns::visit(OpNodeLabel& op)
 void AddLinearPatterns::visit(OpEdgeLabel& op)
 {
     tmp = std::make_unique<OpEdgeLabel>(op);
+}
+
+void AddLinearPatterns::visit(OpFilterStatement& op)
+{
+    tmp = std::make_unique<OpFilterStatement>(std::move(op.exprs));
 }

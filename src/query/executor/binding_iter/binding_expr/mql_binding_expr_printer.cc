@@ -142,17 +142,37 @@ void BindingExprPrinter::visit(BindingExprRegex& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprTensorDistance& expr) {
-    os << "TENSOR_DISTANCE(";
-    os << expr.tensor_store->name() ;
+void BindingExprPrinter::visit(BindingExprCosineSimilarity& expr)
+{
+    os << "COSINE_SIMILARITY(";
+    expr.lhs->accept_visitor(*this);
     os << ", ";
-    expr.lhs_expr->accept_visitor(*this);
-    os << ", ";
-    expr.rhs_expr->accept_visitor(*this);
-    os << ", ";
-    os << expr.metric_type;
+    expr.rhs->accept_visitor(*this);
     os << ")";
 }
 
+void BindingExprPrinter::visit(BindingExprCosineDistance& expr) {
+    os << "COSINE_DISTANCE(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ")";
+}
+
+void BindingExprPrinter::visit(BindingExprManhattanDistance& expr) {
+    os << "MANHATTAN DISTANCE(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ")";
+}
+
+void BindingExprPrinter::visit(BindingExprEuclideanDistance& expr) {
+    os << "EUCLIDEAN_DISTANCE(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ")";
+}
 
 } // namespace MQL

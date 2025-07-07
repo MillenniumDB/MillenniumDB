@@ -13,8 +13,8 @@ namespace TextSearch {
 
 // These are the model specific functions that have to be implemented
 
-// Returns [total_inserted_elements, total_inserted_tokens]
-typedef std::tuple<uint_fast32_t, uint_fast32_t> IndexPredicateFuncType(
+// Returns [total_inserted_elements, total_inserted_tokens, predicate_oid]
+typedef std::tuple<uint_fast32_t, uint_fast32_t, ObjectId> IndexPredicateFuncType(
     Trie& trie,
     BPlusTree<2>& bpt,
     Table& table,

@@ -7,12 +7,13 @@ namespace GQL {
 
 class DirectedLeftRightEdgePlan : public Plan {
 public:
-    DirectedLeftRightEdgePlan(Id edge, Id from, Id to);
+    DirectedLeftRightEdgePlan(Id edge, Id from, Id to, VarId direction_var);
 
     DirectedLeftRightEdgePlan(const DirectedLeftRightEdgePlan& other) :
         edge(other.edge),
         from(other.from),
         to(other.to),
+        direction_var(other.direction_var),
         edge_assigned(other.edge_assigned),
         from_assigned(other.from_assigned),
         to_assigned(other.to_assigned)
@@ -48,6 +49,7 @@ private:
     Id edge;
     Id from;
     Id to;
+    VarId direction_var;
 
     bool edge_assigned;
     bool from_assigned;

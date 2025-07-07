@@ -24,9 +24,11 @@ public:
 
     std::string nfkd_casefold(const std::string& input) const;
 
-    std::string uppercase(const std::string& input) const;
+    static std::string uppercase(const std::string& input);
 
-    std::string lowercase(const std::string& input) const;
+    static std::string lowercase(const std::string& input);
+
+    static std::string substr(const std::string& str, size_t start, size_t length);
 
 private:
     Transliterator();
@@ -38,7 +40,4 @@ private:
     UErrorCode ec { U_ZERO_ERROR };
 
     icu::Transliterator* nfkd_casefold_transliterator;
-
-    // NULL locale to the ICU's default
-    icu::Locale loc { NULL };
 };

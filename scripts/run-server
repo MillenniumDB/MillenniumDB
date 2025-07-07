@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e; set -u; set -o pipefail
+
+[[ ! ${1-} ]] && echo "Missing data file" && exit 1
+
+cmake -B build/Debug -D CMAKE_BUILD_TYPE=Debug
+cmake --build build/Debug
+
+[[ -d tests/tmp/ ]] && echo Removing tmp dir && rm -r tests/tmp/
+
+echo Creating database
+build/Debug/bin/mdb import "$1" tests/tmp/interactive-db
+
+echo Running server
+build/Debug/bin/mdb server --timeout 3600 tests/tmp/interactive-db

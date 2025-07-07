@@ -12,10 +12,12 @@ public:
     std::unique_ptr<BindingExpr> rhs;
 
     BindingExprOr(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
-        lhs (std::move(lhs)),
-        rhs (std::move(rhs)) { }
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         // Evaluation according to the SPARQL 1.1 standard
         // https://www.w3.org/TR/sparql11-query/#evaluation
         auto lhs_oid = lhs->eval(binding);
@@ -31,16 +33,15 @@ public:
 
         if (rhs_bool == Conversions::pack_bool(true)) {
             return Conversions::pack_bool(true);
-        } else if (lhs_bool == Conversions::pack_bool(false) &&
-                   rhs_bool == Conversions::pack_bool(false))
-        {
+        } else if (lhs_bool == Conversions::pack_bool(false) && rhs_bool == Conversions::pack_bool(false)) {
             return Conversions::pack_bool(false);
         } else {
             return ObjectId::get_null();
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

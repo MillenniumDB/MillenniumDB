@@ -38,7 +38,6 @@
 class FileManager {
 friend class Page; // to allow calling file_manager.flush
 friend class BufferManager; // to allow calling file_manager.read_existing_page
-friend class TensorBufferManager; // to allow calling file_manager.read_existing_page
 public:
     ~FileManager() = default;
 
@@ -59,7 +58,7 @@ public:
         return db_folder + "/" + filename;
     }
 
-    // Returns whether the filename is valid before attemping to create a file
+    // Returns whether the filename is valid before attempting to create a file
     // Only alphanumeric characters, and ' ', '_', '-' are allowed
     inline bool is_filename_valid(const std::string& filename) const noexcept
     {

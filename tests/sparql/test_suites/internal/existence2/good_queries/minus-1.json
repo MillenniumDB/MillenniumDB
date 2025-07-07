@@ -1,0 +1,34 @@
+{
+  "head": {
+    "vars": [
+      "x",
+      "n"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": {
+          "type": "uri",
+          "value": "http://example.com/b"
+        },
+        "n": {
+          "type": "uri",
+          "value": "3.0",
+          "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        }
+      },
+      {
+        "x": {
+          "type": "uri",
+          "value": "http://example.com/a"
+        },
+        "n": {
+          "type": "uri",
+          "value": "1",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      }
+    ]
+  }
+}

@@ -2,11 +2,11 @@
 
 #include <map>
 
-#include <boost/unordered_map.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 
-#include "query/parser/op/op.h"
-#include "storage/index/tensor_store/tensor_store_update_data.h"
-#include "storage/index/text_search/text_search_index_update_data.h"
+#include "query/parser/op/mql/op.h"
+#include "storage/index/hnsw/hnsw_index_update_data.h"
+#include "storage/index/text_search/text_index_update_data.h"
 
 namespace MQL {
 
@@ -39,11 +39,10 @@ public:
 
     ~UpdateExecutor();
 
+    // TODO: OpDelete?
     void visit(OpInsert&) override;
-    void visit(OpInsertTensors&) override;
-    void visit(OpDeleteTensors&) override;
-    void visit(OpCreateTensorStore&) override;
-    void visit(OpCreateTextSearchIndex&) override;
+    void visit(OpCreateHNSWIndex&) override;
+    void visit(OpCreateTextIndex&) override;
 
     void execute(Op& op);
     void print_stats(std::ostream& os);
@@ -53,14 +52,13 @@ private:
 
     GraphUpdateData graph_update_data;
 
-    boost::unordered_map<std::string, TextSearchIndexUpdateData> name2text_search_index_update_data;
-
-    boost::unordered_map<std::string, TensorStoreUpdateData> name2tensor_store_update_data;
+    boost::unordered_flat_map<std::string, TextIndexUpdateData> name2text_index_update_data;
+    boost::unordered_flat_map<std::string, HNSWIndexUpdateData> name2hnsw_index_update_data;
 
     // returns true if oid was transformed
     bool transform_if_tmp(ObjectId& oid);
 
-    void insert_text_search_index_update_data(TextSearchIndexUpdateData&& text_search_index_update_data);
-    void insert_tensor_store_update_data(TensorStoreUpdateData&& tensor_store_update_data);
+    void insert_text_index_update_data(TextIndexUpdateData&& text_index_update_data);
+    void insert_hnsw_index_update_data(HNSWIndexUpdateData&& hnsw_index_update_data);
 };
 } // namespace MQL

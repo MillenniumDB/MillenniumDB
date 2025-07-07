@@ -2,10 +2,11 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
+#include "misc/is_name_valid_for_path.h"
+#include "misc/transliterator.h"
 #include "misc/unicode_escape.h"
 #include "query/parser/op/sparql/ops.h"
-#include "system/file_manager.h"
-#include "mdb_extensions.h"
+#include "storage/index/hnsw/hnsw_metric.h"
 
 using namespace SPARQL;
 using antlrcpp::Any;
@@ -471,7 +472,7 @@ Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContex
 
 Any UpdateVisitor::visitBooleanLiteral(SUP::BooleanLiteralContext* ctx)
 {
-    current_sparql_element = Conversions::pack_bool(ctx->TRUE() != nullptr);
+    current_sparql_element = Conversions::pack_bool(ctx->K_TRUE() != nullptr);
     return 0;
 }
 
@@ -500,63 +501,206 @@ Any UpdateVisitor::visitNil(SUP::NilContext*)
     return 0;
 }
 
-Any UpdateVisitor::visitCreateTextIndex(SUP::CreateTextIndexContext* ctx)
+Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
 {
-    auto text_search_index_name = stringCtxToString(ctx->string());
+    std::string index_name = stringCtxToString(ctx->string());
 
-    // Check if text index existed before
-    if (rdf_model.catalog.text_search_index_manager.get_text_search_index(text_search_index_name, nullptr)) {
-        throw QueryException("TextSearchIndex \"" + text_search_index_name + "\" already exists");
+    if (!misc::is_name_valid_for_path(index_name)) {
+        throw QueryException("Invalid index name: \"" + index_name + "\"");
     }
 
-    // Check if text index is being created twice
-    for (const auto& op : op_update->updates) {
-        if (auto op_create_text_index = dynamic_cast<OpCreateTextSearchIndex*>(op.get())) {
-            if (op_create_text_index->text_search_index_name == text_search_index_name) {
-                throw QueryException(
-                    "TextSearchIndex \"" + text_search_index_name + "\" is being created twice"
-                );
+    const std::string index_type = ctx->ALPHANUMERIC_IDENTIFIER()->getText();
+    const std::string index_type_lowercased = Transliterator::lowercase(index_type);
+
+    auto graph_term_to_str = [&](SUP::GraphTermContext* ctx, const std::string& key) -> std::string {
+        visit(ctx);
+        if (current_sparql_element.is_OID()) {
+            const auto oid = current_sparql_element.get_OID();
+            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
+            switch (gen_sub_t) {
+            case RDF_OID::GenericSubType::STRING_SIMPLE:
+            case RDF_OID::GenericSubType::STRING_XSD:
+                return SPARQL::Conversions::unpack_string(oid);
+            default:
+                break;
             }
         }
-    }
 
-    auto iri_str = iriCtxToString(ctx->iri());
+        throw QueryException("index option \"" + key + "\" is expected to be a string");
+    };
 
-    // Default values
-    TextSearch::NORMALIZE_TYPE normalize_type = TextSearch::DEFAULT_NORMALIZE_TYPE;
-    TextSearch::TOKENIZE_TYPE tokenize_type = TextSearch::DEFAULT_TOKENIZE_TYPE;
+    auto graph_term_to_iri = [&](SUP::GraphTermContext* ctx, const std::string& key) -> std::string {
+        visit(ctx);
+        if (current_sparql_element.is_OID()) {
+            const auto oid = current_sparql_element.get_OID();
+            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
+            switch (gen_sub_t) {
+            case RDF_OID::GenericSubType::IRI:
+                return SPARQL::Conversions::unpack_iri(oid);
+            default:
+                break;
+            }
+        }
 
-    if (ctx->normalizeTextIndex()) {
-        const auto normalizeType = ctx->normalizeTextIndex()->normalizeType();
-        if (normalizeType->IDENTITY()) {
-            normalize_type = TextSearch::NORMALIZE_TYPE::IDENTITY;
-        } else if (normalizeType->NFKD_CASEFOLD()) {
+        throw QueryException("index option \"" + key + "\" is expected to be an IRI");
+    };
+
+    auto graph_term_to_uint64 = [&](SUP::GraphTermContext* ctx, const std::string& key) -> uint64_t {
+        visit(ctx);
+        if (current_sparql_element.is_OID()) {
+            const auto oid = current_sparql_element.get_OID();
+            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
+            switch (gen_sub_t) {
+            case RDF_OID::GenericSubType::INTEGER: {
+                const auto i = SPARQL::Conversions::unpack_int(oid);
+                if (i >= 0) {
+                    return static_cast<uint64_t>(i);
+                }
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        throw QueryException("index option \"" + key + "\" is expected to be an unsigned integer");
+    };
+
+    if (index_type_lowercased == "text") {
+        // Check if text index existed before
+        if (rdf_model.catalog.text_index_manager.get_text_index(index_name) != nullptr) {
+            throw QueryException("Text index \"" + index_name + "\" already exists");
+        }
+
+        TextIndexOptions text_index_opts;
+
+        parse_index_options(
+            ctx->createIndexOptions(),
+            text_index_opts,
+            [&](const std::string& key, SUP::GraphTermContext* graphTermCtx) {
+                if (key == "predicate") {
+                    text_index_opts.predicate = graph_term_to_iri(graphTermCtx, key);
+                } else if (key == "normalization") {
+                    text_index_opts.normalization = graph_term_to_str(graphTermCtx, key);
+                } else if (key == "tokenization") {
+                    text_index_opts.tokenization = graph_term_to_str(graphTermCtx, key);
+                } else {
+                    assert(false && "unhandled text index option");
+                }
+            }
+        );
+
+        TextSearch::NORMALIZE_TYPE normalize_type;
+        if (text_index_opts.normalization == "nfkdCasefold") {
             normalize_type = TextSearch::NORMALIZE_TYPE::NFKD_CASEFOLD;
         } else {
-            throw QueryException("Unknown normalize type");
+            assert(text_index_opts.normalization == "identity");
+            normalize_type = TextSearch::NORMALIZE_TYPE::IDENTITY;
         }
-    }
-    if (ctx->tokenizeTextIndex()) {
-        const auto tokenizeType = ctx->tokenizeTextIndex()->tokenizeType();
-        if (tokenizeType->IDENTITY()) {
-            tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
-        } else if (tokenizeType->WS_RM_PUNCT()) {
-            tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_REMOVE_PUNCTUATION;
-        } else if (tokenizeType->WS_SPLIT_PUNCT()) {
+
+        TextSearch::TOKENIZE_TYPE tokenize_type;
+        if (text_index_opts.tokenization == "wsSplitPunc") {
             tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_SPLIT_PUNCTUATION;
-        } else if (tokenizeType->WS_KEEP_PUNCT()) {
+            // identity, wsSplitPunc, wsRmPunc, wsKeepPunc
+        } else if (text_index_opts.tokenization == "wsRmPunc") {
+            tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_REMOVE_PUNCTUATION;
+        } else if (text_index_opts.tokenization == "wsKeepPunc") {
             tokenize_type = TextSearch::TOKENIZE_TYPE::WHITESPACE_KEEP_PUNCTUATION;
         } else {
-            throw QueryException("Unknown tokenize type");
+            assert(text_index_opts.tokenization == "identity");
+            tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
+
+        op_update->updates.emplace_back(std::make_unique<OpCreateTextIndex>(
+            std::move(index_name),
+            std::move(text_index_opts.predicate),
+            normalize_type,
+            tokenize_type
+        ));
+    } else if (index_type_lowercased == "hnsw") {
+        // Check if hnsw index existed before
+        if (rdf_model.catalog.hnsw_index_manager.get_hnsw_index(index_name) != nullptr) {
+            throw QueryException("HNSW index \"" + index_name + "\" already exists");
+        }
+
+        HNSWIndexOptions hnsw_index_opts;
+
+        parse_index_options(
+            ctx->createIndexOptions(),
+            hnsw_index_opts,
+            [&](const std::string& key, SUP::GraphTermContext* graphTermCtx) {
+                if (key == "predicate") {
+                    hnsw_index_opts.predicate = graph_term_to_iri(graphTermCtx, key);
+                } else if (key == "metric") {
+                    hnsw_index_opts.metric = graph_term_to_str(graphTermCtx, key);
+                } else if (key == "dimension") {
+                    hnsw_index_opts.dimension = graph_term_to_uint64(graphTermCtx, key);
+                } else if (key == "maxEdges") {
+                    hnsw_index_opts.max_edges = graph_term_to_uint64(graphTermCtx, key);
+                } else if (key == "maxCandidates") {
+                    hnsw_index_opts.max_candidates = graph_term_to_uint64(graphTermCtx, key);
+                } else {
+                    assert(false && "unhandled hnsw index option");
+                }
+            }
+        );
+
+        HNSW::MetricType metric_type;
+        if (hnsw_index_opts.metric == "cosineDistance") {
+            metric_type = HNSW::MetricType::COSINE_DISTANCE;
+        } else if (hnsw_index_opts.metric == "manhattanDistance") {
+            metric_type = HNSW::MetricType::MANHATTAN_DISTANCE;
+        } else {
+            assert(hnsw_index_opts.metric == "euclideanDistance");
+            metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
+        }
+
+        op_update->updates.emplace_back(std::make_unique<OpCreateHNSWIndex>(
+            std::move(index_name),
+            std::move(hnsw_index_opts.predicate),
+            hnsw_index_opts.dimension,
+            hnsw_index_opts.max_edges,
+            hnsw_index_opts.max_candidates,
+            metric_type
+        ));
+    } else {
+        throw QueryException("Invalid index type \"" + index_type + "\"");
     }
 
-    op_update->updates.emplace_back(std::make_unique<OpCreateTextSearchIndex>(
-        std::move(text_search_index_name),
-        std::move(iri_str),
-        normalize_type,
-        tokenize_type
-    ));
-
     return 0;
+}
+
+template<typename IndexOptions, typename OptionHandlerFunc>
+void UpdateVisitor::parse_index_options(
+    SparqlUpdateParser::CreateIndexOptionsContext* ctx,
+    IndexOptions& index_opts,
+    OptionHandlerFunc option_handler_func
+)
+{
+    assert(ctx != nullptr);
+    for (const auto& opt : ctx->createIndexOption()) {
+        const std::string key = stringCtxToString(opt->string());
+
+        if (!index_opts.opt2seen.contains(key)) {
+            const auto valid_options = index_opts.valid_options();
+            std::string valid_options_str;
+            valid_options_str += valid_options[0];
+            for (std::size_t i = 1; i < valid_options.size(); ++i) {
+                valid_options_str += ", " + valid_options[i];
+            }
+            throw QueryException(
+                "Unexpected index option: \"" + key + "\". Expected one of the following: { "
+                + valid_options_str + " }"
+            );
+        }
+
+        if (index_opts.opt2seen[key] == true) {
+            throw QueryException("Duplicate index option: \"" + key + "\"");
+        }
+
+        option_handler_func(key, opt->graphTerm());
+
+        index_opts.opt2seen[key] = true;
+    }
+
+    index_opts.validate();
 }

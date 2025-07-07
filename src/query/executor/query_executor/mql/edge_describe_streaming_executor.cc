@@ -39,10 +39,9 @@ uint64_t EdgeDescribeStreamingExecutor::execute(MDBServer::StreamingResponseWrit
     key_value_iter->begin(binding);
 
     const auto edge_id = ObjectId::VALUE_MASK & object_id.id;
-    assert(edge_id > 0);
 
     // from, to, type
-    Record<3>* record = (*quad_model.edge_table)[edge_id - 1];
+    Record<3>* record = (*quad_model.edge_table)[edge_id];
     const bool edge_exists = record != nullptr;
     if (!edge_exists) {
         return 0;

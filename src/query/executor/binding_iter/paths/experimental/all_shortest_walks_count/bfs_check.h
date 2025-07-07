@@ -3,11 +3,12 @@
 #include <memory>
 #include <queue>
 
+#include <boost/unordered/unordered_node_set.hpp>
+
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/search_state.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths { namespace AllShortestCount {
 
@@ -17,9 +18,9 @@ AllShortestCount::BFSCheck returns the count of all shortest paths between two f
 class BFSCheck : public BindingIter {
 private:
     // Attributes determined in the constructor
-    VarId         path_var;
-    Id            start;
-    Id            end;
+    VarId path_var;
+    Id start;
+    Id end;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
@@ -32,7 +33,7 @@ private:
     ObjectId end_object_id;
 
     // Remembers which states were explored. A structure with pointer stability is required
-    robin_hood::unordered_node_set<SearchState> visited;
+    boost::unordered_node_set<SearchState, std::hash<SearchState>> visited;
 
     // Queue for BFS. Pointers point to the states in visited
     std::queue<const SearchState*> open;
@@ -51,28 +52,24 @@ public:
     uint_fast32_t paths_found = 0;
     uint_fast32_t idx_searches = 0;
 
-    BFSCheck(
-        VarId                          path_var,
-        Id                             start,
-        Id                             end,
-        RPQ_DFA                        automaton,
-        std::unique_ptr<IndexProvider> provider
-    ) :
-        path_var      (path_var),
-        start         (start),
-        end           (end),
-        automaton     (automaton),
-        provider      (std::move(provider)) { }
+    BFSCheck(VarId path_var, Id start, Id end, RPQ_DFA automaton, std::unique_ptr<IndexProvider> provider) :
+        path_var(path_var),
+        start(start),
+        end(end),
+        automaton(automaton),
+        provider(std::move(provider))
+    { }
 
     // Explore all neighbors counting paths reached.
     void explore_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     void _reset() override;
     bool _next() override;
 
-    void assign_nulls() override {
+    void assign_nulls() override
+    {
         parent_binding->add(path_var, ObjectId::get_null());
     }
 };

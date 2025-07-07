@@ -76,24 +76,6 @@ namespace MQL { namespace Conversions {
         return DateTime(oid);
     }
 
-
-    /**
-    *  @brief Calculates the generic datatypes of the operand in an expression.
-    *  @param oid ObjectId of the operand involved in an expression.
-    *  @return generic numeric datatype of the operand or OPTYPE_INVALID if oid is not numeric
-    */
-    inline uint8_t calculate_optype(ObjectId oid) {
-        switch (oid.get_sub_type()) {
-        case ObjectId::MASK_INT:     return OPTYPE_INTEGER;
-        case ObjectId::MASK_FLOAT:   return OPTYPE_FLOAT;
-        default:                     return OPTYPE_INVALID;
-        }
-    }
-
-    inline uint8_t calculate_optype(ObjectId oid1, ObjectId oid2) {
-        return std::max(calculate_optype(oid1), calculate_optype(oid2));
-    }
-
     inline float to_float(ObjectId oid) {
         switch (oid.get_sub_type()) {
         case ObjectId::MASK_INT:
@@ -144,6 +126,16 @@ namespace MQL { namespace Conversions {
             return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
         // Note: Extern decimals will never be zero
         case ObjectId::MASK_DECIMAL_EXTERN:
+            return ObjectId(ObjectId::BOOL_TRUE);
+            // Note: This assumes empty tensors will never be extern/tmp
+        case ObjectId::MASK_TENSOR_FLOAT_INLINED:
+        case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
+            return ObjectId(ObjectId::BOOL_FALSE);
+        // Note: extern/tmp tensors will never be empty
+        case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
+        case ObjectId::MASK_TENSOR_FLOAT_TMP:
+        case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
+        case ObjectId::MASK_TENSOR_DOUBLE_TMP:
             return ObjectId(ObjectId::BOOL_TRUE);
         // Can not be converted to boolean
         default:

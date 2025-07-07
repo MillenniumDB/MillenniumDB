@@ -2,6 +2,17 @@
 
 using namespace GQL;
 
+void PushLabels::visit(OpQueryStatements& op_statements)
+{
+    std::vector<std::unique_ptr<Op>> new_ops;
+
+    for (auto& op : op_statements.ops) {
+        op->accept_visitor(*this);
+        new_ops.push_back(std::move(tmp));
+    }
+    tmp = std::make_unique<OpQueryStatements>(std::move(new_ops));
+}
+
 void PushLabels::visit(OpGraphPattern& op_graph_pattern)
 {
     op_graph_pattern.op->accept_visitor(*this);
@@ -69,7 +80,28 @@ void PushLabels::visit(OpRepetition& op)
 void PushLabels::visit(OpReturn& op)
 {
     op.op->accept_visitor(*this);
-    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op.return_items), op.distinct);
+    tmp = std::make_unique<OpReturn>(
+        std::move(tmp),
+        std::move(op.return_items),
+        op.distinct,
+        std::move(op.op_order_by)
+    );
+}
+
+void PushLabels::visit(OpLet& op)
+{
+    tmp = std::make_unique<OpLet>(std::move(op.items));
+}
+
+void PushLabels::visit(OpOrderByStatement& op)
+{
+    tmp = std::make_unique<OpOrderByStatement>(
+        std::move(op.items),
+        std::move(op.ascending_order),
+        std::move(op.null_order),
+        op.offset,
+        op.limit
+    );
 }
 
 void PushLabels::visit(OpOrderBy& op)
@@ -79,7 +111,9 @@ void PushLabels::visit(OpOrderBy& op)
         std::move(tmp),
         std::move(op.items),
         std::move(op.ascending_order),
-        std::move(op.null_order)
+        std::move(op.null_order),
+        op.offset,
+        op.limit
     );
 }
 
@@ -99,7 +133,7 @@ void PushLabels::visit(OpFilter& op_filter)
     size_t num_of_new_labels = visitor.labels.size();
 
     for (auto& label : visitor.labels) {
-        labels_to_push.push_back(std::move(label));
+        labels_to_push.emplace_back(label.op->clone(), label.id, label.label_id);
     }
 
     op_filter.op->accept_visitor(*this);
@@ -153,4 +187,9 @@ void PushLabels::visit(OpEdgeLabel& op)
 void PushLabels::visit(OpProperty& op)
 {
     tmp = op.clone();
+}
+
+void PushLabels::visit(OpFilterStatement& op_filter)
+{
+    tmp = op_filter.clone();
 }

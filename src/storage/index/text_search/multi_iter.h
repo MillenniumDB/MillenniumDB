@@ -14,9 +14,12 @@ public:
 
     uint64_t get_table_pointer() const override;
 
+    uint64_t get_score() const override;
+
 private:
     std::vector<std::unique_ptr<OrderedIter>> iters;
     uint64_t table_pointer;
+    uint64_t score;
 };
 
 } // namespace TextSearch

@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN SUM(x.number) AS suma

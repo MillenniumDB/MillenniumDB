@@ -18,6 +18,7 @@ public:
 
         switch (RDF_OID::get_generic_type(expr_oid)) {
             case RDF_OID::GenericType::NUMERIC:
+            case RDF_OID::GenericType::TENSOR:
                 return expr_oid;
             default:
                 return ObjectId::get_null();

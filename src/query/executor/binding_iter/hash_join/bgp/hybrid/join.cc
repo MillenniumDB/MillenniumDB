@@ -13,16 +13,16 @@ template<std::size_t N>
 Join<N>::Join(
     unique_ptr<BindingIter> lhs,
     unique_ptr<BindingIter> rhs,
-    vector<VarId>&&         join_vars,
-    vector<VarId>&&         lhs_vars,
-    vector<VarId>&&         rhs_vars
+    vector<VarId>&& join_vars,
+    vector<VarId>&& lhs_vars,
+    vector<VarId>&& rhs_vars
 ) :
-    lhs           (std::move(lhs)),
-    rhs           (std::move(rhs)),
-    join_vars     (std::move(join_vars)),
-    lhs_vars      (std::move(lhs_vars)),
-    rhs_vars      (std::move(rhs_vars)),
-    probe_key     (Key<N>(pk_start))
+    lhs(std::move(lhs)),
+    rhs(std::move(rhs)),
+    join_vars(std::move(join_vars)),
+    lhs_vars(std::move(lhs_vars)),
+    rhs_vars(std::move(rhs_vars)),
+    probe_key(Key<N>(pk_start))
 {
     for (auto var : join_vars) {
         all_lhs_vars.push_back(var);
@@ -36,21 +36,21 @@ Join<N>::Join(
     }
 }
 
-
 template<std::size_t N>
-Join<N>::~Join() {
+Join<N>::~Join()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
 }
 
-
 template<std::size_t N>
-void Join<N>::_begin(Binding& _parent_binding) {
+void Join<N>::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
     lhs->begin(*parent_binding);
     rhs->begin(*parent_binding);
@@ -76,15 +76,16 @@ void Join<N>::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset probe to iterate with 0 partition
         probe->reset();
     }
 }
 
-
 template<std::size_t N>
-bool Join<N>::_next() {
+bool Join<N>::_next()
+{
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -123,9 +124,9 @@ bool Join<N>::_next() {
     }
 }
 
-
 template<std::size_t N>
-void Join<N>::_reset() {
+void Join<N>::_reset()
+{
     hash_table.clear();
 
     // Spread reset to children
@@ -154,27 +155,22 @@ void Join<N>::_reset() {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         probe->reset();
     }
 }
 
-
 template<std::size_t N>
-void Join<N>::assign_nulls() {
+void Join<N>::assign_nulls()
+{
     lhs->assign_nulls();
     rhs->assign_nulls();
 }
 
-
 template<std::size_t N>
-void Join<N>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-template<std::size_t N>
-bool Join<N>::build_0_partition() {
+bool Join<N>::build_0_partition()
+{
     auto data_tuple_size = lhs_vars.size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -205,7 +201,7 @@ bool Join<N>::build_0_partition() {
         }
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: lhs_vars) {
+        for (auto& var : lhs_vars) {
             *current_data_pos = (*parent_binding)[var].id;
             current_data_pos++;
         }
@@ -265,9 +261,9 @@ bool Join<N>::build_0_partition() {
     return true;
 }
 
-
 template<std::size_t N>
-void Join<N>::build_hash_table() {
+void Join<N>::build_hash_table()
+{
     auto data_tuple_size = build_vars->size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -299,7 +295,7 @@ void Join<N>::build_hash_table() {
 
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: *build_vars) {
+        for (auto& var : *build_vars) {
             *current_data_pos = (*parent_binding)[var].id;
             current_data_pos++;
         }
@@ -352,9 +348,9 @@ void Join<N>::build_hash_table() {
     }
 }
 
-
 template<size_t N>
-void Join<N>::prepare_chunks_for_new_partition() {
+void Join<N>::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -384,22 +380,22 @@ void Join<N>::prepare_chunks_for_new_partition() {
     key_chunks_dir.push_back(key_chunk);
 }
 
-
 template<size_t N>
-bool Join<N>::get_next_partition() {
+bool Join<N>::get_next_partition()
+{
     while (current_partition < partitions.size()) {
         //std::cout << "First: " << partitions[current_partition].first->total_tuples << std::endl;
         //std::cout << "Second: " << partitions[current_partition].second->total_tuples << std::endl;
         // Avoid partitions where build or probe does not has tuples
-        if (partitions[current_partition].first->total_tuples == 0 ||
-            partitions[current_partition].second->total_tuples == 0)
+        if (partitions[current_partition].first->total_tuples == 0
+            || partitions[current_partition].second->total_tuples == 0)
         {
             current_partition++;
             continue;
         }
         // Check the smallest partition to use with build
-        if (partitions[current_partition].first->total_tuples <
-            partitions[current_partition].second->total_tuples)
+        if (partitions[current_partition].first->total_tuples
+            < partitions[current_partition].second->total_tuples)
         {
             build = partitions[current_partition].first.get();
             probe = partitions[current_partition].second.get();
@@ -420,7 +416,6 @@ bool Join<N>::get_next_partition() {
     }
     return false;
 }
-
 
 template class HashJoin::BGP::Hybrid::Join<2>;
 template class HashJoin::BGP::Hybrid::Join<3>;

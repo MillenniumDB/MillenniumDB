@@ -1,0 +1,2 @@
+MATCH (x: SpecialNode)
+RETURN x.word, UPPER(x.word) AS mayusculas

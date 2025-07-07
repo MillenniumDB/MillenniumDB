@@ -1,0 +1,2 @@
+MATCH (x: !bbb & !ccc)
+RETURN x

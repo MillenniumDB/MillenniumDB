@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/expr/expr.h"
-#include "query/parser/op/op.h"
+#include "query/parser/expr/mql/expr.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -35,21 +33,6 @@ public:
             res.insert(var);
         }
         return res;
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return op->get_scope_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return op->get_safe_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return {};
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

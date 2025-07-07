@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "query/query_context.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 
 namespace SPARQL {

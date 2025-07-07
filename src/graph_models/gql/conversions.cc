@@ -53,6 +53,50 @@ void Conversions::print_path_edge(std::ostream& os, ObjectId edge_id, bool inver
     os << ' ';
 }
 
+void Conversions::print_path(std::ostream& os, ObjectId oid)
+{
+    std::vector<ObjectId> oid_list;
+    unpack_path(oid, oid_list);
+
+    bool is_node = true;
+    for (auto it = oid_list.begin(); it != oid_list.end();) {
+        ObjectId current_oid = *it;
+
+        if (is_node) {
+            os << "(";
+            debug_print(os, current_oid);
+            os << ")";
+            ++it;
+        } else {
+            ++it;
+            ObjectId direction = *it;
+
+            switch (direction.id) {
+            case ObjectId::DIRECTION_LEFT: {
+                os << "<-[";
+                debug_print(os, current_oid);
+                os << "]-";
+                break;
+            }
+            case ObjectId::DIRECTION_RIGHT: {
+                os << "-[";
+                debug_print(os, current_oid);
+                os << "]->";
+                break;
+            }
+            case ObjectId::DIRECTION_UNDIRECTED: {
+                os << "~[";
+                debug_print(os, current_oid);
+                os << "]~";
+                break;
+            }
+            }
+            ++it;
+        }
+        is_node = !is_node;
+    }
+}
+
 void Conversions::print_string(ObjectId oid, std::ostream& os)
 {
     switch (oid.get_type()) {
@@ -238,6 +282,17 @@ void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
     lists.get(out, list_id.id & LIST_OFFSET_MASK);
 }
 
+ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
+{
+    ObjectId path_oid = pack_list(oid_list);
+    return ObjectId((path_oid.id & ~ObjectId::TYPE_MASK) | ObjectId::MASK_GQL_PATH);
+}
+
+void Conversions::unpack_path(ObjectId oid, std::vector<ObjectId>& out)
+{
+    unpack_list(oid, out);
+}
+
 std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
 {
     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
@@ -322,25 +377,27 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         break;
     }
     case GQL_OID::Type::PATH: {
-        using namespace std::placeholders;
-        os << '[';
-        path_manager.print(
-            os,
-            Conversions::get_path_id(oid),
-            std::bind(&print_path_node, _1, _2),
-            std::bind(&print_path_edge, _1, _2, _3)
-        );
-        os << ']';
+        print_path(os, oid);
         break;
     }
-    case GQL_OID::Type::DATE:
-    case GQL_OID::Type::DATETIME:
-    case GQL_OID::Type::TIME:
+    case GQL_OID::Type::DATE: {
+        DateTime datetime = Conversions::unpack_date(oid);
+        os << "Date(" << datetime.get_value_string() << ")";
+        break;
+    }
+    case GQL_OID::Type::DATETIME: {
+        DateTime datetime = Conversions::unpack_date(oid);
+        os << "Datetime(" << datetime.get_value_string() << ")";
+        break;
+    }
+    case GQL_OID::Type::TIME: {
+        DateTime datetime = Conversions::unpack_date(oid);
+        os << "Time(" << datetime.get_value_string() << ")";
+        break;
+    }
     case GQL_OID::Type::DATETIMESTAMP: {
         DateTime datetime = Conversions::unpack_date(oid);
-
-        os << '"' << datetime.get_value_string();
-        os << "\"^^<" << datetime.get_datatype_string() << ">";
+        os << "DatetimeStamp(" << datetime.get_value_string() << ")";
         break;
     }
     case GQL_OID::Type::DECIMAL_INLINE:
@@ -358,238 +415,6 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     return os;
 }
 
-/*
-Steps to evaluate an expression:
-    - Calculate the datatype the operation should use (calculate_optype)
-    - unpack operands (unpack_x)
-    - convert operands to previously calculated datatype
-    - evaluate operation
-    - pack result (pack_x)
-
-Type promotion and type substitution order:
-    integer -> decimal -> float (-> double)
-
-Conversion:
-    int64_t -> Decimal (Decimal constructor)
-    int64_t -> float (cast)
-    Decimal -> float (Decimal member function)
-*/
-
-Decimal Conversions::unpack_decimal_inlined(ObjectId oid)
-{
-    assert(oid.get_type() == ObjectId::MASK_DECIMAL_INLINED);
-
-    auto sign = (oid.id & Conversions::DECIMAL_SIGN_MASK) != 0;
-    auto number = (oid.id & Conversions::DECIMAL_NUMBER_MASK) >> 4;
-    auto decimals = oid.id & Conversions::DECIMAL_SEPARATOR_MASK;
-
-    std::string dec_str;
-
-    if (sign) {
-        dec_str += '-';
-    } else {
-        dec_str += '+';
-    }
-
-    auto num_str = std::to_string(number);
-    auto num_str_size = num_str.size();
-    if (decimals > 0) {
-        if (decimals >= num_str_size) {
-            dec_str += "0.";
-            if (decimals > num_str_size) {
-                dec_str += std::string(decimals - num_str_size, '0');
-            }
-            dec_str += num_str;
-        } else {
-            dec_str += num_str;
-            dec_str.insert(dec_str.length() - decimals, ".");
-        }
-    } else {
-        dec_str += num_str;
-        dec_str += (".0");
-    }
-
-    // inefficient, str is already normalized, but the constructor of Decimal normalizes again.
-    bool error;
-    Decimal dec(dec_str, &error);
-    assert(!error);
-    return dec;
-}
-
-Decimal Conversions::unpack_decimal(ObjectId oid)
-{
-    switch (oid.get_type()) {
-    case ObjectId::MASK_DECIMAL_INLINED:
-        return unpack_decimal_inlined(oid);
-    case ObjectId::MASK_DECIMAL_EXTERN: {
-        auto ss = std::stringstream();
-        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        string_manager.print(ss, external_id);
-        return Decimal::from_external(ss.str());
-    }
-
-    case ObjectId::MASK_DECIMAL_TMP: {
-        auto ss = std::stringstream();
-        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        tmp_manager.print_str(ss, external_id);
-        return Decimal::from_external(ss.str());
-    }
-    default:
-        throw LogicException("Called unpack_decimal with incorrect ObjectId type, this should never happen");
-    }
-}
-
-ObjectId Conversions::pack_decimal(Decimal dec)
-{
-    auto oid = dec.to_internal();
-
-    // dec.to_internal fails if it can't be inlined
-    if (oid == ObjectId::NULL_ID) {
-        auto bytes_vec = dec.to_bytes();
-        auto bytes = reinterpret_cast<const char*>(bytes_vec.data());
-        auto bytes_id = string_manager.get_bytes_id(bytes, bytes_vec.size());
-        if (bytes_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_DECIMAL_EXTERN | bytes_id;
-        } else {
-            oid = ObjectId::MASK_DECIMAL_TMP | tmp_manager.get_bytes_id(bytes, bytes_vec.size());
-        }
-    }
-    return ObjectId(oid);
-}
-
-ObjectId Conversions::pack_double(double dbl)
-{
-    uint64_t oid;
-    auto bytes = reinterpret_cast<const char*>(reinterpret_cast<const char*>(&dbl));
-    auto bytes_id = string_manager.get_bytes_id(bytes, sizeof(double));
-    if (bytes_id != ObjectId::MASK_NOT_FOUND) {
-        oid = ObjectId::MASK_DOUBLE_EXTERN | bytes_id;
-    } else {
-        oid = ObjectId::MASK_DOUBLE_TMP | tmp_manager.get_bytes_id(bytes, sizeof(double));
-    }
-    return ObjectId(oid);
-}
-
-/**
- *  @brief Calculates the datatype that should be used for expression evaluation.
- *  @param oid1 ObjectId of the first operand.
- *  @param oid2 ObjectId of the second operand.
- *  @return datatype that should be used or OPTYPE_INVALID if not both operands are numeric.
- */
-uint8_t Conversions::calculate_optype(ObjectId oid1, ObjectId oid2)
-{
-    auto optype1 = calculate_optype(oid1);
-    auto optype2 = calculate_optype(oid2);
-    return std::max(optype1, optype2);
-}
-
-/**
- *  @brief Calculates the generic datatypes of the operand in an expression.
- *  @param oid ObjectId of the operand involved in an expression.
- *  @return generic numeric datatype of the operand or OPTYPE_INVALID if oid is not numeric
- */
-uint8_t Conversions::calculate_optype(ObjectId oid)
-{
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
-        return OPTYPE_INTEGER;
-    case ObjectId::MASK_DECIMAL:
-        return OPTYPE_DECIMAL;
-    case ObjectId::MASK_FLOAT:
-        return OPTYPE_FLOAT;
-    case ObjectId::MASK_DOUBLE:
-        return OPTYPE_DOUBLE;
-    default:
-        return OPTYPE_INVALID;
-    }
-}
-
-/**
- *  @brief Converts an ObjectId to int64_t if permitted.
- *  @param oid ObjectId to convert.
- *  @return an int64_t representing the ObjectId.
- *  @throws LogicException if the ObjectId has no permitted type.
- */
-int64_t Conversions::to_integer(ObjectId oid)
-{
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
-        return unpack_int(oid);
-    default:
-        throw LogicException("Called to_integer with incorrect ObjectId type, this should never happen");
-    }
-}
-
-/**
- *  @brief Converts an ObjectId to Decimal if permitted.
- *  @param oid ObjectId to convert.
- *  @return a Decimal representing the ObjectId.
- *  @throws LogicException if the ObjectId has no permitted type.
- */
-Decimal Conversions::to_decimal(ObjectId oid)
-{
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
-        return Decimal(unpack_int(oid));
-    case ObjectId::MASK_DECIMAL:
-        return unpack_decimal(oid);
-    default:
-        throw LogicException("Called to_decimal with incorrect ObjectId type, this should never happen");
-    }
-}
-
-/**
- *  @brief Converts an ObjectId to float if permitted.
- *  @param oid ObjectId to convert.
- *  @return a float representing the ObjectId.
- *  @throws LogicException if the ObjectId has no permitted type.
- */
-float Conversions::to_float(ObjectId oid)
-{
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
-        return unpack_int(oid);
-    case ObjectId::MASK_DECIMAL:
-        return unpack_decimal(oid).to_float();
-    case ObjectId::MASK_FLOAT:
-        return unpack_float(oid);
-    case ObjectId::MASK_DOUBLE:
-        return unpack_double(oid);
-    default:
-        throw LogicException("Called to_float with incorrect ObjectId type, this should never happen");
-    }
-}
-
-/**
- *  @brief Converts an ObjectId to double if permitted.
- *  @param oid ObjectId to convert.
- *  @return a double representing the ObjectId.
- *  @throws LogicException if the ObjectId has no permitted type.
- */
-double Conversions::to_double(ObjectId oid)
-{
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
-        return unpack_int(oid);
-    case ObjectId::MASK_DECIMAL:
-        return unpack_decimal(oid).to_double();
-    case ObjectId::MASK_FLOAT:
-        return unpack_float(oid);
-    case ObjectId::MASK_DOUBLE:
-        return unpack_double(oid);
-    default:
-        throw LogicException("Called to_double with incorrect ObjectId type, this should never happen");
-    }
-}
-
-/*
-Implemented according to the Effective Boolean Value rules:
-https://www.w3.org/TR/2017/REC-xquery-31-20170321/#dt-ebv
-
-If the ObjectId can not be converted to boolean, it returns a Null ObjectId
-This Null ObjectId represents the Error Type according to the following:
-https://www.w3.org/TR/sparql11-query/#evaluation
-*/
 ObjectId Conversions::to_boolean(ObjectId oid)
 {
     uint64_t value = oid.get_value();

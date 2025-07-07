@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN COUNT(DISTINCT x.number) AS ammount

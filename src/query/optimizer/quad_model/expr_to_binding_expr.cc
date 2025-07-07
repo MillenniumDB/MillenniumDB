@@ -29,10 +29,9 @@
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_or.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_regex.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_subtraction.h"
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_tensor_distance.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_minus.h"
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_plus.h"
-#include "query/parser/expr/mql_exprs.h"
+#include "query/parser/expr/mql/exprs.h"
 
 using namespace MQL;
 
@@ -40,7 +39,7 @@ void ExprToBindingExpr::visit(ExprVar& expr_var)
 {
     tmp = std::make_unique<BindingExprVar>(expr_var.var);
 
-    if (bic == nullptr) {
+    if (!after_group) {
         return;
     }
 
@@ -53,26 +52,6 @@ void ExprToBindingExpr::visit(ExprVar& expr_var)
                 + "\" cannot be used in aggregation without grouping"
             );
         }
-    } else {
-        // if (bic->grouping) {
-        //     // TODO: Support this?
-        //     // It's fine to use a var previously defined as an expression
-        //     // Example:
-        //     // MATCH  (?from)-[:?type]->(?to)
-        //     // GROUP BY ?from
-        //     // RETURN 2*sum(?to) AS ?x, -1*?x AS ?y
-        //     // In that case ?x is not grouped but can be used
-        //     for (const auto& [var, _] : bic->projection_order_exprs) {
-        //         if (var == expr_var.var) {
-        //             return;
-        //         }
-        //     }
-        //     if (bic->group_vars.find(expr_var.var) == bic->group_vars.end()) {
-        //         throw QuerySemanticException(
-        //             "Variable \"" + get_query_ctx().get_var_name(expr_var.var) + "\" must be grouped"
-        //         );
-        //     }
-        // }
     }
 }
 
@@ -80,11 +59,14 @@ void ExprToBindingExpr::visit(ExprVarProperty& expr_var)
 {
     tmp = std::make_unique<BindingExprVar>(expr_var.var_with_property);
 
-    if (bic == nullptr) {
-        return;
-    }
+    bic->used_properties.emplace(
+        ExprVarProperty(expr_var.var_without_property, expr_var.key, expr_var.var_with_property),
+        false
+    );
 
-    bic->group_saved_vars.insert(expr_var.var_with_property);
+    if (after_group) {
+        bic->group_saved_vars.insert(expr_var.var_with_property);
+    }
 }
 
 void ExprToBindingExpr::visit(ExprConstant& expr_constant)
@@ -129,8 +111,10 @@ void ExprToBindingExpr::visit(ExprMultiplication& expr)
     expr.rhs->accept_visitor(*this);
     auto rhs_binding_expr = std::move(tmp);
 
-    tmp =
-        std::make_unique<BindingExprMultiplication>(std::move(lhs_binding_expr), std::move(rhs_binding_expr));
+    tmp = std::make_unique<BindingExprMultiplication>(
+        std::move(lhs_binding_expr),
+        std::move(rhs_binding_expr)
+    );
 }
 
 void ExprToBindingExpr::visit(ExprSubtraction& expr)
@@ -185,7 +169,6 @@ void ExprToBindingExpr::visit(ExprGreater& expr)
     tmp = std::make_unique<BindingExprLess>(std::move(rhs_binding_expr), std::move(lhs_binding_expr));
 }
 
-
 void ExprToBindingExpr::visit(ExprIs& expr)
 {
     expr.expr->accept_visitor(*this);
@@ -202,7 +185,6 @@ void ExprToBindingExpr::visit(ExprIs& expr)
     }
     tmp = std::make_unique<BindingExprIs>(std::move(tmp), expr.negation, expr.type);
 }
-
 
 void ExprToBindingExpr::visit(ExprLessOrEquals& expr)
 {
@@ -327,7 +309,6 @@ void ExprToBindingExpr::visit(MQL::ExprAggCountAll& expr)
     } else {
         check_and_make_aggregate<AggCountAll>(nullptr);
     }
-
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggCount& expr)
@@ -371,32 +352,54 @@ void ExprToBindingExpr::visit(ExprRegex& expr)
     }
 }
 
-void ExprToBindingExpr::visit(ExprTensorDistance& expr)
+void ExprToBindingExpr::visit(ExprCosineSimilarity& expr)
 {
-    expr.lhs_expr->accept_visitor(*this);
-    auto lhs_expr = std::move(tmp);
+    expr.expr1->accept_visitor(*this);
+    auto expr1 = std::move(tmp);
 
-    expr.rhs_expr->accept_visitor(*this);
-    auto rhs_expr = std::move(tmp);
+    expr.expr2->accept_visitor(*this);
+    auto expr2 = std::move(tmp);
 
-    // Expression and tensor
-    tmp = std::make_unique<BindingExprTensorDistance>(
-        expr.tensor_store_name,
-        expr.metric_type,
-        std::move(lhs_expr),
-        std::move(rhs_expr)
-    );
+    tmp = std::make_unique<BindingExprCosineSimilarity>(std::move(expr1), std::move(expr2));
 }
 
-void ExprToBindingExpr::visit(ExprTextSearch&)
+void ExprToBindingExpr::visit(ExprCosineDistance& expr)
 {
-    throw QueryException("Non-mandatory TextSearches not implemented yet");
+    expr.expr1->accept_visitor(*this);
+    auto expr1 = std::move(tmp);
+
+    expr.expr2->accept_visitor(*this);
+    auto expr2 = std::move(tmp);
+
+    tmp = std::make_unique<BindingExprCosineDistance>(std::move(expr1), std::move(expr2));
+}
+
+void ExprToBindingExpr::visit(ExprManhattanDistance& expr)
+{
+    expr.expr1->accept_visitor(*this);
+    auto expr1 = std::move(tmp);
+
+    expr.expr2->accept_visitor(*this);
+    auto expr2 = std::move(tmp);
+
+    tmp = std::make_unique<BindingExprManhattanDistance>(std::move(expr1), std::move(expr2));
+}
+
+void ExprToBindingExpr::visit(ExprEuclideanDistance& expr)
+{
+    expr.expr1->accept_visitor(*this);
+    auto expr1 = std::move(tmp);
+
+    expr.expr2->accept_visitor(*this);
+    auto expr2 = std::move(tmp);
+
+    tmp = std::make_unique<BindingExprEuclideanDistance>(std::move(expr1), std::move(expr2));
 }
 
 template<typename AggType, class... Args>
 void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
 {
-    if (bic == nullptr) {
+    if (!after_group) {
         throw QuerySemanticException("Aggregation where it is not allowed");
     }
 

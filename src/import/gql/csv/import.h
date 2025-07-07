@@ -1,22 +1,20 @@
 #pragma once
 
-#include <cctype>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "boost/unordered/unordered_flat_map.hpp"
-#include "boost/unordered/unordered_flat_set.hpp"
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
+
 #include "graph_models/common/conversions.h"
 #include "graph_models/gql/gql_catalog.h"
-#include "graph_models/inliner.h"
 #include "import/disk_vector.h"
-#include "import/external_string.h"
 #include "import/gql/csv/lexer/state.h"
 #include "import/gql/csv/lexer/token.h"
 #include "import/gql/csv/lexer/tokenizer.h"
-#include "import/import_helper.h"
+#include "import/external_helper.h"
 #include "misc/istream.h"
 
 namespace Import { namespace GQL { namespace CSV {
@@ -69,13 +67,21 @@ struct CSVColumn {
 
 class OnDiskImport {
 public:
-    OnDiskImport(const std::string& db_folder, uint64_t buffer_size);
+    static constexpr char PENDING_NODE_PROPERTIES_FILENAME_PREFIX[] = "tmp_pending_node_properties";
+    static constexpr char PENDING_EDGE_PROPERTIES_FILENAME_PREFIX[] = "tmp_pending_edge_properties";
+
+    OnDiskImport(
+        const std::string& db_folder,
+        uint64_t string_buffer_size,
+        uint64_t tensor_buffer_size,
+        char list_separator
+    );
 
     ~OnDiskImport();
 
     void start_import(
-        std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes,
-        std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges
+        std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes,
+        std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges
     );
 
     void print_error();
@@ -87,10 +93,11 @@ public:
     std::vector<std::string> split(std::string input, std::string delimiter);
 
 private:
-    void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes);
-    void parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges);
+    void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes);
+    void parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges);
 
-    uint64_t buffer_size;
+    uint64_t strings_buffer_size;
+    uint64_t tensors_buffer_size;
     std::string db_folder;
 
     CSVTokenizer lexer;
@@ -124,10 +131,6 @@ private:
     int current_column = 0;
 
     GQLCatalog catalog;
-    char* external_strings;
-    boost::unordered_flat_set<ExternalString, std::hash<ExternalString>> external_strings_set;
-    uint64_t external_strings_capacity;
-    uint64_t external_strings_end;
 
     boost::unordered_flat_map<std::string, uint64_t> csvid_global;
     uint64_t group_count = 0;
@@ -139,6 +142,9 @@ private:
     boost::unordered_flat_map<std::string, uint64_t> node_keys_map;
     boost::unordered_flat_map<std::string, uint64_t> edge_keys_map;
 
+    std::unique_ptr<DiskVector<3>> pending_node_properties;
+    std::unique_ptr<DiskVector<3>> pending_edge_properties;
+
     DiskVector<2> node_labels; // { node_id, label_id }
     DiskVector<2> edge_labels; // { edge_id, label_id }
     DiskVector<3> node_properties; // { node_id, key_id, value_id }
@@ -148,9 +154,15 @@ private:
     DiskVector<2> directed_equal_edges; // { nodes_id, edge_id }
     DiskVector<2> undirected_equal_edges; // { nodes_id, edge_id }
 
+    // manager writing bytes to disk in a buffered manner
+    std::unique_ptr<ExternalHelper> external_helper;
+
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 
     int* state_transitions;
+
+    void try_save_node_property(uint64_t node, uint64_t key, uint64_t value);
+    void try_save_edge_property(uint64_t node, uint64_t key, uint64_t value);
 
     void create_automata();
 
@@ -172,15 +184,11 @@ private:
 
     void save_empty_body_column_to_buffer();
 
-    void save_node_to_disk();
-
-    // uint64_t get_or_create_external_string_id();
-
-    uint64_t get_or_create_external_string_id(const std::string& input);
+    void process_node_line();
 
     void normalize_string_literal(CSVColumn& col);
 
-    void save_edge_to_disk();
+    void save_edge_line();
 
     void go_to_next_line();
 
@@ -202,6 +210,18 @@ private:
     {
         return Common::Conversions::pack_float(atof(num_str)).id;
     }
+
+    // processes a pending file by iterations, until no more pending tuples are available
+    // the size of the tuples and a resolve+save function must be provided.
+    // pending_vector is passed-by-reference in order to keep it valid when calling the
+    // resolve_and_save_func
+    template<std::size_t N, typename ResolveAndSaveFunc>
+    inline void process_pending(
+        std::unique_ptr<DiskVector<N>>& pending_vector,
+        const std::string& name,
+        const std::string& pending_filename_prefix,
+        ResolveAndSaveFunc resolve_and_save_func
+    );
 };
 
 }}} // namespace Import::GQL::CSV

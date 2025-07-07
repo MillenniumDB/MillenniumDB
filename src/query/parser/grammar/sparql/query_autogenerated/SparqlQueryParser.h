@@ -18,10 +18,10 @@ public:
     OPTIONAL = 20, GRAPH = 21, UNION = 22, FILTER = 23, A = 24, STR = 25, 
     LANG = 26, LANGMATCHES = 27, DATATYPE = 28, BOUND = 29, SAMETERM = 30, 
     ISIRI = 31, ISURI = 32, ISBLANK = 33, ISLITERAL = 34, REGEX = 35, SUBSTR = 36, 
-    TRUE = 37, FALSE = 38, SILENT = 39, ALL = 40, AS = 41, GROUP = 42, HAVING = 43, 
-    UNDEF = 44, BINDINGS = 45, SERVICE = 46, BIND = 47, MINUS = 48, IRI = 49, 
-    URI = 50, BNODE = 51, RAND = 52, ABS = 53, CEIL = 54, FLOOR = 55, ROUND = 56, 
-    CONCAT = 57, STRLEN = 58, UCASE = 59, LCASE = 60, ENCODE_FOR_URI = 61, 
+    K_TRUE = 37, K_FALSE = 38, SILENT = 39, ALL = 40, AS = 41, GROUP = 42, 
+    HAVING = 43, UNDEF = 44, BINDINGS = 45, SERVICE = 46, BIND = 47, MINUS = 48, 
+    IRI = 49, URI = 50, BNODE = 51, RAND = 52, ABS = 53, CEIL = 54, FLOOR = 55, 
+    ROUND = 56, CONCAT = 57, STRLEN = 58, UCASE = 59, LCASE = 60, ENCODE_FOR_URI = 61, 
     CONTAINS = 62, STRSTARTS = 63, STRENDS = 64, STRBEFORE = 65, STRAFTER = 66, 
     REPLACE = 67, YEAR = 68, MONTH = 69, DAY = 70, HOURS = 71, MINUTES = 72, 
     SECONDS = 73, TIMEZONE = 74, TZ = 75, NOW = 76, UUID = 77, STRUUID = 78, 
@@ -29,10 +29,10 @@ public:
     IF = 85, STRLANG = 86, STRDT = 87, ISNUMERIC = 88, COUNT = 89, SUM = 90, 
     MIN = 91, MAX = 92, AVG = 93, SAMPLE = 94, GROUP_CONCAT = 95, NOT = 96, 
     IN = 97, EXISTS = 98, SEPARATOR = 99, ANY = 100, SHORTEST = 101, SIMPLE = 102, 
-    ACYCLIC = 103, WALKS = 104, SHOW = 105, TEXT = 106, INDEX = 107, IRIREF = 108, 
-    PNAME_NS = 109, PNAME_LN = 110, BLANK_NODE_LABEL = 111, VAR1 = 112, 
-    VAR2 = 113, LANGTAG = 114, INTEGER = 115, DECIMAL = 116, DOUBLE = 117, 
-    INTEGER_POSITIVE = 118, DECIMAL_POSITIVE = 119, DOUBLE_POSITIVE = 120, 
+    ACYCLIC = 103, WALKS = 104, SHOW = 105, INDEX = 106, ALPHANUMERIC_IDENTIFIER = 107, 
+    IRIREF = 108, PNAME_NS = 109, PNAME_LN = 110, BLANK_NODE_LABEL = 111, 
+    VAR1 = 112, VAR2 = 113, LANGTAG = 114, INTEGER = 115, DECIMAL = 116, 
+    DOUBLE = 117, INTEGER_POSITIVE = 118, DECIMAL_POSITIVE = 119, DOUBLE_POSITIVE = 120, 
     INTEGER_NEGATIVE = 121, DECIMAL_NEGATIVE = 122, DOUBLE_NEGATIVE = 123, 
     STRING_LITERAL1 = 124, STRING_LITERAL2 = 125, STRING_LITERAL_LONG1 = 126, 
     STRING_LITERAL_LONG2 = 127, COMMENT = 128, REFERENCE = 129, LESS_EQUAL = 130, 
@@ -77,12 +77,13 @@ public:
     RuleConditionalAndExpression = 95, RuleRelationalExpression = 96, RuleAdditiveExpression = 97, 
     RuleRhsAdditiveExpression = 98, RuleRhsAdditiveExpressionSub = 99, RuleMultiplicativeExpression = 100, 
     RuleUnaryExpression = 101, RulePrimaryExpression = 102, RuleBuiltInCall = 103, 
-    RuleRegexExpression = 104, RuleSubStringExpression = 105, RuleStrReplaceExpression = 106, 
-    RuleExistsFunction = 107, RuleNotExistsFunction = 108, RuleAggregate = 109, 
-    RuleIriOrFunction = 110, RuleRdfLiteral = 111, RuleNumericLiteral = 112, 
-    RuleNumericLiteralUnsigned = 113, RuleNumericLiteralPositive = 114, 
-    RuleNumericLiteralNegative = 115, RuleBooleanLiteral = 116, RuleString = 117, 
-    RuleIri = 118, RulePrefixedName = 119, RuleBlankNode = 120, RuleAnon = 121
+    RuleProcedure = 104, RuleProcedureArguments = 105, RuleProcedureBindings = 106, 
+    RuleRegexExpression = 107, RuleSubStringExpression = 108, RuleStrReplaceExpression = 109, 
+    RuleExistsFunction = 110, RuleNotExistsFunction = 111, RuleAggregate = 112, 
+    RuleIriOrFunction = 113, RuleRdfLiteral = 114, RuleNumericLiteral = 115, 
+    RuleNumericLiteralUnsigned = 116, RuleNumericLiteralPositive = 117, 
+    RuleNumericLiteralNegative = 118, RuleBooleanLiteral = 119, RuleString = 120, 
+    RuleIri = 121, RulePrefixedName = 122, RuleBlankNode = 123, RuleAnon = 124
   };
 
   explicit SparqlQueryParser(antlr4::TokenStream *input);
@@ -206,6 +207,9 @@ public:
   class UnaryExpressionContext;
   class PrimaryExpressionContext;
   class BuiltInCallContext;
+  class ProcedureContext;
+  class ProcedureArgumentsContext;
+  class ProcedureBindingsContext;
   class RegexExpressionContext;
   class SubStringExpressionContext;
   class StrReplaceExpressionContext;
@@ -250,7 +254,7 @@ public:
     ShowQueryContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *SHOW();
-    antlr4::tree::TerminalNode *TEXT();
+    antlr4::tree::TerminalNode *ALPHANUMERIC_IDENTIFIER();
     antlr4::tree::TerminalNode *INDEX();
 
 
@@ -754,6 +758,7 @@ public:
     FilterContext *filter();
     BindContext *bind();
     InlineDataContext *inlineData();
+    ProcedureContext *procedure();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1795,7 +1800,7 @@ public:
     antlr4::Token *s146 = nullptr;
     std::vector<antlr4::Token *> op;
     antlr4::Token *s150 = nullptr;
-    antlr4::Token *_tset1717 = nullptr;
+    antlr4::Token *_tset1723 = nullptr;
     RhsAdditiveExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     RhsAdditiveExpressionSubContext *rhsAdditiveExpressionSub();
@@ -1835,7 +1840,7 @@ public:
     antlr4::Token *s146 = nullptr;
     std::vector<antlr4::Token *> op;
     antlr4::Token *s150 = nullptr;
-    antlr4::Token *_tset1760 = nullptr;
+    antlr4::Token *_tset1766 = nullptr;
     MultiplicativeExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExpressionContext *> unaryExpression();
@@ -1964,6 +1969,58 @@ public:
   };
 
   BuiltInCallContext* builtInCall();
+
+  class  ProcedureContext : public antlr4::ParserRuleContext {
+  public:
+    ProcedureContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ALPHANUMERIC_IDENTIFIER();
+    antlr4::tree::TerminalNode *OPEN_BRACE();
+    antlr4::tree::TerminalNode *CLOSE_BRACE();
+    antlr4::tree::TerminalNode *AS();
+    ProcedureBindingsContext *procedureBindings();
+    ProcedureArgumentsContext *procedureArguments();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ProcedureContext* procedure();
+
+  class  ProcedureArgumentsContext : public antlr4::ParserRuleContext {
+  public:
+    ProcedureArgumentsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext* expression(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ProcedureArgumentsContext* procedureArguments();
+
+  class  ProcedureBindingsContext : public antlr4::ParserRuleContext {
+  public:
+    ProcedureBindingsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<VarContext *> var();
+    VarContext* var(size_t i);
+    antlr4::tree::TerminalNode *OPEN_BRACE();
+    antlr4::tree::TerminalNode *CLOSE_BRACE();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ProcedureBindingsContext* procedureBindings();
 
   class  RegexExpressionContext : public antlr4::ParserRuleContext {
   public:
@@ -2173,8 +2230,8 @@ public:
   public:
     BooleanLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *TRUE();
-    antlr4::tree::TerminalNode *FALSE();
+    antlr4::tree::TerminalNode *K_TRUE();
+    antlr4::tree::TerminalNode *K_FALSE();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

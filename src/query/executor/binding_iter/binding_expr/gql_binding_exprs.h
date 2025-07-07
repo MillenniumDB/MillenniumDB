@@ -9,6 +9,7 @@
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_greater_or_equals.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_edge_label.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_has_node_label.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_wildcard_label.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_is.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_less.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_less_or_equals.h" // IWYU pragma: export
@@ -16,7 +17,8 @@
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_not.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_not_equals.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_or.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/gql/binding_expr_property.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_node_property.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_edge_property.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_subtraction.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_xor.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_abs.h" // IWYU pragma: export

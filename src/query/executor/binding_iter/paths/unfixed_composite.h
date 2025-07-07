@@ -2,10 +2,11 @@
 
 #include <memory>
 
+#include <boost/unordered/unordered_flat_set.hpp>
+
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths {
 /*
@@ -16,18 +17,17 @@ It then does a search on that node using a nested path enum.
 class UnfixedComposite : public BindingIter {
 private:
     // Attributes determined in the constructor
-    VarId         path_var;
-    VarId         start;
-    VarId         end;
+    VarId path_var;
+    VarId start;
+    VarId end;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
     // Attributes determined in begin
     Binding* parent_binding;
 
-
     // Only used to remember the starting nodes, in order to not repeat them
-    robin_hood::unordered_set<uint64_t> visited;
+    boost::unordered_flat_set<uint64_t> visited;
 
     uint64_t last_start = ObjectId::get_null().id;
 
@@ -48,27 +48,29 @@ public:
     std::unique_ptr<BindingIter> child_iter;
 
     UnfixedComposite(
-        VarId                          path_var,
-        VarId                          start,
-        VarId                          end,
-        RPQ_DFA                        _automaton,
+        VarId path_var,
+        VarId start,
+        VarId end,
+        RPQ_DFA _automaton,
         std::unique_ptr<IndexProvider> provider,
-        std::unique_ptr<BindingIter>   child_iter
+        std::unique_ptr<BindingIter> child_iter
     ) :
-        path_var          (path_var),
-        start             (start),
-        end               (end),
-        automaton         (_automaton),
-        provider          (std::move(provider)),
-        start_transitions (automaton.from_to_connections[0]),
-        child_iter        (std::move(child_iter)) { }
+        path_var(path_var),
+        start(start),
+        end(end),
+        automaton(_automaton),
+        provider(std::move(provider)),
+        start_transitions(automaton.from_to_connections[0]),
+        child_iter(std::move(child_iter))
+    { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     void _reset() override;
     bool _next() override;
 
-    void assign_nulls() override {
+    void assign_nulls() override
+    {
         parent_binding->add(start, ObjectId::get_null());
         parent_binding->add(end, ObjectId::get_null());
         parent_binding->add(path_var, ObjectId::get_null());

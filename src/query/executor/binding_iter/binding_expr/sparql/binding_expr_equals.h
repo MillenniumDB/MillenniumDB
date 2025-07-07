@@ -106,27 +106,27 @@ public:
         {
             auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
-            case Conversions::OPTYPE_INTEGER: {
+            case Conversions::OpType::INTEGER: {
                 auto lhs = Conversions::to_integer(lhs_oid);
                 auto rhs = Conversions::to_integer(rhs_oid);
                 return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
-            case Conversions::OPTYPE_DECIMAL: {
+            case Conversions::OpType::DECIMAL: {
                 auto lhs = Conversions::to_decimal(lhs_oid);
                 auto rhs = Conversions::to_decimal(rhs_oid);
                 return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
-            case Conversions::OPTYPE_FLOAT: {
+            case Conversions::OpType::FLOAT: {
                 auto lhs = Conversions::to_float(lhs_oid);
                 auto rhs = Conversions::to_float(rhs_oid);
                 return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
-            case Conversions::OPTYPE_DOUBLE: {
+            case Conversions::OpType::DOUBLE: {
                 auto lhs = Conversions::to_double(lhs_oid);
                 auto rhs = Conversions::to_double(rhs_oid);
                 return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
-            case Conversions::OPTYPE_INVALID: {
+            case Conversions::OpType::INVALID: {
                 return ObjectId::get_null();
             }
             default:
@@ -151,17 +151,15 @@ public:
             && rhs_generic_type == RDF_OID::GenericType::TENSOR) {
             const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
-            case Conversions::OPTYPE_TENSOR_FLOAT: {
+            case Conversions::OpType::TENSOR_FLOAT: {
                 const auto lhs = Conversions::to_tensor<float>(lhs_oid);
                 const auto rhs = Conversions::to_tensor<float>(rhs_oid);
-                const auto cmp = Tensor<float>::compare(lhs, rhs);
-                return SPARQL::Conversions::pack_bool(cmp == 0);
+                return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
-            case Conversions::OPTYPE_TENSOR_DOUBLE: {
+            case Conversions::OpType::TENSOR_DOUBLE: {
                 const auto lhs = Conversions::to_tensor<double>(lhs_oid);
                 const auto rhs = Conversions::to_tensor<double>(rhs_oid);
-                const auto cmp = Tensor<double>::compare(lhs, rhs);
-                return SPARQL::Conversions::pack_bool(cmp == 0);
+                return SPARQL::Conversions::pack_bool(lhs == rhs);
             }
             default:
                 throw std::runtime_error("This should never happen.");

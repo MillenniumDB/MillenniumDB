@@ -1,11 +1,9 @@
 #pragma once
 
-#include <set>
 #include <memory>
 
-#include "query/query_context.h"
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/expr/sparql_exprs.h"
+#include "query/parser/expr/sparql/expr_visitor.h"
+#include "query/parser/expr/sparql/exprs.h"
 #include "query/rewriter/sparql/expr/rewrite_rules/expr_rewrite_rule.h"
 
 namespace SPARQL {
@@ -112,24 +110,28 @@ public:
     void visit(ExprSum&            expr) override { visit_expr_with_one_expr<ExprSum>(expr);            }
 
     // lhs rhs
-    void visit(ExprMultiplication& expr) override { visit_expr_with_lhs_and_rhs<ExprMultiplication>(expr); }
-    void visit(ExprDivision&       expr) override { visit_expr_with_lhs_and_rhs<ExprDivision>(expr);       }
-    void visit(ExprAddition&       expr) override { visit_expr_with_lhs_and_rhs<ExprAddition>(expr);       }
-    void visit(ExprSubtraction&    expr) override { visit_expr_with_lhs_and_rhs<ExprSubtraction>(expr);    }
-    void visit(ExprAnd&            expr) override { visit_expr_with_lhs_and_rhs<ExprAnd>(expr);            }
-    void visit(ExprOr&             expr) override { visit_expr_with_lhs_and_rhs<ExprOr>(expr);             }
-    void visit(ExprLess&           expr) override { visit_expr_with_lhs_and_rhs<ExprLess>(expr);           }
-    void visit(ExprGreater&        expr) override { visit_expr_with_lhs_and_rhs<ExprGreater>(expr);        }
-    void visit(ExprEqual&          expr) override { visit_expr_with_lhs_and_rhs<ExprEqual>(expr);          }
-    void visit(ExprNotEqual&       expr) override { visit_expr_with_lhs_and_rhs<ExprNotEqual>(expr);       }
-    void visit(ExprLessOrEqual&    expr) override { visit_expr_with_lhs_and_rhs<ExprLessOrEqual>(expr);    }
-    void visit(ExprGreaterOrEqual& expr) override { visit_expr_with_lhs_and_rhs<ExprGreaterOrEqual>(expr); }
-    void visit(ExprContains&       expr) override { visit_expr_with_lhs_and_rhs<ExprContains>(expr);       }
-    void visit(ExprSameTerm&       expr) override { visit_expr_with_lhs_and_rhs<ExprSameTerm>(expr);       }
-    void visit(ExprStrAfter&       expr) override { visit_expr_with_lhs_and_rhs<ExprStrAfter>(expr);       }
-    void visit(ExprStrBefore&      expr) override { visit_expr_with_lhs_and_rhs<ExprStrBefore>(expr);      }
-    void visit(ExprDot&            expr) override { visit_expr_with_lhs_and_rhs<ExprDot>(expr);            }
-    void visit(ExprPow&            expr) override { visit_expr_with_lhs_and_rhs<ExprPow>(expr);            }
+    void visit(ExprAddition&          expr) override { visit_expr_with_lhs_and_rhs<ExprAddition>(expr);          }
+    void visit(ExprAnd&               expr) override { visit_expr_with_lhs_and_rhs<ExprAnd>(expr);               }
+    void visit(ExprContains&          expr) override { visit_expr_with_lhs_and_rhs<ExprContains>(expr);          }
+    void visit(ExprCosineDistance&    expr) override { visit_expr_with_lhs_and_rhs<ExprCosineDistance>(expr);    }
+    void visit(ExprCosineSimilarity&  expr) override { visit_expr_with_lhs_and_rhs<ExprCosineSimilarity>(expr);  }
+    void visit(ExprDivision&          expr) override { visit_expr_with_lhs_and_rhs<ExprDivision>(expr);          }
+    void visit(ExprDot&               expr) override { visit_expr_with_lhs_and_rhs<ExprDot>(expr);               }
+    void visit(ExprEqual&             expr) override { visit_expr_with_lhs_and_rhs<ExprEqual>(expr);             }
+    void visit(ExprEuclideanDistance& expr) override { visit_expr_with_lhs_and_rhs<ExprEuclideanDistance>(expr); }
+    void visit(ExprGreater&           expr) override { visit_expr_with_lhs_and_rhs<ExprGreater>(expr);           }
+    void visit(ExprGreaterOrEqual&    expr) override { visit_expr_with_lhs_and_rhs<ExprGreaterOrEqual>(expr);    }
+    void visit(ExprLess&              expr) override { visit_expr_with_lhs_and_rhs<ExprLess>(expr);              }
+    void visit(ExprLessOrEqual&       expr) override { visit_expr_with_lhs_and_rhs<ExprLessOrEqual>(expr);       }
+    void visit(ExprManhattanDistance& expr) override { visit_expr_with_lhs_and_rhs<ExprManhattanDistance>(expr); }
+    void visit(ExprMultiplication&    expr) override { visit_expr_with_lhs_and_rhs<ExprMultiplication>(expr);    }
+    void visit(ExprNotEqual&          expr) override { visit_expr_with_lhs_and_rhs<ExprNotEqual>(expr);          }
+    void visit(ExprOr&                expr) override { visit_expr_with_lhs_and_rhs<ExprOr>(expr);                }
+    void visit(ExprPow&               expr) override { visit_expr_with_lhs_and_rhs<ExprPow>(expr);               }
+    void visit(ExprSameTerm&          expr) override { visit_expr_with_lhs_and_rhs<ExprSameTerm>(expr);          }
+    void visit(ExprStrAfter&          expr) override { visit_expr_with_lhs_and_rhs<ExprStrAfter>(expr);          }
+    void visit(ExprStrBefore&         expr) override { visit_expr_with_lhs_and_rhs<ExprStrBefore>(expr);         }
+    void visit(ExprSubtraction&       expr) override { visit_expr_with_lhs_and_rhs<ExprSubtraction>(expr);       }
 
     // lhs_expr and exprs
     void visit(ExprIn&    expr) override { visit_expr_with_lhs_expr_and_exprs<ExprIn>(expr);    }

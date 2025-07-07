@@ -1,11 +1,13 @@
 #pragma once
 
 #include "graph_models/gql/conversions.h"
+#include "graph_models/gql/gql_model.h"
 #include "graph_models/object_id.h"
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/query_context.h"
 #include "query/var_id.h"
+#include "storage/index/bplus_tree/bplus_tree.h"
 
 namespace GQL {
 
@@ -26,17 +28,16 @@ public:
 
     ObjectId eval(const Binding& binding) override
     {
-        std::string var_name = "." + get_query_ctx().get_var_name(edge_id) + "_labels";
-        bool found;
-        VarId labels_var = get_query_ctx().get_var(var_name, &found);
+        bool interruption = false;
+        ObjectId edge_oid = binding[edge_id];
 
-        std::vector<ObjectId> labels;
-        ObjectId list_oid = binding[labels_var];
-        Conversions::unpack_list(list_oid, labels);
+        BptIter<2> it = gql_model.edge_label->get_range(
+            &interruption,
+            { edge_oid.id, label_id.id },
+            { edge_oid.id, label_id.id }
+        );
 
-        auto pos = std::find(labels.begin(), labels.end(), label_id);
-
-        if (pos != labels.end()) {
+        if (it.next()) {
             return GQL::Conversions::pack_bool(true);
         }
         return GQL::Conversions::pack_bool(false);

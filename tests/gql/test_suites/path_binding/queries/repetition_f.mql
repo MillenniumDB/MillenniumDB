@@ -1,0 +1,2 @@
+MATCH p = ((a)-[:Follows]->(b)|(c)-[:Owns]->(d)){1,2}
+RETURN p,a,b,c,d

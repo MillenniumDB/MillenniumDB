@@ -1,0 +1,2 @@
+MATCH (x: !bbb)
+RETURN x

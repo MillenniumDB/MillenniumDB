@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
 class ExprAggAvg : public Expr {
@@ -11,22 +9,27 @@ public:
     bool distinct;
 
     ExprAggAvg(std::unique_ptr<Expr> expr, bool distinct) :
-        expr     (std::move(expr)),
-        distinct (distinct) { }
+        expr(std::move(expr)),
+        distinct(distinct)
+    { }
 
-    virtual std::unique_ptr<Expr> clone() const override {
+    virtual std::unique_ptr<Expr> clone() const override
+    {
         return std::make_unique<ExprAggAvg>(expr->clone(), distinct);
     }
 
-    void accept_visitor(ExprVisitor& visitor) override {
+    void accept_visitor(ExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         return expr->get_all_vars();
     }
 
-    bool has_aggregation() const override {
+    bool has_aggregation() const override
+    {
         return true;
     }
 };

@@ -21,6 +21,8 @@ public:
     // Returns the table pointer associated with the current result
     uint64_t get_table_pointer() const override;
 
+    uint64_t get_score() const override;
+
 private:
     // Iterator that makes the search in the trie
     std::unique_ptr<TrieIter> trie_iter;
@@ -32,6 +34,8 @@ private:
     std::unique_ptr<BptIter<2>> bpt_iter;
 
     uint64_t table_pointer;
+
+    uint64_t score;
 
     // Only needed to pass to bpt.get_range()
     bool interruption_requested = false;

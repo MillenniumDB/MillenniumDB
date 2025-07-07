@@ -23,6 +23,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPrimitiveStatementList(MQL_Parser::PrimitiveStatementListContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -43,59 +51,15 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitTensorStoreQuery(MQL_Parser::TensorStoreQueryContext *ctx) override {
+  virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitCreateTensorStore(MQL_Parser::CreateTensorStoreContext *ctx) override {
+  virtual std::any visitCreateIndexOptions(MQL_Parser::CreateIndexOptionsContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsertTensors(MQL_Parser::InsertTensorsContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertTensorsTuple(MQL_Parser::InsertTensorsTupleContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitDeleteTensors(MQL_Parser::DeleteTensorsContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTensor(MQL_Parser::TensorContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTensorDistanceReference(MQL_Parser::TensorDistanceReferenceContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitMetricType(MQL_Parser::MetricTypeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTextIndexQuery(MQL_Parser::TextIndexQueryContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitCreateTextIndex(MQL_Parser::CreateTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNormalizeTextIndex(MQL_Parser::NormalizeTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNormalizeType(MQL_Parser::NormalizeTypeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTokenizeTextIndex(MQL_Parser::TokenizeTextIndexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTokenizeType(MQL_Parser::TokenizeTypeContext *ctx) override {
+  virtual std::any visitCreateIndexOption(MQL_Parser::CreateIndexOptionContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -111,11 +75,19 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *ctx) override {
+  virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext *ctx) override {
+  virtual std::any visitLetStatement(MQL_Parser::LetStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitLetDefinitionList(MQL_Parser::LetDefinitionListContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitLetDefinition(MQL_Parser::LetDefinitionContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -139,6 +111,22 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitCallStatement(MQL_Parser::CallStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitYieldStatement(MQL_Parser::YieldStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitYieldItem(MQL_Parser::YieldItemContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitCallArguments(MQL_Parser::CallArgumentsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitLimitOffsetClauses(MQL_Parser::LimitOffsetClausesContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -148,10 +136,6 @@ public:
   }
 
   virtual std::any visitOffsetClause(MQL_Parser::OffsetClauseContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitSetItem(MQL_Parser::SetItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -367,11 +351,23 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitTensorDistance(MQL_Parser::TensorDistanceContext *ctx) override {
+  virtual std::any visitTextSearch(MQL_Parser::TextSearchContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitTextSearch(MQL_Parser::TextSearchContext *ctx) override {
+  virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitCosineDistance(MQL_Parser::CosineDistanceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitManhattanDistance(MQL_Parser::ManhattanDistanceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext *ctx) override {
     return visitChildren(ctx);
   }
 

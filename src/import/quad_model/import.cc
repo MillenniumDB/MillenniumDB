@@ -4,31 +4,28 @@
 
 #include "import/import_helper.h"
 #include "import/stats_processor.h"
-#include "misc/fatal_error.h"
-#include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "storage/index/random_access_table/edge_table_mem_import.h"
 
 using namespace Import::QuadModel;
 
-
-void OnDiskImport::start_import(MDBIstream& in) {
+void OnDiskImport::start_import(MDBIstream& in)
+{
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
 
+    pending_declared_nodes = std::make_unique<DiskVector<1>>(
+        db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX
+    );
+    pending_labels = std::make_unique<DiskVector<2>>(db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX);
+    pending_properties = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX
+    );
+    pending_edges = std::make_unique<DiskVector<4>>(db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX);
+
+    // Initialize external helper
+    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+
     lexer.begin(in);
-
-    { // Initial memory allocation
-        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
-
-        if (external_strings == nullptr) {
-            FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
-        }
-
-        Import::ExternalString::strings = external_strings;
-        external_strings_capacity = buffer_size;
-        external_strings_end = 0;
-        assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
-    }
 
     int current_state = State::LINE_BEGIN;
     current_line = 1;
@@ -48,61 +45,130 @@ void OnDiskImport::start_import(MDBIstream& in) {
         std::cout << "  " << parsing_errors << " errors found.\n";
         std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
     }
+
     print_duration("Parsing", start);
 
-    // Finish Strings File
-    std::fstream strings_file;
-    strings_file.open(db_folder + "/strings.dat", std::ios::out | std::ios::binary);
-    strings_file.write(external_strings, external_strings_end);
-    uint64_t last_str_pos = strings_file.tellp();
+    // initial flush
+    external_helper->flush_to_disk();
 
-    print_duration("Processing strings", start);
+    { // process pending files
+        pending_declared_nodes->finish_appends();
+        pending_labels->finish_appends();
+        pending_properties->finish_appends();
+        pending_edges->finish_appends();
 
-    { // Destroy external_strings_set replacing it with an empty map
-        // boost::unordered_set<ExternalString> tmp;
-        // external_strings_set.swap(tmp);
-        external_strings_set.clear();
-    }
+        int i = 0;
+        while (true) {
+            const auto total_pending = pending_declared_nodes->get_total_tuples()
+                                     + pending_labels->get_total_tuples()
+                                     + pending_properties->get_total_tuples()
+                                     + pending_edges->get_total_tuples();
+            if (total_pending == 0) {
+                break;
+            }
+            std::cout << "total pending: " << total_pending << std::endl;
 
-    { // Create StringsHash
-        // Big enough buffer to store any string
-        char* string_buffer = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
-        );
+            auto old_pending_declared_nodes = std::move(pending_declared_nodes);
+            auto old_pending_labels = std::move(pending_labels);
+            auto old_pending_properties = std::move(pending_properties);
+            auto old_pending_edges = std::move(pending_edges);
 
-        // we reuse the allocated memory for external strings as a buffer
-        StringsHashBulkOnDiskImport strings_hash(
-            db_folder + "/str_hash",
-            external_strings,
-            external_strings_capacity
-        );
-        strings_file.close();
-        strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(0, strings_file.beg);
-        uint64_t current_pos = 0;
+            pending_declared_nodes = std::make_unique<DiskVector<1>>(
+                db_folder + "/" + PENDING_DECLARED_NODES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_labels = std::make_unique<DiskVector<2>>(
+                db_folder + "/" + PENDING_LABELS_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_properties = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_PROPERTIES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_edges = std::make_unique<DiskVector<4>>(
+                db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX + std::to_string(i)
+            );
+            ++i;
 
-        // read all strings one by one and add them to the StringsHash
-        while (current_pos < last_str_pos) {
-            auto remaining_in_block = StringManager::BLOCK_SIZE - (current_pos % StringManager::BLOCK_SIZE);
+            // advance pending variables for current iteration
+            external_helper->advance_pending();
+            external_helper->clear_sets();
 
-            if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-                current_pos += remaining_in_block;
-                strings_file.read(string_buffer, remaining_in_block);
+            old_pending_declared_nodes->begin_tuple_iter();
+            while (old_pending_declared_nodes->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_declared_nodes->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+
+                try_save_declared_node();
             }
 
-            auto str_len = read_str(strings_file, string_buffer);
-            strings_hash.create_id(string_buffer, current_pos, str_len);
-            current_pos = strings_file.tellg();
+            old_pending_labels->begin_tuple_iter();
+            while (old_pending_labels->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_labels->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                label_id = external_helper->resolve_id(pending_tuple[1]);
+
+                try_save_label();
+            }
+
+            old_pending_properties->begin_tuple_iter();
+            while (old_pending_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_properties->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                key_id = external_helper->resolve_id(pending_tuple[1]);
+                value_id = external_helper->resolve_id(pending_tuple[2]);
+
+                try_save_property(id1);
+            }
+
+            old_pending_edges->begin_tuple_iter();
+            while (old_pending_edges->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_edges->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id2 = external_helper->resolve_id(pending_tuple[1]);
+                type_id = external_helper->resolve_id(pending_tuple[2]);
+                edge_id = pending_tuple[3]; // always inlined
+
+                try_save_quad<true>(); // was stored as right-directed
+            }
+
+            // write out new data
+            external_helper->flush_to_disk();
+            // close and delete the old pending files
+            external_helper->clean_up_old();
+
+            // close and delete old pending file
+            pending_declared_nodes->finish_appends();
+            pending_labels->finish_appends();
+            pending_properties->finish_appends();
+            pending_edges->finish_appends();
+
+            old_pending_declared_nodes->skip_indexing(); // will close and remove file
+            old_pending_labels->skip_indexing(); // will close and remove file
+            old_pending_properties->skip_indexing(); // will close and remove file
+            old_pending_edges->skip_indexing(); // will close and remove file
         }
-        strings_file.close();
-        MDB_ALIGNED_FREE(string_buffer);
+
+        // process pending finished, clean up the last pending file
+        pending_declared_nodes->skip_indexing();
+        pending_labels->skip_indexing();
+        pending_properties->skip_indexing();
+        pending_edges->skip_indexing();
     }
 
-    print_duration("Write strings and strings hashes", start);
+    // delete all unnecessary files and free-up memory
+    external_helper->clean_up();
+
+    print_duration("Process strings and tensors", start);
+
+    external_helper->build_disk_hash();
+
+    print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_strings;
-    buffer_size = external_strings_capacity;
+    char* const buffer = external_helper->buffer;
+    const auto buffer_size = external_helper->buffer_size;
 
     // Save lasts blocks to disk
     declared_nodes.finish_appends();
@@ -141,8 +207,7 @@ void OnDiskImport::start_import(MDBIstream& in) {
         }
         // declared_nodes.finish_appends() its called twice, no problem with that
         declared_nodes.finish_appends();
-
-        catalog.identifiable_nodes_count = nodes_set.size();
+        catalog.nodes_count = nodes_set.size();
     }
     print_duration("Write table", start);
 
@@ -155,7 +220,6 @@ void OnDiskImport::start_import(MDBIstream& in) {
     equal_from_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
     equal_to_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
 
-
     { // Nodes B+Tree
         size_t COL_NODE = 0;
         NoStat<1> no_stat;
@@ -167,7 +231,7 @@ void OnDiskImport::start_import(MDBIstream& in) {
         size_t COL_NODE = 0, COL_LABEL = 1;
 
         NoStat<2> no_stat;
-        LabelStat label_stat;
+        DictCountStat<2> label_stat;
 
         labels.create_bpt(db_folder + "/node_label", { COL_NODE, COL_LABEL }, no_stat);
 
@@ -175,7 +239,7 @@ void OnDiskImport::start_import(MDBIstream& in) {
         catalog.label_count = label_stat.all;
         label_stat.end();
 
-        catalog.label2total_count = std::move(label_stat.map_label_count);
+        catalog.label2total_count = std::move(label_stat.dict);
     }
 
     { // Properties B+Tree
@@ -198,23 +262,23 @@ void OnDiskImport::start_import(MDBIstream& in) {
 
         NoStat<4> no_stat;
         AllStat<4> all_stat;
+        DictCountStat<4> dict_count_stat;
 
-        edges.create_bpt(
-            db_folder + "/from_to_type_edge",
-            { COL_FROM, COL_TO, COL_TYPE, COL_EDGE },
-            all_stat
-        );
+        edges
+            .create_bpt(db_folder + "/from_to_type_edge", { COL_FROM, COL_TO, COL_TYPE, COL_EDGE }, all_stat);
         catalog.edge_count = all_stat.all;
 
+        edges.create_bpt(db_folder + "/to_type_from_edge", { COL_TO, COL_TYPE, COL_FROM, COL_EDGE }, no_stat);
+
         edges.create_bpt(
-            db_folder + "/to_type_from_edge",
-            { COL_TO, COL_TYPE, COL_FROM, COL_EDGE },
-            no_stat
+            db_folder + "/type_from_to_edge",
+            { COL_TYPE, COL_FROM, COL_TO, COL_EDGE },
+            dict_count_stat
         );
 
-        edges.create_bpt(db_folder + "/type_from_to_edge", { COL_TYPE, COL_FROM, COL_TO, COL_EDGE }, no_stat);
-
         edges.create_bpt(db_folder + "/type_to_from_edge", { COL_TYPE, COL_TO, COL_FROM, COL_EDGE }, no_stat);
+
+        catalog.type2total_count = std::move(dict_count_stat.dict);
     }
 
     { // FROM=TO=TYPE EDGE
@@ -238,7 +302,6 @@ void OnDiskImport::start_import(MDBIstream& in) {
         DictCountStat<3> stat;
         equal_from_to
             .create_bpt(db_folder + "/equal_from_to_inverted", { COL_TYPE, COL_FROM_TO, COL_EDGE }, stat);
-
         stat.end();
 
         catalog.equal_from_to_count = stat.all;
@@ -284,7 +347,6 @@ void OnDiskImport::start_import(MDBIstream& in) {
     equal_from_to.finish_indexing();
     equal_from_type.finish_indexing();
     equal_to_type.finish_indexing();
-    MDB_ALIGNED_FREE(external_strings);
 
     print_duration("Write B+tree indexes", start);
 
@@ -293,8 +355,8 @@ void OnDiskImport::start_import(MDBIstream& in) {
     print_duration("Total Import", import_start);
 }
 
-
-void OnDiskImport::create_automata() {
+void OnDiskImport::create_automata()
+{
     // set all transitions as error at first, transitions that are defined later will stay as error.
     for (int s = 0; s < State::TOTAL_STATES; s++) {
         for (int t = 1; t < Token::TOTAL_TOKENS; t++) {

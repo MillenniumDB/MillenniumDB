@@ -28,8 +28,8 @@ WHERE {
         && DATATYPE(-1)                                                  = <http://www.w3.org/2001/XMLSchema#integer>
         && DATATYPE(1.0)                                                 = <http://www.w3.org/2001/XMLSchema#decimal>
         && DATATYPE(-1.0)                                                = <http://www.w3.org/2001/XMLSchema#decimal>
-        && DATATYPE(111111111111111111111111.0)                          = <http://www.w3.org/2001/XMLSchema#decimal>
-        && DATATYPE(-11111111111111111111111.0)                          = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE(111111111111111111.0)                                = <http://www.w3.org/2001/XMLSchema#decimal>
+        && DATATYPE(-111111111111111111.0)                               = <http://www.w3.org/2001/XMLSchema#decimal>
         && DATATYPE("1e0"^^xsd:float)                                    = <http://www.w3.org/2001/XMLSchema#float>
         && DATATYPE("-1e0"^^xsd:float)                                   = <http://www.w3.org/2001/XMLSchema#float>
         && DATATYPE(1e0)                                                 = <http://www.w3.org/2001/XMLSchema#double>

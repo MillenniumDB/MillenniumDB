@@ -5,9 +5,14 @@ options {
 	tokenVocab = MQL_Lexer;
 }
 
-root: ((setStatement? matchQuery | describeQuery) | insertPatterns | tensorStoreQuery | textIndexQuery | showQuery) EOF;
+root: (matchQuery | describeQuery | insertPatterns | createIndexQuery | showQuery) EOF;
 
-matchQuery: matchStatement whereStatement? groupByStatement? orderByStatement? returnStatement;
+matchQuery: primitiveStatementList whereStatement? groupByStatement? orderByStatement?
+        returnStatement;
+
+primitiveStatementList: primitiveStatement+;
+
+primitiveStatement: matchStatement | callStatement | letStatement;
 
 insertPatterns: K_INSERT insertLinearPattern (',' insertLinearPattern)*;
 
@@ -21,44 +26,16 @@ insertPlainEdge: '<' '-' '[' TYPE properties? ']''-'
 |                '-' '[' TYPE properties? ']''-' '>'
 ;
 
-tensorStoreQuery: createTensorStore | insertTensors | deleteTensors;
+createIndexQuery: K_CREATE identifier K_INDEX STRING K_WITH createIndexOptions;
 
-createTensorStore: K_CREATE K_TENSOR K_STORE STRING K_DIMENSIONS UNSIGNED_INTEGER;
+createIndexOptions:
+    '{' (createIndexOption (',' createIndexOption)*)? '}';
 
-// deleteTensorStore: K_DELETE K_TENSOR K_STORE identifier
-
-insertTensors: K_INSERT K_INTO K_TENSOR K_STORE STRING K_VALUES insertTensorsTuple (',' insertTensorsTuple)*;
-
-insertTensorsTuple: '(' identifier ',' tensor ')';
-
-deleteTensors: K_DELETE K_FROM K_TENSOR K_STORE STRING K_OBJECTS '(' identifier (',' identifier)* ')';
-
-tensor: '[' numericValue (',' numericValue)* ']';
-
-tensorDistanceReference: conditionalOrExpr;// | tensor;
-
-metricType: K_ANGULAR | K_EUCLIDEAN | K_MANHATTAN;
-
-textIndexQuery: createTextIndex;
-
-createTextIndex:
-    K_CREATE K_TEXT K_INDEX STRING K_ON identifier (
-        K_WITH (
-            normalizeTextIndex
-            | tokenizeTextIndex
-            | normalizeTextIndex tokenizeTextIndex
-            | tokenizeTextIndex normalizeTextIndex
-        ) )?;
-
-normalizeTextIndex: K_NORMALIZE normalizeType;
-normalizeType: K_IDENTITY | K_NFKD_CASEFOLD;
-
-tokenizeTextIndex: K_TOKENIZE tokenizeType;
-tokenizeType: K_IDENTITY | K_WS_SPLIT_PUNCT | K_WS_RM_PUNCT | K_WS_KEEP_PUNCT;
+createIndexOption:
+    STRING ('=' value | boolValue);
 
 showQuery: K_SHOW (
-    K_TENSOR K_STORE
-|   K_TEXT K_INDEX
+|   identifier K_INDEX
 );
 
 // updateStatements: (insertStatement | deleteStatement | updateSetStatement)+;
@@ -107,9 +84,13 @@ describeQuery: K_DESCRIBE describeFlag* fixedNodeInside;
 
 describeFlag: ( K_LABELS | K_PROPERTIES| K_OUTGOING | K_INCOMING ) (K_LIMIT UNSIGNED_INTEGER)?;
 
-setStatement: K_SET setItem (',' setItem)*;
-
 matchStatement: K_MATCH graphPattern;
+
+letStatement: K_LET letDefinitionList;
+
+letDefinitionList: letDefinition (',' letDefinition)*;
+
+letDefinition: VARIABLE '=' conditionalOrExpr;
 
 whereStatement: K_WHERE conditionalOrExpr;
 
@@ -120,6 +101,14 @@ orderByStatement: K_ORDER K_BY orderByItem (',' orderByItem)*;
 returnStatement: K_RETURN K_DISTINCT? returnItem (',' returnItem)* limitOffsetClauses? # returnList
 |                K_RETURN K_DISTINCT? '*' limitOffsetClauses? # returnAll
 ;
+
+callStatement: K_CALL identifier '(' callArguments? ')' yieldStatement?;
+
+yieldStatement: K_YIELD ('*' | yieldItem (',' yieldItem)*);
+
+yieldItem: VARIABLE alias?;
+
+callArguments: conditionalOrExpr (',' conditionalOrExpr)*;
 
 limitOffsetClauses
     : limitClause offsetClause? | offsetClause limitClause?
@@ -132,8 +121,6 @@ limitClause
 offsetClause
     : K_OFFSET UNSIGNED_INTEGER
     ;
-
-setItem: VARIABLE '=' fixedNodeInside;
 
 returnItem: VARIABLE KEY? # returnItemVar
 |           aggregateFunc '(' VARIABLE KEY? ')' (alias)? # returnItemAgg
@@ -254,14 +241,23 @@ atomicExpr:  VARIABLE KEY? # exprVar
 ;
 
 function: regex
-|         tensorDistance
-|         textSearch;
+|         textSearch
+|         cosineSimilarity
+|         cosineDistance
+|         manhattanDistance
+|         euclideanDistance;
 
 regex: K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (',' conditionalOrExpr)? ')';
 
-tensorDistance: K_TENSOR_DISTANCE '(' STRING ',' tensorDistanceReference ',' tensorDistanceReference ',' metricType ')';
-
 textSearch: K_TEXT_SEARCH '(' STRING ',' STRING ',' textSearchIndexMode ',' VARIABLE (',' VARIABLE)? ')';
+
+cosineSimilarity:  K_COSINE_SIMILARITY  '(' conditionalOrExpr ',' conditionalOrExpr ')';
+
+cosineDistance:    K_COSINE_DISTANCE    '(' conditionalOrExpr ',' conditionalOrExpr ')';
+
+manhattanDistance: K_MANHATTAN_DISTANCE '(' conditionalOrExpr ',' conditionalOrExpr ')';
+
+euclideanDistance: K_EUCLIDEAN_DISTANCE '(' conditionalOrExpr ',' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 
@@ -276,7 +272,6 @@ exprTypename: K_NULL
 keyword:
 K_ACYCLIC
 | K_AND
-| K_ANGULAR
 | K_ANY
 | K_AS
 | K_AVG
@@ -284,6 +279,9 @@ K_ACYCLIC
 | K_ASC
 | K_BY
 | K_BOOL
+| K_CALL
+| K_COSINE_DISTANCE
+| K_COSINE_SIMILARITY
 | K_COUNT
 | K_CREATE
 | K_DELETE
@@ -292,7 +290,7 @@ K_ACYCLIC
 | K_DIMENSIONS
 | K_DISTINCT
 | K_EDGE
-| K_EUCLIDEAN
+| K_EUCLIDEAN_DISTANCE
 | K_FROM
 | K_INCOMING
 | K_INDEX
@@ -306,16 +304,14 @@ K_ACYCLIC
 | K_IDENTITY
 | K_LABELS
 | K_LABEL
+| K_LET
 | K_LIMIT
-| K_MANHATTAN
+| K_MANHATTAN_DISTANCE
 | K_MATCH
 | K_MAX
 | K_MIN
-| K_NFKD_CASEFOLD
-| K_NORMALIZE
 | K_OBJECTS
 | K_OFFSET
-| K_ON
 | K_OPTIONAL
 | K_ORDER
 | K_OR
@@ -328,23 +324,15 @@ K_ACYCLIC
 | K_SHORTEST
 | K_SHOW
 | K_SIMPLE
-| K_TENSOR_DISTANCE
 | K_TEXT_SEARCH
 | K_REGEX
 | K_RETURN
-| K_SET
 | K_SUM
 | K_STRING
-| K_STORE
-| K_TENSOR
-| K_TEXT
-| K_TOKENIZE
 | K_TRAILS
 | K_VALUES
 | K_WALKS
 | K_WITH
 | K_WHERE
-| K_WS_KEEP_PUNCT
-| K_WS_RM_PUNCT
-| K_WS_SPLIT_PUNCT
+| K_YIELD
 ;

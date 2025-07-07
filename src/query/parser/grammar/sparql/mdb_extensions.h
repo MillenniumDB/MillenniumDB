@@ -6,22 +6,6 @@ namespace SPARQL::MDBExtensions {
 
 static std::string MDB_PREFIX_IRI = "https://mdb.imfd.cl/";
 
-namespace Procedure {
-/**
- * Procedures are represented by triples of the form:
- *
- * ?res mdbproc:myProcedure (arg1 arg2 arg3) .
- *
- * The main result will be projected into ?res, while additional projections may be posible through
- * the arguments
- *
- */
-static std::string PROCEDURE_PREFIX_IRI = MDB_PREFIX_IRI + "procedure#";
-
-static std::string TEXT_SEARCH_SUFFIX_IRI = "textSearch";
-static std::string TEXT_SEARCH_IRI = PROCEDURE_PREFIX_IRI + TEXT_SEARCH_SUFFIX_IRI;
-} // namespace Procedure
-
 namespace Function {
 /**
  * Functions are additional expressions that we provide
@@ -43,6 +27,9 @@ static std::string SUM_IRI = FUNCTION_PREFIX_IRI + SUM_SUFFIX_IRI;
 
 static std::string COSINE_SIMILARITY_SUFFIX_IRI = "cosineSimilarity";
 static std::string COSINE_SIMILARITY_IRI = FUNCTION_PREFIX_IRI + COSINE_SIMILARITY_SUFFIX_IRI;
+
+static std::string COSINE_DISTANCE_SUFFIX_IRI = "cosineDistance";
+static std::string COSINE_DISTANCE_IRI = FUNCTION_PREFIX_IRI + COSINE_SIMILARITY_SUFFIX_IRI;
 
 static std::string EUCLIDEAN_DISTANCE_SUFFIX_IRI = "euclideanDistance";
 static std::string EUCLIDEAN_DISTANCE_IRI = FUNCTION_PREFIX_IRI + EUCLIDEAN_DISTANCE_SUFFIX_IRI;

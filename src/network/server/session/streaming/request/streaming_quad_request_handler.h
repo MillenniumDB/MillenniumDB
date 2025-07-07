@@ -17,20 +17,20 @@ public:
 
     ~StreamingQuadRequestHandler() = default;
 
-    std::unique_ptr<Op> create_logical_plan(const std::string& query) override
+    OpUptr create_logical_plan(const std::string& query) override
     {
         auto logical_plan = MQL::QueryParser::get_query_plan(query);
         return logical_plan;
     }
 
-    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(Op& logical_plan) override
+    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) override
     {
         MQL::StreamingExecutorConstructor query_optimizer;
-        logical_plan.accept_visitor(query_optimizer);
+        std::get<std::unique_ptr<MQL::Op>>(logical_plan)->accept_visitor(query_optimizer);
         return std::move(query_optimizer.executor);
     }
 
-    void execute_update(Op& logical_plan, BufferManager::VersionScope& version_scope) override
+    void execute_update(OpUptr& logical_plan, BufferManager::VersionScope& version_scope) override
     {
         // Mutex to allow only one write query at a time
         std::lock_guard<std::mutex> lock(session.server.update_execution_mutex);
@@ -42,11 +42,10 @@ public:
         );
 
         buffer_manager.upgrade_to_editable(version_scope);
-        get_query_ctx().result_version += 1; // TODO: think a better way?
 
         const auto execution_start = std::chrono::system_clock::now();
         MQL::UpdateExecutor update_executor;
-        update_executor.execute(logical_plan);
+        update_executor.execute(*std::get<std::unique_ptr<MQL::Op>>(logical_plan));
         execution_duration_ms = get_duration(execution_start);
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {

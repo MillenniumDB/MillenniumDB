@@ -1,5 +1,6 @@
 #include "update_executor.h"
 
+#include <iostream>
 #include <sstream>
 
 #include "graph_models/inliner.h"
@@ -7,8 +8,8 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/text_search/text_search_index.h"
-#include "storage/index/text_search/text_search_index_manager.h"
+#include "storage/index/text_search/text_index.h"
+#include "storage/index/text_search/text_index_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
@@ -210,13 +211,21 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
     }
     default: {
         if (oid.is_tmp()) {
-            // we need to materialize the string
-            auto tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-            auto& str = tmp_manager.get_str(tmp_id);
-            auto new_external_id = string_manager.get_or_create(str.data(), str.size());
+            const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+            const auto& tmp_str = tmp_manager.get_str(tmp_id);
+
+            const uint64_t gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
+
+            uint64_t new_external_id;
+            if (gen_t == ObjectId::MASK_TENSOR) {
+                new_external_id = tensor_manager.get_or_create_id(tmp_str.data(), tmp_str.size());
+            } else {
+                new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
+            }
 
             oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
         }
+
         return true;
     }
     }
@@ -224,10 +233,14 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
 
 void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
 {
-    // Store all the inserts that will be necessary for the text search index
-    const auto& predicate2names = rdf_model.catalog.text_search_index_manager.get_predicate2names();
-    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
-        text_search_index_name2inserts;
+    // Store all the inserts that will be necessary for the indexes
+    using Name2InsertsMap = boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>;
+    const auto& text_index_predicate2names = rdf_model.catalog.text_index_manager
+                                                        .get_predicate2names();
+    Name2InsertsMap text_index_name2inserts;
+
+    const auto& hnsw_index_predicate2names = rdf_model.catalog.hnsw_index_manager.get_predicate2names();
+    Name2InsertsMap hnsw_index_name2inserts;
 
     // to receive the data
     for (auto& triple : op_insert_data.triples) {
@@ -261,12 +274,22 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
         bool is_new_record = rdf_model.spo->insert(record_spo);
 
         if (is_new_record) {
-            if (!predicate2names.empty()) {
+            if (!text_index_predicate2names.empty() || !hnsw_index_predicate2names.empty()) {
                 const auto predicate_str = SPARQL::Conversions::unpack_iri(P);
-                auto it = predicate2names.find(predicate_str);
-                if (it != predicate2names.end()) {
-                    for (const auto& name : it->second) {
-                        text_search_index_name2inserts[name].emplace_back(S, O);
+                { // register text index inserts
+                    const auto it = text_index_predicate2names.find(predicate_str);
+                    if (it != text_index_predicate2names.end()) {
+                        for (const auto& name : it->second) {
+                            text_index_name2inserts[name].emplace_back(S, O);
+                        }
+                    }
+                }
+                { // register hnsw index inserts
+                    const auto it = hnsw_index_predicate2names.find(predicate_str);
+                    if (it != hnsw_index_predicate2names.end()) {
+                        for (const auto& name : it->second) {
+                            hnsw_index_name2inserts[name].emplace_back(S, O);
+                        }
                     }
                 }
             }
@@ -324,20 +347,16 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
         }
     }
 
-    // Execute text search index updates
-    TextSearch::TextSearchIndex* text_search_index;
-    for (const auto& [name, inserts] : text_search_index_name2inserts) {
-        [[maybe_unused]] const auto found = rdf_model.catalog.text_search_index_manager.get_text_search_index(
-            name,
-            &text_search_index
-        );
-        assert(found && "Text search index not found");
+    // Execute index inserts
+    for (const auto& [name, inserts] : text_index_name2inserts) {
+        auto* text_search_index_ptr = rdf_model.catalog.text_index_manager.get_text_index(name);
+        assert(text_search_index_ptr != nullptr && "Text index not found");
 
-        TextSearchIndexUpdateData tsi_update {};
-        tsi_update.text_search_index_name = name;
+        TextIndexUpdateData tsi_update {};
+        tsi_update.index_name = name;
 
         for (const auto& [S, O] : inserts) {
-            const auto current_inserted_tokens = text_search_index->index_single(S, O);
+            const auto current_inserted_tokens = text_search_index_ptr->index_single(S, O);
             if (current_inserted_tokens > 0) {
                 ++tsi_update.inserted_elements;
                 tsi_update.inserted_tokens += current_inserted_tokens;
@@ -346,14 +365,35 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
 
         insert_text_search_index_update_data(std::move(tsi_update));
     }
+
+    for (const auto& [name, inserts] : hnsw_index_name2inserts) {
+        auto* hnsw_index_ptr = rdf_model.catalog.hnsw_index_manager.get_hnsw_index(name);
+        assert(hnsw_index_ptr != nullptr && "HNSW index not found");
+
+        HNSWIndexUpdateData hi_update {};
+        hi_update.index_name = name;
+
+        for (const auto& [S, O] : inserts) {
+            const bool was_inserted = hnsw_index_ptr->index_single<true>(S, O);
+            if (was_inserted) {
+                ++hi_update.inserted_elements;
+            }
+        }
+
+        insert_hnsw_index_update_data(std::move(hi_update));
+    }
 }
 
 void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
 {
-    // Store all the deletes that will be necessary for the text search index
-    const auto& predicate2names = rdf_model.catalog.text_search_index_manager.get_predicate2names();
-    boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>
-        text_search_index_name2deletes;
+    // Store all the deletes that will be necessary for the indexes
+    using Name2DeletesMap = boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>;
+    const auto& text_index_predicate2names = rdf_model.catalog.text_index_manager
+                                                        .get_predicate2names();
+    Name2DeletesMap text_index_name2deletes;
+
+    const auto& hnsw_index_predicate2names = rdf_model.catalog.hnsw_index_manager.get_predicate2names();
+    Name2DeletesMap hnsw_index_name2deletes;
 
     for (auto& triple : op_delete_data.triples) {
         assert(triple.subject.is_OID());
@@ -389,13 +429,23 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
         bool exists = rdf_model.spo->delete_record(record_spo);
 
         if (exists) {
-            // Retrieve all the updates that will be necessary for the text search index
-            if (!predicate2names.empty()) {
+            // Retrieve all the updates that will be necessary for the text index
+            if (!text_index_predicate2names.empty() || !hnsw_index_predicate2names.empty()) {
                 const auto predicate_str = SPARQL::Conversions::unpack_iri(P);
-                auto it = predicate2names.find(predicate_str);
-                if (it != predicate2names.end()) {
-                    for (const auto& name : it->second) {
-                        text_search_index_name2deletes[name].emplace_back(S, O);
+                { // register text index inserts
+                    const auto it = text_index_predicate2names.find(predicate_str);
+                    if (it != text_index_predicate2names.end()) {
+                        for (const auto& name : it->second) {
+                            text_index_name2deletes[name].emplace_back(S, O);
+                        }
+                    }
+                }
+                { // register hnsw index inserts
+                    const auto it = hnsw_index_predicate2names.find(predicate_str);
+                    if (it != hnsw_index_predicate2names.end()) {
+                        for (const auto& name : it->second) {
+                            hnsw_index_name2deletes[name].emplace_back(S, O);
+                        }
                     }
                 }
             }
@@ -453,47 +503,84 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
         }
     }
 
-    // Execute text search index updates
-    TextSearch::TextSearchIndex* text_search_index;
-    for (const auto& [name, deletes] : text_search_index_name2deletes) {
-        [[maybe_unused]] const auto found = rdf_model.catalog.text_search_index_manager.get_text_search_index(
-            name,
-            &text_search_index
-        );
-        assert(found && "Text search index not found");
+    // Execute index deletes
+    for (const auto& [name, deletes] : text_index_name2deletes) {
+        auto* text_search_index_ptr = rdf_model.catalog.text_index_manager.get_text_index(name);
+        assert(text_search_index_ptr != nullptr && "Text index not found");
 
-        TextSearchIndexUpdateData tsi_update {};
-        tsi_update.text_search_index_name = name;
+        TextIndexUpdateData hi_update {};
+        hi_update.index_name = name;
 
         for (const auto& [S, O] : deletes) {
-            const auto current_removed_tokens = text_search_index->remove_single(S, O);
-            if (current_removed_tokens > 0) {
-                ++tsi_update.removed_elements;
-                tsi_update.removed_tokens += current_removed_tokens;
+            const auto current_inserted_tokens = text_search_index_ptr->remove_single(S, O);
+            if (current_inserted_tokens > 0) {
+                ++hi_update.removed_elements;
+                hi_update.inserted_tokens += current_inserted_tokens;
             }
         }
 
-        insert_text_search_index_update_data(std::move(tsi_update));
+        insert_text_search_index_update_data(std::move(hi_update));
+    }
+
+    for (const auto& [name, deletes] : hnsw_index_name2deletes) {
+        auto* hnsw_index_ptr = rdf_model.catalog.hnsw_index_manager.get_hnsw_index(name);
+        assert(hnsw_index_ptr != nullptr && "HNSW index not found");
+
+        HNSWIndexUpdateData hi_update {};
+        hi_update.index_name = name;
+
+        for (const auto& [S, O] : deletes) {
+            const bool was_inserted = hnsw_index_ptr->remove_single(S, O);
+            if (was_inserted) {
+                ++hi_update.removed_elements;
+            }
+        }
+
+        insert_hnsw_index_update_data(std::move(hi_update));
     }
 }
 
-void UpdateExecutor::visit(SPARQL::OpCreateTextSearchIndex& op_create_text_search_index)
+void UpdateExecutor::visit(SPARQL::OpCreateTextIndex& op_create_text_index)
 {
     try {
-        auto& text_search_index_manager = rdf_model.catalog.text_search_index_manager;
+        auto& text_search_index_manager = rdf_model.catalog.text_index_manager;
         const auto& [inserted_elements, inserted_tokens] = text_search_index_manager.create_text_search_index(
-            op_create_text_search_index.text_search_index_name,
-            op_create_text_search_index.predicate,
-            op_create_text_search_index.normalize_type,
-            op_create_text_search_index.tokenize_type
+            op_create_text_index.index_name,
+            op_create_text_index.predicate,
+            op_create_text_index.normalize_type,
+            op_create_text_index.tokenize_type
         );
 
-        TextSearchIndexUpdateData tsi_update {};
-        tsi_update.text_search_index_name = op_create_text_search_index.text_search_index_name;
+        TextIndexUpdateData tsi_update {};
+        tsi_update.index_name = op_create_text_index.index_name;
         tsi_update.created = true;
         tsi_update.inserted_elements = inserted_elements;
         tsi_update.inserted_tokens = inserted_tokens;
         insert_text_search_index_update_data(std::move(tsi_update));
+    } catch (const std::exception& e) {
+        // Rethrow any exception wrapped by a QueryExecutionException
+        throw QueryExecutionException(e.what());
+    }
+}
+
+void UpdateExecutor::visit(SPARQL::OpCreateHNSWIndex& op_create_hnsw_index)
+{
+    try {
+        auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;
+        auto&& [inserted_elements] = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::RDF>(
+            op_create_hnsw_index.index_name,
+            op_create_hnsw_index.predicate,
+            op_create_hnsw_index.dimension,
+            op_create_hnsw_index.max_edges,
+            op_create_hnsw_index.num_candidates,
+            op_create_hnsw_index.metric_type
+        );
+
+        HNSWIndexUpdateData hnsw_update {};
+        hnsw_update.index_name = op_create_hnsw_index.index_name;
+        hnsw_update.created = true;
+        hnsw_update.inserted_elements = inserted_elements;
+        insert_hnsw_index_update_data(std::move(hnsw_update));
     } catch (const std::exception& e) {
         // Rethrow any exception wrapped by a QueryExecutionException
         throw QueryExecutionException(e.what());
@@ -511,9 +598,17 @@ void UpdateExecutor::print_stats(std::ostream& os)
     }
 
     if (!name2text_search_index_update_data.empty()) {
-        os << "TextSearchIndex updates:\n";
+        os << "Text Index updates:\n";
         for (const auto& [_, tsi_update] : name2text_search_index_update_data) {
             os << "  " << tsi_update << '\n';
+        }
+        has_changes = true;
+    }
+
+    if (!name2hnsw_index_update_data.empty()) {
+        os << "HNSW Index update:\n";
+        for (const auto& [_, hnsw_update] : name2hnsw_index_update_data) {
+            os << "  " << hnsw_update << '\n';
         }
         has_changes = true;
     }
@@ -524,15 +619,25 @@ void UpdateExecutor::print_stats(std::ostream& os)
     }
 }
 
-void UpdateExecutor::insert_text_search_index_update_data(TextSearchIndexUpdateData&& data)
+void UpdateExecutor::insert_text_search_index_update_data(TextIndexUpdateData&& data)
 {
-    auto it = name2text_search_index_update_data.find(data.text_search_index_name);
+    auto it = name2text_search_index_update_data.find(data.index_name);
     if (it == name2text_search_index_update_data.end()) {
-        name2text_search_index_update_data.emplace(data.text_search_index_name, std::move(data));
+        name2text_search_index_update_data.emplace(data.index_name, std::move(data));
     } else {
         it->second.inserted_elements += data.inserted_elements;
         it->second.inserted_tokens += data.inserted_tokens;
         it->second.removed_elements += data.removed_elements;
         it->second.removed_tokens += data.removed_tokens;
+    }
+}
+
+void UpdateExecutor::insert_hnsw_index_update_data(HNSWIndexUpdateData&& data)
+{
+    auto it = name2hnsw_index_update_data.find(data.index_name);
+    if (it == name2hnsw_index_update_data.end()) {
+        name2hnsw_index_update_data.emplace(data.index_name, std::move(data));
+    } else {
+        it->second.inserted_elements += data.inserted_elements;
     }
 }

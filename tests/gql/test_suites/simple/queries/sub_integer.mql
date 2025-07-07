@@ -1,0 +1,2 @@
+MATCH (n:Account)
+RETURN n.number - 20 AS result

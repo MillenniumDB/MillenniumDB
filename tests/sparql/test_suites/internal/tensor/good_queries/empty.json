@@ -1,0 +1,25 @@
+{
+    "head": {
+        "vars": [
+            "isEmpty"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "isEmpty": {
+                    "type": "literal",
+                    "value": "true",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#boolean"
+                }
+            },
+            {
+                "isEmpty": {
+                    "type": "literal",
+                    "value": "true",
+                    "datatype": "http://www.w3.org/2001/XMLSchema#boolean"
+                }
+            }
+        ]
+    }
+}

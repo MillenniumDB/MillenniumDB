@@ -3,16 +3,19 @@
 #include "graph_models/common/conversions.h"
 #include "graph_models/inliner.h"
 #include "import/import_helper.h"
-#include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
-#include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "storage/index/random_access_table/edge_table_mem_import.h"
 
 using namespace Import::GQL;
 
-OnDiskImport::OnDiskImport(const std::string& db_folder, uint64_t buffer_size) :
+OnDiskImport::OnDiskImport(
+    const std::string& db_folder,
+    uint64_t strings_buffer_size,
+    uint64_t tensors_buffer_size
+) :
     catalog("catalog.dat"),
-    buffer_size(buffer_size),
+    strings_buffer_size(strings_buffer_size),
+    tensors_buffer_size(tensors_buffer_size),
     db_folder(db_folder),
     node_labels(db_folder + "/node_labels"),
     edge_labels(db_folder + "/edge_labels"),
@@ -37,70 +40,8 @@ uint64_t OnDiskImport::get_str_id()
     if (lexer.str_len < 8) {
         return Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
     } else {
-        return get_or_create_external_string_id() | ObjectId::MASK_STRING_SIMPLE_EXTERN;
-    }
-}
-
-uint64_t OnDiskImport::get_or_create_external_string_id()
-{
-    // reserve more space if needed
-    while (external_strings_end
-           + lexer.str_len
-           + StringManager::MIN_PAGE_REMAINING_BYTES
-           + StringManager::MAX_LEN_BYTES
-           + 1 >= external_strings_capacity)
-    {
-        // TODO: use pending strings
-        // duplicate buffer
-        char* new_external_strings = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(external_strings_capacity * 2)
-        );
-        std::memcpy(new_external_strings, external_strings, external_strings_capacity);
-
-        external_strings_capacity *= 2;
-
-        MDB_ALIGNED_FREE(external_strings);
-        external_strings = new_external_strings;
-        ExternalString::strings = external_strings;
-    }
-
-    // encode length
-    auto bytes_for_len = StringManager::write_encoded_strlen(
-        &external_strings[external_strings_end],
-        lexer.str_len
-    );
-
-    // copy string
-    std::memcpy(&external_strings[external_strings_end] + bytes_for_len, lexer.str, lexer.str_len);
-
-    ExternalString s(external_strings_end);
-    auto found = external_strings_set.find(s);
-    if (found == external_strings_set.end()) {
-        external_strings_set.insert(s);
-        external_strings_end += lexer.str_len + bytes_for_len;
-
-        size_t remaining_in_block = StringManager::BLOCK_SIZE
-                                  - (external_strings_end % StringManager::BLOCK_SIZE);
-        if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-            external_strings_end += remaining_in_block;
-        }
-
-        return s.offset;
-    } else {
-        return found->offset;
-    }
-}
-
-uint64_t OnDiskImport::get_node_id(uint64_t id)
-{
-    auto it = node_ids_map.find(id);
-    if (it != node_ids_map.end()) {
-        return it->second;
-    } else {
-        auto res = catalog.nodes_count++ | ObjectId::MASK_NODE;
-        node_ids_map.insert({ id, res });
-
-        return res;
+        return external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
+             | ObjectId::MASK_STRING_SIMPLE;
     }
 }
 
@@ -170,19 +111,53 @@ int64_t try_parse_float(char* c_str)
 
 void OnDiskImport::save_first_id_identifier()
 {
-    id1 = get_str_id();
+    auto id = get_str_id();
+
+    if ((id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        id1 = id;
+        return;
+    }
+
+    auto it = node_ids_map.find(id);
+    if (it != node_ids_map.end()) {
+        id1 = it->second;
+    } else {
+        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        node_ids_map.insert({ id, id1 });
+    }
 }
 
 void OnDiskImport::save_first_id_string()
 {
     normalize_string_literal();
 
-    id1 = get_str_id();
+    auto id = get_str_id();
+
+    if ((id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        id1 = id;
+        return;
+    }
+
+    auto it = node_ids_map.find(id);
+    if (it != node_ids_map.end()) {
+        id1 = it->second;
+    } else {
+        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        node_ids_map.insert({ id, id1 });
+    }
 }
 
 void OnDiskImport::save_first_id_int()
 {
-    id1 = try_parse_int(lexer.str);
+    auto id_int = try_parse_int(lexer.str);
+
+    auto it = node_ids_map.find(id_int);
+    if (it != node_ids_map.end()) {
+        id1 = it->second;
+    } else {
+        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        node_ids_map.insert({ id_int, id1 });
+    }
 }
 
 void OnDiskImport::save_prop_key()
@@ -197,58 +172,95 @@ void OnDiskImport::save_direction(EdgeDir dir)
 
 void OnDiskImport::add_node_label()
 {
-    auto node_id = get_node_id(id1);
     auto label_id = get_node_label_id(std::string(lexer.str, lexer.str_len));
-    node_labels.push_back({ node_id, label_id });
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_labels->push_back({ id1, label_id });
+    } else {
+        node_labels.push_back({ id1, label_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_string()
 {
     normalize_string_literal();
-    auto node_id = get_node_id(id1);
     auto key_id = get_node_key_id();
     auto value_id = get_str_id();
-    node_properties.push_back({ node_id, key_id, value_id });
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_int()
 {
-    auto node_id = get_node_id(id1);
     auto key_id = get_node_key_id();
     uint64_t value_id = try_parse_int(lexer.str);
-    node_properties.push_back({ node_id, key_id, value_id });
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_float()
 {
-    auto node_id = get_node_id(id1);
     auto key_id = get_node_key_id();
     uint64_t value_id = try_parse_float(lexer.str);
-    node_properties.push_back({ node_id, key_id, value_id });
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_true()
 {
-    auto node_id = get_node_id(id1);
     auto key_id = get_node_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(true).id;
-    node_properties.push_back({ node_id, key_id, value_id });
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_false()
 {
-    auto node_id = get_node_id(id1);
     auto key_id = get_node_key_id();
     uint64_t value_id = Common::Conversions::pack_bool(false).id;
-    node_properties.push_back({ node_id, key_id, value_id });
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_node_prop_datatype()
 {
-    add_prop_datatype(get_node_id(id1), node_properties);
+    uint64_t value_id = get_datatype_value_id();
+
+    if (value_id == ObjectId::NULL_ID) {
+        return;
+    }
+
+    auto key_id = get_node_key_id();
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_properties->push_back({ id1, key_id, value_id });
+    } else {
+        node_properties.push_back({ id1, key_id, value_id });
+    }
 }
 
-void OnDiskImport::add_prop_datatype(uint64_t obj_id, DiskVector<3>& obj_properties)
+// returns ObjectId::NULL_ID if invalid
+uint64_t OnDiskImport::get_datatype_value_id()
 {
     // we have something like: `datatype("string")`
     // parse datatype name
@@ -274,14 +286,14 @@ void OnDiskImport::add_prop_datatype(uint64_t obj_id, DiskVector<3>& obj_propert
     // we edited lexer.str_len and lexer.str to point correctly at the datatype (considering quotes)
     normalize_string_literal();
 
-    uint64_t value_id;
+    uint64_t value_id = ObjectId::NULL_ID;
+
     if (strcmp(datatype_beg, "dateTime") == 0) {
         value_id = DateTime::from_dateTime(lexer.str);
         if (value_id == ObjectId::NULL_ID) {
             parsing_errors++;
             std::cout << "ERROR on line " << current_line << ", ";
             std::cout << " invalid dateTime: " << lexer.str << "\n";
-            return;
         }
     } else if (strcmp(datatype_beg, "date") == 0) {
         value_id = DateTime::from_date(lexer.str);
@@ -289,7 +301,6 @@ void OnDiskImport::add_prop_datatype(uint64_t obj_id, DiskVector<3>& obj_propert
             parsing_errors++;
             std::cout << "ERROR on line " << current_line << ", ";
             std::cout << "invalid date: " << lexer.str << "\n";
-            return;
         }
     } else if (strcmp(datatype_beg, "time") == 0) {
         value_id = DateTime::from_time(lexer.str);
@@ -297,7 +308,6 @@ void OnDiskImport::add_prop_datatype(uint64_t obj_id, DiskVector<3>& obj_propert
             parsing_errors++;
             std::cout << "ERROR on line " << current_line << ", ";
             std::cout << "invalid time: " << lexer.str << "\n";
-            return;
         }
     } else if (strcmp(datatype_beg, "dateTimeStamp") == 0) {
         value_id = DateTime::from_dateTimeStamp(lexer.str);
@@ -305,63 +315,109 @@ void OnDiskImport::add_prop_datatype(uint64_t obj_id, DiskVector<3>& obj_propert
             parsing_errors++;
             std::cout << "ERROR on line " << current_line << ", ";
             std::cout << "invalid dateTimeStamp: " << lexer.str << "\n";
-            return;
         }
     } else {
         parsing_errors++;
         std::cout << "ERROR on line " << current_line << ", ";
         std::cout << "unknown datatype: " << datatype_beg << "\n";
-        return;
     }
-
-    // auto node_id = ;
-    auto key_id = get_node_key_id();
-    obj_properties.push_back({ obj_id, key_id, value_id });
+    return value_id;
 }
 
 void OnDiskImport::save_second_id_identifier()
 {
-    id2 = get_str_id();
+    auto id = get_str_id();
+
+    if ((id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        id2 = id;
+    } else {
+        auto it = node_ids_map.find(id);
+        if (it != node_ids_map.end()) {
+            id2 = it->second;
+        } else {
+            id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+            node_ids_map.insert({ id, id2 });
+        }
+    }
+
     save_edge();
 }
 
 void OnDiskImport::save_second_id_string()
 {
     normalize_string_literal();
-    id2 = get_str_id();
+
+    auto id = get_str_id();
+
+    if ((id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        id2 = id;
+    } else {
+        auto it = node_ids_map.find(id);
+        if (it != node_ids_map.end()) {
+            id2 = it->second;
+        } else {
+            id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+            node_ids_map.insert({ id, id2 });
+        }
+    }
+
     save_edge();
 }
 
 void OnDiskImport::save_second_id_int()
 {
-    id2 = try_parse_int(lexer.str);
+    auto id_int = try_parse_int(lexer.str);
+
+    auto it = node_ids_map.find(id_int);
+    if (it != node_ids_map.end()) {
+        id2 = it->second;
+    } else {
+        id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        node_ids_map.insert({ id_int, id2 });
+    }
+
     save_edge();
 }
 
 void OnDiskImport::save_edge()
 {
-    auto n1 = get_node_id(id1);
-    auto n2 = get_node_id(id2);
     if (edge_dir == EdgeDir::UNDIRECTED) {
         edge_id = ObjectId::MASK_UNDIRECTED_EDGE | catalog.undirected_edges_count++;
+        try_save_undirected_edge();
 
-        undirected_edges.push_back({ n1, n2, edge_id });
-        if (n1 != n2) {
-            undirected_edges.push_back({ n2, n1, edge_id });
-        } else {
-            undirected_equal_edges.push_back({ n1, edge_id });
-        }
     } else {
         edge_id = ObjectId::MASK_DIRECTED_EDGE | catalog.directed_edges_count++;
+        try_save_directed_edge();
+    }
+}
 
-        if (edge_dir == EdgeDir::RIGHT) {
-            directed_edges.push_back({ n1, n2, edge_id });
+void OnDiskImport::try_save_undirected_edge()
+{
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP || (id2 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_undirected_edges->push_back({ id1, id2, edge_id });
+    } else {
+        undirected_edges.push_back({ id1, id2, edge_id });
+        if (id1 != id2) {
+            undirected_edges.push_back({ id2, id1, edge_id });
         } else {
-            directed_edges.push_back({ n2, n1, edge_id });
+            undirected_equal_edges.push_back({ id1, edge_id });
+        }
+    }
+}
+
+void OnDiskImport::try_save_directed_edge()
+{
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP || (id2 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_directed_edges->push_back({ id1, id2, edge_id });
+    } else {
+        if (edge_dir == EdgeDir::RIGHT) {
+            directed_edges.push_back({ id1, id2, edge_id });
+        } else {
+            directed_edges.push_back({ id2, id1, edge_id });
         }
 
-        if (n1 == n2) {
-            directed_equal_edges.push_back({ n1, edge_id });
+        if (id1 == id2) {
+            directed_equal_edges.push_back({ id1, edge_id });
         }
     }
 }
@@ -374,7 +430,10 @@ void OnDiskImport::add_edge_label()
 
 void OnDiskImport::add_edge_prop_datatype()
 {
-    add_prop_datatype(edge_id, edge_properties);
+    get_datatype_value_id();
+    auto key_id = get_node_key_id();
+    uint64_t value_id = get_datatype_value_id();
+    edge_properties.push_back({ id1, key_id, value_id });
 }
 
 void OnDiskImport::add_edge_prop_string()
@@ -382,7 +441,12 @@ void OnDiskImport::add_edge_prop_string()
     normalize_string_literal();
     auto key_id = get_edge_key_id();
     auto value_id = get_str_id();
-    edge_properties.push_back({ edge_id, key_id, value_id });
+
+    if ((value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_edge_properties->push_back({ edge_id, key_id, value_id });
+    } else {
+        edge_properties.push_back({ edge_id, key_id, value_id });
+    }
 }
 
 void OnDiskImport::add_edge_prop_int()
@@ -422,6 +486,35 @@ void OnDiskImport::print_error()
 {
     parsing_errors++;
     std::cout << "ERROR on line " << current_line << "\n";
+}
+
+void OnDiskImport::try_save_node_label(uint64_t node_id, uint64_t label_id)
+{
+    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_node_labels->push_back({ node_id, label_id });
+    } else {
+        node_labels.push_back({ node_id, label_id });
+    }
+}
+
+void OnDiskImport::try_save_node_property(uint64_t node_id, uint64_t key_id, uint64_t value_id)
+{
+    if ((node_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_node_properties->push_back({ node_id, key_id, value_id });
+    } else {
+        node_properties.push_back({ node_id, key_id, value_id });
+    }
+}
+
+void OnDiskImport::try_save_edge_property(uint64_t edge_id, uint64_t key_id, uint64_t value_id)
+{
+    if ((value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+        pending_edge_properties->push_back({ edge_id, key_id, value_id });
+    } else {
+        edge_properties.push_back({ edge_id, key_id, value_id });
+    }
 }
 
 void OnDiskImport::create_automata()
@@ -679,112 +772,33 @@ void OnDiskImport::start_import(MDBIstream& in)
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
 
+    pending_directed_edges = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_DIRECTED_EDGES_FILENAME_PREFIX
+    );
+    pending_undirected_edges = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_UNDIRECTED_EDGES_FILENAME_PREFIX
+    );
+
+    pending_node_labels = std::make_unique<DiskVector<2>>(
+        db_folder + "/" + PENDING_NODE_LABELS_FILENAME_PREFIX
+    );
+
+    pending_node_properties = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_NODE_PROPERTIES_FILENAME_PREFIX
+    );
+    pending_edge_properties = std::make_unique<DiskVector<3>>(
+        db_folder + "/" + PENDING_EDGE_PROPERTIES_FILENAME_PREFIX
+    );
+
+    // Initialize external helper
+    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+
     lexer.begin(in);
-
-    { // Initial memory allocation
-        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
-
-        if (external_strings == nullptr) {
-            FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
-        }
-
-        Import::ExternalString::strings = external_strings;
-        external_strings_capacity = buffer_size;
-        external_strings_end = 0;
-        assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
-    }
 
     int current_state = State::LINE_BEGIN;
     current_line = 1;
     while (auto token = lexer.get_token()) {
-        // std::cout << "token: ";
-        // switch (token) {
-        //     case Token::END_OF_FILE:
-        //         std::cout << "END_OF_FILE\n";
-        //         break;
-        //     case Token::COLON:
-        //         std::cout << "COLON\n";
-        //         break;
-        //     case Token::L_ARROW:
-        //         std::cout << "L_ARROW\n";
-        //         break;
-        //     case Token::R_ARROW:
-        //         std::cout << "R_ARROW\n";
-        //         break;
-        //     case Token::UNDIRECTED:
-        //         std::cout << "UNDIRECTED\n";
-        //         break;
-        //     case Token::TRUE:
-        //         std::cout << "TRUE\n";
-        //         break;
-        //     case Token::FALSE:
-        //         std::cout << "FALSE\n";
-        //         break;
-        //     case Token::STRING:
-        //         std::cout << "STRING\n";
-        //         break;
-        //     case Token::TYPED_STRING:
-        //         std::cout << "TYPED_STRING\n";
-        //         break;
-        //     case Token::IDENTIFIER:
-        //         std::cout << "IDENTIFIER\n";
-        //         break;
-        //     case Token::INTEGER:
-        //         std::cout << "INTEGER\n";
-        //         break;
-        //     case Token::FLOAT:
-        //         std::cout << "FLOAT\n";
-        //         break;
-        //     case Token::WHITESPACE:
-        //         std::cout << "WHITESPACE\n";
-        //         break;
-        //     case Token::ENDLINE:
-        //         std::cout << "ENDLINE\n";
-        //         break;
-        //     case Token::UNRECOGNIZED:
-        //         std::cout << "UNRECOGNIZED\n";
-        //         break;
-        // }
         current_state = get_transition(current_state, token);
-        // std::cout << "current_state: ";
-        // switch (current_state) {
-        //     case State::WRONG_LINE:
-        //         std::cout << "WRONG_LINE\n";
-        //         break;
-        //     case State::LINE_BEGIN:
-        //         std::cout << "LINE_BEGIN\n";
-        //         break;
-        //     case State::FIRST_ID:
-        //         std::cout << "FIRST_ID\n";
-        //         break;
-        //     case State::NODE_DEFINED:
-        //         std::cout << "NODE_DEFINED\n";
-        //         break;
-        //     case State::EXPECT_NODE_LABEL:
-        //         std::cout << "EXPECT_NODE_LABEL\n";
-        //         break;
-        //     case State::EXPECT_NODE_PROP_COLON:
-        //         std::cout << "EXPECT_NODE_PROP_COLON\n";
-        //         break;
-        //     case State::EXPECT_NODE_PROP_VALUE:
-        //         std::cout << "EXPECT_NODE_PROP_VALUE\n";
-        //         break;
-        //     case State::EXPECT_EDGE_SECOND:
-        //         std::cout << "EXPECT_EDGE_SECOND\n";
-        //         break;
-        //     case State::EDGE_DEFINED:
-        //         std::cout << "EDGE_DEFINED\n";
-        //         break;
-        //     case State::EXPECT_EDGE_LABEL:
-        //         std::cout << "EXPECT_EDGE_LABEL\n";
-        //         break;
-        //     case State::EXPECT_EDGE_PROP_COLON:
-        //         std::cout << "EXPECT_EDGE_PROP_COLON\n";
-        //         break;
-        //     case State::EXPECT_EDGE_PROP_VALUE:
-        //         std::cout << "EXPECT_EDGE_PROP_VALUE\n";
-        //         break;
-        // }
     }
     // After EOF simulate and endline
     get_transition(current_state, Token::ENDLINE);
@@ -797,13 +811,221 @@ void OnDiskImport::start_import(MDBIstream& in)
     }
     print_duration("Parsing", start);
 
-    // Finish Strings File
-    std::fstream strings_file;
-    strings_file.open(db_folder + "/strings.dat", std::ios::out | std::ios::binary);
-    strings_file.write(external_strings, external_strings_end);
-    uint64_t last_str_pos = strings_file.tellp();
+    external_helper->flush_to_disk();
 
     print_duration("Processing strings", start);
+
+    { // process pending files
+        pending_directed_edges->finish_appends();
+        pending_undirected_edges->finish_appends();
+        pending_node_labels->finish_appends();
+        pending_node_properties->finish_appends();
+        pending_edge_properties->finish_appends();
+
+        int i = 0;
+        while (true) {
+            const auto total_pending = pending_directed_edges->get_total_tuples()
+                                     + pending_undirected_edges->get_total_tuples()
+                                     + pending_node_labels->get_total_tuples()
+                                     + pending_node_properties->get_total_tuples()
+                                     + pending_edge_properties->get_total_tuples();
+            if (total_pending == 0) {
+                break;
+            }
+            std::cout << "total pending: " << total_pending << std::endl;
+
+            auto old_directed_pending_edges = std::move(pending_directed_edges);
+            auto old_undirected_pending_edges = std::move(pending_undirected_edges);
+            auto old_pending_node_labels = std::move(pending_node_labels);
+            auto old_pending_node_properties = std::move(pending_node_properties);
+            auto old_pending_edge_properties = std::move(pending_edge_properties);
+
+            pending_directed_edges = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_DIRECTED_EDGES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_undirected_edges = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_UNDIRECTED_EDGES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_node_labels = std::make_unique<DiskVector<2>>(
+                db_folder + "/" + PENDING_NODE_LABELS_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_node_properties = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_NODE_PROPERTIES_FILENAME_PREFIX + std::to_string(i)
+            );
+            pending_edge_properties = std::make_unique<DiskVector<3>>(
+                db_folder + "/" + PENDING_EDGE_PROPERTIES_FILENAME_PREFIX + std::to_string(i)
+            );
+            ++i;
+
+            // advance pending variables for current iteration
+            external_helper->advance_pending();
+            external_helper->clear_sets();
+
+            old_directed_pending_edges->begin_tuple_iter();
+            while (old_directed_pending_edges->has_next_tuple()) {
+                const auto& pending_tuple = old_directed_pending_edges->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id2 = external_helper->resolve_id(pending_tuple[1]);
+                edge_id = pending_tuple[2];
+
+                if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
+                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                {
+                    auto it = node_ids_map.find(id1);
+                    if (it != node_ids_map.end()) {
+                        id1 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id1, internal_id });
+                        id1 = internal_id;
+                    }
+                }
+
+                if ((id2 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
+                    && (id2 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                {
+                    auto it = node_ids_map.find(id2);
+                    if (it != node_ids_map.end()) {
+                        id2 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id2, internal_id });
+                        id2 = internal_id;
+                    }
+                }
+
+                try_save_directed_edge();
+            }
+
+            old_undirected_pending_edges->begin_tuple_iter();
+            while (old_undirected_pending_edges->has_next_tuple()) {
+                const auto& pending_tuple = old_undirected_pending_edges->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id2 = external_helper->resolve_id(pending_tuple[1]);
+                edge_id = pending_tuple[2];
+
+                if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
+                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                {
+                    auto it = node_ids_map.find(id1);
+                    if (it != node_ids_map.end()) {
+                        id1 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id1, internal_id });
+                        id1 = internal_id;
+                    }
+                }
+
+                if ((id2 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
+                    && (id2 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                {
+                    auto it = node_ids_map.find(id2);
+                    if (it != node_ids_map.end()) {
+                        id2 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id2, internal_id });
+                        id2 = internal_id;
+                    }
+                }
+
+                try_save_undirected_edge();
+            }
+
+            old_pending_node_labels->begin_tuple_iter();
+            while (old_pending_node_labels->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_node_labels->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                uint64_t label_id = pending_tuple[1];
+
+                if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP) {
+                    auto it = node_ids_map.find(id1);
+                    if (it != node_ids_map.end()) {
+                        id1 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id1, internal_id });
+                        id1 = internal_id;
+                    }
+                }
+
+                try_save_node_label(id1, label_id);
+            }
+
+            old_pending_node_properties->begin_tuple_iter();
+            while (old_pending_node_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_node_properties->next_tuple();
+
+                id1 = external_helper->resolve_id(pending_tuple[0]);
+                uint64_t key_id = pending_tuple[1];
+                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+
+                if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
+                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                {
+                    auto it = node_ids_map.find(id1);
+                    if (it != node_ids_map.end()) {
+                        id1 = it->second;
+                    } else {
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        node_ids_map.insert({ id1, internal_id });
+                        id1 = internal_id;
+                    }
+                }
+
+                try_save_node_property(id1, key_id, value_id);
+            }
+
+            old_pending_edge_properties->begin_tuple_iter();
+            while (old_pending_edge_properties->has_next_tuple()) {
+                const auto& pending_tuple = old_pending_edge_properties->next_tuple();
+
+                id1 = pending_tuple[0];
+                uint64_t key_id = pending_tuple[1];
+                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+
+                try_save_edge_property(id1, key_id, value_id);
+            }
+
+            { // write node mapping as properties
+                saved_key = "_id";
+                auto key_id = get_node_key_id();
+                for (auto&& [k, v] : node_ids_map) {
+                    node_properties.push_back({ v, key_id, k });
+                }
+                node_ids_map.clear();
+            }
+
+            // write out new data
+            external_helper->flush_to_disk();
+            // close and delete the old pending files
+            external_helper->clean_up_old();
+
+            // close and delete old pending file
+            pending_directed_edges->finish_appends();
+            pending_undirected_edges->finish_appends();
+            pending_node_labels->finish_appends();
+            pending_node_properties->finish_appends();
+            pending_edge_properties->finish_appends();
+            // close and remove file
+            old_directed_pending_edges->skip_indexing();
+            old_undirected_pending_edges->skip_indexing();
+            old_pending_node_labels->skip_indexing();
+            old_pending_node_properties->skip_indexing();
+            old_pending_edge_properties->skip_indexing();
+        }
+
+        // process pending finished, clean up the last pending file
+        pending_directed_edges->skip_indexing();
+        pending_undirected_edges->skip_indexing();
+        pending_node_labels->skip_indexing();
+        pending_node_properties->skip_indexing();
+        pending_edge_properties->skip_indexing();
+    }
 
     { // write node mapping as properties
         saved_key = "_id";
@@ -813,46 +1035,18 @@ void OnDiskImport::start_import(MDBIstream& in)
         }
     }
 
-    { // Create StringsHash
-        // Big enough buffer to store any string
-        char* string_buffer = reinterpret_cast<char*>(
-            MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
-        );
+    // delete all unnecessary files and free-up memory
+    external_helper->clean_up();
 
-        // we reuse the allocated memory for external strings as a buffer
-        StringsHashBulkOnDiskImport strings_hash(
-            db_folder + "/str_hash",
-            external_strings,
-            external_strings_capacity
-        );
-        strings_file.close();
-        strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(0, strings_file.beg);
-        uint64_t current_pos = 0;
+    print_duration("Process strings and tensors", start);
 
-        // read all strings one by one and add them to the StringsHash
-        while (current_pos < last_str_pos) {
-            size_t remaining_in_block = StringManager::BLOCK_SIZE
-                                      - (current_pos % StringManager::BLOCK_SIZE);
+    external_helper->build_disk_hash();
 
-            if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-                current_pos += remaining_in_block;
-                strings_file.read(string_buffer, remaining_in_block);
-            }
-
-            auto str_len = read_str(strings_file, string_buffer);
-            strings_hash.create_id(string_buffer, current_pos, str_len);
-            current_pos = strings_file.tellg();
-        }
-        strings_file.close();
-        MDB_ALIGNED_FREE(string_buffer);
-    }
-
-    print_duration("Write strings and strings hashes", start);
+    print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_strings;
-    buffer_size = external_strings_capacity;
+    char* const buffer = external_helper->buffer;
+    const auto buffer_size = external_helper->buffer_size;
 
     // Save lasts blocks to disk
     node_labels.finish_appends();
@@ -899,7 +1093,7 @@ void OnDiskImport::start_import(MDBIstream& in)
         size_t COL_NODE = 0, COL_LABEL = 1;
 
         NoStat<2> no_stat;
-        LabelStat label_stat;
+        DictCountStat<2> label_stat;
 
         node_labels.create_bpt(db_folder + "/node_label", { COL_NODE, COL_LABEL }, no_stat);
 
@@ -907,14 +1101,14 @@ void OnDiskImport::start_import(MDBIstream& in)
         catalog.node_labels_count = label_stat.all;
         label_stat.end();
 
-        catalog.node_label2total_count = std::move(label_stat.map_label_count);
+        catalog.node_label2total_count = std::move(label_stat.dict);
     }
 
     { // Edge Labels B+Tree
         size_t COL_EDGE = 0, COL_LABEL = 1;
 
         NoStat<2> no_stat;
-        LabelStat label_stat;
+        DictCountStat<2> label_stat;
 
         edge_labels.create_bpt(db_folder + "/edge_label", { COL_EDGE, COL_LABEL }, no_stat);
 
@@ -922,7 +1116,7 @@ void OnDiskImport::start_import(MDBIstream& in)
         catalog.edge_labels_count = label_stat.all;
         label_stat.end();
 
-        catalog.edge_label2total_count = std::move(label_stat.map_label_count);
+        catalog.edge_label2total_count = std::move(label_stat.dict);
     }
 
     { // Node Properties B+Tree
@@ -991,7 +1185,6 @@ void OnDiskImport::start_import(MDBIstream& in)
     undirected_edges.finish_indexing();
     directed_equal_edges.finish_indexing();
     undirected_equal_edges.finish_indexing();
-    MDB_ALIGNED_FREE(external_strings);
 
     print_duration("Write B+tree indexes", start);
 
@@ -1028,4 +1221,52 @@ void OnDiskImport::normalize_string_literal()
     char* end = lexer.str + lexer.str_len + 1;
 
     UnicodeEscape::normalize_string(read_ptr, write_ptr, end, lexer.str_len);
+}
+
+template<std::size_t N, typename ResolveAndSaveFunc>
+inline void OnDiskImport::process_pending(
+    std::unique_ptr<DiskVector<N>>& pending_vector,
+    const std::string& name,
+    const std::string& pending_filename_prefix,
+    ResolveAndSaveFunc resolve_and_save_func
+)
+{
+    pending_vector->finish_appends();
+    int i = 0;
+    while (true) {
+        const auto total_pending = pending_vector->get_total_tuples();
+        if (total_pending == 0) {
+            break;
+        }
+        std::cout << "pending " + name + ": " << total_pending << std::endl;
+
+        auto old_pending_vector = std::move(pending_vector);
+        pending_vector = std::make_unique<DiskVector<N>>(
+            db_folder + "/" + pending_filename_prefix + std::to_string(i)
+        );
+        ++i;
+
+        // advance pending variables for current iteration
+        external_helper->advance_pending();
+        external_helper->clear_sets();
+
+        old_pending_vector->begin_tuple_iter();
+        while (old_pending_vector->has_next_tuple()) {
+            const auto& pending_tuple = old_pending_vector->next_tuple();
+
+            resolve_and_save_func(pending_tuple);
+        }
+
+        // write out new data
+        external_helper->flush_to_disk();
+        // close and delete the old pending files
+        external_helper->clean_up_old();
+
+        // close and delete old pending file
+        pending_vector->finish_appends();
+        old_pending_vector->skip_indexing(); // will close and remove file
+    }
+
+    // process pending finished, clean up the last pending file
+    pending_vector->skip_indexing();
 }

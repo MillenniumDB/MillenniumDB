@@ -69,7 +69,13 @@ void Sequence::assign_nulls()
     }
 }
 
-void Sequence::accept_visitor(BindingIterVisitor& visitor)
+void Sequence::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "Sequence()\n";
+    for (auto& iter : iters) {
+        iter->print(os, indent + 2, stats);
+    }
 }

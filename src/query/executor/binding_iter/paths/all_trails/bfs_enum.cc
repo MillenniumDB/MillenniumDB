@@ -2,13 +2,13 @@
 
 #include <cassert>
 
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllTrails;
 
-void BFSEnum::_begin(Binding& _parent_binding) {
+void BFSEnum::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -19,8 +19,8 @@ void BFSEnum::_begin(Binding& _parent_binding) {
     open.emplace(start_node_visited, automaton.start_state);
 }
 
-
-bool BFSEnum::_next() {
+bool BFSEnum::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -60,8 +60,8 @@ bool BFSEnum::_next() {
     return false;
 }
 
-
-const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
+const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -85,11 +85,13 @@ const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               ObjectId(iter->get_edge()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                ObjectId(iter->get_edge()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
             // Add new state to open
             auto reached_state = &open.emplace(new_visited_ptr, transition.to);
 
@@ -108,8 +110,8 @@ const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
     return nullptr;
 }
 
-
-void BFSEnum::_reset() {
+void BFSEnum::_reset()
+{
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -123,7 +125,15 @@ void BFSEnum::_reset() {
     open.emplace(start_node_visited, automaton.start_state);
 }
 
-
-void BFSEnum::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void BFSEnum::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllTrails::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

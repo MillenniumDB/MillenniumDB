@@ -1,17 +1,23 @@
 #pragma once
 
+#include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/leapfrog/leapfrog_iter.h"
 
-template <std::size_t N>
+template<std::size_t N>
 class LeapfrogBptIter : public LeapfrogIter {
 public:
-    LeapfrogBptIter(bool*                                     interruption_requested,
-                    const BPlusTree<N>&                       btree,
-                    std::vector<std::unique_ptr<ScanRange>>&& initial_ranges,
-                    std::vector<VarId>&&                      intersection_vars,
-                    std::vector<VarId>&&                      enumeration_vars);
+    LeapfrogBptIter(
+        bool* interruption_requested,
+        const BPlusTree<N>& btree,
+        std::vector<std::unique_ptr<ScanRange>>&& initial_ranges,
+        std::vector<VarId>&& intersection_vars,
+        std::vector<VarId>&& enumeration_vars
+    );
 
-    inline uint64_t get_key() const override { return current_tuple[level]; }
+    inline uint64_t get_key() const override
+    {
+        return current_tuple[level];
+    }
 
     // Increases the level and sets the current_tuple
     void down() override;
@@ -32,13 +38,18 @@ public:
     // returns true if the terms and parent_binding were found
     bool open_terms(Binding& input_binding) override;
 
-    const BPlusTreeDir<N>& get_root() const {
+    const BPlusTreeDir<N>& get_root() const
+    {
         return *directory_stack[0];
     }
 
-    std::string get_iter_name() const override { return "LeapfrogBptIter"; }
+    std::string get_iter_name() const override
+    {
+        return "LeapfrogBptIter";
+    }
 
-    bool try_estimate(std::vector<double>& initial_estimations, std::vector<double>& after_estimations) const override;
+    bool try_estimate(std::vector<double>& initial_estimations, std::vector<double>& after_estimations)
+        const override;
 
 private:
     Record<N> current_tuple;

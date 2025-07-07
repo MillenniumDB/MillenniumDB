@@ -1,0 +1,2 @@
+MATCH (x: StringNode)
+RETURN x.word, UPPER(x.word) AS mayusculas

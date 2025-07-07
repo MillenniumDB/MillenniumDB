@@ -16,7 +16,7 @@ from testing.types import ExecutionStats, QueryTest, Test, TestSuite
 from tqdm import tqdm
 
 
-def run_all_tests(server_executable: Path, create_db_executable: Path):
+def run_all_tests(executable: Path):
     stats = ExecutionStats("All Tests")
 
     test_suites: List[TestSuite] = []
@@ -32,8 +32,7 @@ def run_all_tests(server_executable: Path, create_db_executable: Path):
     for test_suite in test_suites:
         stats += execute_tests(
             test_suite,
-            server_executable=server_executable,
-            create_db_executable=create_db_executable,
+            executable=executable,
             progress_bar=progress_bar,
         )
     progress_bar.close()
@@ -43,7 +42,7 @@ def run_all_tests(server_executable: Path, create_db_executable: Path):
     return stats.error != 0
 
 
-def run_specific_tests(server_executable: Path, create_db_executable: Path):
+def run_specific_tests(executable: Path):
     query_tests: list[Test] = []
     for test in options.ONLY_SPECIFIC_TESTS:
         query = Path(test["query"])
@@ -56,11 +55,7 @@ def run_specific_tests(server_executable: Path, create_db_executable: Path):
 
         query_tests.append(query_test)
 
-    stats = execute_tests(
-        TestSuite("Specific Tests", query_tests),
-        server_executable=server_executable,
-        create_db_executable=create_db_executable,
-    )
+    stats = execute_tests(TestSuite("Specific Tests", query_tests), executable=executable)
     print_summary()
     return stats.error != 0
 
@@ -68,7 +63,7 @@ def run_specific_tests(server_executable: Path, create_db_executable: Path):
 RUN_CUSTOM_FUNCTION = False
 
 
-def run_custom_tests(server_executable: Path, create_db_executable: Path):
+def run_custom_tests(executable: Path):
     """Use this function to do custom testing for debugging, etc"""
     stats = ExecutionStats("Custom Tests")
 
@@ -87,8 +82,7 @@ def run_custom_tests(server_executable: Path, create_db_executable: Path):
 
     stats += execute_tests(
         TestSuite("Custom Tests", tests),
-        server_executable=server_executable,
-        create_db_executable=create_db_executable,
+        executable=executable,
         client_only=False,
     )
 
@@ -99,19 +93,18 @@ def run_custom_tests(server_executable: Path, create_db_executable: Path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--server-executable", type=str, help="Custom server executable", default=options.SERVER_EXECUTABLE
-    )
-    parser.add_argument(
-        "--create-db-executable", type=str, help="Custom create-db executable", default=options.CREATE_DB_EXECUTABLE
-    )
+    parser.add_argument("--executable", type=str, help="Custom executable", default=options.EXECUTABLE)
     args = parser.parse_args()
 
     if options.ONLY_SPECIFIC_TESTS:
-        sys.exit(run_specific_tests(args.server_executable, args.create_db_executable))
+        sys.exit(run_specific_tests(args.executable))
 
     elif RUN_CUSTOM_FUNCTION:
-        sys.exit(run_custom_tests(args.server_executable, args.create_db_executable))
+        sys.exit(
+            run_custom_tests(
+                args.executable,
+            )
+        )
 
     else:
-        sys.exit(run_all_tests(args.server_executable, args.create_db_executable))
+        sys.exit(run_all_tests(args.executable))

@@ -1,0 +1,21 @@
+N0  :TestNode number:24  number2:46  word:"Gg"   mixed:true
+N1  :TestNode number:42  number2:25  word:"Aa"   mixed:false
+N2  :TestNode number:14  number2:30  word:"Zz"   mixed:"C++"
+N3  :TestNode number:7   number2:14   mixed:"Hello"
+N4  :TestNode number:10   number2:16  word:"Bb"   mixed:1234
+N5  :TestNode number:99  number2:66  word:"Yy"   mixed:"GQL"
+N6  :TestNode number:57  number2:28  word:"Xx"   mixed:"Database"
+N7  :TestNode number:47  number2:12  word:"Mm"   mixed:"Test"
+N8  :TestNode number:2   number2:10  word:"Cc"   mixed:"World"
+N9  :TestNode number:-5  number2:15  word:"Dd"   mixed:6789
+N10 :TestNode number:35  number2:68  word:"Ee"   mixed:42
+N11 :TestNode number:13  number2:24  word:"Ff"   mixed:100000
+N12 :TestNode number:88  number2:44  word:"Ll"   mixed:"MixedTypes"
+N13 :TestNode number:3   number2:6   word:"Kk"   mixed:0
+N14 :TestNode number:73  number2:36  word:"Hh"   mixed:"DB"
+N15 :TestNode number:4   number2:9   word:"Ii"   mixed:123
+N16 :TestNode number:49  number2:23  word:"Vv"   mixed:"Millenium"
+N17 :TestNode number:33  number2:67  word:"Nn"   mixed:"Query"
+N18 :TestNode number:67  number2:21  word:"Tt"   mixed:"Code"
+N19 :TestNode number:91  number2:46  word:"Pp"   mixed:777
+N20 :TestNode number:23  number2:50  word:"Jj"   mixed:47

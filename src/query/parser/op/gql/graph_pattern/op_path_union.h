@@ -1,10 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-
-#include "query/parser/op/op.h"
-#include "query/rewriter/gql/op/var_type.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 class OpPathUnion : public Op {
@@ -41,62 +37,29 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        if (op_list.empty()) {
-            return {};
-        }
-
-        std::set<VarId> res = op_list.front()->get_safe_vars();
-        std::set<VarId> outer;
+        std::map<VarId, VarType> res;
+        std::map<VarId, bool> checked;
 
         for (auto& op : op_list) {
-            auto op_safe_vars = op->get_safe_vars();
-            set_intersection(res.begin(), res.end(), op_safe_vars.begin(), op_safe_vars.end(),
-                 std::inserter(res, res.begin()));
-        }
-
-        return res;
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<VarType>> get_var_types() const override
-    {
-        std::map<VarId, std::unique_ptr<VarType>> res;
-
-        for (auto& op : op_list) {
-            std::map<VarId, std::unique_ptr<VarType>> op_types = op->get_var_types();
+            std::map<VarId, VarType> op_types = op->get_var_types();
 
             for (auto& [var, type] : op_types) {
-                if (res.count(var) && *res[var] != *type) {
-                    throw QuerySemanticException(
-                        "Variable \"" + get_query_ctx().get_var_name(var)
-                        + "\" appears in union and it has more than one type."
-                    );
+                if (!checked[var]) {
+                    res[var] = type;
+                } else {
+                    continue;
                 }
 
-                if (res.count(var) && !type->is_singleton()) {
-                    throw QuerySemanticException(
-                        "Variable \"" + get_query_ctx().get_var_name(var)
-                        + "\" appears in more than one term in an alternation and it is not singleton."
-                    );
+                if (type.is_conditional()) {
+                    res[var].degree = VarType::Conditional;
+                    checked[var] = true;
                 }
-                res[var] = std::move(type);
-            }
-        }
-
-        for (auto& [var, type] : res) {
-            if (!type->is_conditional()) {
-                res[var] = std::make_unique<Maybe>(std::move(type));
+                else if (type.is_group()) {
+                    res[var].degree = VarType::Group;
+                    checked[var] = true;
+                }
             }
         }
 

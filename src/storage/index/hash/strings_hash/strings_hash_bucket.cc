@@ -1,7 +1,6 @@
 #include "strings_hash_bucket.h"
 
 #include <cstring>
-#include <memory>
 
 #include "graph_models/object_id.h"
 #include "storage/index/hash/strings_hash/strings_hash.h"

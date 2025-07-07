@@ -1,8 +1,8 @@
 #pragma once
 
 #include "graph_models/rdf_model/comparisons.h"
-#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/aggregation/sparql/uagg_max.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 
 namespace SPARQL {
@@ -34,6 +34,16 @@ public:
         expr->accept_visitor(printer);
         os << ")";
         return os;
+    }
+
+    bool is_pipelineble() const override
+    {
+        return true;
+    }
+
+    std::unique_ptr<UAgg> get_uagg() override
+    {
+        return std::make_unique<UAggMax>(var_id, expr.get());
     }
 
 private:

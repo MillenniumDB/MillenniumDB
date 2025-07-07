@@ -1,0 +1,4 @@
+MATCH (x)
+ORDER BY x.name DESC
+FILTER x:Book
+RETURN x, x.name

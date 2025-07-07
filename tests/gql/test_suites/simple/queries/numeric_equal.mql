@@ -1,0 +1,2 @@
+MATCH (a1:Account {number: 0023})
+RETURN (a1.number = 0024) AS result

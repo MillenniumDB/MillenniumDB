@@ -3,9 +3,9 @@
 #include <memory>
 #include <vector>
 
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/gql_expr_printer.h"
-#include "query/parser/op/op.h"
+#include "query/parser/expr/gql/expr.h"
+#include "query/parser/expr/gql/expr_printer.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 class OpFilter : public Op {
@@ -44,22 +44,7 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return op->get_safe_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
         return op->get_var_types();
     }

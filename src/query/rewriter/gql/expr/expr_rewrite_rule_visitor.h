@@ -1,7 +1,7 @@
 #pragma once
 
-#include "query/parser/expr/expr_visitor.h"
-#include "query/parser/expr/gql_exprs.h"
+#include "query/parser/expr/gql/expr_visitor.h"
+#include "query/parser/expr/gql/exprs.h"
 #include "query/rewriter/gql/expr/rewrite_rules/expr_rewrite_rule.h"
 
 namespace GQL {
@@ -269,6 +269,7 @@ public:
     void visit(GQL::ExprTerm&) override { }
     void visit(GQL::ExprHasNodeLabel&) override { }
     void visit(GQL::ExprHasEdgeLabel&) override { }
+    void visit(GQL::ExprWildcardLabel&) override { }
     void visit(GQL::ExprVar&) override { }
     void visit(GQL::ExprProperty&) override { }
 };

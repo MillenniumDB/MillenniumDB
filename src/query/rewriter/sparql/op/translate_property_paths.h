@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/rewriter/sparql/op/default_expr_visitor.h"
 
 #include <vector>
@@ -50,6 +50,7 @@ public:
     void visit(OpNotExists&)         override;
     void visit(OpOptional&)          override;
     void visit(OpOrderBy&)           override;
+    void visit(OpProcedure&)         override;
     void visit(OpSelect&)            override;
     void visit(OpSemiJoin&)          override;
     void visit(OpSequence&)          override;

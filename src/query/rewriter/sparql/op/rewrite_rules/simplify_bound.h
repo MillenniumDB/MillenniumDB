@@ -3,9 +3,9 @@
 #include <memory>
 #include <set>
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
-#include "query/parser/expr/sparql_exprs.h"
+#include "query/parser/expr/sparql/exprs.h"
 #include "rewrite_rule.h"
 
 namespace SPARQL {

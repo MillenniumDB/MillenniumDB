@@ -1,27 +1,15 @@
 #include "gql_catalog.h"
 
-#include "graph_models/exceptions.h"
+#include "query/exceptions.h"
 
 GQLCatalog::GQLCatalog(const std::string& filename) :
     Catalog(filename)
 {
     if (!is_empty()) {
-        start_io();
-        auto model_id = read_uint64();
-        if (model_id != MODEL_ID) {
-            std::string error_msg = "Wrong MODEL_ID for GQLCatalog, expected: ";
-            error_msg += std::to_string(MODEL_ID);
-            error_msg += ", got: ";
-            error_msg += std::to_string(model_id);
-            throw WrongModelException(error_msg);
-        }
-        auto version_id = read_uint64();
-        if (version_id != VERSION) {
-            std::string error_msg = "Wrong version for GQLCatalog, expected: v";
-            error_msg += std::to_string(VERSION);
-            error_msg += ", got: v";
-            error_msg += std::to_string(version_id);
-            throw WrongCatalogVersionException(error_msg);
+        auto diff_minor_version = check_version("GQL", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+
+        if (diff_minor_version != 0) {
+            throw LogicException("Undefined catalog recovery");
         }
 
         nodes_count = read_uint64();
@@ -83,10 +71,7 @@ void GQLCatalog::print(std::ostream& os)
 
 void GQLCatalog::save()
 {
-    start_io();
-
-    write_uint64(MODEL_ID);
-    write_uint64(VERSION);
+    start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
     write_uint64(nodes_count);
     write_uint64(directed_edges_count);

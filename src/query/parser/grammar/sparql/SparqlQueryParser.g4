@@ -36,7 +36,7 @@ query
     ;
 
 // MDB extension
-showQuery: SHOW TEXT INDEX;
+showQuery: SHOW ALPHANUMERIC_IDENTIFIER INDEX;
 
 prologue
     : (baseDecl | prefixDecl)*
@@ -262,6 +262,8 @@ graphPatternNotTriples
     | filter
     | bind
     | inlineData
+    // MDB extension
+    | procedure
     ;
 
 optionalGraphPattern
@@ -601,6 +603,10 @@ builtInCall
     | notExistsFunction
     ;
 
+procedure:          ALPHANUMERIC_IDENTIFIER '(' procedureArguments? ')' AS procedureBindings;
+procedureArguments: expression (',' expression)*;
+procedureBindings:  var | '(' var (',' var)* ')';
+
 regexExpression
     : REGEX '(' expression ',' expression (',' expression)? ')'
     ;
@@ -656,7 +662,7 @@ numericLiteralNegative
     ;
 
 booleanLiteral
-    : TRUE | FALSE
+    : K_TRUE | K_FALSE
     ;
 
 string

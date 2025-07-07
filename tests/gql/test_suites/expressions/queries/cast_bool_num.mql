@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN CAST(false AS INT32) AS case_value

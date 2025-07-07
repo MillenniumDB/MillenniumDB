@@ -1,0 +1,2 @@
+MATCH (x:Person)(y WHERE y.age > 40)
+RETURN *

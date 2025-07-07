@@ -11,13 +11,7 @@ void BFSCheck::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-
-    // Store ID for end object
-    end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
-
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 void BFSCheck::_reset()
@@ -27,20 +21,20 @@ void BFSCheck::_reset()
     open.swap(empty);
     visited.clear();
 
+    expand_first_state();
+}
+
+void BFSCheck::expand_first_state()
+{
+    iter = make_unique<NullIndexIterator>();
+
     // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+    ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 
-    expand_first_state(start_object_id);
-}
-
-void BFSCheck::expand_first_state(ObjectId start)
-{
-    iter = make_unique<NullIndexIterator>();
-
-    auto start_node_visited = visited.add(start, ObjectId(), ObjectId(), false, nullptr);
+    auto start_node_visited = visited.add(start_oid, ObjectId(), ObjectId(), false, nullptr);
     open.emplace(start_node_visited, automaton.start_state, 0);
 
     // Check if first state is final
@@ -52,26 +46,26 @@ void BFSCheck::expand_first_state(ObjectId start)
         return;
     }
 
-    solution.path_states.clear();
-    solution.num_groups = 0;
-    solution.last_depth = 0;
-
-    first_state_is_solution = false;
+    last_depth = 0;
 
     // Starting state is solution
-    if (automaton.is_final_state[automaton.start_state]) {
-        first_state_is_solution = true;
-        solution.path_states.push_back(current_state.path_state);
-        solution.num_groups = 1;
+    if (automaton.is_final_state[automaton.start_state] && current_state.path_state->node_id == end_object_id)
+    {
+        solution = current_state.path_state;
+        num_groups = 1;
+    } else {
+        solution = nullptr;
+        num_groups = 0;
     }
 }
 
 bool BFSCheck::_next()
 {
-    if (first_state_is_solution) {
-        first_state_is_solution = false;
-        auto path_id = path_manager.set_path(solution.path_states.back(), path_var);
+    if (solution != nullptr) {
+solution_found:
+        auto path_id = path_manager.set_path(solution, path_var);
         parent_binding->add(path_var, path_id);
+        solution = nullptr;
         return true;
     }
 
@@ -80,14 +74,13 @@ bool BFSCheck::_next()
 
         // Enumerate reached solutions
         if (expand_neighbors(current_state)) {
-            if (solution.num_groups > K) {
+            if (num_groups > K) {
                 queue<SearchState> empty;
                 open.swap(empty);
+                solution = nullptr;
                 return false;
             }
-            auto path_id = path_manager.set_path(solution.path_states.back(), path_var);
-            parent_binding->add(path_var, path_id);
-            return true;
+            goto solution_found;
         } else {
             // Pop and visit next state
             assert(iter->at_end());
@@ -117,7 +110,7 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            auto reached_node = ObjectId(iter->get_reached_node());
+            ObjectId reached_node(iter->get_reached_node());
             ObjectId edge(iter->get_edge());
             if (!is_trail(current_state.path_state, edge)) {
                 continue;
@@ -137,12 +130,12 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
 
             // Check if new path is solution
             if (automaton.is_final_state[transition.to] && reached_node == end_object_id) {
-                solution.path_states.push_back(new_visited_ptr);
-                if (solution.last_depth < reached_state_distance) {
-                    solution.last_depth = reached_state_distance;
-                    solution.num_groups++;
-                    return true;
+                solution = new_visited_ptr;
+                if (last_depth < reached_state_distance) {
+                    last_depth = reached_state_distance;
+                    num_groups++;
                 }
+                return true;
             }
         }
 
@@ -155,7 +148,15 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
     return false;
 }
 
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor)
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKGroupsTrails::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

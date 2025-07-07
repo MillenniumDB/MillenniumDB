@@ -1,7 +1,5 @@
 #include "label_plan.h"
 
-#include <cassert>
-
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
@@ -38,7 +36,7 @@ double LabelPlan::estimate_cost() const {
 
 
 double LabelPlan::estimate_output_size() const {
-    const auto total_nodes = static_cast<double>(quad_model.catalog.identifiable_nodes_count);
+    const auto total_nodes = static_cast<double>(quad_model.catalog.nodes_count);
 
     auto total_labels = static_cast<double>(quad_model.catalog.label_count);
 

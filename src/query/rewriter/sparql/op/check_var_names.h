@@ -2,9 +2,8 @@
 
 #include <set>
 
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/var_id.h"
-#include "query/query_context.h"
-#include "query/parser/op/op_visitor.h"
 
 namespace SPARQL {
 /*
@@ -19,6 +18,7 @@ public:
     void visit(OpConstruct&)            override;
     void visit(OpDescribe&)             override;
     void visit(OpBasicGraphPattern&)    override;
+    void visit(OpProcedure&)            override;
     void visit(OpEmpty&)                override;
     void visit(OpFilter&)               override;
     void visit(OpJoin&)                 override;
@@ -43,7 +43,7 @@ public:
 
 private:
     std::set<VarId> declared_vars;
-    std::set<VarId> declared_path_vars;
+    std::set<VarId> unjoinable_vars;
     std::set<VarId> group_vars;
 
     // Used to handle common functionality of SELECTs and SUB-SELECTs

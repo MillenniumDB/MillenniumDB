@@ -2,7 +2,6 @@
 
 #include <cstdint>
 
-#include "storage/file_id.h"
 #include "storage/page/unversioned_page.h"
 
 class StringsHashBucket {

@@ -1,0 +1,2 @@
+MATCH ((x :Person)~(y))({age:20})
+RETURN *

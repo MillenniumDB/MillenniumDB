@@ -1159,6 +1159,8 @@ public:
 
     virtual std::any visitRecordFieldLiteral(GQLParser::RecordFieldLiteralContext *context) = 0;
 
+    virtual std::any visitKeyword(GQLParser::KeywordContext *context) = 0;
+
 
 };
 

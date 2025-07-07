@@ -1,7 +1,7 @@
 #pragma once
 
 #include "graph_models/object_id.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/mql/expr.h"
 
 namespace MQL {
 class ExprVarProperty : public Expr {
@@ -33,6 +33,28 @@ public:
 
     std::set<VarId> get_all_vars() const override {
         return { var_with_property };
+    }
+
+    bool operator<(const ExprVarProperty& other) const {
+        if (var_without_property < other.var_without_property) {
+            return true;
+        } else if (other.var_without_property < var_without_property) {
+            return false;
+        }
+
+        if (key < other.key) {
+            return true;
+        } else if (other.key < key) {
+            return false;
+        }
+
+        if (var_with_property < other.var_with_property) {
+            return true;
+        } else if (other.var_with_property < var_with_property) {
+            return false;
+        }
+
+        return false;
     }
 };
 } // namespace MQL

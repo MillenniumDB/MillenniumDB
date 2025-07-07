@@ -1,19 +1,22 @@
 #pragma once
 
-#include <memory>
+#include <vector>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
-class ExprSimpleCase: public Expr {
+class ExprSimpleCase : public Expr {
 public:
     std::unique_ptr<Expr> case_operand;
-    std::vector<std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>> when_clauses;
+    std::vector<std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>>
+        when_clauses;
     std::unique_ptr<Expr> else_expr;
 
     ExprSimpleCase(
         std::unique_ptr<Expr> case_operand,
-        std::vector<std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>> when_clauses,
+        std::vector<
+            std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>>
+            when_clauses,
         std::unique_ptr<Expr> else_expr
     ) :
         case_operand(std::move(case_operand)),
@@ -23,7 +26,9 @@ public:
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        std::vector<std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>> cloned_when_clauses;
+        std::vector<
+            std::pair<std::pair<std::string, std::vector<std::unique_ptr<Expr>>>, std::unique_ptr<Expr>>>
+            cloned_when_clauses;
 
         for (const auto& clause : when_clauses) {
             std::vector<std::unique_ptr<Expr>> cloned_vector;
@@ -33,10 +38,17 @@ public:
 
             std::unique_ptr<Expr> cloned_expr = clause.second ? clause.second->clone() : nullptr;
 
-            cloned_when_clauses.emplace_back(std::make_pair(clause.first.first, std::move(cloned_vector)), std::move(cloned_expr));
+            cloned_when_clauses.emplace_back(
+                std::make_pair(clause.first.first, std::move(cloned_vector)),
+                std::move(cloned_expr)
+            );
         }
 
-        return std::make_unique<ExprSimpleCase>(case_operand->clone(), std::move(cloned_when_clauses), else_expr->clone());
+        return std::make_unique<ExprSimpleCase>(
+            case_operand->clone(),
+            std::move(cloned_when_clauses),
+            else_expr->clone()
+        );
     }
 
     void accept_visitor(ExprVisitor& visitor) override

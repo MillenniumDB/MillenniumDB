@@ -3,7 +3,7 @@
 #include <memory>
 #include <set>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 
 // IMPORTANT: This is not the aggregate SUM(), its the function mdbfn:sum() for tensors
 namespace SPARQL {

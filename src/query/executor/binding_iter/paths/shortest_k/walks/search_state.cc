@@ -87,16 +87,16 @@ void SearchState::print(
         }
     } else {
         auto current_state = this;
-        print_node(os, current_state->node_id);
-
-        while (current_state->path_iter.current != nullptr) {
+        for (; current_state->path_iter.current->previous != nullptr;
+            current_state = current_state->path_iter.current->previous)
+        {
+            print_node(os, current_state->node_id);
             print_edge(
                 os,
                 current_state->path_iter.current->type_id,
                 !current_state->path_iter.current->inverse_direction
             );
-            current_state = current_state->path_iter.current->previous;
-            print_node(os, current_state->node_id);
         }
+        print_node(os, current_state->node_id);
     }
 }

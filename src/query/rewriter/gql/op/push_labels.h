@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "query/parser/op/gql/ops.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/gql/op_visitor.h"
 #include "query/rewriter/gql/expr/extract_labels_from_expr.h"
 
 namespace GQL {
@@ -22,16 +22,20 @@ public:
     void restore_parent_var_labels();
     void update_var_labels_to_push();
 
+    void visit(OpQueryStatements& op) override;
+    void visit(OpFilterStatement& op) override;
     void visit(OpGraphPattern& op) override;
     void visit(OpGraphPatternList& op) override;
     void visit(OpBasicGraphPattern& op) override;
     void visit(OpRepetition& op) override;
     void visit(OpReturn& op) override;
     void visit(OpOrderBy& op) override;
+    void visit(OpOrderByStatement& op) override;
     void visit(OpFilter& op_filter) override;
     void visit(OpOptProperties&) override;
     void visit(OpPathUnion& op) override;
     void visit(OpLinearPattern& op) override;
+    void visit(OpLet& op) override;
 
     void visit(OpNode&) override;
     void visit(OpEdge&) override;

@@ -2,12 +2,9 @@
 
 #include <cstdint>
 #include <memory>
-#include <variant>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "network/sparql/response_type.h"
-#include "query/optimizer/rdf_model/plan/triple_plan.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace SPARQL {

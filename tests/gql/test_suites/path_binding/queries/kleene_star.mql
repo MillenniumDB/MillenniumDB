@@ -1,0 +1,2 @@
+MATCH p = ANY SHORTEST (src {_id:"N0"})->*(des)
+RETURN p

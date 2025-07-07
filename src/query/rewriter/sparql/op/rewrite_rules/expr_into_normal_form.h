@@ -11,7 +11,7 @@
 #include "query/rewriter/sparql/expr/rewrite_rules/simplify_boolean_literals/boolean_literal_simplification.h"
 #include "query/rewriter/sparql/expr/rewrite_rules/simplify_boolean_literals/literal_simplification.h"
 #include "query/rewriter/sparql/expr/rewrite_rules/remove_optionals_from_exists.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
 #include "query/rewriter/sparql/op/rewrite_rules/rewrite_rule.h"
 
@@ -48,22 +48,34 @@ public:
     }
 
     bool is_possible_to_regroup(std::unique_ptr<Op>& unknown_op) override {
-        if (!is_castable_to<OpFilter>(unknown_op)) {
-            return false;
-        }
         bool has_rewritten = false;
-        while (true) {
-            auto op_filter = dynamic_cast<OpFilter*>(unknown_op.get());
-            for (auto &expr : op_filter->filters) {
-                expr_visitor.start_visit(expr);
+
+        if (is_castable_to<OpFilter>(unknown_op)) {
+            while (true) {
+                auto op_filter = dynamic_cast<OpFilter*>(unknown_op.get());
+                for (auto& expr : op_filter->filters) {
+                    expr_visitor.start_visit(expr);
+                }
+                if (expr_visitor.reset_and_check_if_has_rewritten_a_rule()) {
+                    has_rewritten = true;
+                } else {
+                    break;
+                }
             }
-            if (expr_visitor.reset_and_check_if_has_rewritten_a_rule()) {
-                has_rewritten = true;
-            }
-            else {
-                break;
+        } else if (is_castable_to<OpProcedure>(unknown_op)) {
+            while (true) {
+                auto op_procedure = dynamic_cast<OpProcedure*>(unknown_op.get());
+                for (auto& expr : op_procedure->argument_exprs) {
+                    expr_visitor.start_visit(expr);
+                }
+                if (expr_visitor.reset_and_check_if_has_rewritten_a_rule()) {
+                    has_rewritten = true;
+                } else {
+                    break;
+                }
             }
         }
+
         return has_rewritten;
     }
 

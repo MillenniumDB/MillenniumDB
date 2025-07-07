@@ -1,3 +1,4 @@
+#ifndef NO_MDB_CLI
 #include "cli.h"
 
 #include <codecvt>
@@ -9,8 +10,10 @@
 #include <vector>
 
 #include "misc/logger.h"
+#include "query/optimizer/property_graph_model/executor_constructor.h"
 #include "query/optimizer/quad_model/executor_constructor.h"
 #include "query/optimizer/rdf_model/executor_constructor.h"
+#include "query/parser/gql_query_parser.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_query_parser.h"
 
@@ -407,10 +410,9 @@ private:
     // Show pager with last output
     void ShowPager();
 
-    // Execute SPARQL query
     void ProcessSPARQLQuery(std::ostream& os, const std::string& query);
-    // Execute MQL query
     void ProcessMQLQuery(std::ostream& os, const std::string& query);
+    void ProcessGQLQuery(std::ostream& os, const std::string& query);
 
     // Updates a spinner to indicate progress
     void update_process_spinner();
@@ -986,8 +988,10 @@ void CLI::HandleSend() {
 
     if (model == Model::RDF) {
         query_execution_thread = std::thread(&CLI::ProcessSPARQLQuery, this, std::ref(fs_raw), std::move(query));
-    } else {
+    } else if (model == Model::Quad) {
         query_execution_thread = std::thread(&CLI::ProcessMQLQuery, this, std::ref(fs_raw), std::move(query));
+    } else {
+        query_execution_thread = std::thread(&CLI::ProcessGQLQuery, this, std::ref(fs_raw), std::move(query));
     }
 
     // Turn off blocking input
@@ -1664,7 +1668,7 @@ void CLI::ProcessSPARQLQuery(std::ostream& os, const std::string& query) {
         auto version_scope = buffer_manager.init_version_readonly();
         get_query_ctx().prepare(*version_scope, timeout);
 
-        std::unique_ptr<Op> logical_plan;
+        std::unique_ptr<SPARQL::Op> logical_plan;
         logical_plan = SPARQL::QueryParser::get_query_plan(query);
 
         auto query_optimizer = SPARQL::ExecutorConstructor(SPARQL::ResponseType::TSV);
@@ -1733,10 +1737,78 @@ void CLI::ProcessMQLQuery(std::ostream& os, const std::string& query) {
         auto version_scope = buffer_manager.init_version_readonly();
         get_query_ctx().prepare(*version_scope, timeout);
 
-        std::unique_ptr<Op> logical_plan;
+        std::unique_ptr<MQL::Op> logical_plan;
         logical_plan = MQL::QueryParser::get_query_plan(query);
 
         auto query_optimizer = MQL::ExecutorConstructor(MQL::ReturnType::TSV);
+        logical_plan->accept_visitor(query_optimizer);
+        auto physical_plan = std::move(query_optimizer.executor);
+
+        query_result_count = physical_plan->execute(os);
+        query_execution_time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start_time);
+        query_return_status = ReturnStatus::Ok;
+        query_is_done = true;
+        return;
+    } catch (QueryParsingException& e) {
+        size_t line = 0;
+        int line_start = -1;
+        size_t line_end = query.size();
+
+        for (size_t pos = 0; pos < query.size(); pos++) {
+            if (line_start == -1 && line == e.line - 1) {
+                line_start = pos;
+            }
+            if (line_end == query.size() && line == e.line) {
+                line_end = pos;
+                break;
+            }
+            if (query[pos] == '\n') {
+                line++;
+            }
+        }
+
+        AddOutput(L"", LineType::BlankLine);
+        std::wstringstream ss;
+        ss << " Parsing error at " << e.line << ":" << e.column + 1 << ": " << e.what();
+        AddOutput(ss.str(), LineType::OutputError);
+
+        if (line_start >= 0 && line_end <= query.size()) {
+            auto line = query.substr(line_start, line_end - line_start);
+            auto wline = string_to_wstring(line);
+            AddOutput(std::wstring(prompt_start.size() + e.column, ' ') + L'v', LineType::OutputError);
+            AddOutput(std::wstring(prompt_start.size(), ' ') + wline, LineType::OutputOk);
+        }
+        query_result_count = -1;
+        query_return_status = ReturnStatus::Error;
+        query_is_done = true;
+        return;
+    } catch (InterruptedException& e) {
+        query_result_count = -1;
+        query_return_status = ReturnStatus::Interrupted;
+        query_is_done = true;
+        return;
+    } catch (std::exception& e) {
+        AddOutput(L"", LineType::BlankLine);
+        AddOutput(L' ' + string_to_wstring(e.what()), LineType::OutputError);
+        query_result_count = -1;
+        query_return_status = ReturnStatus::Error;
+        query_is_done = true;
+        return;
+    }
+}
+
+void CLI::ProcessGQLQuery(std::ostream& os, const std::string& query) {
+    try {
+        auto start_time = chrono::system_clock::now();
+        QueryContext::set_query_ctx(&qc);
+
+        auto version_scope = buffer_manager.init_version_readonly();
+        get_query_ctx().prepare(*version_scope, timeout);
+
+        std::unique_ptr<Op> logical_plan;
+        logical_plan = GQL::QueryParser::get_query_plan(query);
+
+        auto query_optimizer = GQL::ExecutorConstructor(GQL::ReturnType::TSV);
         logical_plan->accept_visitor(query_optimizer);
         auto physical_plan = std::move(query_optimizer.executor);
 
@@ -1860,3 +1932,5 @@ int RunCLI(Model model, chrono::seconds timeout) {
 
     return tui.MainLoop();
 }
+
+#endif

@@ -1,0 +1,89 @@
+{
+    "head": {
+        "vars": [
+            "s",
+            "tensor"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski1"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-10.000000, -10.000000, -10.000000, -10.000000, -10.000000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski2"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-1.000000, -1.000000, -1.000000, -1.000000, -1.000000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski3"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-0.100000, -0.100000, -0.100000, -0.100000, -0.100000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski4"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.000000, 0.000000, 0.000000, 0.000000, 0.000000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski5"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.100000, 0.100000, 0.100000, 0.100000, 0.100000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski6"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[1.000000, 1.000000, 1.000000, 1.000000, 1.000000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski7"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[10.000000, 10.000000, 10.000000, 10.000000, 10.000000]",
+                    "datatype": "https://mdb.imfd.cl/type#tensorDouble"
+                }
+            }
+        ]
+    }
+}

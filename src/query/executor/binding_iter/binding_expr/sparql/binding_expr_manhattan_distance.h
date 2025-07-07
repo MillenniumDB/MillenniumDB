@@ -35,7 +35,7 @@ public:
 
         const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
         switch (optype) {
-        case Conversions::OPTYPE_TENSOR_FLOAT: {
+        case Conversions::OpType::TENSOR_FLOAT: {
             const auto lhs = Conversions::to_tensor<float>(lhs_oid);
             const auto rhs = Conversions::to_tensor<float>(rhs_oid);
             if (lhs.size() != rhs.size()) {
@@ -43,7 +43,7 @@ public:
             }
             return Conversions::pack_float(lhs.manhattan_distance(rhs));
         }
-        case Conversions::OPTYPE_TENSOR_DOUBLE: {
+        case Conversions::OpType::TENSOR_DOUBLE: {
             const auto lhs = Conversions::to_tensor<double>(lhs_oid);
             const auto rhs = Conversions::to_tensor<double>(rhs_oid);
             if (lhs.size() != rhs.size()) {
@@ -51,15 +51,14 @@ public:
             }
             return Conversions::pack_double(lhs.manhattan_distance(rhs));
         }
-        case Conversions::OPTYPE_INTEGER:
-        case Conversions::OPTYPE_DECIMAL:
-        case Conversions::OPTYPE_FLOAT:
-        case Conversions::OPTYPE_DOUBLE:
-        case Conversions::OPTYPE_INVALID:
-        default: {
-            assert(false);
+        case Conversions::OpType::INTEGER:
+        case Conversions::OpType::DECIMAL:
+        case Conversions::OpType::FLOAT:
+        case Conversions::OpType::DOUBLE:
+        case Conversions::OpType::INVALID:
             return ObjectId::get_null();
-        }
+        default:
+            throw LogicException("This should never happen");
         }
     }
 

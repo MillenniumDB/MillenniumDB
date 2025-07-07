@@ -1,0 +1,2 @@
+MATCH ((a {age:100})<-|(b {age:110})<-)(c: Person)
+RETURN *

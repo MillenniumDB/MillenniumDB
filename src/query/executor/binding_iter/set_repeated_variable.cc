@@ -48,7 +48,13 @@ void SetRepeatedVariable::assign_nulls()
     }
 }
 
-void SetRepeatedVariable::accept_visitor(BindingIterVisitor& visitor)
+void SetRepeatedVariable::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "SetRepeatedVariable(";
+    os << "start: " << start_var;
+    os << ")\n";
+    child_iter->print(os, indent + 2, stats);
 }

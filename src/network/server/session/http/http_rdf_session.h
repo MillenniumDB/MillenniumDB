@@ -7,7 +7,7 @@
 
 #include "network/sparql/response_type.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace MDBServer {
 
@@ -51,10 +51,10 @@ private:
         SPARQL::ResponseType response_type
     );
 
-    std::unique_ptr<Op> create_readonly_logical_plan(const std::string& query);
+    std::unique_ptr<SPARQL::Op> create_readonly_logical_plan(const std::string& query);
 
     std::unique_ptr<QueryExecutor>
-        create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type);
+        create_readonly_physical_plan(SPARQL::Op& logical_plan, SPARQL::ResponseType response_type);
 
     void execute_readonly_query_plan(
         QueryExecutor& physical_plan,

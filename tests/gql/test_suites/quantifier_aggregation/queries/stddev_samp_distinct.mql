@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN STDDEV_SAMP(DISTINCT x.number) AS deviation

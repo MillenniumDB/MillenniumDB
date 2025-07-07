@@ -10,9 +10,12 @@ class BindingExprAbs : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> expr;
 
-    BindingExprAbs(std::unique_ptr<BindingExpr> expr) : expr(std::move(expr)) { }
+    BindingExprAbs(std::unique_ptr<BindingExpr> expr) :
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr_oid = expr->eval(binding);
 
         switch (RDF_OID::get_generic_sub_type(expr_oid)) {
@@ -21,20 +24,19 @@ public:
             if (i >= 0) {
                 return expr_oid;
             } else {
-                return Conversions::pack_int(i*-1);
+                return Conversions::pack_int(-i);
             }
         }
         case RDF_OID::GenericSubType::DECIMAL: {
             auto d = Conversions::unpack_decimal(expr_oid);
-            d.sign = false;
-            return Conversions::pack_decimal(d);
+            return Conversions::pack_decimal(d.abs());
         }
         case RDF_OID::GenericSubType::FLOAT: {
             auto f = Conversions::unpack_float(expr_oid);
             if (f >= 0) {
                 return expr_oid;
             } else {
-                return Conversions::pack_float(f*-1);
+                return Conversions::pack_float(-f);
             }
         }
         case RDF_OID::GenericSubType::DOUBLE: {
@@ -42,23 +44,26 @@ public:
             if (d >= 0) {
                 return expr_oid;
             } else {
-                return Conversions::pack_double(d*-1);
+                return Conversions::pack_double(-d);
             }
         }
         case RDF_OID::GenericSubType::TENSOR_FLOAT: {
             auto tensor = Conversions::unpack_tensor<float>(expr_oid);
-            return Conversions::pack_tensor<float>(tensor.abs());
+            tensor.abs();
+            return Conversions::pack_tensor<float>(tensor);
         }
         case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
             auto tensor = Conversions::unpack_tensor<double>(expr_oid);
-            return Conversions::pack_tensor<double>(tensor.abs());
+            tensor.abs();
+            return Conversions::pack_tensor<double>(tensor);
         }
         default:
             return ObjectId::get_null();
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

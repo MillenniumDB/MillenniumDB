@@ -10,12 +10,7 @@ using namespace Paths::ShortestKGroupsTrails;
 void BFSEnum::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-    iter = make_unique<NullIndexIterator>();
-    reached_final_states = nullptr;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 void BFSEnum::_reset()
@@ -24,19 +19,20 @@ void BFSEnum::_reset()
     queue<SearchState> empty;
     open.swap(empty);
     visited.clear();
-    iter = make_unique<NullIndexIterator>();
-    reached_final_states = nullptr;
     solutions.clear();
     pending_finals.clear();
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
-void BFSEnum::expand_first_state(ObjectId start)
+void BFSEnum::expand_first_state()
 {
-    auto start_node_visited = visited.add(start, ObjectId(), ObjectId(), false, nullptr);
+    iter = make_unique<NullIndexIterator>();
+    reached_final_states = nullptr;
+
+    ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+
+    auto start_node_visited = visited.add(start_oid, ObjectId(), ObjectId(), false, nullptr);
     open.emplace(start_node_visited, automaton.start_state, 0);
 
     // Check if first state is final
@@ -51,7 +47,7 @@ void BFSEnum::expand_first_state(ObjectId start)
     // Starting state is solution
     if (automaton.is_final_state[automaton.start_state]) {
         pending_finals.insert(current_state.path_state->node_id.id);
-        SolutionInfo s( { current_state.path_state }, 0, 1);
+        SolutionInfo s({ current_state.path_state }, 0, 1);
         solutions.insert({ current_state.path_state->node_id.id, s });
     }
 }
@@ -60,12 +56,12 @@ bool BFSEnum::_next()
 {
     if (reached_final_states != nullptr) {
 result_enum:
-        auto path_id = path_manager.set_path((*reached_final_states)[enumerating_result_i], path_var);
+        auto path_id = path_manager.set_path(*solution_it, path_var);
         parent_binding->add(path_var, path_id);
-        parent_binding->add(end, (*reached_final_states)[enumerating_result_i]->node_id);
+        parent_binding->add(end, (*solution_it)->node_id);
 
-        enumerating_result_i++;
-        if (enumerating_result_i == enumerating_result_last) {
+        solution_it++;
+        if (solution_it == reached_final_states->end()) {
             // selecting back(), but any element of the vector should have the same value
             pending_finals.erase(reached_final_states->back()->node_id.id);
             reached_final_states = nullptr;
@@ -79,8 +75,7 @@ result_enum:
 
         // Enumerate reached solutions
         if (reached_final_states != nullptr) {
-            enumerating_result_i = 0;
-            enumerating_result_last = K;
+            solution_it = reached_final_states->begin();
             goto result_enum;
         } else {
             // Pop and visit next state
@@ -96,8 +91,7 @@ result_enum:
         assert(sol_it != solutions.end());
 
         reached_final_states = &sol_it->second.path_states;
-        enumerating_result_i = 0;
-        enumerating_result_last = reached_final_states->size();
+        solution_it = reached_final_states->begin();
         goto result_enum;
     }
 
@@ -123,7 +117,7 @@ std::vector<const PathState*>* BFSEnum::expand_neighbors(const SearchState& curr
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            auto reached_node = ObjectId(iter->get_reached_node());
+            ObjectId reached_node(iter->get_reached_node());
 
             ObjectId edge(iter->get_edge());
             if (!is_trail(current_state.path_state, edge)) {
@@ -156,13 +150,14 @@ std::vector<const PathState*>* BFSEnum::expand_neighbors(const SearchState& curr
                             sol_it->second.num_groups++;
                             sol_it->second.path_states.push_back(new_visited_ptr);
                         } else { //sol_it->second.num_groups == K
-                            // instead of creating group k+1 we finish
+                            // create group K+1 but don't add to solutions
+                            sol_it->second.num_groups++;
                             return &sol_it->second.path_states;
                         }
                     }
                 } else {
                     pending_finals.insert(new_visited_ptr->node_id.id);
-                    SolutionInfo s( { new_visited_ptr }, reached_state_distance, 1);
+                    SolutionInfo s({ new_visited_ptr }, reached_state_distance, 1);
                     solutions.insert({ iter->get_reached_node(), s });
                 }
             }
@@ -177,7 +172,15 @@ std::vector<const PathState*>* BFSEnum::expand_neighbors(const SearchState& curr
     return nullptr;
 }
 
-void BFSEnum::accept_visitor(BindingIterVisitor& visitor)
+void BFSEnum::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKGroupsTrails::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

@@ -1,0 +1,2 @@
+MATCH (x:Person)
+RETURN x,x.name

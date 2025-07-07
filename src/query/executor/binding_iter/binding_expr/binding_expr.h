@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ostream>
-
 #include "graph_models/object_id.h"
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_visitor.h"

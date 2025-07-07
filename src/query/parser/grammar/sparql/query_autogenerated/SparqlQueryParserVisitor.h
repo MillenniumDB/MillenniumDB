@@ -229,6 +229,12 @@ public:
 
     virtual std::any visitBuiltInCall(SparqlQueryParser::BuiltInCallContext *context) = 0;
 
+    virtual std::any visitProcedure(SparqlQueryParser::ProcedureContext *context) = 0;
+
+    virtual std::any visitProcedureArguments(SparqlQueryParser::ProcedureArgumentsContext *context) = 0;
+
+    virtual std::any visitProcedureBindings(SparqlQueryParser::ProcedureBindingsContext *context) = 0;
+
     virtual std::any visitRegexExpression(SparqlQueryParser::RegexExpressionContext *context) = 0;
 
     virtual std::any visitSubStringExpression(SparqlQueryParser::SubStringExpressionContext *context) = 0;

@@ -52,17 +52,16 @@ void sparqlupdateparserParserInitialize() {
 #endif
   auto staticData = std::make_unique<SparqlUpdateParserStaticData>(
     std::vector<std::string>{
-      "query", "prologue", "baseDecl", "prefixDecl", "update", "insertData", 
-      "deleteData", "createTextIndex", "normalizeTextIndex", "normalizeType", 
-      "tokenizeTextIndex", "tokenizeType", "quadData", "triplesTemplate", 
-      "constructTemplate", "constructTriples", "triplesSameSubject", "propertyList", 
-      "propertyListNotEmpty", "verb", "objectList", "object", "propertyListPathNotEmpty", 
-      "propertyListPathNotEmptyList", "objectListPath", "objectPath", "integer", 
-      "triplesNode", "blankNodePropertyList", "triplesNodePath", "blankNodePropertyListPath", 
-      "collection", "collectionPath", "graphNode", "graphNodePath", "graphTerm", 
-      "nil", "rdfLiteral", "numericLiteral", "numericLiteralUnsigned", "numericLiteralPositive", 
-      "numericLiteralNegative", "booleanLiteral", "string", "iri", "prefixedName", 
-      "blankNode", "anon"
+      "query", "prologue", "baseDecl", "prefixDecl", "update", "createIndexQuery", 
+      "createIndexOptions", "createIndexOption", "insertData", "deleteData", 
+      "quadData", "triplesTemplate", "constructTemplate", "constructTriples", 
+      "triplesSameSubject", "propertyList", "propertyListNotEmpty", "verb", 
+      "objectList", "object", "propertyListPathNotEmpty", "propertyListPathNotEmptyList", 
+      "objectListPath", "objectPath", "integer", "triplesNode", "blankNodePropertyList", 
+      "triplesNodePath", "blankNodePropertyListPath", "collection", "collectionPath", 
+      "graphNode", "graphNodePath", "graphTerm", "nil", "rdfLiteral", "numericLiteral", 
+      "numericLiteralUnsigned", "numericLiteralPositive", "numericLiteralNegative", 
+      "booleanLiteral", "string", "iri", "prefixedName", "blankNode", "anon"
     },
     std::vector<std::string>{
       "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
@@ -73,10 +72,10 @@ void sparqlupdateparserParserInitialize() {
       "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
       "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
       "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
-      "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
-      "", "'^^'", "'<='", "'>='", "'!='", "'&&'", "'||'", "'^'", "'('", 
-      "')'", "'{'", "'}'", "'['", "']'", "';'", "'.'", "'+'", "'-'", "'*'", 
-      "'\\u003F'", "','", "'!'", "'/'", "'='", "'<'", "'>'", "'|'"
+      "", "", "", "", "", "", "", "", "'^^'", "'<='", "'>='", "'!='", "'&&'", 
+      "'||'", "'^'", "'('", "')'", "'{'", "'}'", "'['", "']'", "';'", "'.'", 
+      "'+'", "'-'", "'*'", "'\\u003F'", "','", "'!'", "'/'", "'='", "'<'", 
+      "'>'", "'|'"
     },
     std::vector<std::string>{
       "", "WS", "BASE", "PREFIX", "SELECT", "DISTINCT", "REDUCED", "CONSTRUCT", 
@@ -84,23 +83,22 @@ void sparqlupdateparserParserInitialize() {
       "DESC", "LIMIT", "OFFSET", "VALUES", "OPTIONAL", "GRAPH", "UNION", 
       "FILTER", "A", "STR", "LANG", "LANGMATCHES", "DATATYPE", "BOUND", 
       "SAMETERM", "ISIRI", "ISURI", "ISBLANK", "ISLITERAL", "REGEX", "SUBSTR", 
-      "TRUE", "FALSE", "LOAD", "CLEAR", "DROP", "ADD", "MOVE", "COPY", "CREATE", 
-      "DELETE", "INSERT", "USING", "SILENT", "DEFAULT", "ALL", "DATA", "WITH", 
-      "INTO", "TO", "AS", "GROUP", "HAVING", "UNDEF", "BINDINGS", "SERVICE", 
-      "BIND", "MINUS", "IRI", "URI", "BNODE", "RAND", "ABS", "CEIL", "FLOOR", 
-      "ROUND", "CONCAT", "STRLEN", "UCASE", "LCASE", "ENCODE_FOR_URI", "CONTAINS", 
-      "STRSTARTS", "STRENDS", "STRBEFORE", "STRAFTER", "REPLACE", "YEAR", 
-      "MONTH", "DAY", "HOURS", "MINUTES", "SECONDS", "TIMEZONE", "TZ", "NOW", 
-      "UUID", "STRUUID", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "COALESCE", 
-      "IF", "STRLANG", "STRDT", "ISNUMERIC", "COUNT", "SUM", "MIN", "MAX", 
-      "AVG", "SAMPLE", "GROUP_CONCAT", "NOT", "IN", "EXISTS", "SEPARATOR", 
-      "ANY", "SHORTEST", "SIMPLE", "ACYCLIC", "WALKS", "IDENTITY", "INDEX", 
-      "NFKD_CASEFOLD", "NORMALIZE", "ON", "TEXT", "TOKENIZE", "WHITESPACE", 
-      "WS_KEEP_PUNCT", "WS_RM_PUNCT", "WS_SPLIT_PUNCT", "WS_SYMBOLS", "IRIREF", 
-      "PNAME_NS", "PNAME_LN", "BLANK_NODE_LABEL", "VAR1", "VAR2", "LANGTAG", 
-      "INTEGER", "DECIMAL", "DOUBLE", "INTEGER_POSITIVE", "DECIMAL_POSITIVE", 
-      "DOUBLE_POSITIVE", "INTEGER_NEGATIVE", "DECIMAL_NEGATIVE", "DOUBLE_NEGATIVE", 
-      "STRING_LITERAL1", "STRING_LITERAL2", "STRING_LITERAL_LONG1", "STRING_LITERAL_LONG2", 
+      "K_TRUE", "K_FALSE", "LOAD", "CLEAR", "DROP", "ADD", "MOVE", "COPY", 
+      "CREATE", "DELETE", "INSERT", "USING", "SILENT", "DEFAULT", "ALL", 
+      "DATA", "WITH", "INTO", "TO", "AS", "GROUP", "HAVING", "UNDEF", "BINDINGS", 
+      "SERVICE", "BIND", "MINUS", "IRI", "URI", "BNODE", "RAND", "ABS", 
+      "CEIL", "FLOOR", "ROUND", "CONCAT", "STRLEN", "UCASE", "LCASE", "ENCODE_FOR_URI", 
+      "CONTAINS", "STRSTARTS", "STRENDS", "STRBEFORE", "STRAFTER", "REPLACE", 
+      "YEAR", "MONTH", "DAY", "HOURS", "MINUTES", "SECONDS", "TIMEZONE", 
+      "TZ", "NOW", "UUID", "STRUUID", "MD5", "SHA1", "SHA256", "SHA384", 
+      "SHA512", "COALESCE", "IF", "STRLANG", "STRDT", "ISNUMERIC", "COUNT", 
+      "SUM", "MIN", "MAX", "AVG", "SAMPLE", "GROUP_CONCAT", "NOT", "IN", 
+      "EXISTS", "SEPARATOR", "ANY", "SHORTEST", "SIMPLE", "ACYCLIC", "WALKS", 
+      "INDEX", "ALPHANUMERIC_IDENTIFIER", "IRIREF", "PNAME_NS", "PNAME_LN", 
+      "BLANK_NODE_LABEL", "VAR1", "VAR2", "LANGTAG", "INTEGER", "DECIMAL", 
+      "DOUBLE", "INTEGER_POSITIVE", "DECIMAL_POSITIVE", "DOUBLE_POSITIVE", 
+      "INTEGER_NEGATIVE", "DECIMAL_NEGATIVE", "DOUBLE_NEGATIVE", "STRING_LITERAL1", 
+      "STRING_LITERAL2", "STRING_LITERAL_LONG1", "STRING_LITERAL_LONG2", 
       "COMMENT", "REFERENCE", "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", 
       "AND", "OR", "INVERSE", "OPEN_BRACE", "CLOSE_BRACE", "OPEN_CURLY_BRACE", 
       "CLOSE_CURLY_BRACE", "OPEN_SQUARE_BRACKET", "CLOSE_SQUARE_BRACKET", 
@@ -110,115 +108,114 @@ void sparqlupdateparserParserInitialize() {
     }
   );
   static const int32_t serializedATNSegment[] = {
-  	4,1,179,341,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
+  	4,1,169,338,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
   	7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,2,14,7,
   	14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,7,20,2,21,7,
   	21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,2,27,7,27,2,28,7,
   	28,2,29,7,29,2,30,7,30,2,31,7,31,2,32,7,32,2,33,7,33,2,34,7,34,2,35,7,
   	35,2,36,7,36,2,37,7,37,2,38,7,38,2,39,7,39,2,40,7,40,2,41,7,41,2,42,7,
-  	42,2,43,7,43,2,44,7,44,2,45,7,45,2,46,7,46,2,47,7,47,1,0,1,0,1,0,3,0,
-  	100,8,0,1,0,1,0,1,0,5,0,105,8,0,10,0,12,0,108,9,0,1,0,1,0,1,1,1,1,5,1,
-  	114,8,1,10,1,12,1,117,9,1,1,2,1,2,1,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,3,4,
-  	129,8,4,1,5,1,5,1,5,1,5,1,6,1,6,1,6,1,6,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,
-  	7,3,7,147,8,7,1,7,3,7,150,8,7,1,8,1,8,1,8,1,9,1,9,1,10,1,10,1,10,1,11,
-  	1,11,1,12,1,12,1,12,1,12,1,13,1,13,1,13,3,13,169,8,13,5,13,171,8,13,10,
-  	13,12,13,174,9,13,1,14,1,14,3,14,178,8,14,1,14,1,14,1,15,1,15,1,15,3,
-  	15,185,8,15,5,15,187,8,15,10,15,12,15,190,9,15,1,16,1,16,1,16,1,16,1,
-  	16,1,16,3,16,198,8,16,1,17,3,17,201,8,17,1,18,1,18,1,18,1,18,1,18,1,18,
-  	3,18,209,8,18,5,18,211,8,18,10,18,12,18,214,9,18,1,19,1,19,3,19,218,8,
-  	19,1,20,1,20,1,20,5,20,223,8,20,10,20,12,20,226,9,20,1,21,1,21,1,22,1,
-  	22,1,22,1,22,3,22,234,8,22,5,22,236,8,22,10,22,12,22,239,9,22,1,23,1,
-  	23,1,23,1,24,1,24,1,24,5,24,247,8,24,10,24,12,24,250,9,24,1,25,1,25,1,
-  	26,1,26,1,27,1,27,3,27,258,8,27,1,28,1,28,1,28,1,28,1,29,1,29,3,29,266,
-  	8,29,1,30,1,30,1,30,1,30,1,31,1,31,4,31,274,8,31,11,31,12,31,275,1,31,
-  	1,31,1,32,1,32,4,32,282,8,32,11,32,12,32,283,1,32,1,32,1,33,1,33,3,33,
-  	290,8,33,1,34,1,34,3,34,294,8,34,1,35,1,35,1,35,1,35,1,35,1,35,3,35,302,
-  	8,35,1,36,1,36,1,36,1,37,1,37,1,37,1,37,3,37,311,8,37,1,38,1,38,1,38,
-  	3,38,316,8,38,1,39,1,39,1,40,1,40,1,41,1,41,1,42,1,42,1,43,1,43,1,44,
-  	1,44,3,44,330,8,44,1,45,1,45,1,46,1,46,3,46,336,8,46,1,47,1,47,1,47,1,
-  	47,0,0,48,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,
-  	44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,
-  	90,92,94,0,8,2,0,120,120,122,122,2,0,120,120,128,130,1,0,139,141,1,0,
-  	142,144,1,0,145,147,1,0,37,38,1,0,148,151,1,0,133,134,331,0,96,1,0,0,
-  	0,2,115,1,0,0,0,4,118,1,0,0,0,6,121,1,0,0,0,8,128,1,0,0,0,10,130,1,0,
-  	0,0,12,134,1,0,0,0,14,138,1,0,0,0,16,151,1,0,0,0,18,154,1,0,0,0,20,156,
-  	1,0,0,0,22,159,1,0,0,0,24,161,1,0,0,0,26,165,1,0,0,0,28,175,1,0,0,0,30,
-  	181,1,0,0,0,32,197,1,0,0,0,34,200,1,0,0,0,36,202,1,0,0,0,38,217,1,0,0,
-  	0,40,219,1,0,0,0,42,227,1,0,0,0,44,229,1,0,0,0,46,240,1,0,0,0,48,243,
-  	1,0,0,0,50,251,1,0,0,0,52,253,1,0,0,0,54,257,1,0,0,0,56,259,1,0,0,0,58,
-  	265,1,0,0,0,60,267,1,0,0,0,62,271,1,0,0,0,64,279,1,0,0,0,66,289,1,0,0,
-  	0,68,293,1,0,0,0,70,301,1,0,0,0,72,303,1,0,0,0,74,306,1,0,0,0,76,315,
-  	1,0,0,0,78,317,1,0,0,0,80,319,1,0,0,0,82,321,1,0,0,0,84,323,1,0,0,0,86,
-  	325,1,0,0,0,88,329,1,0,0,0,90,331,1,0,0,0,92,335,1,0,0,0,94,337,1,0,0,
-  	0,96,97,3,2,1,0,97,106,3,8,4,0,98,100,5,166,0,0,99,98,1,0,0,0,99,100,
-  	1,0,0,0,100,101,1,0,0,0,101,102,3,2,1,0,102,103,3,8,4,0,103,105,1,0,0,
-  	0,104,99,1,0,0,0,105,108,1,0,0,0,106,104,1,0,0,0,106,107,1,0,0,0,107,
-  	109,1,0,0,0,108,106,1,0,0,0,109,110,5,0,0,1,110,1,1,0,0,0,111,114,3,4,
-  	2,0,112,114,3,6,3,0,113,111,1,0,0,0,113,112,1,0,0,0,114,117,1,0,0,0,115,
-  	113,1,0,0,0,115,116,1,0,0,0,116,3,1,0,0,0,117,115,1,0,0,0,118,119,5,2,
-  	0,0,119,120,5,132,0,0,120,5,1,0,0,0,121,122,5,3,0,0,122,123,5,133,0,0,
-  	123,124,5,132,0,0,124,7,1,0,0,0,125,129,3,10,5,0,126,129,3,12,6,0,127,
-  	129,3,14,7,0,128,125,1,0,0,0,128,126,1,0,0,0,128,127,1,0,0,0,129,9,1,
-  	0,0,0,130,131,5,47,0,0,131,132,5,52,0,0,132,133,3,24,12,0,133,11,1,0,
-  	0,0,134,135,5,46,0,0,135,136,5,52,0,0,136,137,3,24,12,0,137,13,1,0,0,
-  	0,138,139,5,45,0,0,139,140,5,125,0,0,140,141,5,121,0,0,141,142,3,86,43,
-  	0,142,143,5,124,0,0,143,149,3,88,44,0,144,146,5,53,0,0,145,147,3,16,8,
-  	0,146,145,1,0,0,0,146,147,1,0,0,0,147,148,1,0,0,0,148,150,3,20,10,0,149,
-  	144,1,0,0,0,149,150,1,0,0,0,150,15,1,0,0,0,151,152,5,123,0,0,152,153,
-  	3,18,9,0,153,17,1,0,0,0,154,155,7,0,0,0,155,19,1,0,0,0,156,157,5,126,
-  	0,0,157,158,3,22,11,0,158,21,1,0,0,0,159,160,7,1,0,0,160,23,1,0,0,0,161,
-  	162,5,162,0,0,162,163,3,26,13,0,163,164,5,163,0,0,164,25,1,0,0,0,165,
-  	172,3,32,16,0,166,168,5,167,0,0,167,169,3,32,16,0,168,167,1,0,0,0,168,
-  	169,1,0,0,0,169,171,1,0,0,0,170,166,1,0,0,0,171,174,1,0,0,0,172,170,1,
-  	0,0,0,172,173,1,0,0,0,173,27,1,0,0,0,174,172,1,0,0,0,175,177,5,162,0,
-  	0,176,178,3,30,15,0,177,176,1,0,0,0,177,178,1,0,0,0,178,179,1,0,0,0,179,
-  	180,5,163,0,0,180,29,1,0,0,0,181,188,3,32,16,0,182,184,5,167,0,0,183,
-  	185,3,30,15,0,184,183,1,0,0,0,184,185,1,0,0,0,185,187,1,0,0,0,186,182,
-  	1,0,0,0,187,190,1,0,0,0,188,186,1,0,0,0,188,189,1,0,0,0,189,31,1,0,0,
-  	0,190,188,1,0,0,0,191,192,3,70,35,0,192,193,3,36,18,0,193,198,1,0,0,0,
-  	194,195,3,54,27,0,195,196,3,34,17,0,196,198,1,0,0,0,197,191,1,0,0,0,197,
-  	194,1,0,0,0,198,33,1,0,0,0,199,201,3,36,18,0,200,199,1,0,0,0,200,201,
-  	1,0,0,0,201,35,1,0,0,0,202,203,3,38,19,0,203,212,3,40,20,0,204,208,5,
-  	166,0,0,205,206,3,38,19,0,206,207,3,40,20,0,207,209,1,0,0,0,208,205,1,
-  	0,0,0,208,209,1,0,0,0,209,211,1,0,0,0,210,204,1,0,0,0,211,214,1,0,0,0,
-  	212,210,1,0,0,0,212,213,1,0,0,0,213,37,1,0,0,0,214,212,1,0,0,0,215,218,
-  	3,88,44,0,216,218,5,24,0,0,217,215,1,0,0,0,217,216,1,0,0,0,218,39,1,0,
-  	0,0,219,224,3,42,21,0,220,221,5,172,0,0,221,223,3,42,21,0,222,220,1,0,
-  	0,0,223,226,1,0,0,0,224,222,1,0,0,0,224,225,1,0,0,0,225,41,1,0,0,0,226,
-  	224,1,0,0,0,227,228,3,66,33,0,228,43,1,0,0,0,229,230,3,38,19,0,230,237,
-  	3,48,24,0,231,233,5,166,0,0,232,234,3,46,23,0,233,232,1,0,0,0,233,234,
-  	1,0,0,0,234,236,1,0,0,0,235,231,1,0,0,0,236,239,1,0,0,0,237,235,1,0,0,
-  	0,237,238,1,0,0,0,238,45,1,0,0,0,239,237,1,0,0,0,240,241,3,38,19,0,241,
-  	242,3,40,20,0,242,47,1,0,0,0,243,248,3,50,25,0,244,245,5,172,0,0,245,
-  	247,3,50,25,0,246,244,1,0,0,0,247,250,1,0,0,0,248,246,1,0,0,0,248,249,
-  	1,0,0,0,249,49,1,0,0,0,250,248,1,0,0,0,251,252,3,68,34,0,252,51,1,0,0,
-  	0,253,254,5,139,0,0,254,53,1,0,0,0,255,258,3,62,31,0,256,258,3,56,28,
-  	0,257,255,1,0,0,0,257,256,1,0,0,0,258,55,1,0,0,0,259,260,5,164,0,0,260,
-  	261,3,36,18,0,261,262,5,165,0,0,262,57,1,0,0,0,263,266,3,64,32,0,264,
-  	266,3,60,30,0,265,263,1,0,0,0,265,264,1,0,0,0,266,59,1,0,0,0,267,268,
-  	5,164,0,0,268,269,3,44,22,0,269,270,5,165,0,0,270,61,1,0,0,0,271,273,
-  	5,160,0,0,272,274,3,66,33,0,273,272,1,0,0,0,274,275,1,0,0,0,275,273,1,
-  	0,0,0,275,276,1,0,0,0,276,277,1,0,0,0,277,278,5,161,0,0,278,63,1,0,0,
-  	0,279,281,5,160,0,0,280,282,3,68,34,0,281,280,1,0,0,0,282,283,1,0,0,0,
-  	283,281,1,0,0,0,283,284,1,0,0,0,284,285,1,0,0,0,285,286,5,161,0,0,286,
-  	65,1,0,0,0,287,290,3,70,35,0,288,290,3,54,27,0,289,287,1,0,0,0,289,288,
-  	1,0,0,0,290,67,1,0,0,0,291,294,3,70,35,0,292,294,3,58,29,0,293,291,1,
-  	0,0,0,293,292,1,0,0,0,294,69,1,0,0,0,295,302,3,88,44,0,296,302,3,74,37,
-  	0,297,302,3,76,38,0,298,302,3,84,42,0,299,302,3,92,46,0,300,302,3,72,
-  	36,0,301,295,1,0,0,0,301,296,1,0,0,0,301,297,1,0,0,0,301,298,1,0,0,0,
-  	301,299,1,0,0,0,301,300,1,0,0,0,302,71,1,0,0,0,303,304,5,160,0,0,304,
-  	305,5,161,0,0,305,73,1,0,0,0,306,310,3,86,43,0,307,311,5,138,0,0,308,
-  	309,5,153,0,0,309,311,3,88,44,0,310,307,1,0,0,0,310,308,1,0,0,0,310,311,
-  	1,0,0,0,311,75,1,0,0,0,312,316,3,78,39,0,313,316,3,80,40,0,314,316,3,
-  	82,41,0,315,312,1,0,0,0,315,313,1,0,0,0,315,314,1,0,0,0,316,77,1,0,0,
-  	0,317,318,7,2,0,0,318,79,1,0,0,0,319,320,7,3,0,0,320,81,1,0,0,0,321,322,
-  	7,4,0,0,322,83,1,0,0,0,323,324,7,5,0,0,324,85,1,0,0,0,325,326,7,6,0,0,
-  	326,87,1,0,0,0,327,330,5,132,0,0,328,330,3,90,45,0,329,327,1,0,0,0,329,
-  	328,1,0,0,0,330,89,1,0,0,0,331,332,7,7,0,0,332,91,1,0,0,0,333,336,5,135,
-  	0,0,334,336,3,94,47,0,335,333,1,0,0,0,335,334,1,0,0,0,336,93,1,0,0,0,
-  	337,338,5,164,0,0,338,339,5,165,0,0,339,95,1,0,0,0,32,99,106,113,115,
-  	128,146,149,168,172,177,184,188,197,200,208,212,217,224,233,237,248,257,
-  	265,275,283,289,293,301,310,315,329,335
+  	42,2,43,7,43,2,44,7,44,2,45,7,45,1,0,1,0,1,0,3,0,96,8,0,1,0,1,0,1,0,5,
+  	0,101,8,0,10,0,12,0,104,9,0,1,0,1,0,1,1,1,1,5,1,110,8,1,10,1,12,1,113,
+  	9,1,1,2,1,2,1,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,3,4,125,8,4,1,5,1,5,1,5,1,
+  	5,1,5,1,5,1,5,1,6,1,6,1,6,1,6,5,6,138,8,6,10,6,12,6,141,9,6,3,6,143,8,
+  	6,1,6,1,6,1,7,1,7,1,7,1,7,1,8,1,8,1,8,1,8,1,9,1,9,1,9,1,9,1,10,1,10,1,
+  	10,1,10,1,11,1,11,1,11,3,11,166,8,11,5,11,168,8,11,10,11,12,11,171,9,
+  	11,1,12,1,12,3,12,175,8,12,1,12,1,12,1,13,1,13,1,13,3,13,182,8,13,5,13,
+  	184,8,13,10,13,12,13,187,9,13,1,14,1,14,1,14,1,14,1,14,1,14,3,14,195,
+  	8,14,1,15,3,15,198,8,15,1,16,1,16,1,16,1,16,1,16,1,16,3,16,206,8,16,5,
+  	16,208,8,16,10,16,12,16,211,9,16,1,17,1,17,3,17,215,8,17,1,18,1,18,1,
+  	18,5,18,220,8,18,10,18,12,18,223,9,18,1,19,1,19,1,20,1,20,1,20,1,20,3,
+  	20,231,8,20,5,20,233,8,20,10,20,12,20,236,9,20,1,21,1,21,1,21,1,22,1,
+  	22,1,22,5,22,244,8,22,10,22,12,22,247,9,22,1,23,1,23,1,24,1,24,1,25,1,
+  	25,3,25,255,8,25,1,26,1,26,1,26,1,26,1,27,1,27,3,27,263,8,27,1,28,1,28,
+  	1,28,1,28,1,29,1,29,4,29,271,8,29,11,29,12,29,272,1,29,1,29,1,30,1,30,
+  	4,30,279,8,30,11,30,12,30,280,1,30,1,30,1,31,1,31,3,31,287,8,31,1,32,
+  	1,32,3,32,291,8,32,1,33,1,33,1,33,1,33,1,33,1,33,3,33,299,8,33,1,34,1,
+  	34,1,34,1,35,1,35,1,35,1,35,3,35,308,8,35,1,36,1,36,1,36,3,36,313,8,36,
+  	1,37,1,37,1,38,1,38,1,39,1,39,1,40,1,40,1,41,1,41,1,42,1,42,3,42,327,
+  	8,42,1,43,1,43,1,44,1,44,3,44,333,8,44,1,45,1,45,1,45,1,45,0,0,46,0,2,
+  	4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,
+  	52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,0,6,1,0,129,
+  	131,1,0,132,134,1,0,135,137,1,0,37,38,1,0,138,141,1,0,123,124,330,0,92,
+  	1,0,0,0,2,111,1,0,0,0,4,114,1,0,0,0,6,117,1,0,0,0,8,124,1,0,0,0,10,126,
+  	1,0,0,0,12,133,1,0,0,0,14,146,1,0,0,0,16,150,1,0,0,0,18,154,1,0,0,0,20,
+  	158,1,0,0,0,22,162,1,0,0,0,24,172,1,0,0,0,26,178,1,0,0,0,28,194,1,0,0,
+  	0,30,197,1,0,0,0,32,199,1,0,0,0,34,214,1,0,0,0,36,216,1,0,0,0,38,224,
+  	1,0,0,0,40,226,1,0,0,0,42,237,1,0,0,0,44,240,1,0,0,0,46,248,1,0,0,0,48,
+  	250,1,0,0,0,50,254,1,0,0,0,52,256,1,0,0,0,54,262,1,0,0,0,56,264,1,0,0,
+  	0,58,268,1,0,0,0,60,276,1,0,0,0,62,286,1,0,0,0,64,290,1,0,0,0,66,298,
+  	1,0,0,0,68,300,1,0,0,0,70,303,1,0,0,0,72,312,1,0,0,0,74,314,1,0,0,0,76,
+  	316,1,0,0,0,78,318,1,0,0,0,80,320,1,0,0,0,82,322,1,0,0,0,84,326,1,0,0,
+  	0,86,328,1,0,0,0,88,332,1,0,0,0,90,334,1,0,0,0,92,93,3,2,1,0,93,102,3,
+  	8,4,0,94,96,5,156,0,0,95,94,1,0,0,0,95,96,1,0,0,0,96,97,1,0,0,0,97,98,
+  	3,2,1,0,98,99,3,8,4,0,99,101,1,0,0,0,100,95,1,0,0,0,101,104,1,0,0,0,102,
+  	100,1,0,0,0,102,103,1,0,0,0,103,105,1,0,0,0,104,102,1,0,0,0,105,106,5,
+  	0,0,1,106,1,1,0,0,0,107,110,3,4,2,0,108,110,3,6,3,0,109,107,1,0,0,0,109,
+  	108,1,0,0,0,110,113,1,0,0,0,111,109,1,0,0,0,111,112,1,0,0,0,112,3,1,0,
+  	0,0,113,111,1,0,0,0,114,115,5,2,0,0,115,116,5,122,0,0,116,5,1,0,0,0,117,
+  	118,5,3,0,0,118,119,5,123,0,0,119,120,5,122,0,0,120,7,1,0,0,0,121,125,
+  	3,16,8,0,122,125,3,18,9,0,123,125,3,10,5,0,124,121,1,0,0,0,124,122,1,
+  	0,0,0,124,123,1,0,0,0,125,9,1,0,0,0,126,127,5,45,0,0,127,128,5,121,0,
+  	0,128,129,5,120,0,0,129,130,3,82,41,0,130,131,5,53,0,0,131,132,3,12,6,
+  	0,132,11,1,0,0,0,133,142,5,152,0,0,134,139,3,14,7,0,135,136,5,162,0,0,
+  	136,138,3,14,7,0,137,135,1,0,0,0,138,141,1,0,0,0,139,137,1,0,0,0,139,
+  	140,1,0,0,0,140,143,1,0,0,0,141,139,1,0,0,0,142,134,1,0,0,0,142,143,1,
+  	0,0,0,143,144,1,0,0,0,144,145,5,153,0,0,145,13,1,0,0,0,146,147,3,82,41,
+  	0,147,148,5,165,0,0,148,149,3,66,33,0,149,15,1,0,0,0,150,151,5,47,0,0,
+  	151,152,5,52,0,0,152,153,3,20,10,0,153,17,1,0,0,0,154,155,5,46,0,0,155,
+  	156,5,52,0,0,156,157,3,20,10,0,157,19,1,0,0,0,158,159,5,152,0,0,159,160,
+  	3,22,11,0,160,161,5,153,0,0,161,21,1,0,0,0,162,169,3,28,14,0,163,165,
+  	5,157,0,0,164,166,3,28,14,0,165,164,1,0,0,0,165,166,1,0,0,0,166,168,1,
+  	0,0,0,167,163,1,0,0,0,168,171,1,0,0,0,169,167,1,0,0,0,169,170,1,0,0,0,
+  	170,23,1,0,0,0,171,169,1,0,0,0,172,174,5,152,0,0,173,175,3,26,13,0,174,
+  	173,1,0,0,0,174,175,1,0,0,0,175,176,1,0,0,0,176,177,5,153,0,0,177,25,
+  	1,0,0,0,178,185,3,28,14,0,179,181,5,157,0,0,180,182,3,26,13,0,181,180,
+  	1,0,0,0,181,182,1,0,0,0,182,184,1,0,0,0,183,179,1,0,0,0,184,187,1,0,0,
+  	0,185,183,1,0,0,0,185,186,1,0,0,0,186,27,1,0,0,0,187,185,1,0,0,0,188,
+  	189,3,66,33,0,189,190,3,32,16,0,190,195,1,0,0,0,191,192,3,50,25,0,192,
+  	193,3,30,15,0,193,195,1,0,0,0,194,188,1,0,0,0,194,191,1,0,0,0,195,29,
+  	1,0,0,0,196,198,3,32,16,0,197,196,1,0,0,0,197,198,1,0,0,0,198,31,1,0,
+  	0,0,199,200,3,34,17,0,200,209,3,36,18,0,201,205,5,156,0,0,202,203,3,34,
+  	17,0,203,204,3,36,18,0,204,206,1,0,0,0,205,202,1,0,0,0,205,206,1,0,0,
+  	0,206,208,1,0,0,0,207,201,1,0,0,0,208,211,1,0,0,0,209,207,1,0,0,0,209,
+  	210,1,0,0,0,210,33,1,0,0,0,211,209,1,0,0,0,212,215,3,84,42,0,213,215,
+  	5,24,0,0,214,212,1,0,0,0,214,213,1,0,0,0,215,35,1,0,0,0,216,221,3,38,
+  	19,0,217,218,5,162,0,0,218,220,3,38,19,0,219,217,1,0,0,0,220,223,1,0,
+  	0,0,221,219,1,0,0,0,221,222,1,0,0,0,222,37,1,0,0,0,223,221,1,0,0,0,224,
+  	225,3,62,31,0,225,39,1,0,0,0,226,227,3,34,17,0,227,234,3,44,22,0,228,
+  	230,5,156,0,0,229,231,3,42,21,0,230,229,1,0,0,0,230,231,1,0,0,0,231,233,
+  	1,0,0,0,232,228,1,0,0,0,233,236,1,0,0,0,234,232,1,0,0,0,234,235,1,0,0,
+  	0,235,41,1,0,0,0,236,234,1,0,0,0,237,238,3,34,17,0,238,239,3,36,18,0,
+  	239,43,1,0,0,0,240,245,3,46,23,0,241,242,5,162,0,0,242,244,3,46,23,0,
+  	243,241,1,0,0,0,244,247,1,0,0,0,245,243,1,0,0,0,245,246,1,0,0,0,246,45,
+  	1,0,0,0,247,245,1,0,0,0,248,249,3,64,32,0,249,47,1,0,0,0,250,251,5,129,
+  	0,0,251,49,1,0,0,0,252,255,3,58,29,0,253,255,3,52,26,0,254,252,1,0,0,
+  	0,254,253,1,0,0,0,255,51,1,0,0,0,256,257,5,154,0,0,257,258,3,32,16,0,
+  	258,259,5,155,0,0,259,53,1,0,0,0,260,263,3,60,30,0,261,263,3,56,28,0,
+  	262,260,1,0,0,0,262,261,1,0,0,0,263,55,1,0,0,0,264,265,5,154,0,0,265,
+  	266,3,40,20,0,266,267,5,155,0,0,267,57,1,0,0,0,268,270,5,150,0,0,269,
+  	271,3,62,31,0,270,269,1,0,0,0,271,272,1,0,0,0,272,270,1,0,0,0,272,273,
+  	1,0,0,0,273,274,1,0,0,0,274,275,5,151,0,0,275,59,1,0,0,0,276,278,5,150,
+  	0,0,277,279,3,64,32,0,278,277,1,0,0,0,279,280,1,0,0,0,280,278,1,0,0,0,
+  	280,281,1,0,0,0,281,282,1,0,0,0,282,283,5,151,0,0,283,61,1,0,0,0,284,
+  	287,3,66,33,0,285,287,3,50,25,0,286,284,1,0,0,0,286,285,1,0,0,0,287,63,
+  	1,0,0,0,288,291,3,66,33,0,289,291,3,54,27,0,290,288,1,0,0,0,290,289,1,
+  	0,0,0,291,65,1,0,0,0,292,299,3,84,42,0,293,299,3,70,35,0,294,299,3,72,
+  	36,0,295,299,3,80,40,0,296,299,3,88,44,0,297,299,3,68,34,0,298,292,1,
+  	0,0,0,298,293,1,0,0,0,298,294,1,0,0,0,298,295,1,0,0,0,298,296,1,0,0,0,
+  	298,297,1,0,0,0,299,67,1,0,0,0,300,301,5,150,0,0,301,302,5,151,0,0,302,
+  	69,1,0,0,0,303,307,3,82,41,0,304,308,5,128,0,0,305,306,5,143,0,0,306,
+  	308,3,84,42,0,307,304,1,0,0,0,307,305,1,0,0,0,307,308,1,0,0,0,308,71,
+  	1,0,0,0,309,313,3,74,37,0,310,313,3,76,38,0,311,313,3,78,39,0,312,309,
+  	1,0,0,0,312,310,1,0,0,0,312,311,1,0,0,0,313,73,1,0,0,0,314,315,7,0,0,
+  	0,315,75,1,0,0,0,316,317,7,1,0,0,317,77,1,0,0,0,318,319,7,2,0,0,319,79,
+  	1,0,0,0,320,321,7,3,0,0,321,81,1,0,0,0,322,323,7,4,0,0,323,83,1,0,0,0,
+  	324,327,5,122,0,0,325,327,3,86,43,0,326,324,1,0,0,0,326,325,1,0,0,0,327,
+  	85,1,0,0,0,328,329,7,5,0,0,329,87,1,0,0,0,330,333,5,125,0,0,331,333,3,
+  	90,45,0,332,330,1,0,0,0,332,331,1,0,0,0,333,89,1,0,0,0,334,335,5,154,
+  	0,0,335,336,5,155,0,0,336,91,1,0,0,0,32,95,102,109,111,124,139,142,165,
+  	169,174,181,185,194,197,205,209,214,221,230,234,245,254,262,272,280,286,
+  	290,298,307,312,326,332
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -328,32 +325,32 @@ SparqlUpdateParser::QueryContext* SparqlUpdateParser::query() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(96);
+    setState(92);
     prologue();
-    setState(97);
+    setState(93);
     update();
-    setState(106);
+    setState(102);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while ((((_la & ~ 0x3fULL) == 0) &&
       ((1ULL << _la) & 246290604621836) != 0) || _la == SparqlUpdateParser::SEMICOLON) {
-      setState(99);
+      setState(95);
       _errHandler->sync(this);
 
       _la = _input->LA(1);
       if (_la == SparqlUpdateParser::SEMICOLON) {
-        setState(98);
+        setState(94);
         match(SparqlUpdateParser::SEMICOLON);
       }
-      setState(101);
+      setState(97);
       prologue();
-      setState(102);
+      setState(98);
       update();
-      setState(108);
+      setState(104);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
-    setState(109);
+    setState(105);
     match(SparqlUpdateParser::EOF);
    
   }
@@ -415,23 +412,23 @@ SparqlUpdateParser::PrologueContext* SparqlUpdateParser::prologue() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(115);
+    setState(111);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::BASE
 
     || _la == SparqlUpdateParser::PREFIX) {
-      setState(113);
+      setState(109);
       _errHandler->sync(this);
       switch (_input->LA(1)) {
         case SparqlUpdateParser::BASE: {
-          setState(111);
+          setState(107);
           baseDecl();
           break;
         }
 
         case SparqlUpdateParser::PREFIX: {
-          setState(112);
+          setState(108);
           prefixDecl();
           break;
         }
@@ -439,7 +436,7 @@ SparqlUpdateParser::PrologueContext* SparqlUpdateParser::prologue() {
       default:
         throw NoViableAltException(this);
       }
-      setState(117);
+      setState(113);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -494,9 +491,9 @@ SparqlUpdateParser::BaseDeclContext* SparqlUpdateParser::baseDecl() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(118);
+    setState(114);
     match(SparqlUpdateParser::BASE);
-    setState(119);
+    setState(115);
     match(SparqlUpdateParser::IRIREF);
    
   }
@@ -553,11 +550,11 @@ SparqlUpdateParser::PrefixDeclContext* SparqlUpdateParser::prefixDecl() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(121);
+    setState(117);
     match(SparqlUpdateParser::PREFIX);
-    setState(122);
+    setState(118);
     match(SparqlUpdateParser::PNAME_NS);
-    setState(123);
+    setState(119);
     match(SparqlUpdateParser::IRIREF);
    
   }
@@ -584,8 +581,8 @@ SparqlUpdateParser::DeleteDataContext* SparqlUpdateParser::UpdateContext::delete
   return getRuleContext<SparqlUpdateParser::DeleteDataContext>(0);
 }
 
-SparqlUpdateParser::CreateTextIndexContext* SparqlUpdateParser::UpdateContext::createTextIndex() {
-  return getRuleContext<SparqlUpdateParser::CreateTextIndexContext>(0);
+SparqlUpdateParser::CreateIndexQueryContext* SparqlUpdateParser::UpdateContext::createIndexQuery() {
+  return getRuleContext<SparqlUpdateParser::CreateIndexQueryContext>(0);
 }
 
 
@@ -613,33 +610,266 @@ SparqlUpdateParser::UpdateContext* SparqlUpdateParser::update() {
     exitRule();
   });
   try {
-    setState(128);
+    setState(124);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::INSERT: {
         enterOuterAlt(_localctx, 1);
-        setState(125);
+        setState(121);
         insertData();
         break;
       }
 
       case SparqlUpdateParser::DELETE: {
         enterOuterAlt(_localctx, 2);
-        setState(126);
+        setState(122);
         deleteData();
         break;
       }
 
       case SparqlUpdateParser::CREATE: {
         enterOuterAlt(_localctx, 3);
-        setState(127);
-        createTextIndex();
+        setState(123);
+        createIndexQuery();
         break;
       }
 
     default:
       throw NoViableAltException(this);
     }
+   
+  }
+  catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- CreateIndexQueryContext ------------------------------------------------------------------
+
+SparqlUpdateParser::CreateIndexQueryContext::CreateIndexQueryContext(ParserRuleContext *parent, size_t invokingState)
+  : ParserRuleContext(parent, invokingState) {
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexQueryContext::CREATE() {
+  return getToken(SparqlUpdateParser::CREATE, 0);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexQueryContext::ALPHANUMERIC_IDENTIFIER() {
+  return getToken(SparqlUpdateParser::ALPHANUMERIC_IDENTIFIER, 0);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexQueryContext::INDEX() {
+  return getToken(SparqlUpdateParser::INDEX, 0);
+}
+
+SparqlUpdateParser::StringContext* SparqlUpdateParser::CreateIndexQueryContext::string() {
+  return getRuleContext<SparqlUpdateParser::StringContext>(0);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexQueryContext::WITH() {
+  return getToken(SparqlUpdateParser::WITH, 0);
+}
+
+SparqlUpdateParser::CreateIndexOptionsContext* SparqlUpdateParser::CreateIndexQueryContext::createIndexOptions() {
+  return getRuleContext<SparqlUpdateParser::CreateIndexOptionsContext>(0);
+}
+
+
+size_t SparqlUpdateParser::CreateIndexQueryContext::getRuleIndex() const {
+  return SparqlUpdateParser::RuleCreateIndexQuery;
+}
+
+
+std::any SparqlUpdateParser::CreateIndexQueryContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
+    return parserVisitor->visitCreateIndexQuery(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+SparqlUpdateParser::CreateIndexQueryContext* SparqlUpdateParser::createIndexQuery() {
+  CreateIndexQueryContext *_localctx = _tracker.createInstance<CreateIndexQueryContext>(_ctx, getState());
+  enterRule(_localctx, 10, SparqlUpdateParser::RuleCreateIndexQuery);
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(126);
+    match(SparqlUpdateParser::CREATE);
+    setState(127);
+    match(SparqlUpdateParser::ALPHANUMERIC_IDENTIFIER);
+    setState(128);
+    match(SparqlUpdateParser::INDEX);
+    setState(129);
+    string();
+    setState(130);
+    match(SparqlUpdateParser::WITH);
+    setState(131);
+    createIndexOptions();
+   
+  }
+  catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- CreateIndexOptionsContext ------------------------------------------------------------------
+
+SparqlUpdateParser::CreateIndexOptionsContext::CreateIndexOptionsContext(ParserRuleContext *parent, size_t invokingState)
+  : ParserRuleContext(parent, invokingState) {
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexOptionsContext::OPEN_CURLY_BRACE() {
+  return getToken(SparqlUpdateParser::OPEN_CURLY_BRACE, 0);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexOptionsContext::CLOSE_CURLY_BRACE() {
+  return getToken(SparqlUpdateParser::CLOSE_CURLY_BRACE, 0);
+}
+
+std::vector<SparqlUpdateParser::CreateIndexOptionContext *> SparqlUpdateParser::CreateIndexOptionsContext::createIndexOption() {
+  return getRuleContexts<SparqlUpdateParser::CreateIndexOptionContext>();
+}
+
+SparqlUpdateParser::CreateIndexOptionContext* SparqlUpdateParser::CreateIndexOptionsContext::createIndexOption(size_t i) {
+  return getRuleContext<SparqlUpdateParser::CreateIndexOptionContext>(i);
+}
+
+std::vector<tree::TerminalNode *> SparqlUpdateParser::CreateIndexOptionsContext::COMMA() {
+  return getTokens(SparqlUpdateParser::COMMA);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexOptionsContext::COMMA(size_t i) {
+  return getToken(SparqlUpdateParser::COMMA, i);
+}
+
+
+size_t SparqlUpdateParser::CreateIndexOptionsContext::getRuleIndex() const {
+  return SparqlUpdateParser::RuleCreateIndexOptions;
+}
+
+
+std::any SparqlUpdateParser::CreateIndexOptionsContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
+    return parserVisitor->visitCreateIndexOptions(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+SparqlUpdateParser::CreateIndexOptionsContext* SparqlUpdateParser::createIndexOptions() {
+  CreateIndexOptionsContext *_localctx = _tracker.createInstance<CreateIndexOptionsContext>(_ctx, getState());
+  enterRule(_localctx, 12, SparqlUpdateParser::RuleCreateIndexOptions);
+  size_t _la = 0;
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(133);
+    match(SparqlUpdateParser::OPEN_CURLY_BRACE);
+    setState(142);
+    _errHandler->sync(this);
+
+    _la = _input->LA(1);
+    if (((((_la - 138) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 138)) & 15) != 0)) {
+      setState(134);
+      createIndexOption();
+      setState(139);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+      while (_la == SparqlUpdateParser::COMMA) {
+        setState(135);
+        match(SparqlUpdateParser::COMMA);
+        setState(136);
+        createIndexOption();
+        setState(141);
+        _errHandler->sync(this);
+        _la = _input->LA(1);
+      }
+    }
+    setState(144);
+    match(SparqlUpdateParser::CLOSE_CURLY_BRACE);
+   
+  }
+  catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- CreateIndexOptionContext ------------------------------------------------------------------
+
+SparqlUpdateParser::CreateIndexOptionContext::CreateIndexOptionContext(ParserRuleContext *parent, size_t invokingState)
+  : ParserRuleContext(parent, invokingState) {
+}
+
+SparqlUpdateParser::StringContext* SparqlUpdateParser::CreateIndexOptionContext::string() {
+  return getRuleContext<SparqlUpdateParser::StringContext>(0);
+}
+
+tree::TerminalNode* SparqlUpdateParser::CreateIndexOptionContext::EQUAL() {
+  return getToken(SparqlUpdateParser::EQUAL, 0);
+}
+
+SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::CreateIndexOptionContext::graphTerm() {
+  return getRuleContext<SparqlUpdateParser::GraphTermContext>(0);
+}
+
+
+size_t SparqlUpdateParser::CreateIndexOptionContext::getRuleIndex() const {
+  return SparqlUpdateParser::RuleCreateIndexOption;
+}
+
+
+std::any SparqlUpdateParser::CreateIndexOptionContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
+    return parserVisitor->visitCreateIndexOption(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+SparqlUpdateParser::CreateIndexOptionContext* SparqlUpdateParser::createIndexOption() {
+  CreateIndexOptionContext *_localctx = _tracker.createInstance<CreateIndexOptionContext>(_ctx, getState());
+  enterRule(_localctx, 14, SparqlUpdateParser::RuleCreateIndexOption);
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(146);
+    string();
+    setState(147);
+    match(SparqlUpdateParser::EQUAL);
+    setState(148);
+    graphTerm();
    
   }
   catch (RecognitionException &e) {
@@ -684,7 +914,7 @@ std::any SparqlUpdateParser::InsertDataContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::InsertDataContext* SparqlUpdateParser::insertData() {
   InsertDataContext *_localctx = _tracker.createInstance<InsertDataContext>(_ctx, getState());
-  enterRule(_localctx, 10, SparqlUpdateParser::RuleInsertData);
+  enterRule(_localctx, 16, SparqlUpdateParser::RuleInsertData);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -695,11 +925,11 @@ SparqlUpdateParser::InsertDataContext* SparqlUpdateParser::insertData() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(130);
+    setState(150);
     match(SparqlUpdateParser::INSERT);
-    setState(131);
+    setState(151);
     match(SparqlUpdateParser::DATA);
-    setState(132);
+    setState(152);
     quadData();
    
   }
@@ -745,230 +975,7 @@ std::any SparqlUpdateParser::DeleteDataContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::DeleteDataContext* SparqlUpdateParser::deleteData() {
   DeleteDataContext *_localctx = _tracker.createInstance<DeleteDataContext>(_ctx, getState());
-  enterRule(_localctx, 12, SparqlUpdateParser::RuleDeleteData);
-
-#if __cplusplus > 201703L
-  auto onExit = finally([=, this] {
-#else
-  auto onExit = finally([=] {
-#endif
-    exitRule();
-  });
-  try {
-    enterOuterAlt(_localctx, 1);
-    setState(134);
-    match(SparqlUpdateParser::DELETE);
-    setState(135);
-    match(SparqlUpdateParser::DATA);
-    setState(136);
-    quadData();
-   
-  }
-  catch (RecognitionException &e) {
-    _errHandler->reportError(this, e);
-    _localctx->exception = std::current_exception();
-    _errHandler->recover(this, _localctx->exception);
-  }
-
-  return _localctx;
-}
-
-//----------------- CreateTextIndexContext ------------------------------------------------------------------
-
-SparqlUpdateParser::CreateTextIndexContext::CreateTextIndexContext(ParserRuleContext *parent, size_t invokingState)
-  : ParserRuleContext(parent, invokingState) {
-}
-
-tree::TerminalNode* SparqlUpdateParser::CreateTextIndexContext::CREATE() {
-  return getToken(SparqlUpdateParser::CREATE, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::CreateTextIndexContext::TEXT() {
-  return getToken(SparqlUpdateParser::TEXT, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::CreateTextIndexContext::INDEX() {
-  return getToken(SparqlUpdateParser::INDEX, 0);
-}
-
-SparqlUpdateParser::StringContext* SparqlUpdateParser::CreateTextIndexContext::string() {
-  return getRuleContext<SparqlUpdateParser::StringContext>(0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::CreateTextIndexContext::ON() {
-  return getToken(SparqlUpdateParser::ON, 0);
-}
-
-SparqlUpdateParser::IriContext* SparqlUpdateParser::CreateTextIndexContext::iri() {
-  return getRuleContext<SparqlUpdateParser::IriContext>(0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::CreateTextIndexContext::WITH() {
-  return getToken(SparqlUpdateParser::WITH, 0);
-}
-
-SparqlUpdateParser::TokenizeTextIndexContext* SparqlUpdateParser::CreateTextIndexContext::tokenizeTextIndex() {
-  return getRuleContext<SparqlUpdateParser::TokenizeTextIndexContext>(0);
-}
-
-SparqlUpdateParser::NormalizeTextIndexContext* SparqlUpdateParser::CreateTextIndexContext::normalizeTextIndex() {
-  return getRuleContext<SparqlUpdateParser::NormalizeTextIndexContext>(0);
-}
-
-
-size_t SparqlUpdateParser::CreateTextIndexContext::getRuleIndex() const {
-  return SparqlUpdateParser::RuleCreateTextIndex;
-}
-
-
-std::any SparqlUpdateParser::CreateTextIndexContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
-    return parserVisitor->visitCreateTextIndex(this);
-  else
-    return visitor->visitChildren(this);
-}
-
-SparqlUpdateParser::CreateTextIndexContext* SparqlUpdateParser::createTextIndex() {
-  CreateTextIndexContext *_localctx = _tracker.createInstance<CreateTextIndexContext>(_ctx, getState());
-  enterRule(_localctx, 14, SparqlUpdateParser::RuleCreateTextIndex);
-  size_t _la = 0;
-
-#if __cplusplus > 201703L
-  auto onExit = finally([=, this] {
-#else
-  auto onExit = finally([=] {
-#endif
-    exitRule();
-  });
-  try {
-    enterOuterAlt(_localctx, 1);
-    setState(138);
-    match(SparqlUpdateParser::CREATE);
-    setState(139);
-    match(SparqlUpdateParser::TEXT);
-    setState(140);
-    match(SparqlUpdateParser::INDEX);
-    setState(141);
-    string();
-    setState(142);
-    match(SparqlUpdateParser::ON);
-    setState(143);
-    iri();
-    setState(149);
-    _errHandler->sync(this);
-
-    _la = _input->LA(1);
-    if (_la == SparqlUpdateParser::WITH) {
-      setState(144);
-      match(SparqlUpdateParser::WITH);
-      setState(146);
-      _errHandler->sync(this);
-
-      _la = _input->LA(1);
-      if (_la == SparqlUpdateParser::NORMALIZE) {
-        setState(145);
-        normalizeTextIndex();
-      }
-      setState(148);
-      tokenizeTextIndex();
-    }
-   
-  }
-  catch (RecognitionException &e) {
-    _errHandler->reportError(this, e);
-    _localctx->exception = std::current_exception();
-    _errHandler->recover(this, _localctx->exception);
-  }
-
-  return _localctx;
-}
-
-//----------------- NormalizeTextIndexContext ------------------------------------------------------------------
-
-SparqlUpdateParser::NormalizeTextIndexContext::NormalizeTextIndexContext(ParserRuleContext *parent, size_t invokingState)
-  : ParserRuleContext(parent, invokingState) {
-}
-
-tree::TerminalNode* SparqlUpdateParser::NormalizeTextIndexContext::NORMALIZE() {
-  return getToken(SparqlUpdateParser::NORMALIZE, 0);
-}
-
-SparqlUpdateParser::NormalizeTypeContext* SparqlUpdateParser::NormalizeTextIndexContext::normalizeType() {
-  return getRuleContext<SparqlUpdateParser::NormalizeTypeContext>(0);
-}
-
-
-size_t SparqlUpdateParser::NormalizeTextIndexContext::getRuleIndex() const {
-  return SparqlUpdateParser::RuleNormalizeTextIndex;
-}
-
-
-std::any SparqlUpdateParser::NormalizeTextIndexContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
-    return parserVisitor->visitNormalizeTextIndex(this);
-  else
-    return visitor->visitChildren(this);
-}
-
-SparqlUpdateParser::NormalizeTextIndexContext* SparqlUpdateParser::normalizeTextIndex() {
-  NormalizeTextIndexContext *_localctx = _tracker.createInstance<NormalizeTextIndexContext>(_ctx, getState());
-  enterRule(_localctx, 16, SparqlUpdateParser::RuleNormalizeTextIndex);
-
-#if __cplusplus > 201703L
-  auto onExit = finally([=, this] {
-#else
-  auto onExit = finally([=] {
-#endif
-    exitRule();
-  });
-  try {
-    enterOuterAlt(_localctx, 1);
-    setState(151);
-    match(SparqlUpdateParser::NORMALIZE);
-    setState(152);
-    normalizeType();
-   
-  }
-  catch (RecognitionException &e) {
-    _errHandler->reportError(this, e);
-    _localctx->exception = std::current_exception();
-    _errHandler->recover(this, _localctx->exception);
-  }
-
-  return _localctx;
-}
-
-//----------------- NormalizeTypeContext ------------------------------------------------------------------
-
-SparqlUpdateParser::NormalizeTypeContext::NormalizeTypeContext(ParserRuleContext *parent, size_t invokingState)
-  : ParserRuleContext(parent, invokingState) {
-}
-
-tree::TerminalNode* SparqlUpdateParser::NormalizeTypeContext::IDENTITY() {
-  return getToken(SparqlUpdateParser::IDENTITY, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::NormalizeTypeContext::NFKD_CASEFOLD() {
-  return getToken(SparqlUpdateParser::NFKD_CASEFOLD, 0);
-}
-
-
-size_t SparqlUpdateParser::NormalizeTypeContext::getRuleIndex() const {
-  return SparqlUpdateParser::RuleNormalizeType;
-}
-
-
-std::any SparqlUpdateParser::NormalizeTypeContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
-    return parserVisitor->visitNormalizeType(this);
-  else
-    return visitor->visitChildren(this);
-}
-
-SparqlUpdateParser::NormalizeTypeContext* SparqlUpdateParser::normalizeType() {
-  NormalizeTypeContext *_localctx = _tracker.createInstance<NormalizeTypeContext>(_ctx, getState());
-  enterRule(_localctx, 18, SparqlUpdateParser::RuleNormalizeType);
-  size_t _la = 0;
+  enterRule(_localctx, 18, SparqlUpdateParser::RuleDeleteData);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -980,141 +987,11 @@ SparqlUpdateParser::NormalizeTypeContext* SparqlUpdateParser::normalizeType() {
   try {
     enterOuterAlt(_localctx, 1);
     setState(154);
-    _la = _input->LA(1);
-    if (!(_la == SparqlUpdateParser::IDENTITY
-
-    || _la == SparqlUpdateParser::NFKD_CASEFOLD)) {
-    _errHandler->recoverInline(this);
-    }
-    else {
-      _errHandler->reportMatch(this);
-      consume();
-    }
-   
-  }
-  catch (RecognitionException &e) {
-    _errHandler->reportError(this, e);
-    _localctx->exception = std::current_exception();
-    _errHandler->recover(this, _localctx->exception);
-  }
-
-  return _localctx;
-}
-
-//----------------- TokenizeTextIndexContext ------------------------------------------------------------------
-
-SparqlUpdateParser::TokenizeTextIndexContext::TokenizeTextIndexContext(ParserRuleContext *parent, size_t invokingState)
-  : ParserRuleContext(parent, invokingState) {
-}
-
-tree::TerminalNode* SparqlUpdateParser::TokenizeTextIndexContext::TOKENIZE() {
-  return getToken(SparqlUpdateParser::TOKENIZE, 0);
-}
-
-SparqlUpdateParser::TokenizeTypeContext* SparqlUpdateParser::TokenizeTextIndexContext::tokenizeType() {
-  return getRuleContext<SparqlUpdateParser::TokenizeTypeContext>(0);
-}
-
-
-size_t SparqlUpdateParser::TokenizeTextIndexContext::getRuleIndex() const {
-  return SparqlUpdateParser::RuleTokenizeTextIndex;
-}
-
-
-std::any SparqlUpdateParser::TokenizeTextIndexContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
-    return parserVisitor->visitTokenizeTextIndex(this);
-  else
-    return visitor->visitChildren(this);
-}
-
-SparqlUpdateParser::TokenizeTextIndexContext* SparqlUpdateParser::tokenizeTextIndex() {
-  TokenizeTextIndexContext *_localctx = _tracker.createInstance<TokenizeTextIndexContext>(_ctx, getState());
-  enterRule(_localctx, 20, SparqlUpdateParser::RuleTokenizeTextIndex);
-
-#if __cplusplus > 201703L
-  auto onExit = finally([=, this] {
-#else
-  auto onExit = finally([=] {
-#endif
-    exitRule();
-  });
-  try {
-    enterOuterAlt(_localctx, 1);
+    match(SparqlUpdateParser::DELETE);
+    setState(155);
+    match(SparqlUpdateParser::DATA);
     setState(156);
-    match(SparqlUpdateParser::TOKENIZE);
-    setState(157);
-    tokenizeType();
-   
-  }
-  catch (RecognitionException &e) {
-    _errHandler->reportError(this, e);
-    _localctx->exception = std::current_exception();
-    _errHandler->recover(this, _localctx->exception);
-  }
-
-  return _localctx;
-}
-
-//----------------- TokenizeTypeContext ------------------------------------------------------------------
-
-SparqlUpdateParser::TokenizeTypeContext::TokenizeTypeContext(ParserRuleContext *parent, size_t invokingState)
-  : ParserRuleContext(parent, invokingState) {
-}
-
-tree::TerminalNode* SparqlUpdateParser::TokenizeTypeContext::IDENTITY() {
-  return getToken(SparqlUpdateParser::IDENTITY, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::TokenizeTypeContext::WS_SPLIT_PUNCT() {
-  return getToken(SparqlUpdateParser::WS_SPLIT_PUNCT, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::TokenizeTypeContext::WS_RM_PUNCT() {
-  return getToken(SparqlUpdateParser::WS_RM_PUNCT, 0);
-}
-
-tree::TerminalNode* SparqlUpdateParser::TokenizeTypeContext::WS_KEEP_PUNCT() {
-  return getToken(SparqlUpdateParser::WS_KEEP_PUNCT, 0);
-}
-
-
-size_t SparqlUpdateParser::TokenizeTypeContext::getRuleIndex() const {
-  return SparqlUpdateParser::RuleTokenizeType;
-}
-
-
-std::any SparqlUpdateParser::TokenizeTypeContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<SparqlUpdateParserVisitor*>(visitor))
-    return parserVisitor->visitTokenizeType(this);
-  else
-    return visitor->visitChildren(this);
-}
-
-SparqlUpdateParser::TokenizeTypeContext* SparqlUpdateParser::tokenizeType() {
-  TokenizeTypeContext *_localctx = _tracker.createInstance<TokenizeTypeContext>(_ctx, getState());
-  enterRule(_localctx, 22, SparqlUpdateParser::RuleTokenizeType);
-  size_t _la = 0;
-
-#if __cplusplus > 201703L
-  auto onExit = finally([=, this] {
-#else
-  auto onExit = finally([=] {
-#endif
-    exitRule();
-  });
-  try {
-    enterOuterAlt(_localctx, 1);
-    setState(159);
-    _la = _input->LA(1);
-    if (!(((((_la - 120) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 120)) & 1793) != 0))) {
-    _errHandler->recoverInline(this);
-    }
-    else {
-      _errHandler->reportMatch(this);
-      consume();
-    }
+    quadData();
    
   }
   catch (RecognitionException &e) {
@@ -1159,7 +1036,7 @@ std::any SparqlUpdateParser::QuadDataContext::accept(tree::ParseTreeVisitor *vis
 
 SparqlUpdateParser::QuadDataContext* SparqlUpdateParser::quadData() {
   QuadDataContext *_localctx = _tracker.createInstance<QuadDataContext>(_ctx, getState());
-  enterRule(_localctx, 24, SparqlUpdateParser::RuleQuadData);
+  enterRule(_localctx, 20, SparqlUpdateParser::RuleQuadData);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1170,11 +1047,11 @@ SparqlUpdateParser::QuadDataContext* SparqlUpdateParser::quadData() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(161);
+    setState(158);
     match(SparqlUpdateParser::OPEN_CURLY_BRACE);
-    setState(162);
+    setState(159);
     triplesTemplate();
-    setState(163);
+    setState(160);
     match(SparqlUpdateParser::CLOSE_CURLY_BRACE);
    
   }
@@ -1224,7 +1101,7 @@ std::any SparqlUpdateParser::TriplesTemplateContext::accept(tree::ParseTreeVisit
 
 SparqlUpdateParser::TriplesTemplateContext* SparqlUpdateParser::triplesTemplate() {
   TriplesTemplateContext *_localctx = _tracker.createInstance<TriplesTemplateContext>(_ctx, getState());
-  enterRule(_localctx, 26, SparqlUpdateParser::RuleTriplesTemplate);
+  enterRule(_localctx, 22, SparqlUpdateParser::RuleTriplesTemplate);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1236,26 +1113,26 @@ SparqlUpdateParser::TriplesTemplateContext* SparqlUpdateParser::triplesTemplate(
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(165);
+    setState(162);
     triplesSameSubject();
-    setState(172);
+    setState(169);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::DOT) {
-      setState(166);
+      setState(163);
       match(SparqlUpdateParser::DOT);
-      setState(168);
+      setState(165);
       _errHandler->sync(this);
 
       _la = _input->LA(1);
-      if (_la == SparqlUpdateParser::TRUE
+      if (_la == SparqlUpdateParser::K_TRUE
 
-      || _la == SparqlUpdateParser::FALSE || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 132)) & 4564451215) != 0)) {
-        setState(167);
+      || _la == SparqlUpdateParser::K_FALSE || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 122)) & 4564451215) != 0)) {
+        setState(164);
         triplesSameSubject();
       }
-      setState(174);
+      setState(171);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -1303,7 +1180,7 @@ std::any SparqlUpdateParser::ConstructTemplateContext::accept(tree::ParseTreeVis
 
 SparqlUpdateParser::ConstructTemplateContext* SparqlUpdateParser::constructTemplate() {
   ConstructTemplateContext *_localctx = _tracker.createInstance<ConstructTemplateContext>(_ctx, getState());
-  enterRule(_localctx, 28, SparqlUpdateParser::RuleConstructTemplate);
+  enterRule(_localctx, 24, SparqlUpdateParser::RuleConstructTemplate);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1315,20 +1192,20 @@ SparqlUpdateParser::ConstructTemplateContext* SparqlUpdateParser::constructTempl
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(175);
+    setState(172);
     match(SparqlUpdateParser::OPEN_CURLY_BRACE);
-    setState(177);
+    setState(174);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
-    if (_la == SparqlUpdateParser::TRUE
+    if (_la == SparqlUpdateParser::K_TRUE
 
-    || _la == SparqlUpdateParser::FALSE || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 132)) & 4564451215) != 0)) {
-      setState(176);
+    || _la == SparqlUpdateParser::K_FALSE || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 122)) & 4564451215) != 0)) {
+      setState(173);
       constructTriples();
     }
-    setState(179);
+    setState(176);
     match(SparqlUpdateParser::CLOSE_CURLY_BRACE);
    
   }
@@ -1382,7 +1259,7 @@ std::any SparqlUpdateParser::ConstructTriplesContext::accept(tree::ParseTreeVisi
 
 SparqlUpdateParser::ConstructTriplesContext* SparqlUpdateParser::constructTriples() {
   ConstructTriplesContext *_localctx = _tracker.createInstance<ConstructTriplesContext>(_ctx, getState());
-  enterRule(_localctx, 30, SparqlUpdateParser::RuleConstructTriples);
+  enterRule(_localctx, 26, SparqlUpdateParser::RuleConstructTriples);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1395,28 +1272,28 @@ SparqlUpdateParser::ConstructTriplesContext* SparqlUpdateParser::constructTriple
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(181);
+    setState(178);
     triplesSameSubject();
-    setState(188);
+    setState(185);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 11, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
       if (alt == 1) {
-        setState(182);
+        setState(179);
         match(SparqlUpdateParser::DOT);
-        setState(184);
+        setState(181);
         _errHandler->sync(this);
 
         _la = _input->LA(1);
-        if (_la == SparqlUpdateParser::TRUE
+        if (_la == SparqlUpdateParser::K_TRUE
 
-        || _la == SparqlUpdateParser::FALSE || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-          ((1ULL << (_la - 132)) & 4564451215) != 0)) {
-          setState(183);
+        || _la == SparqlUpdateParser::K_FALSE || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+          ((1ULL << (_la - 122)) & 4564451215) != 0)) {
+          setState(180);
           constructTriples();
         } 
       }
-      setState(190);
+      setState(187);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 11, _ctx);
     }
@@ -1468,7 +1345,7 @@ std::any SparqlUpdateParser::TriplesSameSubjectContext::accept(tree::ParseTreeVi
 
 SparqlUpdateParser::TriplesSameSubjectContext* SparqlUpdateParser::triplesSameSubject() {
   TriplesSameSubjectContext *_localctx = _tracker.createInstance<TriplesSameSubjectContext>(_ctx, getState());
-  enterRule(_localctx, 32, SparqlUpdateParser::RuleTriplesSameSubject);
+  enterRule(_localctx, 28, SparqlUpdateParser::RuleTriplesSameSubject);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1478,23 +1355,23 @@ SparqlUpdateParser::TriplesSameSubjectContext* SparqlUpdateParser::triplesSameSu
     exitRule();
   });
   try {
-    setState(197);
+    setState(194);
     _errHandler->sync(this);
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 12, _ctx)) {
     case 1: {
       enterOuterAlt(_localctx, 1);
-      setState(191);
+      setState(188);
       graphTerm();
-      setState(192);
+      setState(189);
       propertyListNotEmpty();
       break;
     }
 
     case 2: {
       enterOuterAlt(_localctx, 2);
-      setState(194);
+      setState(191);
       triplesNode();
-      setState(195);
+      setState(192);
       propertyList();
       break;
     }
@@ -1538,7 +1415,7 @@ std::any SparqlUpdateParser::PropertyListContext::accept(tree::ParseTreeVisitor 
 
 SparqlUpdateParser::PropertyListContext* SparqlUpdateParser::propertyList() {
   PropertyListContext *_localctx = _tracker.createInstance<PropertyListContext>(_ctx, getState());
-  enterRule(_localctx, 34, SparqlUpdateParser::RulePropertyList);
+  enterRule(_localctx, 30, SparqlUpdateParser::RulePropertyList);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1550,13 +1427,13 @@ SparqlUpdateParser::PropertyListContext* SparqlUpdateParser::propertyList() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(200);
+    setState(197);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
-    if (_la == SparqlUpdateParser::A || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 132)) & 7) != 0)) {
-      setState(199);
+    if (_la == SparqlUpdateParser::A || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 122)) & 7) != 0)) {
+      setState(196);
       propertyListNotEmpty();
     }
    
@@ -1615,7 +1492,7 @@ std::any SparqlUpdateParser::PropertyListNotEmptyContext::accept(tree::ParseTree
 
 SparqlUpdateParser::PropertyListNotEmptyContext* SparqlUpdateParser::propertyListNotEmpty() {
   PropertyListNotEmptyContext *_localctx = _tracker.createInstance<PropertyListNotEmptyContext>(_ctx, getState());
-  enterRule(_localctx, 36, SparqlUpdateParser::RulePropertyListNotEmpty);
+  enterRule(_localctx, 32, SparqlUpdateParser::RulePropertyListNotEmpty);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1627,28 +1504,28 @@ SparqlUpdateParser::PropertyListNotEmptyContext* SparqlUpdateParser::propertyLis
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(202);
+    setState(199);
     verb();
-    setState(203);
+    setState(200);
     objectList();
-    setState(212);
+    setState(209);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::SEMICOLON) {
-      setState(204);
+      setState(201);
       match(SparqlUpdateParser::SEMICOLON);
-      setState(208);
+      setState(205);
       _errHandler->sync(this);
 
       _la = _input->LA(1);
-      if (_la == SparqlUpdateParser::A || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 132)) & 7) != 0)) {
-        setState(205);
+      if (_la == SparqlUpdateParser::A || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 122)) & 7) != 0)) {
+        setState(202);
         verb();
-        setState(206);
+        setState(203);
         objectList();
       }
-      setState(214);
+      setState(211);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -1692,7 +1569,7 @@ std::any SparqlUpdateParser::VerbContext::accept(tree::ParseTreeVisitor *visitor
 
 SparqlUpdateParser::VerbContext* SparqlUpdateParser::verb() {
   VerbContext *_localctx = _tracker.createInstance<VerbContext>(_ctx, getState());
-  enterRule(_localctx, 38, SparqlUpdateParser::RuleVerb);
+  enterRule(_localctx, 34, SparqlUpdateParser::RuleVerb);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1702,21 +1579,21 @@ SparqlUpdateParser::VerbContext* SparqlUpdateParser::verb() {
     exitRule();
   });
   try {
-    setState(217);
+    setState(214);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::IRIREF:
       case SparqlUpdateParser::PNAME_NS:
       case SparqlUpdateParser::PNAME_LN: {
         enterOuterAlt(_localctx, 1);
-        setState(215);
+        setState(212);
         iri();
         break;
       }
 
       case SparqlUpdateParser::A: {
         enterOuterAlt(_localctx, 2);
-        setState(216);
+        setState(213);
         match(SparqlUpdateParser::A);
         break;
       }
@@ -1772,7 +1649,7 @@ std::any SparqlUpdateParser::ObjectListContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::ObjectListContext* SparqlUpdateParser::objectList() {
   ObjectListContext *_localctx = _tracker.createInstance<ObjectListContext>(_ctx, getState());
-  enterRule(_localctx, 40, SparqlUpdateParser::RuleObjectList);
+  enterRule(_localctx, 36, SparqlUpdateParser::RuleObjectList);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1784,17 +1661,17 @@ SparqlUpdateParser::ObjectListContext* SparqlUpdateParser::objectList() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(219);
+    setState(216);
     object();
-    setState(224);
+    setState(221);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::COMMA) {
-      setState(220);
+      setState(217);
       match(SparqlUpdateParser::COMMA);
-      setState(221);
+      setState(218);
       object();
-      setState(226);
+      setState(223);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -1834,7 +1711,7 @@ std::any SparqlUpdateParser::ObjectContext::accept(tree::ParseTreeVisitor *visit
 
 SparqlUpdateParser::ObjectContext* SparqlUpdateParser::object() {
   ObjectContext *_localctx = _tracker.createInstance<ObjectContext>(_ctx, getState());
-  enterRule(_localctx, 42, SparqlUpdateParser::RuleObject);
+  enterRule(_localctx, 38, SparqlUpdateParser::RuleObject);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1845,7 +1722,7 @@ SparqlUpdateParser::ObjectContext* SparqlUpdateParser::object() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(227);
+    setState(224);
     graphNode();
    
   }
@@ -1903,7 +1780,7 @@ std::any SparqlUpdateParser::PropertyListPathNotEmptyContext::accept(tree::Parse
 
 SparqlUpdateParser::PropertyListPathNotEmptyContext* SparqlUpdateParser::propertyListPathNotEmpty() {
   PropertyListPathNotEmptyContext *_localctx = _tracker.createInstance<PropertyListPathNotEmptyContext>(_ctx, getState());
-  enterRule(_localctx, 44, SparqlUpdateParser::RulePropertyListPathNotEmpty);
+  enterRule(_localctx, 40, SparqlUpdateParser::RulePropertyListPathNotEmpty);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1915,26 +1792,26 @@ SparqlUpdateParser::PropertyListPathNotEmptyContext* SparqlUpdateParser::propert
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(229);
+    setState(226);
     verb();
-    setState(230);
+    setState(227);
     objectListPath();
-    setState(237);
+    setState(234);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::SEMICOLON) {
-      setState(231);
+      setState(228);
       match(SparqlUpdateParser::SEMICOLON);
-      setState(233);
+      setState(230);
       _errHandler->sync(this);
 
       _la = _input->LA(1);
-      if (_la == SparqlUpdateParser::A || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-        ((1ULL << (_la - 132)) & 7) != 0)) {
-        setState(232);
+      if (_la == SparqlUpdateParser::A || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+        ((1ULL << (_la - 122)) & 7) != 0)) {
+        setState(229);
         propertyListPathNotEmptyList();
       }
-      setState(239);
+      setState(236);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -1978,7 +1855,7 @@ std::any SparqlUpdateParser::PropertyListPathNotEmptyListContext::accept(tree::P
 
 SparqlUpdateParser::PropertyListPathNotEmptyListContext* SparqlUpdateParser::propertyListPathNotEmptyList() {
   PropertyListPathNotEmptyListContext *_localctx = _tracker.createInstance<PropertyListPathNotEmptyListContext>(_ctx, getState());
-  enterRule(_localctx, 46, SparqlUpdateParser::RulePropertyListPathNotEmptyList);
+  enterRule(_localctx, 42, SparqlUpdateParser::RulePropertyListPathNotEmptyList);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1989,9 +1866,9 @@ SparqlUpdateParser::PropertyListPathNotEmptyListContext* SparqlUpdateParser::pro
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(240);
+    setState(237);
     verb();
-    setState(241);
+    setState(238);
     objectList();
    
   }
@@ -2041,7 +1918,7 @@ std::any SparqlUpdateParser::ObjectListPathContext::accept(tree::ParseTreeVisito
 
 SparqlUpdateParser::ObjectListPathContext* SparqlUpdateParser::objectListPath() {
   ObjectListPathContext *_localctx = _tracker.createInstance<ObjectListPathContext>(_ctx, getState());
-  enterRule(_localctx, 48, SparqlUpdateParser::RuleObjectListPath);
+  enterRule(_localctx, 44, SparqlUpdateParser::RuleObjectListPath);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -2053,17 +1930,17 @@ SparqlUpdateParser::ObjectListPathContext* SparqlUpdateParser::objectListPath() 
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(243);
+    setState(240);
     objectPath();
-    setState(248);
+    setState(245);
     _errHandler->sync(this);
     _la = _input->LA(1);
     while (_la == SparqlUpdateParser::COMMA) {
-      setState(244);
+      setState(241);
       match(SparqlUpdateParser::COMMA);
-      setState(245);
+      setState(242);
       objectPath();
-      setState(250);
+      setState(247);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
@@ -2103,7 +1980,7 @@ std::any SparqlUpdateParser::ObjectPathContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::ObjectPathContext* SparqlUpdateParser::objectPath() {
   ObjectPathContext *_localctx = _tracker.createInstance<ObjectPathContext>(_ctx, getState());
-  enterRule(_localctx, 50, SparqlUpdateParser::RuleObjectPath);
+  enterRule(_localctx, 46, SparqlUpdateParser::RuleObjectPath);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2114,7 +1991,7 @@ SparqlUpdateParser::ObjectPathContext* SparqlUpdateParser::objectPath() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(251);
+    setState(248);
     graphNodePath();
    
   }
@@ -2152,7 +2029,7 @@ std::any SparqlUpdateParser::IntegerContext::accept(tree::ParseTreeVisitor *visi
 
 SparqlUpdateParser::IntegerContext* SparqlUpdateParser::integer() {
   IntegerContext *_localctx = _tracker.createInstance<IntegerContext>(_ctx, getState());
-  enterRule(_localctx, 52, SparqlUpdateParser::RuleInteger);
+  enterRule(_localctx, 48, SparqlUpdateParser::RuleInteger);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2163,7 +2040,7 @@ SparqlUpdateParser::IntegerContext* SparqlUpdateParser::integer() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(253);
+    setState(250);
     match(SparqlUpdateParser::INTEGER);
    
   }
@@ -2205,7 +2082,7 @@ std::any SparqlUpdateParser::TriplesNodeContext::accept(tree::ParseTreeVisitor *
 
 SparqlUpdateParser::TriplesNodeContext* SparqlUpdateParser::triplesNode() {
   TriplesNodeContext *_localctx = _tracker.createInstance<TriplesNodeContext>(_ctx, getState());
-  enterRule(_localctx, 54, SparqlUpdateParser::RuleTriplesNode);
+  enterRule(_localctx, 50, SparqlUpdateParser::RuleTriplesNode);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2215,19 +2092,19 @@ SparqlUpdateParser::TriplesNodeContext* SparqlUpdateParser::triplesNode() {
     exitRule();
   });
   try {
-    setState(257);
+    setState(254);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::OPEN_BRACE: {
         enterOuterAlt(_localctx, 1);
-        setState(255);
+        setState(252);
         collection();
         break;
       }
 
       case SparqlUpdateParser::OPEN_SQUARE_BRACKET: {
         enterOuterAlt(_localctx, 2);
-        setState(256);
+        setState(253);
         blankNodePropertyList();
         break;
       }
@@ -2279,7 +2156,7 @@ std::any SparqlUpdateParser::BlankNodePropertyListContext::accept(tree::ParseTre
 
 SparqlUpdateParser::BlankNodePropertyListContext* SparqlUpdateParser::blankNodePropertyList() {
   BlankNodePropertyListContext *_localctx = _tracker.createInstance<BlankNodePropertyListContext>(_ctx, getState());
-  enterRule(_localctx, 56, SparqlUpdateParser::RuleBlankNodePropertyList);
+  enterRule(_localctx, 52, SparqlUpdateParser::RuleBlankNodePropertyList);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2290,11 +2167,11 @@ SparqlUpdateParser::BlankNodePropertyListContext* SparqlUpdateParser::blankNodeP
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(259);
+    setState(256);
     match(SparqlUpdateParser::OPEN_SQUARE_BRACKET);
-    setState(260);
+    setState(257);
     propertyListNotEmpty();
-    setState(261);
+    setState(258);
     match(SparqlUpdateParser::CLOSE_SQUARE_BRACKET);
    
   }
@@ -2336,7 +2213,7 @@ std::any SparqlUpdateParser::TriplesNodePathContext::accept(tree::ParseTreeVisit
 
 SparqlUpdateParser::TriplesNodePathContext* SparqlUpdateParser::triplesNodePath() {
   TriplesNodePathContext *_localctx = _tracker.createInstance<TriplesNodePathContext>(_ctx, getState());
-  enterRule(_localctx, 58, SparqlUpdateParser::RuleTriplesNodePath);
+  enterRule(_localctx, 54, SparqlUpdateParser::RuleTriplesNodePath);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2346,19 +2223,19 @@ SparqlUpdateParser::TriplesNodePathContext* SparqlUpdateParser::triplesNodePath(
     exitRule();
   });
   try {
-    setState(265);
+    setState(262);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::OPEN_BRACE: {
         enterOuterAlt(_localctx, 1);
-        setState(263);
+        setState(260);
         collectionPath();
         break;
       }
 
       case SparqlUpdateParser::OPEN_SQUARE_BRACKET: {
         enterOuterAlt(_localctx, 2);
-        setState(264);
+        setState(261);
         blankNodePropertyListPath();
         break;
       }
@@ -2410,7 +2287,7 @@ std::any SparqlUpdateParser::BlankNodePropertyListPathContext::accept(tree::Pars
 
 SparqlUpdateParser::BlankNodePropertyListPathContext* SparqlUpdateParser::blankNodePropertyListPath() {
   BlankNodePropertyListPathContext *_localctx = _tracker.createInstance<BlankNodePropertyListPathContext>(_ctx, getState());
-  enterRule(_localctx, 60, SparqlUpdateParser::RuleBlankNodePropertyListPath);
+  enterRule(_localctx, 56, SparqlUpdateParser::RuleBlankNodePropertyListPath);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2421,11 +2298,11 @@ SparqlUpdateParser::BlankNodePropertyListPathContext* SparqlUpdateParser::blankN
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(267);
+    setState(264);
     match(SparqlUpdateParser::OPEN_SQUARE_BRACKET);
-    setState(268);
+    setState(265);
     propertyListPathNotEmpty();
-    setState(269);
+    setState(266);
     match(SparqlUpdateParser::CLOSE_SQUARE_BRACKET);
    
   }
@@ -2475,7 +2352,7 @@ std::any SparqlUpdateParser::CollectionContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::CollectionContext* SparqlUpdateParser::collection() {
   CollectionContext *_localctx = _tracker.createInstance<CollectionContext>(_ctx, getState());
-  enterRule(_localctx, 62, SparqlUpdateParser::RuleCollection);
+  enterRule(_localctx, 58, SparqlUpdateParser::RuleCollection);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -2487,22 +2364,22 @@ SparqlUpdateParser::CollectionContext* SparqlUpdateParser::collection() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(271);
+    setState(268);
     match(SparqlUpdateParser::OPEN_BRACE);
-    setState(273); 
+    setState(270); 
     _errHandler->sync(this);
     _la = _input->LA(1);
     do {
-      setState(272);
+      setState(269);
       graphNode();
-      setState(275); 
+      setState(272); 
       _errHandler->sync(this);
       _la = _input->LA(1);
-    } while (_la == SparqlUpdateParser::TRUE
+    } while (_la == SparqlUpdateParser::K_TRUE
 
-    || _la == SparqlUpdateParser::FALSE || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 132)) & 4564451215) != 0));
-    setState(277);
+    || _la == SparqlUpdateParser::K_FALSE || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 122)) & 4564451215) != 0));
+    setState(274);
     match(SparqlUpdateParser::CLOSE_BRACE);
    
   }
@@ -2552,7 +2429,7 @@ std::any SparqlUpdateParser::CollectionPathContext::accept(tree::ParseTreeVisito
 
 SparqlUpdateParser::CollectionPathContext* SparqlUpdateParser::collectionPath() {
   CollectionPathContext *_localctx = _tracker.createInstance<CollectionPathContext>(_ctx, getState());
-  enterRule(_localctx, 64, SparqlUpdateParser::RuleCollectionPath);
+  enterRule(_localctx, 60, SparqlUpdateParser::RuleCollectionPath);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -2564,22 +2441,22 @@ SparqlUpdateParser::CollectionPathContext* SparqlUpdateParser::collectionPath() 
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(279);
+    setState(276);
     match(SparqlUpdateParser::OPEN_BRACE);
-    setState(281); 
+    setState(278); 
     _errHandler->sync(this);
     _la = _input->LA(1);
     do {
-      setState(280);
+      setState(277);
       graphNodePath();
-      setState(283); 
+      setState(280); 
       _errHandler->sync(this);
       _la = _input->LA(1);
-    } while (_la == SparqlUpdateParser::TRUE
+    } while (_la == SparqlUpdateParser::K_TRUE
 
-    || _la == SparqlUpdateParser::FALSE || ((((_la - 132) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 132)) & 4564451215) != 0));
-    setState(285);
+    || _la == SparqlUpdateParser::K_FALSE || ((((_la - 122) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 122)) & 4564451215) != 0));
+    setState(282);
     match(SparqlUpdateParser::CLOSE_BRACE);
    
   }
@@ -2621,7 +2498,7 @@ std::any SparqlUpdateParser::GraphNodeContext::accept(tree::ParseTreeVisitor *vi
 
 SparqlUpdateParser::GraphNodeContext* SparqlUpdateParser::graphNode() {
   GraphNodeContext *_localctx = _tracker.createInstance<GraphNodeContext>(_ctx, getState());
-  enterRule(_localctx, 66, SparqlUpdateParser::RuleGraphNode);
+  enterRule(_localctx, 62, SparqlUpdateParser::RuleGraphNode);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2631,19 +2508,19 @@ SparqlUpdateParser::GraphNodeContext* SparqlUpdateParser::graphNode() {
     exitRule();
   });
   try {
-    setState(289);
+    setState(286);
     _errHandler->sync(this);
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 25, _ctx)) {
     case 1: {
       enterOuterAlt(_localctx, 1);
-      setState(287);
+      setState(284);
       graphTerm();
       break;
     }
 
     case 2: {
       enterOuterAlt(_localctx, 2);
-      setState(288);
+      setState(285);
       triplesNode();
       break;
     }
@@ -2691,7 +2568,7 @@ std::any SparqlUpdateParser::GraphNodePathContext::accept(tree::ParseTreeVisitor
 
 SparqlUpdateParser::GraphNodePathContext* SparqlUpdateParser::graphNodePath() {
   GraphNodePathContext *_localctx = _tracker.createInstance<GraphNodePathContext>(_ctx, getState());
-  enterRule(_localctx, 68, SparqlUpdateParser::RuleGraphNodePath);
+  enterRule(_localctx, 64, SparqlUpdateParser::RuleGraphNodePath);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2701,19 +2578,19 @@ SparqlUpdateParser::GraphNodePathContext* SparqlUpdateParser::graphNodePath() {
     exitRule();
   });
   try {
-    setState(293);
+    setState(290);
     _errHandler->sync(this);
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 26, _ctx)) {
     case 1: {
       enterOuterAlt(_localctx, 1);
-      setState(291);
+      setState(288);
       graphTerm();
       break;
     }
 
     case 2: {
       enterOuterAlt(_localctx, 2);
-      setState(292);
+      setState(289);
       triplesNodePath();
       break;
     }
@@ -2777,7 +2654,7 @@ std::any SparqlUpdateParser::GraphTermContext::accept(tree::ParseTreeVisitor *vi
 
 SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::graphTerm() {
   GraphTermContext *_localctx = _tracker.createInstance<GraphTermContext>(_ctx, getState());
-  enterRule(_localctx, 70, SparqlUpdateParser::RuleGraphTerm);
+  enterRule(_localctx, 66, SparqlUpdateParser::RuleGraphTerm);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2787,14 +2664,14 @@ SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::graphTerm() {
     exitRule();
   });
   try {
-    setState(301);
+    setState(298);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::IRIREF:
       case SparqlUpdateParser::PNAME_NS:
       case SparqlUpdateParser::PNAME_LN: {
         enterOuterAlt(_localctx, 1);
-        setState(295);
+        setState(292);
         iri();
         break;
       }
@@ -2804,7 +2681,7 @@ SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::graphTerm() {
       case SparqlUpdateParser::STRING_LITERAL_LONG1:
       case SparqlUpdateParser::STRING_LITERAL_LONG2: {
         enterOuterAlt(_localctx, 2);
-        setState(296);
+        setState(293);
         rdfLiteral();
         break;
       }
@@ -2819,15 +2696,15 @@ SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::graphTerm() {
       case SparqlUpdateParser::DECIMAL_NEGATIVE:
       case SparqlUpdateParser::DOUBLE_NEGATIVE: {
         enterOuterAlt(_localctx, 3);
-        setState(297);
+        setState(294);
         numericLiteral();
         break;
       }
 
-      case SparqlUpdateParser::TRUE:
-      case SparqlUpdateParser::FALSE: {
+      case SparqlUpdateParser::K_TRUE:
+      case SparqlUpdateParser::K_FALSE: {
         enterOuterAlt(_localctx, 4);
-        setState(298);
+        setState(295);
         booleanLiteral();
         break;
       }
@@ -2835,14 +2712,14 @@ SparqlUpdateParser::GraphTermContext* SparqlUpdateParser::graphTerm() {
       case SparqlUpdateParser::BLANK_NODE_LABEL:
       case SparqlUpdateParser::OPEN_SQUARE_BRACKET: {
         enterOuterAlt(_localctx, 5);
-        setState(299);
+        setState(296);
         blankNode();
         break;
       }
 
       case SparqlUpdateParser::OPEN_BRACE: {
         enterOuterAlt(_localctx, 6);
-        setState(300);
+        setState(297);
         nil();
         break;
       }
@@ -2890,7 +2767,7 @@ std::any SparqlUpdateParser::NilContext::accept(tree::ParseTreeVisitor *visitor)
 
 SparqlUpdateParser::NilContext* SparqlUpdateParser::nil() {
   NilContext *_localctx = _tracker.createInstance<NilContext>(_ctx, getState());
-  enterRule(_localctx, 72, SparqlUpdateParser::RuleNil);
+  enterRule(_localctx, 68, SparqlUpdateParser::RuleNil);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2901,9 +2778,9 @@ SparqlUpdateParser::NilContext* SparqlUpdateParser::nil() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(303);
+    setState(300);
     match(SparqlUpdateParser::OPEN_BRACE);
-    setState(304);
+    setState(301);
     match(SparqlUpdateParser::CLOSE_BRACE);
    
   }
@@ -2953,7 +2830,7 @@ std::any SparqlUpdateParser::RdfLiteralContext::accept(tree::ParseTreeVisitor *v
 
 SparqlUpdateParser::RdfLiteralContext* SparqlUpdateParser::rdfLiteral() {
   RdfLiteralContext *_localctx = _tracker.createInstance<RdfLiteralContext>(_ctx, getState());
-  enterRule(_localctx, 74, SparqlUpdateParser::RuleRdfLiteral);
+  enterRule(_localctx, 70, SparqlUpdateParser::RuleRdfLiteral);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -2964,28 +2841,28 @@ SparqlUpdateParser::RdfLiteralContext* SparqlUpdateParser::rdfLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(306);
+    setState(303);
     string();
-    setState(310);
+    setState(307);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::LANGTAG: {
-        setState(307);
+        setState(304);
         match(SparqlUpdateParser::LANGTAG);
         break;
       }
 
       case SparqlUpdateParser::REFERENCE: {
-        setState(308);
+        setState(305);
         match(SparqlUpdateParser::REFERENCE);
-        setState(309);
+        setState(306);
         iri();
         break;
       }
 
       case SparqlUpdateParser::A:
-      case SparqlUpdateParser::TRUE:
-      case SparqlUpdateParser::FALSE:
+      case SparqlUpdateParser::K_TRUE:
+      case SparqlUpdateParser::K_FALSE:
       case SparqlUpdateParser::IRIREF:
       case SparqlUpdateParser::PNAME_NS:
       case SparqlUpdateParser::PNAME_LN:
@@ -3061,7 +2938,7 @@ std::any SparqlUpdateParser::NumericLiteralContext::accept(tree::ParseTreeVisito
 
 SparqlUpdateParser::NumericLiteralContext* SparqlUpdateParser::numericLiteral() {
   NumericLiteralContext *_localctx = _tracker.createInstance<NumericLiteralContext>(_ctx, getState());
-  enterRule(_localctx, 76, SparqlUpdateParser::RuleNumericLiteral);
+  enterRule(_localctx, 72, SparqlUpdateParser::RuleNumericLiteral);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -3071,14 +2948,14 @@ SparqlUpdateParser::NumericLiteralContext* SparqlUpdateParser::numericLiteral() 
     exitRule();
   });
   try {
-    setState(315);
+    setState(312);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::INTEGER:
       case SparqlUpdateParser::DECIMAL:
       case SparqlUpdateParser::DOUBLE: {
         enterOuterAlt(_localctx, 1);
-        setState(312);
+        setState(309);
         numericLiteralUnsigned();
         break;
       }
@@ -3087,7 +2964,7 @@ SparqlUpdateParser::NumericLiteralContext* SparqlUpdateParser::numericLiteral() 
       case SparqlUpdateParser::DECIMAL_POSITIVE:
       case SparqlUpdateParser::DOUBLE_POSITIVE: {
         enterOuterAlt(_localctx, 2);
-        setState(313);
+        setState(310);
         numericLiteralPositive();
         break;
       }
@@ -3096,7 +2973,7 @@ SparqlUpdateParser::NumericLiteralContext* SparqlUpdateParser::numericLiteral() 
       case SparqlUpdateParser::DECIMAL_NEGATIVE:
       case SparqlUpdateParser::DOUBLE_NEGATIVE: {
         enterOuterAlt(_localctx, 3);
-        setState(314);
+        setState(311);
         numericLiteralNegative();
         break;
       }
@@ -3148,7 +3025,7 @@ std::any SparqlUpdateParser::NumericLiteralUnsignedContext::accept(tree::ParseTr
 
 SparqlUpdateParser::NumericLiteralUnsignedContext* SparqlUpdateParser::numericLiteralUnsigned() {
   NumericLiteralUnsignedContext *_localctx = _tracker.createInstance<NumericLiteralUnsignedContext>(_ctx, getState());
-  enterRule(_localctx, 78, SparqlUpdateParser::RuleNumericLiteralUnsigned);
+  enterRule(_localctx, 74, SparqlUpdateParser::RuleNumericLiteralUnsigned);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3160,10 +3037,10 @@ SparqlUpdateParser::NumericLiteralUnsignedContext* SparqlUpdateParser::numericLi
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(317);
+    setState(314);
     _la = _input->LA(1);
-    if (!(((((_la - 139) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 139)) & 7) != 0))) {
+    if (!(((((_la - 129) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 129)) & 7) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -3214,7 +3091,7 @@ std::any SparqlUpdateParser::NumericLiteralPositiveContext::accept(tree::ParseTr
 
 SparqlUpdateParser::NumericLiteralPositiveContext* SparqlUpdateParser::numericLiteralPositive() {
   NumericLiteralPositiveContext *_localctx = _tracker.createInstance<NumericLiteralPositiveContext>(_ctx, getState());
-  enterRule(_localctx, 80, SparqlUpdateParser::RuleNumericLiteralPositive);
+  enterRule(_localctx, 76, SparqlUpdateParser::RuleNumericLiteralPositive);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3226,10 +3103,10 @@ SparqlUpdateParser::NumericLiteralPositiveContext* SparqlUpdateParser::numericLi
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(319);
+    setState(316);
     _la = _input->LA(1);
-    if (!(((((_la - 142) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 142)) & 7) != 0))) {
+    if (!(((((_la - 132) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 132)) & 7) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -3280,7 +3157,7 @@ std::any SparqlUpdateParser::NumericLiteralNegativeContext::accept(tree::ParseTr
 
 SparqlUpdateParser::NumericLiteralNegativeContext* SparqlUpdateParser::numericLiteralNegative() {
   NumericLiteralNegativeContext *_localctx = _tracker.createInstance<NumericLiteralNegativeContext>(_ctx, getState());
-  enterRule(_localctx, 82, SparqlUpdateParser::RuleNumericLiteralNegative);
+  enterRule(_localctx, 78, SparqlUpdateParser::RuleNumericLiteralNegative);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3292,10 +3169,10 @@ SparqlUpdateParser::NumericLiteralNegativeContext* SparqlUpdateParser::numericLi
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(321);
+    setState(318);
     _la = _input->LA(1);
-    if (!(((((_la - 145) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 145)) & 7) != 0))) {
+    if (!(((((_la - 135) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 135)) & 7) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -3319,12 +3196,12 @@ SparqlUpdateParser::BooleanLiteralContext::BooleanLiteralContext(ParserRuleConte
   : ParserRuleContext(parent, invokingState) {
 }
 
-tree::TerminalNode* SparqlUpdateParser::BooleanLiteralContext::TRUE() {
-  return getToken(SparqlUpdateParser::TRUE, 0);
+tree::TerminalNode* SparqlUpdateParser::BooleanLiteralContext::K_TRUE() {
+  return getToken(SparqlUpdateParser::K_TRUE, 0);
 }
 
-tree::TerminalNode* SparqlUpdateParser::BooleanLiteralContext::FALSE() {
-  return getToken(SparqlUpdateParser::FALSE, 0);
+tree::TerminalNode* SparqlUpdateParser::BooleanLiteralContext::K_FALSE() {
+  return getToken(SparqlUpdateParser::K_FALSE, 0);
 }
 
 
@@ -3342,7 +3219,7 @@ std::any SparqlUpdateParser::BooleanLiteralContext::accept(tree::ParseTreeVisito
 
 SparqlUpdateParser::BooleanLiteralContext* SparqlUpdateParser::booleanLiteral() {
   BooleanLiteralContext *_localctx = _tracker.createInstance<BooleanLiteralContext>(_ctx, getState());
-  enterRule(_localctx, 84, SparqlUpdateParser::RuleBooleanLiteral);
+  enterRule(_localctx, 80, SparqlUpdateParser::RuleBooleanLiteral);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3354,11 +3231,11 @@ SparqlUpdateParser::BooleanLiteralContext* SparqlUpdateParser::booleanLiteral() 
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(323);
+    setState(320);
     _la = _input->LA(1);
-    if (!(_la == SparqlUpdateParser::TRUE
+    if (!(_la == SparqlUpdateParser::K_TRUE
 
-    || _la == SparqlUpdateParser::FALSE)) {
+    || _la == SparqlUpdateParser::K_FALSE)) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -3413,7 +3290,7 @@ std::any SparqlUpdateParser::StringContext::accept(tree::ParseTreeVisitor *visit
 
 SparqlUpdateParser::StringContext* SparqlUpdateParser::string() {
   StringContext *_localctx = _tracker.createInstance<StringContext>(_ctx, getState());
-  enterRule(_localctx, 86, SparqlUpdateParser::RuleString);
+  enterRule(_localctx, 82, SparqlUpdateParser::RuleString);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3425,10 +3302,10 @@ SparqlUpdateParser::StringContext* SparqlUpdateParser::string() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(325);
+    setState(322);
     _la = _input->LA(1);
-    if (!(((((_la - 148) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 148)) & 15) != 0))) {
+    if (!(((((_la - 138) & ~ 0x3fULL) == 0) &&
+      ((1ULL << (_la - 138)) & 15) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -3475,7 +3352,7 @@ std::any SparqlUpdateParser::IriContext::accept(tree::ParseTreeVisitor *visitor)
 
 SparqlUpdateParser::IriContext* SparqlUpdateParser::iri() {
   IriContext *_localctx = _tracker.createInstance<IriContext>(_ctx, getState());
-  enterRule(_localctx, 88, SparqlUpdateParser::RuleIri);
+  enterRule(_localctx, 84, SparqlUpdateParser::RuleIri);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -3485,12 +3362,12 @@ SparqlUpdateParser::IriContext* SparqlUpdateParser::iri() {
     exitRule();
   });
   try {
-    setState(329);
+    setState(326);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::IRIREF: {
         enterOuterAlt(_localctx, 1);
-        setState(327);
+        setState(324);
         match(SparqlUpdateParser::IRIREF);
         break;
       }
@@ -3498,7 +3375,7 @@ SparqlUpdateParser::IriContext* SparqlUpdateParser::iri() {
       case SparqlUpdateParser::PNAME_NS:
       case SparqlUpdateParser::PNAME_LN: {
         enterOuterAlt(_localctx, 2);
-        setState(328);
+        setState(325);
         prefixedName();
         break;
       }
@@ -3546,7 +3423,7 @@ std::any SparqlUpdateParser::PrefixedNameContext::accept(tree::ParseTreeVisitor 
 
 SparqlUpdateParser::PrefixedNameContext* SparqlUpdateParser::prefixedName() {
   PrefixedNameContext *_localctx = _tracker.createInstance<PrefixedNameContext>(_ctx, getState());
-  enterRule(_localctx, 90, SparqlUpdateParser::RulePrefixedName);
+  enterRule(_localctx, 86, SparqlUpdateParser::RulePrefixedName);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -3558,7 +3435,7 @@ SparqlUpdateParser::PrefixedNameContext* SparqlUpdateParser::prefixedName() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(331);
+    setState(328);
     _la = _input->LA(1);
     if (!(_la == SparqlUpdateParser::PNAME_NS
 
@@ -3609,7 +3486,7 @@ std::any SparqlUpdateParser::BlankNodeContext::accept(tree::ParseTreeVisitor *vi
 
 SparqlUpdateParser::BlankNodeContext* SparqlUpdateParser::blankNode() {
   BlankNodeContext *_localctx = _tracker.createInstance<BlankNodeContext>(_ctx, getState());
-  enterRule(_localctx, 92, SparqlUpdateParser::RuleBlankNode);
+  enterRule(_localctx, 88, SparqlUpdateParser::RuleBlankNode);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -3619,19 +3496,19 @@ SparqlUpdateParser::BlankNodeContext* SparqlUpdateParser::blankNode() {
     exitRule();
   });
   try {
-    setState(335);
+    setState(332);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case SparqlUpdateParser::BLANK_NODE_LABEL: {
         enterOuterAlt(_localctx, 1);
-        setState(333);
+        setState(330);
         match(SparqlUpdateParser::BLANK_NODE_LABEL);
         break;
       }
 
       case SparqlUpdateParser::OPEN_SQUARE_BRACKET: {
         enterOuterAlt(_localctx, 2);
-        setState(334);
+        setState(331);
         anon();
         break;
       }
@@ -3679,7 +3556,7 @@ std::any SparqlUpdateParser::AnonContext::accept(tree::ParseTreeVisitor *visitor
 
 SparqlUpdateParser::AnonContext* SparqlUpdateParser::anon() {
   AnonContext *_localctx = _tracker.createInstance<AnonContext>(_ctx, getState());
-  enterRule(_localctx, 94, SparqlUpdateParser::RuleAnon);
+  enterRule(_localctx, 90, SparqlUpdateParser::RuleAnon);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -3690,9 +3567,9 @@ SparqlUpdateParser::AnonContext* SparqlUpdateParser::anon() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(337);
+    setState(334);
     match(SparqlUpdateParser::OPEN_SQUARE_BRACKET);
-    setState(338);
+    setState(335);
     match(SparqlUpdateParser::CLOSE_SQUARE_BRACKET);
    
   }

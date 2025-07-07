@@ -1,6 +1,6 @@
 #include "executor_constructor.h"
 #include "query/executor/query_executor/gql/return_executor.h"
-#include "query/optimizer/property_graph_model/binding_iter_constructor.h"
+#include "query/optimizer/property_graph_model/binding_list_iter_constructor.h"
 #include "query/parser/op/gql/op_return.h"
 #include "system/path_manager.h"
 
@@ -8,10 +8,10 @@ using namespace GQL;
 
 void ExecutorConstructor::visit(OpReturn& op_return)
 {
-    BindingIterConstructor visitor;
+    PathBindingIterConstructor visitor;
     op_return.accept_visitor(visitor);
 
-    std::unique_ptr<BindingIter> binding_iter = std::move(visitor.tmp);
+    std::unique_ptr<BindingIter> binding_iter = std::move(visitor.tmp_iter);
 
     std::vector<VarId> projection_vars;
 
@@ -19,7 +19,7 @@ void ExecutorConstructor::visit(OpReturn& op_return)
         projection_vars.push_back(var);
     }
 
-    path_manager.begin(std::move(visitor.begin_at_left));
+    // path_manager.begin(std::move(visitor.begin_at_left));
 
     executor = std::make_unique<ReturnExecutor>(
         std::move(binding_iter),

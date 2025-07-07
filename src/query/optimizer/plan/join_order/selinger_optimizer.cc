@@ -1,7 +1,6 @@
 #include "selinger_optimizer.h"
 
 #include <cassert>
-#include <iomanip>
 #include <limits>
 
 #include "query/optimizer/plan/join/index_nested_loop_plan.h"

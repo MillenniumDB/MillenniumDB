@@ -6,8 +6,8 @@
 using namespace std;
 using namespace Paths::AllShortestTrails;
 
-
-void BFSCheck::_begin(Binding& _parent_binding) {
+void BFSCheck::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
 
     // setted at object initialization:
@@ -24,8 +24,8 @@ void BFSCheck::_begin(Binding& _parent_binding) {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-void BFSCheck::_reset() {
+void BFSCheck::_reset()
+{
     // clear bfs structures
     queue<SearchState> empty;
     open.swap(empty);
@@ -44,8 +44,8 @@ void BFSCheck::_reset() {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-bool BFSCheck::_next() {
+bool BFSCheck::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -58,10 +58,12 @@ bool BFSCheck::_next() {
         }
 
         // Starting state is solution
-        if (automaton.is_final_state[automaton.start_state] && current_state.path_state->node_id == end_object_id) {
+        if (automaton.is_final_state[automaton.start_state]
+            && current_state.path_state->node_id == end_object_id)
+        {
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
-            queue<SearchState> empty;  // Empty queue because the only state with 0 distance is the first state
+            queue<SearchState> empty; // Empty queue because the only state with 0 distance is the first state
             open.swap(empty);
             return true;
         }
@@ -83,8 +85,8 @@ bool BFSCheck::_next() {
     return false;
 }
 
-
-const PathState* BFSCheck::expand_neighbors(const SearchState& current_state) {
+const PathState* BFSCheck::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -108,32 +110,40 @@ const PathState* BFSCheck::expand_neighbors(const SearchState& current_state) {
             }
 
             // Special Case: A solution has been reached (don't expand)
-            if (automaton.is_final_state[transition.to] && ObjectId(iter->get_reached_node()) == end_object_id) {
-                if (optimal_distance != UINT64_MAX) {  // Only return shortest paths
+            if (automaton.is_final_state[transition.to]
+                && ObjectId(iter->get_reached_node()) == end_object_id)
+            {
+                if (optimal_distance != UINT64_MAX) { // Only return shortest paths
                     if (optimal_distance == current_state.distance + 1) {
-                        return visited.add(ObjectId(iter->get_reached_node()),
-                                           ObjectId(iter->get_edge()),
-                                           transition.type_id,
-                                           transition.inverse,
-                                           current_state.path_state);
-                    }  // Else: continue
+                        return visited.add(
+                            ObjectId(iter->get_reached_node()),
+                            ObjectId(iter->get_edge()),
+                            transition.type_id,
+                            transition.inverse,
+                            current_state.path_state
+                        );
+                    } // Else: continue
                 } else {
                     optimal_distance = current_state.distance + 1;
-                    return visited.add(ObjectId(iter->get_reached_node()),
-                                       ObjectId(iter->get_edge()),
-                                       transition.type_id,
-                                       transition.inverse,
-                                       current_state.path_state);
-                }  // Else: continue
+                    return visited.add(
+                        ObjectId(iter->get_reached_node()),
+                        ObjectId(iter->get_edge()),
+                        transition.type_id,
+                        transition.inverse,
+                        current_state.path_state
+                    );
+                } // Else: continue
                 continue;
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               ObjectId(iter->get_edge()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                ObjectId(iter->get_edge()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
 
             // Add new state to open if it's a potential optimal path
             // When the first optimal solution is reached, all other paths to potential solutions are already in open
@@ -151,7 +161,15 @@ const PathState* BFSCheck::expand_neighbors(const SearchState& current_state) {
     return nullptr;
 }
 
-
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllShortestTrails::BFSCheck(path_var: " << path_var << ", start: " << start
+       << ", end: " << end << ")";
 }

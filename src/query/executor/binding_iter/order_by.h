@@ -13,7 +13,7 @@ class OrderBy : public BindingIter {
 public:
     OrderBy(
         std::unique_ptr<BindingIter> child_iter,
-        const std::set<VarId>& saved_vars,
+        std::set<VarId>&& saved_vars,
         std::vector<VarId>&& order_vars,
         std::vector<bool>&& ascending,
         int64_t (*_compare)(ObjectId, ObjectId)
@@ -31,7 +31,7 @@ public:
 
     void assign_nulls() override;
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     std::unique_ptr<BindingIter> child_iter;
 

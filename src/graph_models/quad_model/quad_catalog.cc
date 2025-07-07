@@ -1,8 +1,7 @@
 #include "quad_catalog.h"
 
+#include "query/exceptions.h"
 #include "storage/index/text_search/quad.h"
-
-#include <cassert>
 
 using namespace std;
 
@@ -10,8 +9,7 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
     Catalog(filename)
 {
     if (is_empty()) {
-        identifiable_nodes_count = 0;
-        anonymous_nodes_count = 0;
+        nodes_count = 0;
 
         edge_count = 0;
         label_count = 0;
@@ -24,15 +22,16 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
 
         has_changes = true;
     } else {
-        start_io();
-        if (read_uint64() != MODEL_ID) {
-            throw runtime_error("QuadCatalog: wrong MODEL_ID");
+        auto diff_minor_version = check_version("Quad", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+
+        if (diff_minor_version != 0) {
+            throw LogicException("Undefined catalog recovery");
         }
-        if (read_uint64() != VERSION) {
-            throw runtime_error("QuadCatalog: wrong VERSION");
-        }
-        identifiable_nodes_count = read_uint64();
-        anonymous_nodes_count = read_uint64();
+
+        nodes_count = read_uint64();
+
+        [[maybe_unused]]
+        auto unused = read_uint64(); // because old layout
 
         edge_count = read_uint64();
         label_count = read_uint64();
@@ -92,49 +91,48 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             type2equal_to_type_count.insert({ type, count });
         }
 
-        text_search_index_manager.init(
+        text_index_manager.init(
             TextSearch::Quad::index_predicate,
             TextSearch::Quad::index_single,
             TextSearch::Quad::remove_single,
             TextSearch::Quad::oid_to_string
         );
         const auto text_index_name2metadata_size = read_uint64();
-        for (uint_fast32_t i = 0; i < text_index_name2metadata_size; i++) {
+        for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
             const auto name = read_string();
-            TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
+            TextSearch::TextIndexManager::TextIndexMetadata metadata;
             metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
             metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+            metadata.predicate_id = ObjectId(read_uint64());
             metadata.predicate = read_string();
-            text_search_index_manager.load_text_search_index(name, metadata);
+            text_index_manager.load_text_index(name, metadata);
         }
 
-        tensor_store_manager.init();
-        const auto tensor_store_name2metadata_size = read_uint64();
-        for (uint_fast32_t i = 0; i < tensor_store_name2metadata_size; i++) {
+        hnsw_index_manager.init();
+        const auto hnsw_index_name2metadata_size = read_uint64();
+        for (uint_fast32_t i = 0; i < hnsw_index_name2metadata_size; ++i) {
             const auto name = read_string();
-            TensorStoreManager::TensorStoreMetadata metadata;
-            metadata.tensors_dim = read_uint64();
-            tensor_store_manager.load_tensor_store(name, metadata);
+            HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
+            metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
+            metadata.predicate = read_string();
+            hnsw_index_manager.load_hnsw_index(name, metadata);
         }
     }
 }
 
 QuadCatalog::~QuadCatalog()
 {
-    if (has_changes || text_search_index_manager.has_changes() || tensor_store_manager.has_changes()) {
+    if (has_changes || text_index_manager.has_changes() || hnsw_index_manager.has_changes()) {
         save();
     }
 }
 
 void QuadCatalog::save()
 {
-    start_io();
+    start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
-    write_uint64(MODEL_ID);
-    write_uint64(VERSION);
-
-    write_uint64(identifiable_nodes_count);
-    write_uint64(anonymous_nodes_count);
+    write_uint64(nodes_count);
+    write_uint64(0); // because old
 
     write_uint64(edge_count);
     write_uint64(label_count);
@@ -187,20 +185,22 @@ void QuadCatalog::save()
         write_uint64(v);
     }
 
-    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
     write_uint64(text_index_name2metadata.size());
     for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
         write_uint8(static_cast<uint8_t>(metadata.normalization_type));
         write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
+        write_uint64(metadata.predicate_id.id);
         write_string(metadata.predicate);
     }
 
-    const auto& tensor_store_name2metadata = tensor_store_manager.get_name2metadata();
-    write_uint64(tensor_store_name2metadata.size());
-    for (const auto& [name, metadata] : tensor_store_name2metadata) {
+    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    write_uint64(hnsw_index_name2metadata.size());
+    for (const auto& [name, metadata] : hnsw_index_name2metadata) {
         write_string(name);
-        write_uint64(metadata.tensors_dim);
+        write_uint8(static_cast<uint8_t>(metadata.metric_type));
+        write_string(metadata.predicate);
     }
 }
 
@@ -208,8 +208,7 @@ void QuadCatalog::print(std::ostream& os)
 {
     os << "-------------------------------------\n";
     os << "Catalog:\n";
-    os << "  identifiable nodes count: " << identifiable_nodes_count << "\n";
-    // os << "  anonymous nodes count:    " << anonymous_nodes_count << "\n";
+    os << "  nodes count:              " << nodes_count << "\n";
     os << "  edges count:              " << edge_count << "\n";
 
     os << "  label count:              " << label_count << "\n";
@@ -224,18 +223,18 @@ void QuadCatalog::print(std::ostream& os)
     os << "  equal_from_type_count:    " << equal_from_type_count << "\n";
     os << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
 
-     const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
     if (!text_index_name2metadata.empty()) {
-        os << "  Text Search Indexes (" << text_index_name2metadata.size() << "):\n";
+        os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : text_index_name2metadata) {
             os << "    " << name << ": " << metadata << "\n";
         }
     }
 
-    const auto& tensor_store_name2metadata = tensor_store_manager.get_name2metadata();
-    if (!tensor_store_name2metadata.empty()) {
-        os << "  Tensor Stores (" << tensor_store_name2metadata.size() << "):\n";
-        for (const auto& [name, metadata] : tensor_store_name2metadata) {
+    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    if (!hnsw_index_name2metadata.empty()) {
+        os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : hnsw_index_name2metadata) {
             os << "    " << name << ": " << metadata << "\n";
         }
     }

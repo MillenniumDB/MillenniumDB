@@ -1,6 +1,5 @@
 // re2c tokenizer_template.cpp -o tokenizer.cc
 #include <cstring>
-#include <iostream>
 
 #include "import/gql/csv/lexer/token.h"
 #include "import/gql/csv/lexer/tokenizer.h"
@@ -71,7 +70,6 @@ Token CSVTokenizer::get_token()
     std::memcpy(_str, token_start, str_len);
     _str[str_len] = '\0';
     str = _str;
-    // std::cout << "[DEBUG] Token: " << res << "\tstr: \"" << str << "\"\n";
     return res;
 }
 
@@ -87,7 +85,6 @@ Token CSVTokenizer::_get_token()
       re2c:define:YYFILL = "if (!fill(@@)) return Token::END_OF_FILE;";
       re2c:define:YYFILL:naked = 1;
 
-      // TODO: Add token types
       sep_column      = [,];
       string          = ["] ([^"\r\n] | ["]["])* ["];
       integer         = [-+]?[0-9]+;

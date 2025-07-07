@@ -1,0 +1,34 @@
+{
+  "head": {
+    "vars": [
+      "x",
+      "xLabel",
+      "xLang",
+      "xLangIndex"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": {
+          "type": "uri",
+          "value": "http://example.com/x"
+        },
+        "xLabel": {
+          "type": "literal",
+          "value": "Popocatépetl",
+          "xml:lang": "de"
+        },
+        "xLang": {
+          "type": "literal",
+          "value": "de"
+        },
+        "xLangIndex": {
+          "type": "literal",
+          "value": "2",
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      }
+    ]
+  }
+}

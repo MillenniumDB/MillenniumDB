@@ -3,7 +3,7 @@
 #include <string>
 
 #include "query/id.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -56,21 +56,6 @@ public:
             res.insert(value.get_var());
         }
         return res;
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

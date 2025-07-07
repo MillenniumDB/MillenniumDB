@@ -1,9 +1,7 @@
 #include "check_well_designed.h"
 
-#include <cassert>
 #include <set>
 
-#include "query/exceptions.h"
 #include "query/parser/op/sparql/ops.h"
 
 using namespace SPARQL;
@@ -51,14 +49,14 @@ void CheckWellDesigned::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
             seen_vars.insert(op_path.object.get_var());
         }
     }
-
-    for (auto& op_text_search_index : op_basic_graph_pattern.text_searches) {
-        for (auto& var : op_text_search_index.get_all_vars()) {
-            seen_vars.insert(var);
-        }
-    }
 }
 
+void CheckWellDesigned::visit(OpProcedure& op_procedure)
+{
+    for (const auto& var : op_procedure.binding_vars) {
+        seen_vars.insert(var);
+    }
+}
 
 void CheckWellDesigned::visit(OpService& op_service) {
     for (auto& var : op_service.get_scope_vars()) {

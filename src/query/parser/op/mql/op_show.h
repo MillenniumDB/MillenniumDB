@@ -1,24 +1,23 @@
 #pragma once
 
-#include "graph_models/object_id.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
 class OpShow : public Op {
 public:
     enum class Type : uint8_t {
-        TENSOR_STORE,
-        TEXT_SEARCH_INDEX,
+        HNSW_INDEX,
+        TEXT_INDEX
     };
 
     static std::string get_type_string(Type type)
     {
         switch (type) {
-        case Type::TENSOR_STORE:
-            return "TENSOR_STORE";
-        case Type::TEXT_SEARCH_INDEX:
-            return "TEXT_SEARCH_INDEX";
+        case Type::HNSW_INDEX:
+            return "HNSW_INDEX";
+        case Type::TEXT_INDEX:
+            return "TEXT_INDEX";
         default:
             return "UNKNOWN";
         }
@@ -41,21 +40,6 @@ public:
     }
 
     std::set<VarId> get_all_vars() const override
-    {
-        return {};
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return {};
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return {};
-    }
-
-    std::set<VarId> get_fixable_vars() const override
     {
         return {};
     }

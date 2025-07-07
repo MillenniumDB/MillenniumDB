@@ -1,0 +1,7 @@
+PREFIX : <https://example.com/>
+
+SELECT ?s ?tensor
+WHERE {
+    ?s :minkowski ?tensor .
+}
+ORDER BY mdbfn:manhattanDistance(?tensor, "[-10, -10, -10, -10, -10]"^^mdbtype:tensorDouble)

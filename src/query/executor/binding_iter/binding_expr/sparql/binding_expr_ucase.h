@@ -1,7 +1,7 @@
 #pragma once
 
-#include <codecvt>
 #include <memory>
+#include <string>
 
 #include "graph_models/rdf_model/conversions.h"
 #include "misc/transliterator.h"
@@ -11,7 +11,7 @@ namespace SPARQL {
 class BindingExprUCase : public BindingExpr {
 private:
     static std::string ucase(const std::string& str) {
-        return Transliterator::get_instance()->uppercase(str);
+        return Transliterator::uppercase(str);
     }
 
 public:

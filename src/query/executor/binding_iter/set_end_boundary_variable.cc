@@ -28,7 +28,11 @@ void SetEndBoundaryVariable::assign_nulls()
     child_iter->assign_nulls();
 }
 
-void SetEndBoundaryVariable::accept_visitor(BindingIterVisitor& visitor)
+void SetEndBoundaryVariable::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "SetEndBoundaryVariable(end: " << end_var_to_set << ")\n";
+    child_iter->print(os, indent + 2, stats);
 }

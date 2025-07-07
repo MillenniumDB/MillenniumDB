@@ -1,0 +1,2 @@
+MATCH ({_id: "N0"})((a)->(b)){0,2}
+RETURN a,b

@@ -1,0 +1,5 @@
+MATCH (a)->(b)
+LIMIT 1
+MATCH (c)->(d)
+LIMIT 3
+RETURN a,b,c,d

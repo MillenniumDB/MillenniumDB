@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN AVG(DISTINCT x.number) AS average

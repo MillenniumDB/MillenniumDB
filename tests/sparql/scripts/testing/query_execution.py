@@ -250,8 +250,7 @@ def execute_bad_test(server: Optional[Popen[bytes]], test: BadTest, stats: Execu
 def execute_tests(
     test_suite: TestSuite,
     *,
-    server_executable: Path,
-    create_db_executable: Path,
+    executable: Path,
     client_only: bool = False,
     progress_bar: tqdm[NoReturn] | None = None,
 ):
@@ -281,8 +280,8 @@ def execute_tests(
         log_file = None
 
         if not client_only:
-            data_path = create_db(create_db_executable, data, prefixes)
-            server, log_file = start_server(server_executable, data_path)
+            data_path = create_db(executable, data, prefixes)
+            server, log_file = start_server(executable, data_path)
 
         for test in tests_:
             # if progress_bar:
@@ -311,7 +310,7 @@ def execute_tests(
                         log(Level.SERVER_LOG, "SERVER:", line.strip())
                     log_file.seek(0, SEEK_END)
 
-                    server, log_file = start_server(server_executable, data_path)  # restart server
+                    server, log_file = start_server(executable, data_path)  # restart server
 
             except Exception as exc:
                 if not client_only:

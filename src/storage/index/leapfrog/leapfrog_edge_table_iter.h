@@ -1,23 +1,32 @@
 #pragma once
 
 #include "storage/index/leapfrog/leapfrog_iter.h"
+#include "storage/index/random_access_table/random_access_table.h"
 
 class LeapfrogEdgeTableIter : public LeapfrogIter {
 public:
-    LeapfrogEdgeTableIter(bool*                                   interruption_requested,
-                          RandomAccessTable<3>&                   edge_table,
-                          std::vector<std::unique_ptr<ScanRange>> initial_ranges,
-                          std::vector<VarId>                      intersection_vars,
-                          std::vector<VarId>                      enumeration_vars,
-                          std::array<uint_fast32_t, 3>            permutation) :
-        LeapfrogIter (interruption_requested,
-                      std::move(initial_ranges),
-                      std::move(intersection_vars),
-                      std::move(enumeration_vars)),
-        edge_table   (edge_table),
-        permutation  (permutation) { }
+    LeapfrogEdgeTableIter(
+        bool* interruption_requested,
+        RandomAccessTable<3>& edge_table,
+        std::vector<std::unique_ptr<ScanRange>> initial_ranges,
+        std::vector<VarId> intersection_vars,
+        std::vector<VarId> enumeration_vars,
+        std::array<uint_fast32_t, 3> permutation
+    ) :
+        LeapfrogIter(
+            interruption_requested,
+            std::move(initial_ranges),
+            std::move(intersection_vars),
+            std::move(enumeration_vars)
+        ),
+        edge_table(edge_table),
+        permutation(permutation)
+    { }
 
-    inline uint64_t get_key() const override { return current_tuple[level]; }
+    inline uint64_t get_key() const override
+    {
+        return current_tuple[level];
+    }
 
     // Increases the level and sets the current_tuple
     void down() override;
@@ -40,9 +49,15 @@ public:
     // returns true if the terms and parent_binding were found
     bool open_terms(Binding& input_binding) override;
 
-    std::string get_iter_name() const override { return "LeapfrogEdgeTableIter"; }
+    std::string get_iter_name() const override
+    {
+        return "LeapfrogEdgeTableIter";
+    }
 
-    bool try_estimate(std::vector<double>& /*initial_estimations*/, std::vector<double>& /*after_estimations*/) const override {
+    bool
+        try_estimate(std::vector<double>& /*initial_estimations*/, std::vector<double>& /*after_estimations*/)
+            const override
+    {
         return false;
     }
 

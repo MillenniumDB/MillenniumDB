@@ -1,7 +1,7 @@
 #pragma once
 
 #include "query/id.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -12,18 +12,22 @@ public:
     Id label;
 
     OpLabel(Id node, Id label) :
-        node  (node),
-        label (label) { }
+        node(node),
+        label(label)
+    { }
 
-    std::unique_ptr<Op> clone() const override {
+    std::unique_ptr<Op> clone() const override
+    {
         return std::make_unique<OpLabel>(*this);
     }
 
-    void accept_visitor(OpVisitor& visitor) override {
+    void accept_visitor(OpVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    bool operator<(const OpLabel& other) const {
+    bool operator<(const OpLabel& other) const
+    {
         if (node < other.node) {
             return true;
         } else if (other.node < node) {
@@ -33,7 +37,8 @@ public:
         }
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res;
         if (node.is_var()) {
             res.insert(node.get_var());
@@ -42,19 +47,8 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
-        return get_all_vars();
-    }
-
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
+    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    {
         os << std::string(indent, ' ');
         os << "OpLabel(";
         os << node;

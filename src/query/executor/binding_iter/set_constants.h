@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "query/executor/binding_iter.h"
 
@@ -12,7 +11,7 @@ public:
         var2oid(var2oid)
     { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     bool _next() override;
     void _reset() override;
@@ -21,6 +20,7 @@ public:
     std::unique_ptr<BindingIter> child_iter;
 
     std::set<std::pair<VarId, ObjectId>> var2oid;
+
 private:
     Binding* parent_binding;
 };

@@ -1,0 +1,21 @@
+@prefix : <http://example.org/> .
+@prefix prop: <http://example.org/property/> .
+@prefix item: <http://example.org/item/> .
+
+# Items
+item:person1 prop:hasOccupation item:engineer ; prop:hasID "ID123" .
+item:person2 prop:hasOccupation item:engineer ; prop:hasID "ID456" .
+item:person3 prop:hasOccupation item:engineer ; prop:hasCode "CODE789" .
+
+# Properties
+prop:idProperty a prop:ExternalID ;
+    prop:category prop:External ;
+    prop:label "ID Property" ;
+    prop:description "A property representing an ID" ;
+    prop:claim prop:hasID .
+
+prop:codeProperty a prop:ExternalID ;
+    prop:category prop:External ;
+    prop:label "Code Property" ;
+    prop:description "A property representing a code" ;
+    prop:claim prop:hasCode .

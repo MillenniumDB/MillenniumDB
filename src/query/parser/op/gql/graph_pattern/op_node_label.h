@@ -1,19 +1,31 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
 struct LabelOpId {
     std::unique_ptr<Op> op;
     VarId id;
+    ObjectId label_id;
 
-    LabelOpId(std::unique_ptr<Op> op, VarId id) :
+    LabelOpId(std::unique_ptr<Op> op, VarId id, ObjectId label_id) :
         op(std::move(op)),
-        id(id)
+        id(id),
+        label_id(label_id)
     { }
+    LabelOpId(const LabelOpId&) = delete;
+    LabelOpId(LabelOpId&&) = default;
+    ~LabelOpId() = default;
+    LabelOpId& operator=(LabelOpId&&) = default;
+
+    bool operator<(const LabelOpId& other) const
+    {
+        if (id.id != other.id.id) {
+            return id.id < other.id.id;
+        }
+        return label_id < other.label_id;
+    }
 };
 
 class OpNodeLabel : public Op {
@@ -39,21 +51,6 @@ public:
     std::set<VarId> get_all_vars() const override
     {
         return { node_id };
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return { node_id };
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

@@ -4,10 +4,26 @@
 
 using namespace GQL;
 
+void PushProperties::visit(OpQueryStatements& op_simple_linear_query_statements)
+{
+    std::vector<std::unique_ptr<Op>> new_ops;
+
+    for (auto& op : op_simple_linear_query_statements.ops) {
+        op->accept_visitor(*this);
+        new_ops.push_back(std::move(tmp));
+    }
+    tmp = std::make_unique<OpQueryStatements>(std::move(new_ops));
+}
+
 void PushProperties::visit(OpReturn& op_return)
 {
     op_return.op->accept_visitor(*this);
-    tmp = std::make_unique<OpReturn>(std::move(tmp), std::move(op_return.return_items), op_return.distinct);
+    tmp = std::make_unique<OpReturn>(
+        std::move(tmp),
+        std::move(op_return.return_items),
+        op_return.distinct,
+        std::move(op_return.op_order_by)
+    );
 }
 
 void PushProperties::visit(OpOrderBy& op_order_by)
@@ -17,7 +33,20 @@ void PushProperties::visit(OpOrderBy& op_order_by)
         std::move(tmp),
         std::move(op_order_by.items),
         std::move(op_order_by.ascending_order),
-        std::move(op_order_by.null_order)
+        std::move(op_order_by.null_order),
+        op_order_by.offset,
+        op_order_by.limit
+    );
+}
+
+void PushProperties::visit(OpOrderByStatement& op_order_by)
+{
+    tmp = std::make_unique<OpOrderByStatement>(
+        std::move(op_order_by.items),
+        std::move(op_order_by.ascending_order),
+        std::move(op_order_by.null_order),
+        op_order_by.offset,
+        op_order_by.limit
     );
 }
 
@@ -107,6 +136,7 @@ void PushProperties::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
 void PushProperties::visit(OpLinearPattern& op_linear_pattern)
 {
+    vars_in_linear_pattern.clear();
     std::vector<std::unique_ptr<Op>> patterns;
 
     for (auto& pattern : op_linear_pattern.patterns) {
@@ -127,6 +157,11 @@ void PushProperties::visit(OpLinearPattern& op_linear_pattern)
     );
 }
 
+void PushProperties::visit(OpLet& op)
+{
+    tmp = std::make_unique<OpLet>(std::move(op.items));
+}
+
 void PushProperties::visit(OpNode& op)
 {
     vars_in_linear_pattern.insert(op.id);
@@ -145,6 +180,11 @@ void PushProperties::visit(OpNodeLabel& op)
 }
 
 void PushProperties::visit(OpEdgeLabel& op)
+{
+    tmp = op.clone();
+}
+
+void PushProperties::visit(OpFilterStatement& op)
 {
     tmp = op.clone();
 }

@@ -1,0 +1,2 @@
+MATCH (x: aaa & (bbb | ccc))
+RETURN x

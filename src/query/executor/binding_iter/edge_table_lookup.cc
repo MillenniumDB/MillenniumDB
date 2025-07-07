@@ -5,18 +5,14 @@
 #include "macros/likely.h"
 #include "query/exceptions.h"
 
-void EdgeTableLookup::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void EdgeTableLookup::_begin(Binding& parent_binding) {
+void EdgeTableLookup::_begin(Binding& parent_binding)
+{
     this->parent_binding = &parent_binding;
     already_looked = false;
 }
 
-
-bool EdgeTableLookup::_next() {
+bool EdgeTableLookup::_next()
+{
     if (already_looked) {
         return false;
     } else {
@@ -24,7 +20,6 @@ bool EdgeTableLookup::_next() {
             throw InterruptedException();
         }
         already_looked = true;
-        ++lookups;
 
         ObjectId edge_assignation;
         if (edge.is_var()) {
@@ -36,9 +31,8 @@ bool EdgeTableLookup::_next() {
             return false;
         }
         auto edge_id = ObjectId::VALUE_MASK & edge_assignation.id;
-        assert(edge_id > 0);
 
-        auto record = table[edge_id - 1]; // first edge has the id 1, and its inserted at pos 0 in the table
+        auto record = table[edge_id];
 
         if (record == nullptr)
             return false;
@@ -71,13 +65,13 @@ bool EdgeTableLookup::_next() {
     }
 }
 
-
-void EdgeTableLookup::_reset() {
+void EdgeTableLookup::_reset()
+{
     already_looked = false;
 }
 
-
-void EdgeTableLookup::assign_nulls() {
+void EdgeTableLookup::assign_nulls()
+{
     // Not assigning edge to null, since the edge is supposed to be assigned
     if (!from_assigned) {
         assert(from.is_var());
@@ -91,4 +85,33 @@ void EdgeTableLookup::assign_nulls() {
         assert(type.is_var());
         parent_binding->add(type.get_var(), ObjectId::get_null());
     }
+}
+
+void EdgeTableLookup::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "EdgeTableLookup(";
+
+    os << "[" << edge << "]";
+    if (from_assigned) {
+        os << " [" << from << "]";
+    }
+    if (to_assigned) {
+        os << " [" << to << "]";
+    }
+    if (type_assigned) {
+        os << " [" << type << "]";
+    }
+    if (!from_assigned) {
+        os << " " << from;
+    }
+    if (!to_assigned) {
+        os << " " << to;
+    }
+    if (!type_assigned) {
+        os << " " << type;
+    }
+    os << ")\n";
 }

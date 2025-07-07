@@ -23,6 +23,10 @@ public:
 
     virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext *context) = 0;
 
+    virtual std::any visitPrimitiveStatementList(MQL_Parser::PrimitiveStatementListContext *context) = 0;
+
+    virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *context) = 0;
+
     virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *context) = 0;
 
     virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext *context) = 0;
@@ -33,33 +37,11 @@ public:
 
     virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *context) = 0;
 
-    virtual std::any visitTensorStoreQuery(MQL_Parser::TensorStoreQueryContext *context) = 0;
+    virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext *context) = 0;
 
-    virtual std::any visitCreateTensorStore(MQL_Parser::CreateTensorStoreContext *context) = 0;
+    virtual std::any visitCreateIndexOptions(MQL_Parser::CreateIndexOptionsContext *context) = 0;
 
-    virtual std::any visitInsertTensors(MQL_Parser::InsertTensorsContext *context) = 0;
-
-    virtual std::any visitInsertTensorsTuple(MQL_Parser::InsertTensorsTupleContext *context) = 0;
-
-    virtual std::any visitDeleteTensors(MQL_Parser::DeleteTensorsContext *context) = 0;
-
-    virtual std::any visitTensor(MQL_Parser::TensorContext *context) = 0;
-
-    virtual std::any visitTensorDistanceReference(MQL_Parser::TensorDistanceReferenceContext *context) = 0;
-
-    virtual std::any visitMetricType(MQL_Parser::MetricTypeContext *context) = 0;
-
-    virtual std::any visitTextIndexQuery(MQL_Parser::TextIndexQueryContext *context) = 0;
-
-    virtual std::any visitCreateTextIndex(MQL_Parser::CreateTextIndexContext *context) = 0;
-
-    virtual std::any visitNormalizeTextIndex(MQL_Parser::NormalizeTextIndexContext *context) = 0;
-
-    virtual std::any visitNormalizeType(MQL_Parser::NormalizeTypeContext *context) = 0;
-
-    virtual std::any visitTokenizeTextIndex(MQL_Parser::TokenizeTextIndexContext *context) = 0;
-
-    virtual std::any visitTokenizeType(MQL_Parser::TokenizeTypeContext *context) = 0;
+    virtual std::any visitCreateIndexOption(MQL_Parser::CreateIndexOptionContext *context) = 0;
 
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext *context) = 0;
 
@@ -67,9 +49,13 @@ public:
 
     virtual std::any visitDescribeFlag(MQL_Parser::DescribeFlagContext *context) = 0;
 
-    virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *context) = 0;
-
     virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext *context) = 0;
+
+    virtual std::any visitLetStatement(MQL_Parser::LetStatementContext *context) = 0;
+
+    virtual std::any visitLetDefinitionList(MQL_Parser::LetDefinitionListContext *context) = 0;
+
+    virtual std::any visitLetDefinition(MQL_Parser::LetDefinitionContext *context) = 0;
 
     virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext *context) = 0;
 
@@ -81,13 +67,19 @@ public:
 
     virtual std::any visitReturnAll(MQL_Parser::ReturnAllContext *context) = 0;
 
+    virtual std::any visitCallStatement(MQL_Parser::CallStatementContext *context) = 0;
+
+    virtual std::any visitYieldStatement(MQL_Parser::YieldStatementContext *context) = 0;
+
+    virtual std::any visitYieldItem(MQL_Parser::YieldItemContext *context) = 0;
+
+    virtual std::any visitCallArguments(MQL_Parser::CallArgumentsContext *context) = 0;
+
     virtual std::any visitLimitOffsetClauses(MQL_Parser::LimitOffsetClausesContext *context) = 0;
 
     virtual std::any visitLimitClause(MQL_Parser::LimitClauseContext *context) = 0;
 
     virtual std::any visitOffsetClause(MQL_Parser::OffsetClauseContext *context) = 0;
-
-    virtual std::any visitSetItem(MQL_Parser::SetItemContext *context) = 0;
 
     virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *context) = 0;
 
@@ -195,9 +187,15 @@ public:
 
     virtual std::any visitRegex(MQL_Parser::RegexContext *context) = 0;
 
-    virtual std::any visitTensorDistance(MQL_Parser::TensorDistanceContext *context) = 0;
-
     virtual std::any visitTextSearch(MQL_Parser::TextSearchContext *context) = 0;
+
+    virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext *context) = 0;
+
+    virtual std::any visitCosineDistance(MQL_Parser::CosineDistanceContext *context) = 0;
+
+    virtual std::any visitManhattanDistance(MQL_Parser::ManhattanDistanceContext *context) = 0;
+
+    virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext *context) = 0;
 
     virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *context) = 0;
 

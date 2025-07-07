@@ -122,7 +122,7 @@ namespace GQL_OID {
         case (ObjectId::MASK_BOOL >> 56):
             return Type::BOOL;
 
-        case (ObjectId::MASK_PATH >> 56):
+        case (ObjectId::MASK_GQL_PATH >> 56):
             return Type::PATH;
 
         case (ObjectId::MASK_DT_DATE >> 56):

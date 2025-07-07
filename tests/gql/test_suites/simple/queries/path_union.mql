@@ -1,0 +1,2 @@
+MATCH (a:aaa)->|<-((b:aaa)|(c:bbb))
+RETURN *

@@ -1,20 +1,20 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
-struct Repetition {
-    Repetition(uint64_t lower, std::optional<uint64_t> upper = std::nullopt) :
-        lower(lower),
-        upper(upper)
-    { }
-    uint64_t lower;
-    std::optional<uint64_t> upper;
-};
-
 class OpRepetition : public Op {
 public:
+    struct Repetition {
+        Repetition(uint64_t lower, std::optional<uint64_t> upper = std::nullopt) :
+            lower(lower),
+            upper(upper)
+        { }
+        uint64_t lower;
+        std::optional<uint64_t> upper;
+    };
+
     std::unique_ptr<Op> op;
     uint64_t lower;
     std::optional<uint64_t> upper;
@@ -46,43 +46,15 @@ public:
         return op->get_all_vars();
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
+        std::map<VarId, GQL::VarType> result = op->get_var_types();
 
-    std::set<VarId> get_safe_vars() const override
-    {
-        if (lower > 0) {
-            return op->get_safe_vars();
-        }
-        return {};
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        std::map<VarId, std::unique_ptr<GQL::VarType>> res = op->get_var_types();
-
-        if (lower == 0 && upper == 1) {
-            for (auto& [var, type] : res) {
-                if (!type->is_conditional()) {
-                    res[var] = std::make_unique<Maybe>(std::move(type));
-                }
-            }
-        } else {
-            for (auto& [var, type] : res) {
-                if (!type->is_group()) {
-                    res[var] = std::make_unique<Group>(std::move(type));
-                }
-            }
+        for (auto& [var, type] : result) {
+            result[var].degree = VarType::Group;
         }
 
-        return res;
+        return result;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
