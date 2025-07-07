@@ -1110,7 +1110,7 @@ yy41:
 	}
 yy42:
 #line 103 "tokenizer_template.cpp"
-	{ return Import::QuadModel::Token::TRUE; }
+	{ return Import::QuadModel::Token::K_TRUE; }
 #line 1115 "tokenizer.cc"
 yy43:
 	++cur;
@@ -1192,7 +1192,7 @@ yy44:
 	}
 yy45:
 #line 104 "tokenizer_template.cpp"
-	{ return Import::QuadModel::Token::FALSE; }
+	{ return Import::QuadModel::Token::K_FALSE; }
 #line 1197 "tokenizer.cc"
 }
 #line 113 "tokenizer_template.cpp"

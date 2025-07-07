@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "import/default_config.h"
+#include "misc/total_ram.h"
 #include "network/server/protocol.h"
 #include "system/buffer_manager.h"
 #include "system/string_manager.h"
@@ -13,13 +14,7 @@ namespace Import { namespace GQL {
 
 inline void create_default_params(const std::string& db_folder)
 {
-    struct sysinfo system_info;
-    if (sysinfo(&system_info) != 0) {
-        // Error reading the system info
-        return;
-    }
-
-    auto target_ram = (system_info.totalram * 3) / 4;
+    auto target_ram = (get_total_ram() * 3) / 4;
     auto workers = std::thread::hardware_concurrency();
     if (workers > 8) {
         workers = 8;

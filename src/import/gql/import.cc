@@ -666,13 +666,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::EXPECT_NODE_PROP_VALUE,
-        Token::FALSE,
+        Token::K_FALSE,
         State::NODE_DEFINED,
         std::bind(&OnDiskImport::add_node_prop_false, this)
     );
     set_transition(
         State::EXPECT_NODE_PROP_VALUE,
-        Token::TRUE,
+        Token::K_TRUE,
         State::NODE_DEFINED,
         std::bind(&OnDiskImport::add_node_prop_true, this)
     );
@@ -755,13 +755,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::EXPECT_EDGE_PROP_VALUE,
-        Token::FALSE,
+        Token::K_FALSE,
         State::EDGE_DEFINED,
         std::bind(&OnDiskImport::add_edge_prop_false, this)
     );
     set_transition(
         State::EXPECT_EDGE_PROP_VALUE,
-        Token::TRUE,
+        Token::K_TRUE,
         State::EDGE_DEFINED,
         std::bind(&OnDiskImport::add_edge_prop_true, this)
     );

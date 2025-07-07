@@ -100,8 +100,8 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             colon        { return Import::QuadModel::Token::COLON; }
             l_arrow      { return Import::QuadModel::Token::L_ARROW; }
             r_arrow      { return Import::QuadModel::Token::R_ARROW; }
-            true         { return Import::QuadModel::Token::TRUE; }
-            false        { return Import::QuadModel::Token::FALSE; }
+            true         { return Import::QuadModel::Token::K_TRUE; }
+            false        { return Import::QuadModel::Token::K_FALSE; }
             string       { return Import::QuadModel::Token::STRING; }
             typed_string { return Import::QuadModel::Token::TYPED_STRING; }
             identifier   { return Import::QuadModel::Token::IDENTIFIER; }
