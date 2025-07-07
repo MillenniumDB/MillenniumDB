@@ -13,5 +13,6 @@
         "stardog-union.stardog-rdf-grammars",
         "wayou.vscode-todo-highlight",
         "shardulm94.trailing-spaces",
+        "DavidAnson.vscode-markdownlint",
     ]
 }
