@@ -5,7 +5,7 @@ FROM ${IMAGE}:${VERSION}
 # Define variables for this stage
 ARG IMAGE
 ARG VERSION
-ENV PACKAGE=millenniumdb_0.2-1_${IMAGE}-${VERSION}_amd64
+ENV PACKAGE=mdb_1.0.0-1_${IMAGE}-${VERSION}_amd64
 
 ARG DEBIAN_FRONTEND=noninteractive
 
