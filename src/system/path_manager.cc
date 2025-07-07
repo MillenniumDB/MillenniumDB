@@ -1,10 +1,9 @@
 #include "path_manager.h"
-#include "query/query_context.h"
 
 #include <cassert>
-#include <new> // placement new
-#include <stack>
-#include <type_traits> // aligned_storage
+#include <type_traits>
+
+#include "query/query_context.h"
 
 // memory for the object
 static typename std::aligned_storage<sizeof(PathManager), alignof(PathManager)>::type path_manager_buf;
@@ -14,7 +13,6 @@ PathManager& path_manager = reinterpret_cast<PathManager&>(path_manager_buf);
 PathManager::PathManager(uint_fast32_t max_threads)
 {
     for (uint64_t i = 0; i < max_threads; i++) {
-        std::vector<robin_hood::unordered_node_set<Paths::Any::SearchState>> materialized_path_states;
         std::vector<const void*> path_vector;
         std::vector<bool> begin_at_left_vector;
 
@@ -321,9 +319,3 @@ uint_fast32_t PathManager::get_thread_index() const
 {
     return get_query_ctx().thread_info.worker_index;
 }
-
-// void PathManager::clear() {
-//     auto index = get_thread_index();
-//     paths[index].clear();
-//     begin_at_left[index].clear();
-// }

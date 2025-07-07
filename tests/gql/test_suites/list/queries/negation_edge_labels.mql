@@ -1,0 +1,2 @@
+MATCH (a)-[x: !bbb]-(b)
+RETURN a, b

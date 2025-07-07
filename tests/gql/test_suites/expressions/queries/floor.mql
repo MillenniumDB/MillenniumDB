@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.floor_exp, FLOOR(x.exp_value) AS piso

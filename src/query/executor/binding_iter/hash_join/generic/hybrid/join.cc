@@ -12,19 +12,19 @@ using namespace HashJoin::Generic::Hybrid;
 Join::Join(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    lhs           (std::move(_lhs)),
-    rhs           (std::move(_rhs)),
-    join_vars     (std::move(_join_vars)),
-    lhs_vars      (std::move(_lhs_vars)),
-    rhs_vars      (std::move(_rhs_vars)),
-    N             (join_vars.size()),
-    pk_start      (new uint64_t[N]),
-    last_pk_start (new uint64_t[N]),
-    probe_key     (Key(pk_start, N))
+    lhs(std::move(_lhs)),
+    rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    last_pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     for (auto var : join_vars) {
         all_lhs_vars.push_back(var);
@@ -38,21 +38,21 @@ Join::Join(
     }
 }
 
-
-Join::~Join() {
+Join::~Join()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
-    delete[](last_pk_start);
+    delete[] (pk_start);
+    delete[] (last_pk_start);
 }
 
-
-void Join::_begin(Binding& _parent_binding) {
+void Join::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
     lhs_binding = make_unique<Binding>(parent_binding->size);
     rhs_binding = make_unique<Binding>(parent_binding->size);
@@ -84,14 +84,15 @@ void Join::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset probe to iterate with 0 partition
         probe->reset();
     }
 }
 
-
-bool Join::_next() {
+bool Join::_next()
+{
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -136,8 +137,8 @@ bool Join::_next() {
     }
 }
 
-
-void Join::_reset() {
+void Join::_reset()
+{
     hash_table.clear();
 
     // Spread reset to children
@@ -169,13 +170,14 @@ void Join::_reset() {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         probe->reset();
     }
 }
 
-
-void Join::assign_nulls() {
+void Join::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -189,13 +191,8 @@ void Join::assign_nulls() {
     rhs->assign_nulls();
 }
 
-
-void Join::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-bool Join::build_0_partition() {
+bool Join::build_0_partition()
+{
     auto data_tuple_size = lhs_vars.size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -227,7 +224,7 @@ bool Join::build_0_partition() {
         }
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: lhs_vars) {
+        for (auto& var : lhs_vars) {
             *current_data_pos = (*lhs_binding)[var].id;
             current_data_pos++;
         }
@@ -280,19 +277,19 @@ bool Join::build_0_partition() {
 
             // Check if hash table does not exceed size limit
             if (hash_table.size() > MAX_HASH_TABLE_SIZE) {
-                delete[](start_key);
-                delete[](dummy_last_key);
+                delete[] (start_key);
+                delete[] (dummy_last_key);
                 return false;
             }
         }
     }
-    delete[](start_key);
-    delete[](dummy_last_key);
+    delete[] (start_key);
+    delete[] (dummy_last_key);
     return true;
 }
 
-
-void Join::build_hash_table() {
+void Join::build_hash_table()
+{
     auto data_tuple_size = build_vars->size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -325,7 +322,7 @@ void Join::build_hash_table() {
 
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: *build_vars) {
+        for (auto& var : *build_vars) {
             *current_data_pos = (*build_binding)[var].id;
             current_data_pos++;
         }
@@ -376,12 +373,12 @@ void Join::build_hash_table() {
             last_key.start = key.start;
         }
     }
-    delete[](start_key);
-    delete[](dummy_last_key);
+    delete[] (start_key);
+    delete[] (dummy_last_key);
 }
 
-
-void Join::prepare_chunks_for_new_partition() {
+void Join::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -411,19 +408,19 @@ void Join::prepare_chunks_for_new_partition() {
     key_chunks_dir.push_back(key_chunk);
 }
 
-
-bool Join::get_next_partition() {
+bool Join::get_next_partition()
+{
     while (current_partition < partitions.size()) {
         // Avoid partitions where build or probe does not has tuples
-        if (partitions[current_partition].first->total_tuples == 0 ||
-            partitions[current_partition].second->total_tuples == 0)
+        if (partitions[current_partition].first->total_tuples == 0
+            || partitions[current_partition].second->total_tuples == 0)
         {
             current_partition++;
             continue;
         }
         // Check the smallest partition to use with build
-        if (partitions[current_partition].first->total_tuples <
-            partitions[current_partition].second->total_tuples)
+        if (partitions[current_partition].first->total_tuples
+            < partitions[current_partition].second->total_tuples)
         {
             build = partitions[current_partition].first.get();
             probe = partitions[current_partition].second.get();

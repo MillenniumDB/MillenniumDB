@@ -1,27 +1,34 @@
 #include "dfs_enum.h"
 
-#include <cassert>
-
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AnySimple;
 
-template <bool CYCLIC>
-void DFSEnum<CYCLIC>::_begin(Binding& _parent_binding) {
+template<bool CYCLIC>
+void DFSEnum<CYCLIC>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
     // Add starting state to open
     current_start = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), current_start, ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        current_start,
+        ObjectId(),
+        false,
+        nullptr
+    );
 
     current_state_nodes.insert(current_start.id);
 }
 
-
-template <bool CYCLIC>
-bool DFSEnum<CYCLIC>::_next() {
+template<bool CYCLIC>
+bool DFSEnum<CYCLIC>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -36,7 +43,7 @@ bool DFSEnum<CYCLIC>::_next() {
 
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state]) {
-            reached_final.insert(current_state.node_id.id);  // Return a single path per reached node
+            reached_final.insert(current_state.node_id.id); // Return a single path per reached node
             auto path_id = path_manager.set_path(&current_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state.node_id);
@@ -51,7 +58,9 @@ bool DFSEnum<CYCLIC>::_next() {
             // current_state.transition == automaton.from_to_connections[current_state.automaton_state].size()
             // is used in expand_neighbors to mark a state that shouldn't be expanded
             // early pruning is only possible for CYCLIC, so for acyclic we want to avoid evaluating this condition
-            if (current_state.transition >= automaton.from_to_connections[current_state.automaton_state].size()) {
+            if (current_state.transition
+                >= automaton.from_to_connections[current_state.automaton_state].size())
+            {
                 // don't need to erase from current_state_nodes
                 open.pop();
                 continue;
@@ -66,7 +75,7 @@ bool DFSEnum<CYCLIC>::_next() {
             // Check if new path is solution
             if (automaton.is_final_state[state_reached->automaton_state]) {
                 auto node_reached_final = reached_final.find(state_reached->node_id.id);
-                if (node_reached_final == reached_final.end()) {  // Return a single path per reached node
+                if (node_reached_final == reached_final.end()) { // Return a single path per reached node
                     reached_final.insert(state_reached->node_id.id);
                     auto path_id = path_manager.set_path(state_reached, path_var);
                     parent_binding->add(path_var, path_id);
@@ -83,9 +92,9 @@ bool DFSEnum<CYCLIC>::_next() {
     return false;
 }
 
-
-template <bool CYCLIC>
-SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state) {
+template<bool CYCLIC>
+SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (current_state.iter->at_end()) {
         // Check if automaton state has transitions
@@ -98,7 +107,8 @@ SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state)
     // Iterate over the remaining transitions of current_state
     // Don't start from the beginning, resume where it left thanks to state transition + iter (pipeline)
     while (current_state.transition < automaton.from_to_connections[current_state.automaton_state].size()) {
-        auto& transition = automaton.from_to_connections[current_state.automaton_state][current_state.transition];
+        auto& transition = automaton
+                               .from_to_connections[current_state.automaton_state][current_state.transition];
 
         // Iterate over records and return simple paths
         while (current_state.iter->next()) {
@@ -117,7 +127,8 @@ SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state)
                                 ObjectId(current_state.iter->get_reached_node()),
                                 transition.type_id,
                                 transition.inverse,
-                                &current_state);
+                                &current_state
+                            );
                         }
                     }
                 }
@@ -132,7 +143,8 @@ SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state)
                 ObjectId(current_state.iter->get_reached_node()),
                 transition.type_id,
                 transition.inverse,
-                &current_state);
+                &current_state
+            );
         }
 
         // Construct new iter with the next transition (if there exists one)
@@ -144,9 +156,9 @@ SearchStateDFS* DFSEnum<CYCLIC>::expand_neighbors(SearchStateDFS& current_state)
     return nullptr;
 }
 
-
-template <bool CYCLIC>
-void DFSEnum<CYCLIC>::_reset() {
+template<bool CYCLIC>
+void DFSEnum<CYCLIC>::_reset()
+{
     // Empty open
     stack<SearchStateDFS> empty;
     open.swap(empty);
@@ -155,18 +167,33 @@ void DFSEnum<CYCLIC>::_reset() {
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        start_object_id,
+        ObjectId(),
+        false,
+        nullptr
+    );
 
     current_state_nodes.clear();
     current_state_nodes.insert(current_start.id);
 }
 
-
-template <bool CYCLIC>
-void DFSEnum<CYCLIC>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+template<bool CYCLIC>
+void DFSEnum<CYCLIC>::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AnySimple::DFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }
-
 
 template class Paths::AnySimple::DFSEnum<true>;
 template class Paths::AnySimple::DFSEnum<false>;

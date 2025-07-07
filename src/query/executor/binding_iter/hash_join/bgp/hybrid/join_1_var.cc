@@ -1,7 +1,7 @@
 #include "join_1_var.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 #include "storage/page/private_page.h"
 
@@ -13,15 +13,15 @@ using namespace HashJoin::BGP::Hybrid;
 Join1Var::Join1Var(
     unique_ptr<BindingIter> lhs,
     unique_ptr<BindingIter> rhs,
-    vector<VarId>&&         join_vars,
-    vector<VarId>&&         lhs_vars,
-    vector<VarId>&&         rhs_vars
+    vector<VarId>&& join_vars,
+    vector<VarId>&& lhs_vars,
+    vector<VarId>&& rhs_vars
 ) :
-    lhs           (std::move(lhs)),
-    rhs           (std::move(rhs)),
-    join_vars     (std::move(join_vars)),
-    lhs_vars      (std::move(lhs_vars)),
-    rhs_vars      (std::move(rhs_vars))
+    lhs(std::move(lhs)),
+    rhs(std::move(rhs)),
+    join_vars(std::move(join_vars)),
+    lhs_vars(std::move(lhs_vars)),
+    rhs_vars(std::move(rhs_vars))
 {
     assert(join_vars.size() == 1);
 
@@ -36,16 +36,16 @@ Join1Var::Join1Var(
     all_rhs_vars.push_back(join_vars[0]);
 }
 
-
-Join1Var::~Join1Var() {
+Join1Var::~Join1Var()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
 }
 
-
-void Join1Var::_begin(Binding& _parent_binding) {
+void Join1Var::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
     lhs->begin(*parent_binding);
     rhs->begin(*parent_binding);
@@ -71,14 +71,15 @@ void Join1Var::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset probe to iterate with 0 partition
         probe->reset();
     }
 }
 
-
-bool Join1Var::_next() {
+bool Join1Var::_next()
+{
     while (true) {
         if (enumerating_rows != nullptr) {
             for (uint_fast32_t i = 0; i < build_vars->size(); i++) {
@@ -104,8 +105,8 @@ bool Join1Var::_next() {
     }
 }
 
-
-void Join1Var::_reset() {
+void Join1Var::_reset()
+{
     hash_table.clear();
 
     // Spread reset to children
@@ -134,19 +135,20 @@ void Join1Var::_reset() {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         probe->reset();
     }
 }
 
-
-void Join1Var::assign_nulls() {
+void Join1Var::assign_nulls()
+{
     lhs->assign_nulls();
     rhs->assign_nulls();
 }
 
-
-bool Join1Var::build_0_partition() {
+bool Join1Var::build_0_partition()
+{
     auto data_tuple_size = lhs_vars.size() + 1;
 
     while (lhs->next()) {
@@ -154,7 +156,7 @@ bool Join1Var::build_0_partition() {
 
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: lhs_vars) {
+        for (auto& var : lhs_vars) {
             *current_data_pos = (*parent_binding)[var].id;
             current_data_pos++;
         }
@@ -175,8 +177,10 @@ bool Join1Var::build_0_partition() {
             data_chunk_index = 0;
         }
 
-        auto iterator = hash_table.emplace((*parent_binding)[join_vars[0]],
-                                           Value(data_pointer, data_pointer));
+        auto iterator = hash_table.emplace(
+            (*parent_binding)[join_vars[0]],
+            Value(data_pointer, data_pointer)
+        );
         // If the key already has been inserted, iterator.second = false
         if (!iterator.second) {
             auto casted_tail = reinterpret_cast<uint64_t**>(iterator.first->second.tail);
@@ -191,8 +195,8 @@ bool Join1Var::build_0_partition() {
     return true;
 }
 
-
-void Join1Var::build_hash_table() {
+void Join1Var::build_hash_table()
+{
     auto data_tuple_size = build_vars->size() + 1;
 
     while (build->next()) {
@@ -200,7 +204,7 @@ void Join1Var::build_hash_table() {
 
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: *build_vars) {
+        for (auto& var : *build_vars) {
             *current_data_pos = (*parent_binding)[var].id;
             current_data_pos++;
         }
@@ -220,8 +224,10 @@ void Join1Var::build_hash_table() {
             data_chunk_index = 0;
         }
 
-        auto iterator = hash_table.emplace((*parent_binding)[join_vars[0]],
-                                           Value(data_pointer, data_pointer));
+        auto iterator = hash_table.emplace(
+            (*parent_binding)[join_vars[0]],
+            Value(data_pointer, data_pointer)
+        );
 
         if (!iterator.second) {
             auto casted_tail = reinterpret_cast<uint64_t**>(iterator.first->second.tail);
@@ -231,8 +237,8 @@ void Join1Var::build_hash_table() {
     }
 }
 
-
-void Join1Var::prepare_chunks_for_new_partition() {
+void Join1Var::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -251,21 +257,21 @@ void Join1Var::prepare_chunks_for_new_partition() {
     data_chunks_dir.push_back(data_chunk);
 }
 
-
-bool Join1Var::get_next_partition() {
+bool Join1Var::get_next_partition()
+{
     while (current_partition < partitions.size()) {
         //std::cout << "First: " << partitions[current_partition].first->total_tuples << std::endl;
         //std::cout << "Second: " << partitions[current_partition].second->total_tuples << std::endl;
         // Avoid partitions where build or probe does not has tuples
-        if (partitions[current_partition].first->total_tuples == 0 ||
-            partitions[current_partition].second->total_tuples == 0)
+        if (partitions[current_partition].first->total_tuples == 0
+            || partitions[current_partition].second->total_tuples == 0)
         {
             current_partition++;
             continue;
         }
         // Check the smallest partition to use with build
-        if (partitions[current_partition].first->total_tuples <
-            partitions[current_partition].second->total_tuples)
+        if (partitions[current_partition].first->total_tuples
+            < partitions[current_partition].second->total_tuples)
         {
             build = partitions[current_partition].first.get();
             probe = partitions[current_partition].second.get();
@@ -285,9 +291,4 @@ bool Join1Var::get_next_partition() {
         return true;
     }
     return false;
-}
-
-
-void Join1Var::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
 }

@@ -1,0 +1,6 @@
+Package: MillenniumDB
+Version: 0.1
+Architecture: amd64
+Maintainer: IMFD <mdb.maintainer@imfd.cl>
+Description: A graph database management system.
+ A modular multi-model graph database management system with SPARQL support.

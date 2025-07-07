@@ -1,0 +1,7 @@
+MATCH (x: CaseNode)
+RETURN x.value1, x.value3,
+CASE
+    WHEN x.value1 = 5 THEN x.value3 > 4
+    WHEN x.value1 < 5 THEN x.value3 > 2
+    WHEN x.value1 > 5 THEN x.value3 > 6
+END AS case_value

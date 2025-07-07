@@ -8,7 +8,7 @@
 #include "network/sparql/response_type.h"
 #include "query/executor/query_executor/gql/return_executor.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace MDBServer {
 
@@ -48,10 +48,10 @@ private:
 
     void execute_readonly_query(const std::string& query, std::ostream& os, GQL::ReturnType response_type);
 
-    std::unique_ptr<Op> create_readonly_logical_plan(const std::string& query);
+    std::unique_ptr<GQL::Op> create_readonly_logical_plan(const std::string& query);
 
     std::unique_ptr<QueryExecutor>
-        create_readonly_physical_plan(Op& logical_plan, GQL::ReturnType response_type);
+        create_readonly_physical_plan(GQL::Op& logical_plan, GQL::ReturnType response_type);
 
     void execute_readonly_query_plan(
         QueryExecutor& physical_plan,

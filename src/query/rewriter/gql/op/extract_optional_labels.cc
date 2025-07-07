@@ -8,6 +8,13 @@
 
 using namespace GQL;
 
+void ExtractOptionalLabels::visit(OpQueryStatements& op_statements)
+{
+    for (auto& op : op_statements.ops) {
+        op->accept_visitor(*this);
+    }
+}
+
 void ExtractOptionalLabels::visit(OpReturn& op_return)
 {
     op_return.op->accept_visitor(*this);
@@ -81,10 +88,9 @@ void ExtractOptionalLabels::visit(OpPathUnion& op)
     }
 }
 
-void ExtractOptionalLabels::visit(OpOrderBy& op)
-{
-    op.op->accept_visitor(*this);
-}
+void ExtractOptionalLabels::visit(OpOrderBy&) { }
+void ExtractOptionalLabels::visit(OpLet&) { }
+void ExtractOptionalLabels::visit(OpFilterStatement&) { }
 
 void ExtractOptionalLabels::visit(OpNode&) { }
 void ExtractOptionalLabels::visit(OpEdge&) { }

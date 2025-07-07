@@ -3,9 +3,6 @@
 #include <memory>
 #include <queue>
 
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
-
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
@@ -76,7 +73,7 @@ public:
 
     bool expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 
@@ -101,6 +98,6 @@ public:
     }
 
 private:
-    void expand_first_state(ObjectId start);
+    void expand_first_state();
 };
 }} // namespace Paths::ShortestKSimple

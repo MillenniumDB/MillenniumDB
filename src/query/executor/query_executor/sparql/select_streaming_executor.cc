@@ -1,7 +1,5 @@
 #include "select_streaming_executor.h"
 
-#include "query/executor/binding_iter_printer.h"
-
 using namespace SPARQL;
 
 SelectStreamingExecutor::SelectStreamingExecutor(std::unique_ptr<BindingIter> iter_,
@@ -31,6 +29,5 @@ uint64_t SelectStreamingExecutor::execute(MDBServer::StreamingResponseWriter& re
 
 void SelectStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
     os << std::string(indent, ' ') << "SelectStreamingExecutor()\n";
-    BindingIterPrinter printer(os, print_stats, indent + 2);
-    iter->accept_visitor(printer);
+    iter->print(os, indent + 2, print_stats);
 }

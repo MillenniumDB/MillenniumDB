@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.asin_value, ASIN(x.in_value) AS arcseno

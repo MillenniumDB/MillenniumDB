@@ -1,8 +1,11 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <vector>
 
-#include "graph_models/common/datatypes/tensor.h"
+#include "graph_models/common/datatypes/tensor/tensor.h"
+
+using namespace tensor;
 
 typedef bool TestFunction();
 
@@ -10,7 +13,7 @@ template<typename T>
 bool from_literal_test()
 {
     const std::string input = "[      1, 1.0, 1e-2, 1e-5, -0, -0.0, 0, 0.0, 00.00, 1e30, 3.14159 ]";
-    const std::vector<T> expected = { 1, 1.0, 1e-2, 1e-5, -0, -0.0, 0, 0.0, 00.00, 1e30, 3.14159 };
+    const Tensor<T> expected = { 1, 1.0, 1e-2, 1e-5, -0, -0.0, 0, 0.0, 00.00, 1e30, 3.14159 };
 
     bool error;
     const auto tensor = Tensor<T>::from_literal(input, &error);
@@ -47,7 +50,7 @@ bool multiplication_test()
     assert(!error);
 
     auto lhs_copy = lhs;
-    lhs.multiply(rhs);
+    lhs.inplace_mul_tensor(rhs);
     if (lhs != res) {
         std::cout << "(" << lhs_copy << " * " << rhs << ")\ngot\n" << lhs << "\nwant\n" << res << "\n";
         return false;
@@ -72,7 +75,7 @@ bool division_test()
     assert(!error);
 
     auto lhs_copy = lhs;
-    lhs.divide(rhs);
+    lhs.inplace_div_tensor(rhs);
     if (lhs != res) {
         std::cout << "(" << lhs_copy << " / " << rhs << ")\ngot\n" << lhs << "\nwant\n" << res << "\n";
         return false;
@@ -97,7 +100,7 @@ bool addition_test()
     assert(!error);
 
     auto lhs_copy = lhs;
-    lhs.add(rhs);
+    lhs.inplace_add_tensor(rhs);
     if (lhs != res) {
         std::cout << "(" << lhs_copy << " / " << rhs << ")\ngot\n" << lhs << "\nwant\n" << res << "\n";
         return false;
@@ -122,7 +125,7 @@ bool subtraction_test()
     assert(!error);
 
     auto lhs_copy = lhs;
-    lhs.subtract(rhs);
+    lhs.inplace_sub_tensor(rhs);
     if (lhs != res) {
         std::cout << "(" << lhs_copy << " / " << rhs << ")\ngot\n" << lhs << "\nwant\n" << res << "\n";
         return false;
@@ -140,22 +143,22 @@ bool metrics_test()
     const auto tensor = Tensor<T>::from_literal(tensor_str, &error);
     assert(!error);
 
-    // Self cosine equals 1
+    // Self cosine similarity equals 1
     const auto zero_cosine = tensor.cosine_similarity(tensor);
-    if (zero_cosine != T(1)) {
+    if (zero_cosine != T(1.0)) {
         std::cout << "zero_cosine = " << zero_cosine;
         return false;
     }
-    // Opposite cosine equals -1
+    // Opposite cosine similarity equals -1
     const std::string tensor_opposite_str = "[-1, -1]";
     const auto tensor_opposite = Tensor<T>::from_literal(tensor_opposite_str, &error);
     assert(!error);
     const auto cosine_opposite = tensor.cosine_similarity(tensor_opposite);
-    if (cosine_opposite != T(-1)) {
+    if (cosine_opposite != T(-1.0)) {
         std::cout << "cosine_opposite = " << cosine_opposite;
         return false;
     }
-    // Orthogonal cosine equals 0
+    // Orthogonal cosine similarity equals 0
     const std::string tensor_orthogonal_str = "[-1, 1]";
     const auto tensor_orthogonal = Tensor<T>::from_literal(tensor_orthogonal_str, &error);
     assert(!error);
@@ -172,6 +175,10 @@ bool metrics_test()
     }
     const auto zero_manhattan = tensor.manhattan_distance(tensor);
     if (zero_manhattan != T(0)) {
+        return false;
+    }
+    const auto zero_cosine_distance = tensor.cosine_distance(tensor);
+    if (zero_cosine_distance != T(0)) {
         return false;
     }
 

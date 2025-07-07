@@ -24,6 +24,9 @@ public:
     // Used to obtain the table pointer after next() returns true
     uint64_t get_table_pointer() const;
 
+    // Used to obtain the score after next() returns true
+    uint64_t get_score() const;
+
 private:
     const TmpFileId first_file_id;
     const TmpFileId second_file_id;
@@ -42,6 +45,8 @@ private:
 
     // Set when next() return true, can be obtained using get_table_pointer
     uint64_t table_pointer;
+
+    uint64_t score;
 
     std::unique_ptr<TupleCollectionPage> get_run(PPage& run_page);
 

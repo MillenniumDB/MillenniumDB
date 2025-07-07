@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
 class ExprCot : public Expr {

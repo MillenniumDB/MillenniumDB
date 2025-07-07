@@ -1,10 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/object_id.h"
-#include "query/id.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 #include "query/rewriter/gql/op/var_type.h"
 
 namespace GQL {

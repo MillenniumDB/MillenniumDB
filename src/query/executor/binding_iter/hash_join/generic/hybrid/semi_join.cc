@@ -12,18 +12,18 @@ using namespace HashJoin::Generic::Hybrid;
 SemiJoin::SemiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    original_lhs     (std::move(_lhs)),
-    original_rhs     (std::move(_rhs)),
-    join_vars        (std::move(_join_vars)),
-    lhs_vars         (std::move(_lhs_vars)),
-    rhs_vars         (std::move(_rhs_vars)),
-    N                (join_vars.size()),
-    pk_start         (new uint64_t[N]),
-    probe_key        (Key(pk_start, N))
+    original_lhs(std::move(_lhs)),
+    original_rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     for (auto var : join_vars) {
         all_lhs_vars.push_back(var);
@@ -33,17 +33,17 @@ SemiJoin::SemiJoin(
     }
 }
 
-
-SemiJoin::~SemiJoin() {
+SemiJoin::~SemiJoin()
+{
     // Avoid mem leaks
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
+    delete[] (pk_start);
 }
 
-
-void SemiJoin::_begin(Binding& _parent_binding) {
+void SemiJoin::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
 
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -70,18 +70,18 @@ void SemiJoin::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             join_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset rhs to iterate with 0 partition
         rhs->reset();
     }
-    for (auto& var: rhs_vars) {
+    for (auto& var : rhs_vars) {
         parent_binding->add(var, ObjectId::get_null());
-
     }
 }
 
-
-bool SemiJoin::_next() {
+bool SemiJoin::_next()
+{
     while (true) {
         if (lhs->next()) {
             // If enumerating rows is nullptr ask for the next probe relation row
@@ -104,7 +104,6 @@ bool SemiJoin::_next() {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
                 return true;
-
             }
 
         } else if (get_next_partition()) {
@@ -117,8 +116,8 @@ bool SemiJoin::_next() {
     }
 }
 
-
-void SemiJoin::_reset() {
+void SemiJoin::_reset()
+{
     hash_table.clear();
 
     // Spread reset to children
@@ -144,13 +143,14 @@ void SemiJoin::_reset() {
             all_lhs_vars,
             join_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         rhs->reset();
     }
 }
 
-
-void SemiJoin::assign_nulls() {
+void SemiJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -164,14 +164,8 @@ void SemiJoin::assign_nulls() {
     original_rhs->assign_nulls();
 }
 
-
-void SemiJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-bool SemiJoin::build_0_partition() {
-
+bool SemiJoin::build_0_partition()
+{
     while (original_rhs->next()) {
         auto start_key_index = key_chunk_index * N;
 
@@ -195,14 +189,13 @@ bool SemiJoin::build_0_partition() {
             if (hash_table.size() > MAX_HASH_TABLE_SIZE) {
                 return false;
             }
-
         }
     }
     return true;
 }
 
-
-void SemiJoin::build_hash_table() {
+void SemiJoin::build_hash_table()
+{
     while (rhs->next()) {
         auto start_key_index = key_chunk_index * N;
 
@@ -226,8 +219,8 @@ void SemiJoin::build_hash_table() {
     }
 }
 
-
-void SemiJoin::prepare_chunks_for_new_partition() {
+void SemiJoin::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -248,10 +241,9 @@ void SemiJoin::prepare_chunks_for_new_partition() {
     key_chunks_dir.push_back(key_chunk);
 }
 
-
-bool SemiJoin::get_next_partition() {
+bool SemiJoin::get_next_partition()
+{
     while (current_partition < partitions.size()) {
-
         lhs = partitions[current_partition].first.get();
         rhs = partitions[current_partition].second.get();
 

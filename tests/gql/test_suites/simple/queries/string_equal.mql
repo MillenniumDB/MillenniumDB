@@ -1,0 +1,2 @@
+MATCH (p1:Person {name: "0"})
+RETURN (p1.name = "0") AS result

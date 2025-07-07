@@ -1,0 +1,2 @@
+MATCH (?x)<=[SHORTEST 5 WALKS ?p :follows*/:works?]=(Joe)
+RETURN ?p

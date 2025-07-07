@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Usage: cancel_query <worker_id> <token>
+
+set -e; set -u; set -o pipefail
+
+[[ ! ${2-} ]] && echo "Missing Params. Usage: cancel_query <worker_id> <token>" && exit 1
+
+
+curl -d "$1:$2" -X POST http://localhost:1234/cancel
+echo ""

@@ -1,0 +1,2 @@
+MATCH (p1:Person {name: "1"})
+RETURN p1.name || 24 AS result

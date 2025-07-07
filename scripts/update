@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# Usage: update <query_file>
-set -e; set -u; set -o pipefail
-
-[[ ! ${1-} ]] && echo "Missing query file" && exit 1
-
-curl -H "Content-Type:application/sparql-update" --data-binary "@$1" -X POST http://localhost:1234/update
-echo ""

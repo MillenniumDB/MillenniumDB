@@ -1,0 +1,17 @@
+{
+    "recommendations": [
+        "mike-lischke.vscode-antlr4",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "twxs.cmake",
+        "streetsidesoftware.code-spell-checker",
+        "vadimcn.vscode-lldb",
+        "ms-python.isort",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-python.black-formatter",
+        "stardog-union.stardog-rdf-grammars",
+        "wayou.vscode-todo-highlight",
+        "shardulm94.trailing-spaces",
+    ]
+}

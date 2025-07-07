@@ -10,9 +10,7 @@
 #include "import/exceptions.h"
 #include "import/import_helper.h"
 #include "import/stats_processor.h"
-#include "macros/aligned_alloc.h"
 #include "misc/fatal_error.h"
-#include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "third_party/serd/serd_internal.h"
 
 namespace Import { namespace Rdf {
@@ -79,7 +77,7 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
         return Conversions::pack_string_datatype_inline(datatype_id, value);
     } else {
         return ObjectId(
-            get_or_create_external_id(value, size) | ObjectId::MASK_STRING_DATATYPE
+            external_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STRING_DATATYPE
             | (datatype_id << Conversions::TMP_SHIFT)
         );
     }
@@ -194,22 +192,10 @@ void OnDiskImport::start_import(
     auto start = std::chrono::system_clock::now();
     auto import_start = start;
 
-    pending_triples = std::make_unique<DiskVector<3>>(db_folder + "/tmp_pending_triples0");
-    std::string pending_strings_filename = db_folder + "/tmp_pending_strings0";
-    pending_strings = get_fstream(pending_strings_filename);
+    pending_triples = std::make_unique<DiskVector<3>>(db_folder + "/" + PENDING_TRIPLES_FILENAME_PREFIX);
 
-    { // Initial memory allocation
-        external_strings = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size));
-
-        if (external_strings == nullptr) {
-            FATAL_ERROR("Could not allocate buffer, try using a smaller buffer size");
-        }
-
-        Import::ExternalString::strings = external_strings;
-        external_strings_capacity = buffer_size;
-        external_strings_end = 0;
-        assert(external_strings_capacity > StringManager::MAX_STRING_SIZE);
-    }
+    // Initialize external helper
+    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     { // Process IRI prefixes
 
@@ -360,138 +346,67 @@ exit_while:
 
     print_duration("Parsing", start);
 
-    std::fstream strings_file;
-    strings_file.open(db_folder + "/strings.dat", std::ios::out | std::ios::binary);
-    strings_file.write(external_strings, external_strings_end);
-    // metadata of strings_file (at pos 0) will be updated later
-    previous_external_strings_offset += external_strings_end;
+    // initial flush
+    external_helper->flush_to_disk();
 
-    // Big enough buffer to store any string
-    char* pending_string_buffer = reinterpret_cast<char*>(
-        MDB_ALIGNED_ALLOC(StringManager::MAX_STRING_SIZE)
-    );
     int i = 0; // used for tmp filenames
     pending_triples->finish_appends();
 
     while (pending_triples->get_total_tuples() > 0) {
         std::cout << "pending triples: " << pending_triples->get_total_tuples() << std::endl;
         auto old_pending_triples = std::move(pending_triples);
-        auto old_pending_strings = std::move(pending_strings);
-
-        auto old_pending_strings_filename = db_folder + "/tmp_pending_strings" + std::to_string(i);
-        i++;
-        pending_strings_filename = db_folder + "/tmp_pending_strings" + std::to_string(i);
         pending_triples = std::make_unique<DiskVector<3>>(
-            db_folder + "/tmp_pending_triples" + std::to_string(i)
+            db_folder + "/" + PENDING_TRIPLES_FILENAME_PREFIX + std::to_string(i)
         );
-        pending_strings = get_fstream(pending_strings_filename);
-        external_strings_set.clear();
+        ++i;
 
-        // set to align properly the old block of strings with the new block that will be created
-        external_strings_align_offset = external_strings_end % StringManager::BLOCK_SIZE;
-        external_strings_end = external_strings_align_offset;
+        // advance pending variables for current iteration
+        external_helper->advance_pending();
+        external_helper->clear_sets();
 
         old_pending_triples->begin_tuple_iter();
         while (old_pending_triples->has_next_tuple()) {
-            auto& pending_triple = old_pending_triples->next_tuple();
-            const auto original_data_mask = ObjectId::SUB_TYPE_MASK | ObjectId::MASK_LITERAL_TAG;
-            if ((pending_triple[0] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-                uint64_t mask = (pending_triple[0] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[0] & ObjectId::MASK_EXTERNAL_ID);
-                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
-                subject_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
-            } else {
-                subject_id.id = pending_triple[0];
-            }
-            if ((pending_triple[1] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-                uint64_t mask = (pending_triple[1] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[1] & ObjectId::MASK_EXTERNAL_ID);
-                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
-                predicate_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
-            } else {
-                predicate_id.id = pending_triple[1];
-            }
-            if ((pending_triple[2] & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
-                uint64_t mask = (pending_triple[2] & original_data_mask);
-                old_pending_strings->seekg(pending_triple[2] & ObjectId::MASK_EXTERNAL_ID);
-                auto str_len = read_str(*old_pending_strings, pending_string_buffer);
-                object_id.id = get_or_create_external_id(pending_string_buffer, str_len) | mask;
-            } else {
-                object_id.id = pending_triple[2];
-            }
+            const auto& pending_triple = old_pending_triples->next_tuple();
+
+            // resolve each id
+            subject_id.id = external_helper->resolve_id(pending_triple[0]);
+            predicate_id.id = external_helper->resolve_id(pending_triple[1]);
+            object_id.id = external_helper->resolve_id(pending_triple[2]);
+
             save_triple();
         }
 
-        // write new strings, skipping the first `external_strings_align_offset` bytes
-        strings_file.write(
-            external_strings + external_strings_align_offset,
-            external_strings_end - external_strings_align_offset
-        );
-        previous_external_strings_offset += external_strings_end - external_strings_align_offset;
+        // write out new data
+        external_helper->flush_to_disk();
+        // close and delete the old pending files
+        external_helper->clean_up_old();
 
         // close and delete old_pending_triples file
         pending_triples->finish_appends();
         old_pending_triples->skip_indexing(); // will close and remove file
-
-        // close and delete old_pending_strings
-        old_pending_strings->close();
-        std::remove(old_pending_strings_filename.c_str());
     }
 
-    // delete pending triples and pending strings
+    // delete pending triples
     pending_triples->skip_indexing(); // will close and remove file
-    pending_strings->close();
-    std::remove(pending_strings_filename.c_str());
 
-    uint64_t last_str_pos = strings_file.tellp();
+    // delete all unnecessary files and free-up memory
+    external_helper->clean_up();
 
-    print_duration("Processing strings", start);
-
-    { // Destroy external_ids_map replacing it with an empty map
-        robin_hood::unordered_set<Import::ExternalString> tmp;
-        external_strings_set.swap(tmp);
-    }
+    print_duration("Processing strings and tensors", start);
 
     { // Destroy blank_ids_map replacing it with an empty map
-        robin_hood::unordered_map<std::string, uint64_t> tmp;
+        boost::unordered_flat_map<std::string, uint64_t> tmp;
         blank_ids_map.swap(tmp);
     }
 
-    { // Create StringsHash
-        // we reuse the allocated memory for external strings as a buffer
-        StringsHashBulkOnDiskImport strings_hash(
-            db_folder + "/str_hash",
-            external_strings,
-            external_strings_capacity
-        );
-        strings_file.close();
-        strings_file.open(db_folder + "/strings.dat", std::ios::in | std::ios::binary);
-        strings_file.seekg(0, strings_file.beg);
-        uint64_t current_pos = 0;
+    // build disk hashes
+    external_helper->build_disk_hash();
 
-        // read all strings one by one and add them to the StringsHash
-        while (current_pos < last_str_pos) {
-            size_t remaining_in_block = StringManager::BLOCK_SIZE
-                                      - (current_pos % StringManager::BLOCK_SIZE);
-
-            if (remaining_in_block < StringManager::MIN_PAGE_REMAINING_BYTES) {
-                current_pos += remaining_in_block;
-                strings_file.read(pending_string_buffer, remaining_in_block);
-            }
-
-            auto str_len = read_str(strings_file, pending_string_buffer);
-            strings_hash.create_id(pending_string_buffer, current_pos, str_len);
-            current_pos = strings_file.tellg();
-        }
-        strings_file.close();
-        MDB_ALIGNED_FREE(pending_string_buffer);
-    }
-
-    print_duration("Write strings and strings hashes", start);
+    print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_strings;
-    buffer_size = external_strings_capacity;
+    char* const buffer = external_helper->buffer;
+    const auto buffer_size = external_helper->buffer_size;
 
     // Save lasts blocks to disk
     triples.finish_appends();
@@ -509,8 +424,8 @@ exit_while:
     { // B+tree creation for triple
         size_t COL_SUBJ = 0, COL_PRED = 1, COL_OBJ = 2;
 
-        Import::PredicateStat pred_stat;
-        Import::NoStat<3> no_stat;
+        PredicateStat pred_stat;
+        NoStat<3> no_stat;
 
         triples.create_bpt(db_folder + "/spo", { COL_SUBJ, COL_PRED, COL_OBJ }, no_stat);
 
@@ -536,39 +451,39 @@ exit_while:
     { // B+tree creation SUBJECT=PREDICATE OBJECT
         size_t COL_SUBJ_PRED = 0, COL_OBJ = 1;
 
-        Import::AllStat<2> all_stat;
+        AllStat<2> all_stat;
         equal_sp.create_bpt(db_folder + "/equal_sp", { COL_SUBJ_PRED, COL_OBJ }, all_stat);
         catalog.set_equal_sp_count(all_stat.all);
 
-        Import::NoStat<2> no_stat_inverted;
+        NoStat<2> no_stat_inverted;
         equal_sp.create_bpt(db_folder + "/equal_sp_inverted", { COL_OBJ, COL_SUBJ_PRED }, no_stat_inverted);
     }
 
     { // B+tree creation SUBJECT=OBJECT PREDICATE
         size_t COL_SUBJ_OBJ = 0, COL_PRED = 1;
 
-        Import::AllStat<2> all_stat;
+        AllStat<2> all_stat;
         equal_so.create_bpt(db_folder + "/equal_so", { COL_SUBJ_OBJ, COL_PRED }, all_stat);
         catalog.set_equal_so_count(all_stat.all);
-        Import::NoStat<2> no_stat_inverted;
+        NoStat<2> no_stat_inverted;
         equal_so.create_bpt(db_folder + "/equal_so_inverted", { COL_PRED, COL_SUBJ_OBJ }, no_stat_inverted);
     }
 
     { // B+tree creation PREDICATE=OBJECT SUBJECT
         size_t COL_PRED_OBJ = 0, COL_SUBJ = 1;
 
-        Import::AllStat<2> all_stat;
+        AllStat<2> all_stat;
         equal_po.create_bpt(db_folder + "/equal_po", { COL_PRED_OBJ, COL_SUBJ }, all_stat);
         catalog.set_equal_po_count(all_stat.all);
 
-        Import::NoStat<2> no_stat_inverted;
+        NoStat<2> no_stat_inverted;
         equal_po.create_bpt(db_folder + "/equal_po_inverted", { COL_SUBJ, COL_PRED_OBJ }, no_stat_inverted);
     }
 
     { // B+tree creation SUBJECT=PREDICATE=OBJECT
         size_t COL_SUBJ_PRED_OBJ = 0;
 
-        Import::AllStat<1> all_stat;
+        AllStat<1> all_stat;
         equal_spo.create_bpt(db_folder + "/equal_spo", { COL_SUBJ_PRED_OBJ }, all_stat);
         catalog.set_equal_spo_count(all_stat.all);
     }
@@ -579,7 +494,6 @@ exit_while:
     equal_so.finish_indexing();
     equal_po.finish_indexing();
     equal_spo.finish_indexing();
-    MDB_ALIGNED_FREE(external_strings);
 
     print_duration("Write special cases B+tree index", start);
 

@@ -1,0 +1,2 @@
+MATCH (a:Account {number: 0024})
+RETURN a.number / 2 AS result

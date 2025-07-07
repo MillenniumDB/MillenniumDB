@@ -1,0 +1,2 @@
+MATCH (x: NormNode)
+RETURN x.word, NORMALIZE(x.word, NFKC) AS normalized_word

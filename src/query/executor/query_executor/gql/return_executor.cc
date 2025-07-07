@@ -81,6 +81,5 @@ void ReturnExecutor::print(std::ostream& os, std::ostream& /* escaped_os */, Obj
 
 void ReturnExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
 {
-    BindingIterPrinter printer(os, print_stats, indent);
-    iter->accept_visitor(printer);
+    iter->print(os, indent, print_stats);
 }

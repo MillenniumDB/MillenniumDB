@@ -1,0 +1,5 @@
+LET x1 = LOCAL_TIME("15:10:17")
+LET x2 = LOCAL_TIME()
+
+LET future = LOCAL_TIME("23:59:59")
+RETURN x1, future, x1 < future, x2 < future

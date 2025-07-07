@@ -4,9 +4,9 @@
 #include <vector>
 #include <variant>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/atom/expr_var.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 
 namespace SPARQL {

@@ -80,6 +80,7 @@ public:
     void visit(BindingExprUnaryPlus&)      override;
     void visit(BindingExprYear&)           override;
 
+    void visit(BindingExprCosineDistance&)    override;
     void visit(BindingExprCosineSimilarity&)  override;
     void visit(BindingExprDot&)               override;
     void visit(BindingExprEuclideanDistance&) override;

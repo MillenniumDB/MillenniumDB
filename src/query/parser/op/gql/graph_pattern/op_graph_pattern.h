@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "query/parser/op/gql/graph_pattern/path_mode.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
@@ -47,42 +45,23 @@ public:
         return op->get_all_vars();
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        std::set<VarId> res = op->get_safe_vars();
-        if (path_var_id.has_value()) {
-            res.insert(path_var_id.value());
-        }
-        return res;
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        auto res = op->get_var_types();
+        auto result = op->get_var_types();
 
         if (!path_var_id.has_value()) {
-            return res;
+            return result;
         }
 
-        if (res[path_var_id.value()] && *res[path_var_id.value()] != VarType::Path) {
+        if (result.count(*path_var_id) && result[*path_var_id].type != VarType::Path) {
             throw QuerySemanticException(
                 "Variable \"" + get_query_ctx().get_var_name(path_var_id.value())
                 + "\" has more than one type."
             );
         }
 
-        res[path_var_id.value()] = std::make_unique<VarType>(VarType::Path);
-        return res;
+        result[*path_var_id] = VarType(VarType::Path);
+        return result;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

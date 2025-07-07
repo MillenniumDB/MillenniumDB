@@ -8,7 +8,8 @@
 using namespace std;
 using namespace Paths::AllShortest;
 
-void BFSCheck::_begin(Binding& _parent_binding) {
+void BFSCheck::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
 
     // setted at object initialization:
@@ -26,8 +27,8 @@ void BFSCheck::_begin(Binding& _parent_binding) {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-void BFSCheck::_reset() {
+void BFSCheck::_reset()
+{
     // Empty BFS structures
     queue<const SearchState*> empty;
     open.swap(empty);
@@ -48,8 +49,8 @@ void BFSCheck::_reset() {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-bool BFSCheck::_next() {
+bool BFSCheck::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -75,12 +76,11 @@ bool BFSCheck::_next() {
 
     // Check if we have a pending result to enumerate
     if (solution_found != nullptr) {
-enumeration:
         // Handle timeout
         if (MDB_unlikely(get_query_ctx().thread_info.interruption_requested)) {
             throw InterruptedException();
         }
-        if (solution_found->path_iter.next()) {
+        if (solution_found->next()) {
             auto path_id = path_manager.set_path(solution_found, path_var);
             parent_binding->add(path_var, path_id);
             return true;
@@ -93,8 +93,10 @@ enumeration:
         auto current_state = open.front();
 
         if (expand_neighbors(*current_state)) {
-            solution_found->path_iter.start_enumeration();
-            goto enumeration;
+            solution_found->start_enumeration();
+            auto path_id = path_manager.set_path(solution_found, path_var);
+            parent_binding->add(path_var, path_id);
+            return true;
         } else {
             // Pop and visit next state in the queue
             open.pop();
@@ -103,8 +105,8 @@ enumeration:
     return false;
 }
 
-
-bool BFSCheck::expand_neighbors(const SearchState& current_state) {
+bool BFSCheck::expand_neighbors(const SearchState& current_state)
+{
     // if iter->at_end() this is the first time that current_state is explored and we need to set the iter
     if (iter->at_end()) {
         // stop if automaton state has not outgoing transitions
@@ -122,21 +124,27 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state) {
 
         // Iterate over records until a final state is reached with a shortest path
         while (iter->next()) {
-            SearchState next_state(ObjectId(iter->get_reached_node()),
-                                   transition.to,
-                                   current_state.distance + 1);
+            SearchState next_state(
+                ObjectId(iter->get_reached_node()),
+                transition.to,
+                current_state.distance + 1
+            );
 
             // Check if next state has already been visited
             auto visited_search = visited.find(next_state);
             if (visited_search != visited.end()) {
                 // Consider next_state only if it has an optimal distance
                 if (visited_search->distance == next_state.distance) {
-                    auto new_iter_transition = iter_arena.add(&current_state, transition.inverse, transition.type_id);
-                    visited_search->path_iter.add(new_iter_transition);
+                    auto new_iter_transition = iter_arena.add(
+                        &current_state,
+                        transition.inverse,
+                        transition.type_id
+                    );
+                    visited_search->add_transition(new_iter_transition);
 
                     // Check if path is solution
-                    if (next_state.node_id == end_object_id &&
-                        automaton.is_final_state[next_state.automaton_state])
+                    if (next_state.node_id == end_object_id
+                        && automaton.is_final_state[next_state.automaton_state])
                     {
                         if (optimal_distance == next_state.distance) {
                             solution_found = visited_search.operator->();
@@ -145,22 +153,21 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state) {
                     }
                 }
             } else {
-                auto new_iter_transition = iter_arena.add(
-                    &current_state,
-                    transition.inverse,
-                    transition.type_id);
+                auto new_iter_transition = iter_arena
+                                               .add(&current_state, transition.inverse, transition.type_id);
                 // Add state to visited and open and keep going unless it's an optimal final state
-                auto reached_state = visited.emplace(
-                    ObjectId(iter->get_reached_node()),
-                    transition.to,
-                    current_state.distance + 1,
-                    new_iter_transition).first;
+                auto reached_state = visited
+                                         .emplace(
+                                             ObjectId(iter->get_reached_node()),
+                                             transition.to,
+                                             current_state.distance + 1,
+                                             new_iter_transition
+                                         )
+                                         .first;
                 open.push(reached_state.operator->());
 
                 // Check if path is solution
-                if (reached_state->node_id == end_object_id
-                    && automaton.is_final_state[transition.to])
-                {
+                if (reached_state->node_id == end_object_id && automaton.is_final_state[transition.to]) {
                     if (optimal_distance == UINT64_MAX) {
                         optimal_distance = next_state.distance;
                         solution_found = reached_state.operator->();
@@ -182,7 +189,15 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state) {
     return false;
 }
 
-
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllShortest::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

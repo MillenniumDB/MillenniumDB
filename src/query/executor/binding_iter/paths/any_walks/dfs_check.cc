@@ -1,14 +1,12 @@
 #include "dfs_check.h"
 
-#include <cassert>
-
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::Any;
 
-void DFSCheck::_begin(Binding& _parent_binding) {
+void DFSCheck::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
@@ -21,8 +19,8 @@ void DFSCheck::_begin(Binding& _parent_binding) {
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-bool DFSCheck::_next() {
+bool DFSCheck::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -37,7 +35,12 @@ bool DFSCheck::_next() {
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state] && current_state.node_id == end_object_id) {
             auto reached_state = Paths::Any::SearchState(
-                automaton.start_state, open.top().node_id, nullptr, true, ObjectId::get_null());
+                automaton.start_state,
+                open.top().node_id,
+                nullptr,
+                true,
+                ObjectId::get_null()
+            );
             auto path_id = path_manager.set_path(visited.insert(reached_state).first.operator->(), path_var);
             parent_binding->add(path_var, path_id);
             stack<DFSSearchState> empty;
@@ -57,7 +60,9 @@ bool DFSCheck::_next() {
             open.emplace(reached_state->node_id, reached_state->automaton_state);
 
             // Check if new path is solution
-            if (automaton.is_final_state[reached_state->automaton_state] && reached_state->node_id == end_object_id) {
+            if (automaton.is_final_state[reached_state->automaton_state]
+                && reached_state->node_id == end_object_id)
+            {
                 auto path_id = path_manager.set_path(reached_state.operator->(), path_var);
                 parent_binding->add(path_var, path_id);
                 stack<DFSSearchState> empty;
@@ -72,11 +77,10 @@ bool DFSCheck::_next() {
     return false;
 }
 
-
-robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
-  DFSCheck::expand_neighbors(DFSSearchState& state)
+boost::unordered_node_set<SearchState, std::hash<SearchState>>::iterator
+    DFSCheck::expand_neighbors(DFSSearchState& state)
 {
-    if (state.iter->at_end()) {  // Check if this is the first time that current_state is explored
+    if (state.iter->at_end()) { // Check if this is the first time that current_state is explored
         state.current_transition = 0;
         // Check if automaton state has transitions
         if (automaton.from_to_connections[state.state].size() == 0) {
@@ -92,12 +96,20 @@ robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
 
         // Iterate over records and return paths
         while (state.iter->next()) {
-            auto current_state = Paths::Any::SearchState(state.state, state.node_id, nullptr, true, ObjectId::get_null());
-            auto next_state = Paths::Any::SearchState(transition.to,
-                                                              ObjectId(state.iter->get_reached_node()),
-                                                              visited.find(current_state).operator->(),
-                                                              transition.inverse,
-                                                              transition.type_id);
+            auto current_state = Paths::Any::SearchState(
+                state.state,
+                state.node_id,
+                nullptr,
+                true,
+                ObjectId::get_null()
+            );
+            auto next_state = Paths::Any::SearchState(
+                transition.to,
+                ObjectId(state.iter->get_reached_node()),
+                visited.find(current_state).operator->(),
+                transition.inverse,
+                transition.type_id
+            );
 
             // Check if child state is not already visited
             auto inserted_state = visited.insert(next_state);
@@ -117,8 +129,8 @@ robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
     return visited.end();
 }
 
-
-void DFSCheck::_reset() {
+void DFSCheck::_reset()
+{
     // Empty open and visited
     stack<DFSSearchState> empty;
     open.swap(empty);
@@ -131,7 +143,15 @@ void DFSCheck::_reset() {
     visited.emplace(automaton.start_state, start_object_id, nullptr, true, ObjectId::get_null());
 }
 
-
-void DFSCheck::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void DFSCheck::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::Any::DFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

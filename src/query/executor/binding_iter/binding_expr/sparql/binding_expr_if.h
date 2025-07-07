@@ -12,14 +12,18 @@ public:
     std::unique_ptr<BindingExpr> expr_then;
     std::unique_ptr<BindingExpr> expr_else;
 
-    BindingExprIf(std::unique_ptr<BindingExpr> expr_cond,
-                  std::unique_ptr<BindingExpr> expr_then,
-                  std::unique_ptr<BindingExpr> expr_else) :
+    BindingExprIf(
+        std::unique_ptr<BindingExpr> expr_cond,
+        std::unique_ptr<BindingExpr> expr_then,
+        std::unique_ptr<BindingExpr> expr_else
+    ) :
         expr_cond(std::move(expr_cond)),
         expr_then(std::move(expr_then)),
-        expr_else(std::move(expr_else)) { }
+        expr_else(std::move(expr_else))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto cond_oid = expr_cond->eval(binding);
 
         ObjectId cond_bool = Conversions::to_boolean(cond_oid);
@@ -33,7 +37,8 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

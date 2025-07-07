@@ -1,12 +1,10 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <vector>
 
-#include "misc/set_operations.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 class OpUpdate : public Op {
@@ -42,36 +40,6 @@ public:
                 res.insert(child_var);
             }
         }
-        return res;
-    }
-
-    std::set<VarId> get_scope_vars() const override {
-        std::set<VarId> res;
-        // for (auto& child : updates) {
-        //     for (auto& child_var : child->get_scope_vars()) {
-        //         res.insert(child_var);
-        //     }
-        // }
-        return res;
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        std::set<VarId> res;
-        // for (auto& child : updates) {
-        //     for (auto& child_var : child->get_safe_vars()) {
-        //         res.insert(child_var);
-        //     }
-        // }
-        return res;
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
-        std::set<VarId> res;
-        // for (auto& child : updates) {
-        //     for (auto& child_var : child->get_fixable_vars()) {
-        //         res.insert(child_var);
-        //     }
-        // }
         return res;
     }
 

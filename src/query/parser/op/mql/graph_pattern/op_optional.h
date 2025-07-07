@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -41,24 +41,6 @@ public:
             }
         }
         return res;
-    }
-
-    std::set<VarId> get_scope_vars() const override {
-        auto res = op->get_scope_vars();
-        for (auto& child : optionals) {
-            for (auto& child_var : child->get_scope_vars()) {
-                res.insert(child_var);
-            }
-        }
-        return res;
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        return op->get_safe_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
-        return op->get_fixable_vars();
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {

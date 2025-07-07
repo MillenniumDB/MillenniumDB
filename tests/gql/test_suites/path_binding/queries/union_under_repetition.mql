@@ -1,0 +1,2 @@
+MATCH ({_id:"N0"})((a)->(b)|(c)~(d)){1,3}
+RETURN a,b,c,d

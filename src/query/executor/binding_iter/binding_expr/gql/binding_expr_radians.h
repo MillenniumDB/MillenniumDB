@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <cmath>
 #include <memory>
 
 #include "graph_models/gql/conversions.h"
@@ -21,33 +21,20 @@ public:
 
         auto expr_subtype = GQL_OID::get_generic_sub_type(expr_oid);
 
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
-
-        if (expr_generic_type == GQL_OID::GenericType::NUMERIC) {
         switch (expr_subtype) {
-        case GQL_OID::GenericSubType::INTEGER: {
-            auto expr = GQL::Conversions::to_integer(expr_oid);
-            return GQL::Conversions::pack_float(expr*(3.141592653589793/180));
-        }
-        case GQL_OID::GenericSubType::DECIMAL: {
-            auto expr = GQL::Conversions::to_decimal(expr_oid);
-            return GQL::Conversions::pack_decimal(expr*(3.141592653589793/180));
-        }
+        case GQL_OID::GenericSubType::INTEGER:
+        case GQL_OID::GenericSubType::DECIMAL:
         case GQL_OID::GenericSubType::FLOAT: {
             auto expr = GQL::Conversions::to_float(expr_oid);
-            return GQL::Conversions::pack_float(expr*(3.141592653589793/180));
+            return GQL::Conversions::pack_float(expr * (M_PI / 180));
         }
         case GQL_OID::GenericSubType::DOUBLE: {
             auto expr = GQL::Conversions::to_double(expr_oid);
-            return GQL::Conversions::pack_double(expr*(3.141592653589793/180));
+            return GQL::Conversions::pack_double(expr * (M_PI / 180));
         }
         default: {
-            assert(false);
             return ObjectId::get_null();
         }
-        }
-        } else {
-            return ObjectId::get_null();
         }
     }
 

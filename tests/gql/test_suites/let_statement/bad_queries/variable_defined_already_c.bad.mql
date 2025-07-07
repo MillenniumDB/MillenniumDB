@@ -1,0 +1,3 @@
+LET y = "y"
+MATCH (y)
+RETURN y

@@ -1,0 +1,2 @@
+MATCH (x)<-[e:people]->(y)
+RETURN x, e, y

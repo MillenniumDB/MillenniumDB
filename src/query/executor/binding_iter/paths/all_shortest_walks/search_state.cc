@@ -4,67 +4,69 @@
 
 using namespace Paths::AllShortest;
 
-
-void PathIter::add(IterTransition* iter_transition) {
+void SearchState::add_transition(TransitionLinkedList* iter_transition) const
+{
     assert(begin != nullptr);
     end->next = iter_transition;
     end = iter_transition;
 }
 
-
-bool PathIter::next() {
+bool SearchState::next() const
+{
     if (begin == nullptr) {
         return false;
     }
-    if (current == nullptr) {
+    if (current_transition == nullptr) {
         // iteration is initializing
-        current = begin;
-        current->previous->path_iter.next(); // initialize recursively
+        current_transition = begin;
+        current_transition->previous->next(); // initialize recursively
         return true;
     } else {
-        if (current->previous->path_iter.next()) {
+        if (current_transition->previous->next()) {
             return true;
         } else {
-            if (current->next == nullptr) {
-                current = nullptr;
+            if (current_transition->next == nullptr) {
+                current_transition = nullptr;
                 return false;
             } else {
-                current = current->next;
-                current->previous->path_iter.next();
+                current_transition = current_transition->next;
+                current_transition->previous->next();
                 return true;
             }
         }
     }
 }
 
-
-void PathIter::start_enumeration() {
+void SearchState::start_enumeration() const
+{
     assert(begin != nullptr);
-    if (begin->previous->path_iter.begin != nullptr) {
-        current = end;
-    }
+    assert(end != nullptr);
+    current_transition = end;
+
+    // prepares the first result
+    current_transition->previous->next();
 }
 
-
-void SearchState::print(std::ostream& os,
-                        std::function<void(std::ostream& os, ObjectId)> print_node,
-                        std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
-                        bool begin_at_left) const
+void SearchState::print(
+    std::ostream& os,
+    std::function<void(std::ostream& os, ObjectId)> print_node,
+    std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+    bool begin_at_left
+) const
 {
     if (begin_at_left) {
         // the path need to be reconstructed in the reverse direction (last seen goes first)
         std::vector<ObjectId> nodes;
         std::vector<ObjectId> edges;
-        std::vector<bool>     inverse_directions;
+        std::vector<bool> inverse_directions;
 
         auto current_state = this;
-        for (;
-             current_state->path_iter.current != nullptr;
-             current_state = current_state->path_iter.current->previous)
+        for (; current_state->current_transition != nullptr;
+             current_state = current_state->current_transition->previous)
         {
             nodes.push_back(current_state->node_id);
-            edges.push_back(current_state->path_iter.current->type_id);
-            inverse_directions.push_back(current_state->path_iter.current->inverse_direction);
+            edges.push_back(current_state->current_transition->type_id);
+            inverse_directions.push_back(current_state->current_transition->inverse_direction);
         }
         nodes.push_back(current_state->node_id);
 
@@ -75,14 +77,16 @@ void SearchState::print(std::ostream& os,
         }
     } else {
         auto current_state = this;
-        print_node(os, current_state->node_id);
-
-        while (current_state->path_iter.current != nullptr) {
-            print_edge(os,
-                       current_state->path_iter.current->type_id,
-                       !current_state->path_iter.current->inverse_direction);
-            current_state = current_state->path_iter.current->previous;
+        for (; current_state->current_transition != nullptr;
+             current_state = current_state->current_transition->previous)
+        {
             print_node(os, current_state->node_id);
+            print_edge(
+                os,
+                current_state->current_transition->type_id,
+                !current_state->current_transition->inverse_direction
+            );
         }
+        print_node(os, current_state->node_id);
     }
 }

@@ -8,7 +8,6 @@
 #include <sstream>
 #include <string>
 
-
 enum class Category {
     Query,
     LogicalPlan,
@@ -20,7 +19,6 @@ enum class Category {
     InvalidCategory,
 };
 
-
 struct CategoryConfig {
     std::ostream* os = &std::cout;
     bool enabled = true;
@@ -28,7 +26,6 @@ struct CategoryConfig {
     bool print_category = false;
     unsigned verbosity = 0;
 };
-
 
 class OStream {
     friend class Logger;
@@ -40,33 +37,41 @@ private:
     std::stringstream stream;
 
     OStream() :
-        mutex(nullptr), category(Category::InvalidCategory), config(nullptr) { }
+        mutex(nullptr),
+        category(Category::InvalidCategory),
+        config(nullptr)
+    { }
 
     OStream(std::mutex& mutex, Category category, CategoryConfig& config) :
-        mutex(&mutex), category(category), config(&config) { }
+        mutex(&mutex),
+        category(category),
+        config(&config)
+    { }
 
 public:
     ~OStream();
 
     template<typename T>
-    OStream& operator<<(T&& obj) {
-        if (config != nullptr) stream << obj;
+    OStream& operator<<(T&& obj)
+    {
+        if (config != nullptr)
+            stream << obj;
         return *this;
     }
 
     template<typename T>
-    OStream& operator<<(T& obj) {
-        if (config != nullptr) stream << obj;
+    OStream& operator<<(T& obj)
+    {
+        if (config != nullptr)
+            stream << obj;
         return *this;
     }
 };
-
 
 static_assert(!std::is_move_constructible<OStream>());
 static_assert(!std::is_move_assignable<OStream>());
 static_assert(!std::is_copy_constructible<OStream>());
 static_assert(!std::is_copy_assignable<OStream>());
-
 
 class Logger {
 private:
@@ -77,11 +82,10 @@ public:
     std::map<std::string, std::ofstream> ofstreams;
 
     Logger();
-    bool read_config(const std::string& path);
+
     void log(Category category, std::function<void(std::ostream&)>, unsigned verbosity = 0);
 
     OStream operator()(Category category, unsigned verbosity = 0);
 };
-
 
 inline Logger logger;

@@ -35,11 +35,13 @@ public:
         }
         case RDF_OID::GenericSubType::TENSOR_FLOAT: {
             auto tensor = Conversions::unpack_tensor<float>(expr_oid);
-            return Conversions::pack_tensor<float>(tensor.floor());
+            tensor.floor();
+            return Conversions::pack_tensor<float>(tensor);
         }
         case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
             auto tensor = Conversions::unpack_tensor<double>(expr_oid);
-            return Conversions::pack_tensor<double>(tensor.floor());
+            tensor.floor();
+            return Conversions::pack_tensor<double>(tensor);
         }
         default:
             return ObjectId::get_null();

@@ -3,16 +3,15 @@
 #include <ostream>
 #include <string>
 
-#include <boost/unordered_map.hpp>
-
 #include "storage/catalog/catalog.h"
-#include "storage/index/text_search/text_search_index_manager.h"
-#include "storage/index/tensor_store/tensor_store_manager.h"
+#include "storage/index/text_search/text_index_manager.h"
+#include "storage/index/hnsw/hnsw_index_manager.h"
 
 class QuadCatalog : public Catalog {
 public:
-    static constexpr uint64_t MODEL_ID = 0;
-    static constexpr uint64_t VERSION = 5;
+    static constexpr uint8_t MODEL_ID = 0;
+    static constexpr uint8_t MAJOR_VERSION = 1;
+    static constexpr uint8_t MINOR_VERSION = 0;
 
     QuadCatalog(const std::string& filename);
 
@@ -31,10 +30,7 @@ public:
     void insert_property(uint64_t key);
     void insert_label(uint64_t label);
 
-    bool has_changes = false;
-
-    uint64_t identifiable_nodes_count; // Does not consider the literals
-    uint64_t anonymous_nodes_count; // TODO: delete?
+    uint64_t nodes_count;
 
     uint64_t edge_count;
     uint64_t label_count;
@@ -45,16 +41,15 @@ public:
     uint64_t equal_to_type_count;
     uint64_t equal_from_to_type_count;
 
-    boost::unordered_map<uint64_t, uint64_t> label2total_count;
-    boost::unordered_map<uint64_t, uint64_t> key2total_count;
-    boost::unordered_map<uint64_t, uint64_t> type2total_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> label2total_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> key2total_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> type2total_count;
 
-    boost::unordered_map<uint64_t, uint64_t> type2equal_from_to_type_count;
-    boost::unordered_map<uint64_t, uint64_t> type2equal_from_to_count;
-    boost::unordered_map<uint64_t, uint64_t> type2equal_from_type_count;
-    boost::unordered_map<uint64_t, uint64_t> type2equal_to_type_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> type2equal_from_to_type_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> type2equal_from_to_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> type2equal_from_type_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> type2equal_to_type_count;
 
-    TextSearch::TextSearchIndexManager text_search_index_manager;
-
-    TensorStoreManager tensor_store_manager;
+    TextSearch::TextIndexManager text_index_manager;
+    HNSW::HNSWIndexManager hnsw_index_manager;
 };

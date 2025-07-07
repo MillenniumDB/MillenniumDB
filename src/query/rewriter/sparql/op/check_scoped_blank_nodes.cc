@@ -18,24 +18,24 @@ void CheckScopedBlankNodes::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
     std::set<VarId> scope_blank_nodes;
     for (auto& triple : op_basic_graph_pattern.triples) {
         if (triple.subject.is_var()) {
-            if (get_query_ctx().get_var_name(triple.subject.get_var()).find("_:") == 0) {
+            if (get_query_ctx().is_blank(triple.subject.get_var())) {
                 scope_blank_nodes.insert(triple.subject.get_var());
             }
         }
         if (triple.object.is_var()) {
-            if (get_query_ctx().get_var_name(triple.object.get_var()).find("_:") == 0) {
+            if (get_query_ctx().is_blank(triple.object.get_var())) {
                 scope_blank_nodes.insert(triple.object.get_var());
             }
         }
     }
     for (auto& path : op_basic_graph_pattern.paths) {
         if (path.subject.is_var()) {
-            if (get_query_ctx().get_var_name(path.subject.get_var()).find("_:") == 0) {
+            if (get_query_ctx().is_blank(path.subject.get_var()) == 0) {
                 scope_blank_nodes.insert(path.subject.get_var());
             }
         }
         if (path.object.is_var()) {
-            if (get_query_ctx().get_var_name(path.object.get_var()).find("_:") == 0) {
+            if (get_query_ctx().is_blank(path.object.get_var()) == 0) {
                 scope_blank_nodes.insert(path.object.get_var());
             }
         }
@@ -55,6 +55,20 @@ void CheckScopedBlankNodes::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
 
 void CheckScopedBlankNodes::visit(OpFilter& op_filter) {
     op_filter.op->accept_visitor(*this);
+
+    CheckScopedBlankNodesExpr expr_visitor(*this);
+    for (auto& expr : op_filter.filters) {
+        expr->accept_visitor(expr_visitor);
+    }
+}
+
+
+void CheckScopedBlankNodes::visit(OpProcedure& op_procedure)
+{
+    CheckScopedBlankNodesExpr expr_visitor(*this);
+    for (auto& expr : op_procedure.argument_exprs) {
+        expr->accept_visitor(expr_visitor);
+    }
 }
 
 
@@ -155,3 +169,13 @@ void CheckScopedBlankNodes::visit(OpUnitTable&) { }
 void CheckScopedBlankNodes::visit(OpValues&) { }
 
 void CheckScopedBlankNodes::visit(OpShow&) { }
+
+///////////////////// CheckScopedBlankNodesExpr /////////////////////
+
+void CheckScopedBlankNodesExpr::visit(ExprNotExists& e) {
+    e.op->accept_visitor(op_visitor);
+}
+
+void CheckScopedBlankNodesExpr::visit(ExprExists& e) {
+    e.op->accept_visitor(op_visitor);
+}

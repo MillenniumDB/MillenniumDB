@@ -1,0 +1,7 @@
+LET x1 = DATE("2022-05-31")
+LET x2 = CURRENT_DATE
+LET x3 = DATE()
+
+LET future = DATE("3000-01-26")
+LET past = DATE("1990-04-21")
+RETURN x1, past, future, x2 < future, x3 < future, x2 > past, x3 > past

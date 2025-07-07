@@ -1,0 +1,99 @@
+N0  :TestNode number:24  number2:-46  number_2:24  number2_2:46
+N1  :TestNode number:42  number2:42  number_2:42  number2_2:42
+N2  :TestNode number:14  number2:30  number_2:14  number2_2:30
+N3  :TestNode number:7   number2:14  number_2:-7  number2_2:14
+N4  :TestNode number:8   number2:16  number_2:8   number2_2:16
+N5  :TestNode number:-99  number2:66  number_2:99  number2_2:66
+N6  :TestNode number:57  number2:28  number_2:57  number2_2:28
+N7  :TestNode number:45  number2:12  number_2:45  number2_2:-12
+N8  :TestNode number:-2   number2:10  number_2:2   number2_2:10
+N9  :TestNode number:-5  number2:15  number_2:5   number2_2:15
+N10 :TestNode number:35  number2:-3535  number_2:35  number2_2:35
+N11 :TestNode number:13  number2:24  number_2:-13  number2_2:24
+N12 :TestNode number:3   number2:6 number_2:3  number2_2:6
+N13 :TestNode number:3   number2:6  number_2:4   number2_2:9
+N14 :TestNode number:-73.3  number2:36  number_2:47  number2_2:47
+N15 :TestNode number:4   number2:9  number_2:-33  number2_2:67
+N16 :TestNode number:-47  number2:47  number_2:67  number2_2:21
+N17 :TestNode number:33  number2:67  number_2:91  number2_2:46
+N18 :TestNode number:-67  number2:21  number_2:46  number2_2:23
+N19 :TestNode number:91  number2:46  number_2:90  number2_2:30
+N20 :TestNode number:-23  number2:23  number_2:8   number2_2:5
+T0 :TrigNode in_value:0 sin_value:0 cos_value:1 tan_value:0 cot_value:"Undefined" sinh_value:0 cosh_value:1 tanh_value:0 asin_value:0 acos_value:1.5707963267948966 atan_value:0 degrees_value:0 radians_value:0
+T1 :TrigNode in_value:1.5707963267948966 sin_value:1 cos_value:0 tan_value:-2.2877332E7 cot_value:0 sinh_value:2.3012989023072947 cosh_value:2.5091784786580567 tanh_value:0.9171523356672744 asin_value:"Undefined" acos_value:"Undefined" atan_value:1.0038848 degrees_value:90 radians_value:0.027415568
+T2 :TrigNode in_value:3.141592653589793 sin_value:0 cos_value:-1 tan_value:0 cot_value:1.1438666E7 sinh_value:11.548739357257748 cosh_value:11.591953275521519 tanh_value:0.99627207622075 asin_value:"Undefined" acos_value:"Undefined" atan_value:1.2626272 degrees_value:180 radians_value:0.054831136
+T3 :TrigNode in_value:4.71238898038469 sin_value:-1 cos_value:0 tan_value:-8.385828E7 cot_value:0 sinh_value:55.65439759941754 cosh_value:55.66338089043877 tanh_value:1 asin_value:"Undefined" acos_value:"Undefined" atan_value:1.3616917 degrees_value:270 radians_value:0.082246706
+T4 :TrigNode in_value:6.283185307179586 sin_value:0 cos_value:1 tan_value:0 cot_value:5.719333E6 sinh_value:267.74489404101644 cosh_value:267.74676148374823 tanh_value:1 asin_value:"Undefined" acos_value:"Undefined" atan_value:1.4129652 degrees_value:360 radians_value:0.10966227
+T5 :TrigNode in_value:-1.5707963267948966 sin_value:-1 cos_value:0 tan_value:2.2877332E7 cot_value:0 sinh_value:-2.3012989023072947 cosh_value:2.5091784786580567 tanh_value:-0.9171523356672744 asin_value:"Undefined" acos_value:"Undefined" atan_value:-1.0038848 degrees_value:-90 radians_value:-0.027415568
+T6 :TrigNode in_value:-3.141592653589793 sin_value:0 cos_value:-1 tan_value:0 cot_value:-1.1438666E7 sinh_value:-11.548739357257748 cosh_value:11.591953275521519 tanh_value:-0.99627207622075 asin_value:"Undefined" acos_value:"Undefined" atan_value:-1.2626272 degrees_value:-180 radians_value:-0.054831136
+T7 :TrigNode in_value:0.7853981633974483 sin_value:0.70710678118 cos_value:0.70710678118 tan_value:1 cot_value:1 sinh_value:0.8686709614860095 cosh_value:1.3246090892520057 tanh_value:0.6557942026326724 asin_value:0.90333915 acos_value:0.66745716 atan_value:0.66577375 degrees_value:45 radians_value:0.013707784
+T8 :TrigNode in_value:-0.7853981633974483 sin_value:-0.70710678118 cos_value:0.70710678118 tan_value:-1 cot_value:-1 sinh_value:-0.8686709614860095 cosh_value:1.3246090892520057 tanh_value:-0.6557942026326724 asin_value:-0.90333915 acos_value:2.4741354 atan_value:-0.66577375  degrees_value:-45 radians_value:-0.013707784
+T9 :TrigNode in_value:3 sin_value:0.1411200080598672 cos_value:-0.9899924966004454 tan_value:-0.1425465430742778 cot_value:-7.015252551434534 sinh_value:10.017874927409903 cosh_value:10.067661995777765 tanh_value:0.9950547536867305 asin_value:"Undefined" acos_value:"Undefined" atan_value:1.2490457723982544 degrees_value:171.887344 radians_value:0.05235988
+A0 :ArithmeticNode base_value:10 exp_value:3 log_base_exp:0.4771 log10_exp:0.4771 ln_exp:1.0986 exponential_exp:20.0855 base_exp:1000 sqrt_exp:1.7321 floor_exp:3 ceil_exp:3
+A1 :ArithmeticNode base_value:2 exp_value:8 log_base_exp:3.0 log10_exp:0.9031 ln_exp:2.0794 exponential_exp:2980.958 base_exp:256 sqrt_exp:2.8284 floor_exp:8 ceil_exp:8
+A2 :ArithmeticNode base_value:5 exp_value:2 log_base_exp:0.4303 log10_exp:0.3010 ln_exp:0.6931 exponential_exp:7.3891 base_exp:25 sqrt_exp:1.4142 floor_exp:2 ceil_exp:2
+A3 :ArithmeticNode base_value:3.5 exp_value:4 log_base_exp:1.0 log10_exp:0.6021 ln_exp:1.3863 exponential_exp:54.5982 base_exp:84.4485 sqrt_exp:2.0 floor_exp:4 ceil_exp:4
+A4 :ArithmeticNode base_value:7 exp_value:0.5 log_base_exp:-0.35620 log10_exp:-0.3010 ln_exp:-0.6931 exponential_exp:1.6487 base_exp:2.6458 sqrt_exp:0.7071 floor_exp:0 ceil_exp:1
+A5 :ArithmeticNode base_value:4 exp_value:3.2 log_base_exp:0.8004 log10_exp:0.5051 ln_exp:1.1632 exponential_exp:24.5325 base_exp:40.3175 sqrt_exp:1.7889 floor_exp:3 ceil_exp:4
+A6 :ArithmeticNode base_value:12 exp_value:2.5 log_base_exp:0.36874 log10_exp:0.3979 ln_exp:0.9163 exponential_exp:12.1825 base_exp:498.8396 sqrt_exp:1.5811 floor_exp:2 ceil_exp:3
+A7 :ArithmeticNode base_value:9 exp_value:-1 log_base_exp:"NaN" log10_exp:"NaN" ln_exp:"Nan" exponential_exp:0.3679 base_exp:0.1111 sqrt_exp:"NaN" floor_exp:-1 ceil_exp:-1
+A8 :ArithmeticNode base_value:2 exp_value:0 log_base_exp:"NaN" log10_exp:"-Inf" ln_exp:"-Inf" exponential_exp:1 base_exp:1 sqrt_exp:0.0 floor_exp:0 ceil_exp:0
+A9 :ArithmeticNode base_value:1.2 exp_value:5 log_base_exp:8.82746 log10_exp:0.6989 ln_exp:1.6094 exponential_exp:148.4132 base_exp:2.4883 sqrt_exp:2.2361 floor_exp:5 ceil_exp:5
+A10 :ArithmeticNode base_value:6 exp_value:1 log_base_exp:1.0 log10_exp:0.0 ln_exp:0.0 exponential_exp:2.7183 base_exp:6 sqrt_exp:1.0 floor_exp:1 ceil_exp:1
+A11 :ArithmeticNode base_value:15 exp_value:0.8 log_base_exp:-0.08240 log10_exp:-0.0969 ln_exp:-0.2231 exponential_exp:2.2255 base_exp:8.7272 sqrt_exp:0.8944 floor_exp:0 ceil_exp:1
+A12 :ArithmeticNode base_value:0.5 exp_value:7 log_base_exp:-2.80735 log10_exp:0.8451 ln_exp:1.9459 exponential_exp:1096.6331 base_exp:0.0078 sqrt_exp:2.6458 floor_exp:7 ceil_exp:7
+A13 :ArithmeticNode base_value:3.3 exp_value:3.7 log_base_exp:1.09582 log10_exp:0.5682 ln_exp:1.3083 exponential_exp:40.4473 base_exp:82.8898 sqrt_exp:1.9235 floor_exp:3 ceil_exp:4
+A14 :ArithmeticNode base_value:8 exp_value:1.2 log_base_exp:0.08767 log10_exp:0.0792 ln_exp:0.1823 exponential_exp:3.3201 base_exp:12.1257 sqrt_exp:1.0954 floor_exp:1 ceil_exp:2
+A15 :ArithmeticNode base_value:10.5 exp_value:2.3 log_base_exp:0.3542 log10_exp:0.3617 ln_exp:0.83290 exponential_exp:9.9742 base_exp:223.2211 sqrt_exp:1.5166 floor_exp:2 ceil_exp:3
+A16 :ArithmeticNode base_value:20 exp_value:0.4 log_base_exp:-0.30586 log10_exp:-0.3979 ln_exp:-0.9163 exponential_exp:1.4918 base_exp:3.3144 sqrt_exp:0.6325 floor_exp:0 ceil_exp:1
+S0  :StringNode word:"          example         "
+S2  :StringNode word:"hello"
+S3  :StringNode word:"world"
+S4  :StringNode word:"daTaBAse"
+S5  :StringNode word:"node"
+S6  :StringNode word:"format"
+S7  :StringNode word:"code"
+S8  :StringNode word:"string"
+S9  :StringNode word:"query"
+S10 :StringNode word:"exampletest"
+S11 :StringNode word:"datastructure"
+S12 :StringNode word:"variable"
+S13 :StringNode word:"attribute"
+S14 :StringNode word:""
+S15 :StringNode word:"SYNTAX"
+S16 :StringNode word:"application"
+S17 :StringNode word:"solution"
+S18 :StringNode word:"COMPUTATION"
+S19 :StringNode word:".-.-.-algorithm.-.-.-"
+S20 :StringNode word:"xxxxxxprogrammingxxxxxxxxxxx"
+X0 :SpecialNode word:"Ñuñoa"
+X1 :SpecialNode word:"Bærum"
+X2 :SpecialNode word:"Tønsberg"
+X3 :SpecialNode word:"Ян Алексáндрович Непóмнящий"
+X4 :SpecialNode word:"Ångström"
+X5 :SpecialNode word:"Façade"
+X6 :SpecialNode word:"Đukanović"
+X7 :SpecialNode word:"Białystok"
+X8 :SpecialNode word:"Dziękuję"
+X9 :SpecialNode word:"Ōsaka"
+X10 :SpecialNode word:"Ħal Tarxien"
+X11 :SpecialNode word:"Őrült"
+X12 :SpecialNode word:"Ґудзик"
+C0 :NormNode word:"e\u0301"
+C1 :NormNode word:"①"
+C2 :NormNode word:"𝓪"
+C3 :NormNode word:"Ⅷ"
+C4 :NormNode word:"ﬁ"
+C5 :NormNode word:"A\u030A"
+E0 :CaseNode value2:5 value3:10
+E1 :CaseNode value1:1 value2:1 value3:9
+E2 :CaseNode value1:2 value2:2 value3:8
+E3 :CaseNode value1:5 value2:4 value3:7
+E4 :CaseNode value1:5 value2:5 value3:6
+E5 :CaseNode value1:5 value2:6 value3:5
+E6 :CaseNode value1:"hola" value2:"hola" value3:1
+E7 :CaseNode value1:4 value3:4
+E8 :CaseNode value1:6 value2:6 value3:3
+E9 :CaseNode value3:2
+E10 :CaseNode value1:8 value2:9 value3:5
+E11 :CaseNode value1:"test" value2:"not" value3:5

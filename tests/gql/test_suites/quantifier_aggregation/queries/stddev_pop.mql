@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN STDDEV_POP(x.number) AS deviation

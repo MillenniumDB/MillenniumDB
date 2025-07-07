@@ -2,7 +2,6 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_catalog.h"
-#include "graph_models/quad_model/quad_model.h"
 #include "graph_models/rdf_model/conversions.h"
 
 namespace MDBServer {
@@ -16,7 +15,7 @@ public:
     }
 
     uint64_t get_catalog_version() const override {
-        return QuadCatalog::VERSION;
+        return QuadCatalog::MAJOR_VERSION;
     }
 
     std::string encode_object_id(const ObjectId& oid) const override {
@@ -84,8 +83,20 @@ public:
         case ObjectId::MASK_PATH: {
             return encode_path(value);
         }
+        case ObjectId::MASK_TENSOR_FLOAT_INLINED:
+        case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
+        case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+            const auto tensor = Common::Conversions::unpack_tensor<float>(oid);
+            return encode_tensor<float>(tensor);
+        }
+        case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
+        case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
+        case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+            const auto tensor = Common::Conversions::unpack_tensor<double>(oid);
+            return encode_tensor<double>(tensor);
+        }
         default:
-            throw std::logic_error("Unmanaged type in QuadResponseWriter::encode_object_id: " + std::to_string(type));
+            throw std::logic_error("Unmanaged type in StreamingQuadResponseWriter::encode_object_id: " + std::to_string(type));
         }
     }
 };

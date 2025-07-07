@@ -1,0 +1,19 @@
+{
+  "head": {
+    "vars": [ "propertyLabel", "propertyDescription", "count" ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "propertyLabel": { "type": "literal", "value": "ID Property" },
+        "propertyDescription": { "type": "literal", "value": "A property representing an ID" },
+        "count": { "type": "literal", "value": "2", "datatype": "xsd:integer" }
+      },
+      {
+        "propertyLabel": { "type": "literal", "value": "Code Property" },
+        "propertyDescription": { "type": "literal", "value": "A property representing a code" },
+        "count": { "type": "literal", "value": "1", "datatype": "xsd:integer" }
+      }
+    ]
+  }
+}

@@ -4,7 +4,7 @@
 
 #include "query/query_context.h"
 #include "query/var_id.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 
 namespace SPARQL {
 class ExprBound : public Expr {

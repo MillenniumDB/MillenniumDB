@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.tan_value, TAN(x.in_value) AS tangente

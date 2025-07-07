@@ -137,8 +137,7 @@ def execute_bad_test(server: Popen[bytes] | None, test: BadTest, stats: Executio
 
 def execute_tests(
     *,
-    server_executable: Path,
-    create_db_executable: Path,
+    executable: Path,
     test_suite: TestSuite,
     client_only: bool = False,
     progress_bar: tqdm | None = None,  # type:ignore
@@ -164,8 +163,8 @@ def execute_tests(
         log_file = None
 
         if not client_only:
-            database = create_db(create_db_executable, data)
-            server, log_file = start_server(server_executable, database)
+            database = create_db(executable, data)
+            server, log_file = start_server(executable, database)
 
         for test in tests_:
             try:
@@ -186,7 +185,7 @@ def execute_tests(
                         log(Level.SERVER_LOG, "SERVER:", line.strip())
                     log_file.seek(0, SEEK_END)
 
-                    server, log_file = start_server(server_executable, database)  # restart server
+                    server, log_file = start_server(executable, database)  # restart server
             except Exception as exc:
                 if not client_only:
                     assert server is not None  # server has been started

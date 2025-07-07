@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN x.number + x.number2 AS suma, ABS(x.number + x.number2) AS absolutevalue

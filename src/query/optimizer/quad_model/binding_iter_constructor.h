@@ -7,16 +7,15 @@
 #include <vector>
 
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/parser/expr/mql/atom_expr/expr_var_property.h"
 #include "query/parser/op/mql/ops.h"
-#include "query/parser/op/op.h"
-#include "query/query_context.h"
 
 class BindingIter;
 namespace MQL {
 
 class BindingIterConstructor : public OpVisitor {
 public:
-    BindingIterConstructor(std::map<VarId, ObjectId>& setted_vars);
+    BindingIterConstructor();
 
     std::vector<VarId> projected_vars;
 
@@ -37,9 +36,8 @@ public:
     std::vector<VarId> order_by_vars;
     std::set<VarId> order_by_saved_vars;
 
-    // Variables that are assigned when evaluating the basic graph pattern, and the optimizer know the value.
-    // May come from properties or the SET/WHERE clauses
-    std::map<VarId, ObjectId>& setted_vars;
+    // second component is a state to tell if it is assigned
+    std::map<ExprVarProperty, bool> used_properties;
 
     // Properties from a where clause that are mandatory (so they are pushed into the basic graph pattern)
     // var, key, value, value_var
@@ -81,18 +79,15 @@ public:
     // True when a group is needed (Aggregation or Group By are present)
     bool grouping = false;
 
-    void visit(MQL::OpBasicGraphPattern&)     override;
-    void visit(MQL::OpOptional&)              override;
-    void visit(MQL::OpWhere&)                 override;
-    void visit(MQL::OpGroupBy&)               override;
-    void visit(MQL::OpOrderBy&)               override;
-    void visit(MQL::OpReturn&)                override;
-
-    /* These are processed in BindingIterVisitor */
-    void visit(MQL::OpSet&) override
-    {
-        throw LogicException("OpSet must be processed outside");
-    }
+    void visit(MQL::OpBasicGraphPattern&) override;
+    void visit(MQL::OpCall&) override;
+    void visit(MQL::OpLet&) override;
+    void visit(MQL::OpOptional&) override;
+    void visit(MQL::OpWhere&) override;
+    void visit(MQL::OpGroupBy&) override;
+    void visit(MQL::OpOrderBy&) override;
+    void visit(MQL::OpReturn&) override;
+    void visit(MQL::OpSequence&) override;
 
     void visit(MQL::OpDescribe&) override
     {
@@ -115,7 +110,6 @@ public:
 private:
     bool term_exists(ObjectId) const;
 
-    // transform Vars in setted_vars to the assigned ObjectId
-    Id replace_setted_var(Id) const;
+    std::unique_ptr<BindingIter> get_pending_properties(std::unique_ptr<BindingIter> binding_iter);
 };
 } // namespace MQL

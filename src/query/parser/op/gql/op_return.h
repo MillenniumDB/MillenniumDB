@@ -3,9 +3,10 @@
 #include <memory>
 #include <vector>
 
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/gql_expr_printer.h"
-#include "query/parser/op/op.h"
+#include "query/parser/expr/gql/expr.h"
+#include "query/parser/expr/gql/expr_printer.h"
+#include "query/parser/op/gql/op.h"
+#include "query/parser/op/gql/op_order_by_statement.h"
 
 namespace GQL {
 
@@ -25,10 +26,19 @@ public:
     std::vector<Item> return_items;
     bool distinct;
 
-    OpReturn(std::unique_ptr<Op> op, std::vector<Item>&& return_items, bool distinct) :
+    // might be nullptr
+    std::unique_ptr<Op> op_order_by;
+
+    OpReturn(
+        std::unique_ptr<Op> op,
+        std::vector<Item>&& return_items,
+        bool distinct,
+        std::unique_ptr<Op> op_order_by = nullptr
+    ) :
         op(std::move(op)),
         return_items(std::move(return_items)),
-        distinct(distinct)
+        distinct(distinct),
+        op_order_by(std::move(op_order_by))
     { }
 
     virtual std::unique_ptr<Op> clone() const override
@@ -38,7 +48,15 @@ public:
         for (auto& item : return_items) {
             return_items_clone.emplace_back(item.expr->clone(), item.alias);
         }
-        return std::make_unique<OpReturn>(op->clone(), std::move(return_items_clone), distinct);
+
+        std::unique_ptr<Op> order_by_clone = op_order_by == nullptr ? nullptr : op_order_by->clone();
+
+        return std::make_unique<OpReturn>(
+            op->clone(),
+            std::move(return_items_clone),
+            distinct,
+            op_order_by->clone()
+        );
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -57,36 +75,22 @@ public:
         return res;
     }
 
-    std::set<VarId> get_expr_vars() const
+    std::vector<VarId> get_expr_vars() const
     {
-        std::set<VarId> result;
+        std::vector<VarId> result;
 
         for (auto& item : return_items) {
             if (item.alias.has_value()) {
-                result.insert(item.alias.value());
+                result.push_back(item.alias.value());
             } else {
-                result.merge(item.expr->get_all_vars());
+                auto expr_variables = item.expr->get_all_vars();
+                result.insert(result.end(), expr_variables.begin(), expr_variables.end());
             }
         }
         return result;
     }
 
-    std::set<VarId> get_scope_vars() const override
-    {
-        return {};
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return op->get_safe_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return {};
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
         return op->get_var_types();
     }

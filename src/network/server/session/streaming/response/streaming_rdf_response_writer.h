@@ -18,7 +18,7 @@ public:
     }
 
     uint64_t get_catalog_version() const override {
-        return RdfCatalog::VERSION;
+        return RdfCatalog::MAJOR_VERSION;
     }
 
     std::string encode_string_lang(const std::string& str, const std::string& lang) const {

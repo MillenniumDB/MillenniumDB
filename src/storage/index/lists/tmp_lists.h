@@ -26,5 +26,7 @@ private:
     TmpFileId file_id;
     uint64_t current_page = 0;
     uint64_t total_pages = 0;
+    uint64_t page_insert_offset = 0;
+
     char* buffer;
 };

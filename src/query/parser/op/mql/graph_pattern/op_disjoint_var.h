@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -27,18 +27,6 @@ public:
     }
 
     std::set<VarId> get_all_vars() const override {
-        return { var };
-    }
-
-    std::set<VarId> get_scope_vars() const override {
-        return { var };
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        return { var };
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
         return { var };
     }
 

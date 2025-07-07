@@ -17,18 +17,19 @@
 #include "query/parser/op/sparql/op_optional.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_order_by.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_path.h" // IWYU pragma: export
+#include "query/parser/op/sparql/op_procedure.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_select.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_semi_join.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_sequence.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_service.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_show.h" // IWYU pragma: export
-#include "query/parser/op/sparql/op_text_search_index.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_triple.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_union.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_unit_table.h" // IWYU pragma: export
 #include "query/parser/op/sparql/op_values.h" // IWYU pragma: export
 
-#include "query/parser/op/sparql/update/op_create_text_search_index.h" // IWYU pragma: export
+#include "query/parser/op/sparql/update/op_create_hnsw_index.h" // IWYU pragma: export
+#include "query/parser/op/sparql/update/op_create_text_index.h" // IWYU pragma: export
 #include "query/parser/op/sparql/update/op_delete_data.h" // IWYU pragma: export
 #include "query/parser/op/sparql/update/op_insert_data.h" // IWYU pragma: export
 #include "query/parser/op/sparql/update/op_update.h" // IWYU pragma: export

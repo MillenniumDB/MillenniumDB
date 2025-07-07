@@ -1,0 +1,24 @@
+N0 :Person name:"0" age:10
+N1 :Person name:"1" age:11
+N2 :Person name:"2" age:12
+N0->N1 :Knows :simple name:"0->1"
+N0->N2 :Knows :simple name:"0->2"
+N2->N2 :Loops :simple name:"2->2"
+P3 :Person name:"p3" age:13
+P4 :Person name:"p4" age:14
+A5 :Account number:0023 isBlocked:"yes" name:"5"
+A6 :Account number:0024 isBlocked:"no" name:"6"
+P3->A5 :owns name:"3->5"
+P4->A6 :owns name:"4->6"
+L7 :aaa :bbb name:7
+L8 :aaa :ccc name:8
+L9 :bbb :ccc name:9
+L10 :aaa :bbb :ccc name:10
+L7->L9 name:"7->9"
+L9->L10 name:"9->10"
+PP11 name:"11"
+PP12 name:"12"
+PP13 name:"13"
+PP11->PP13 name:"11->13"
+PP11->PP12 name:"11->12"
+PP12<-PP13 name:"13->12"

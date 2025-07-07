@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
+#include <vector>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
-class ExprSearchedCase: public Expr {
+class ExprSearchedCase : public Expr {
 public:
     std::vector<std::pair<std::unique_ptr<Expr>, std::unique_ptr<Expr>>> when_clauses;
     std::unique_ptr<Expr> else_clause;
@@ -26,7 +26,9 @@ public:
             auto cloned_condition = clause.first->clone();
             auto cloned_result = clause.second->clone();
 
-            cloned_when_clauses.emplace_back(std::make_pair(std::move(cloned_condition), std::move(cloned_result)));
+            cloned_when_clauses.emplace_back(
+                std::make_pair(std::move(cloned_condition), std::move(cloned_result))
+            );
         }
 
         return std::make_unique<ExprSearchedCase>(std::move(cloned_when_clauses), else_clause->clone());
@@ -40,7 +42,7 @@ public:
     bool has_aggregation() const override
     {
         for (const auto& clause : when_clauses) {
-            if (clause.first->has_aggregation()||clause.second->has_aggregation()) {
+            if (clause.first->has_aggregation() || clause.second->has_aggregation()) {
                 return true;
             }
         }

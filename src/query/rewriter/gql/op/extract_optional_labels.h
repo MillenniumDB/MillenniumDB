@@ -1,9 +1,10 @@
 #pragma once
 
-#include "query/parser/op/op.h"
-#include "query/parser/op/op_visitor.h"
 #include <memory>
 #include <vector>
+
+#include "query/parser/op/gql/op.h"
+#include "query/parser/op/gql/op_visitor.h"
 
 namespace GQL {
 
@@ -11,7 +12,9 @@ class ExtractOptionalLabels : public OpVisitor {
 public:
     void visit(OpReturn&) override;
 
-    void visit(OpFilter& op_filter) override;
+    void visit(OpQueryStatements& op) override;
+    void visit(OpFilterStatement& op) override;
+    void visit(OpFilter& op) override;
     void visit(OpGraphPattern& op) override;
     void visit(OpGraphPatternList& op) override;
     void visit(OpBasicGraphPattern& op) override;
@@ -20,6 +23,7 @@ public:
     void visit(OpOptProperties&) override;
     void visit(OpPathUnion& op) override;
     void visit(OpOrderBy& op) override;
+    void visit(OpLet& op) override;
 
     void visit(OpNode&) override;
     void visit(OpEdge&) override;

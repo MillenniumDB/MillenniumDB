@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN x.value1, x.value2, NULLIF(x.value1, x.value2) AS null_if_equals;

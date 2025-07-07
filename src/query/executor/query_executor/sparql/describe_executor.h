@@ -6,9 +6,7 @@
 
 #include "query/executor/binding_iter.h"
 #include "query/id.h"
-#include "query/query_context.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "network/sparql/response_type.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace SPARQL {

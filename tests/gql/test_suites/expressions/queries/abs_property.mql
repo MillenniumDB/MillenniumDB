@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN x.number, ABS(x.number) AS absolutevalue

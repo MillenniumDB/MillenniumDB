@@ -1,10 +1,14 @@
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_addition.h"       // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_and.h"            // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_division.h"       // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_equals.h"         // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_addition.h"        // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_and.h"             // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_cosine_distance.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_cosine_similarity.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_division.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_equals.h"   // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_euclidean_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_is.h"             // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_less.h"           // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_less_or_equals.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_manhattan_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_modulo.h"         // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_multiplication.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_not.h"            // IWYU pragma: export
@@ -12,6 +16,5 @@
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_or.h"             // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_regex.h"          // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_subtraction.h"    // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_tensor_distance.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_minus.h" // IWYU pragma: export
-#include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_plus.h"  // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_minus.h"    // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_plus.h"     // IWYU pragma: export

@@ -446,6 +446,357 @@ uint64_t DateTime::from_dateTimeStamp(const std::string& str) noexcept {
 }
 
 
+uint64_t DateTime::from_zoned_time(const std::string& str) noexcept {
+    constexpr auto NO_ERROR = std::errc();
+    uint64_t ret = ObjectId::MASK_DT_TIME;
+
+    const char* ptr = str.data();
+    const char* const last = ptr + str.size();
+
+    if (ptr + 9 > last) { return ObjectId::NULL_ID; }
+
+    uint64_t year = 0;
+    uint8_t month = 1;
+    uint8_t day = 1;
+
+    // Handle time
+    uint8_t hour; auto res = std::from_chars(ptr, last, hour); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 6 > last || *ptr != ':' || hour > 23) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t min; res = std::from_chars(ptr, last, min); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || min > 59) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t sec; res = std::from_chars(ptr, last, sec); ptr = res.ptr;
+    if (res.ec != NO_ERROR || sec > 59) { return ObjectId::NULL_ID; }
+
+    uint64_t fractional_seconds = 0;
+    if (ptr < last && *ptr == '.') {
+        ptr++;
+        if (ptr + 1 > last) { return ObjectId::NULL_ID; }
+        res = std::from_chars(ptr, last, fractional_seconds); ptr = res.ptr;
+        if (res.ec != NO_ERROR) { return ObjectId::NULL_ID; }
+    }
+
+    // Handle timezone
+    uint8_t has_tz  = 0;
+    uint8_t tz_sign = 0;
+    uint8_t tz_hour = 0;
+    uint8_t tz_min  = 0;
+    uint8_t tz0_z = 0;
+
+    if (ptr < last) {
+        if (*ptr == '+' || *ptr == '-') {
+            if (ptr < last - 6) { return ObjectId::NULL_ID; }
+
+            tz_sign = *ptr == '-';
+            ptr++;
+
+            res = std::from_chars(ptr, last, tz_hour); ptr = res.ptr;
+            if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || tz_hour > 14) { return ObjectId::NULL_ID; }
+            else { ptr++; }
+
+            res = std::from_chars(ptr, last, tz_min); ptr = res.ptr;
+            if (res.ec != NO_ERROR || ptr != last || tz_min > 59) { return ObjectId::NULL_ID; }
+
+            if (tz_hour == 14 && tz_min != 0) { return ObjectId::NULL_ID; }
+
+            has_tz = 1;
+            tz0_z = 0;
+        } else if (*ptr == 'Z') {
+            if (ptr + 1 != last) { return ObjectId::NULL_ID; }
+            has_tz = 1;
+            tz0_z = 1;
+        } else {
+            return ObjectId::NULL_ID;
+        }
+    } else {
+        return ObjectId::NULL_ID;
+    }
+
+    // Handle years that do not fit in 14 bits using lower precision
+    if (year > 0x3FFF) {
+        ret |= year;
+        ret |= LOW_PRES;
+        return ret;
+    }
+
+    // Construct final representation
+    uint64_t dt = 0;
+    dt = (dt << 14) | year;
+    dt = (dt <<  4) | month;
+    dt = (dt <<  5) | day;
+    dt = (dt <<  5) | hour;
+    dt = (dt <<  6) | min;
+    dt = (dt <<  6) | sec;
+    dt = (dt <<  1) | has_tz;
+    dt = (dt <<  1) | tz_sign;
+    dt = (dt <<  5) | tz_hour;
+    dt = (dt <<  6) | tz_min;
+    dt = (dt <<  1) | tz0_z;
+
+    return ret | dt;
+}
+
+
+uint64_t DateTime::from_local_time(const std::string& str) noexcept {
+    constexpr auto NO_ERROR = std::errc();
+    uint64_t ret = ObjectId::MASK_DT_TIME;
+
+    const char* ptr = str.data();
+    const char* const last = ptr + str.size();
+
+    if (ptr + 8 > last) { return ObjectId::NULL_ID; }
+
+    uint64_t year = 0;
+    uint8_t month = 1;
+    uint8_t day = 1;
+
+    // Handle time
+    uint8_t hour; auto res = std::from_chars(ptr, last, hour); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 6 > last || *ptr != ':' || hour > 23) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t min; res = std::from_chars(ptr, last, min); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || min > 59) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t sec; res = std::from_chars(ptr, last, sec); ptr = res.ptr;
+    if (res.ec != NO_ERROR || sec > 59) { return ObjectId::NULL_ID; }
+
+    uint64_t fractional_seconds = 0;
+    if (ptr < last && *ptr == '.') {
+        ptr++;
+        if (ptr + 1 > last) { return ObjectId::NULL_ID; }
+        res = std::from_chars(ptr, last, fractional_seconds); ptr = res.ptr;
+        if (res.ec != NO_ERROR) { return ObjectId::NULL_ID; }
+    }
+
+    // local time does not contain time zone
+    if (ptr < last) {
+        return ObjectId::NULL_ID;
+    }
+
+    uint8_t has_tz  = 0;
+    uint8_t tz_sign = 0;
+    uint8_t tz_hour = 0;
+    uint8_t tz_min  = 0;
+    uint8_t tz0_z = 0;
+
+    // Handle years that do not fit in 14 bits using lower precision
+    if (year > 0x3FFF) {
+        ret |= year;
+        ret |= LOW_PRES;
+        return ret;
+    }
+
+    // Construct final representation
+    uint64_t dt = 0;
+    dt = (dt << 14) | year;
+    dt = (dt <<  4) | month;
+    dt = (dt <<  5) | day;
+    dt = (dt <<  5) | hour;
+    dt = (dt <<  6) | min;
+    dt = (dt <<  6) | sec;
+    dt = (dt <<  1) | has_tz;
+    dt = (dt <<  1) | tz_sign;
+    dt = (dt <<  5) | tz_hour;
+    dt = (dt <<  6) | tz_min;
+    dt = (dt <<  1) | tz0_z;
+
+    return ret | dt;
+}
+
+
+uint64_t DateTime::from_zoned_datetime(const std::string& str) noexcept {
+    constexpr auto NO_ERROR = std::errc();
+    uint64_t ret = ObjectId::MASK_DT_DATETIME;
+
+    const char* ptr = str.data();
+    const char* const last = ptr + str.size();
+
+    if (ptr + 19 > last) { return ObjectId::NULL_ID; }
+
+    if (*ptr == '-') {
+        ret |= SIGN;
+        ptr++;
+    }
+
+    // Handle date and time
+    uint64_t year; auto res = std::from_chars(ptr, last, year); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 15 > last || *ptr != '-' || year > BIG_YEAR) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t month; res = std::from_chars(ptr, last, month); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 12 > last || *ptr != '-' || month < 1 || month > 12) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t day; res = std::from_chars(ptr, last, day); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 9 > last || *ptr != 'T' || day < 1 || day > days_in_month(year, month)) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t hour; res = std::from_chars(ptr, last, hour); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 6 > last || *ptr != ':' || hour > 23) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t min; res = std::from_chars(ptr, last, min); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || min > 59) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t sec; res = std::from_chars(ptr, last, sec); ptr = res.ptr;
+    if (res.ec != NO_ERROR || sec > 59) { return ObjectId::NULL_ID; }
+
+    uint64_t fractional_seconds = 0;
+    if (ptr < last && *ptr == '.') {
+        ptr++;
+        if (ptr + 1 > last) { return ObjectId::NULL_ID; }
+        res = std::from_chars(ptr, last, fractional_seconds); ptr = res.ptr;
+        if (res.ec != NO_ERROR) { return ObjectId::NULL_ID; }
+    }
+
+    uint8_t has_tz  = 0;
+    uint8_t tz_sign = 0;
+    uint8_t tz_hour = 0;
+    uint8_t tz_min  = 0;
+    uint8_t tz0_z = 0;
+
+    if (ptr < last) {
+        if (*ptr == '+' || *ptr == '-') {
+            if (ptr < last - 6) { return ObjectId::NULL_ID; }
+
+            tz_sign = *ptr == '-';
+            ptr++;
+
+            res = std::from_chars(ptr, last, tz_hour); ptr = res.ptr;
+            if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || tz_hour > 14) { return ObjectId::NULL_ID; }
+            else { ptr++; }
+
+            res = std::from_chars(ptr, last, tz_min); ptr = res.ptr;
+            if (res.ec != NO_ERROR || ptr != last || tz_min > 59) { return ObjectId::NULL_ID; }
+
+            if (tz_hour == 14 && tz_min != 0) { return ObjectId::NULL_ID; }
+
+            has_tz = 1;
+            tz0_z = 0;
+        } else if (*ptr == 'Z') {
+            if (ptr + 1 != last) { return ObjectId::NULL_ID; }
+            has_tz = 1;
+            tz0_z = 1;
+        } else {
+            return ObjectId::NULL_ID;
+        }
+    } else {
+        return ObjectId::NULL_ID;
+    }
+
+    // Handle years that do not fit in 14 bits using lower precision
+    if (year > 0x3FFF) {
+        ret |= year;
+        ret |= LOW_PRES;
+        return ret;
+    }
+
+    // Construct final representation
+    uint64_t dt = 0;
+    dt = (dt << 14) | year;
+    dt = (dt <<  4) | month;
+    dt = (dt <<  5) | day;
+    dt = (dt <<  5) | hour;
+    dt = (dt <<  6) | min;
+    dt = (dt <<  6) | sec;
+    dt = (dt <<  1) | has_tz;
+    dt = (dt <<  1) | tz_sign;
+    dt = (dt <<  5) | tz_hour;
+    dt = (dt <<  6) | tz_min;
+    dt = (dt <<  1) | tz0_z;
+
+    return ret | dt;
+}
+
+
+uint64_t DateTime::from_local_datetime(const std::string& str) noexcept {
+    constexpr auto NO_ERROR = std::errc();
+    uint64_t ret = ObjectId::MASK_DT_DATETIME;
+
+    const char* ptr = str.data();
+    const char* const last = ptr + str.size();
+
+    if (ptr + 19 > last) { return ObjectId::NULL_ID; }
+
+    if (*ptr == '-') {
+        ret |= SIGN;
+        ptr++;
+    }
+
+    // Handle date and time
+    uint64_t year; auto res = std::from_chars(ptr, last, year); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 15 > last || *ptr != '-' || year > BIG_YEAR) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t month; res = std::from_chars(ptr, last, month); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 12 > last || *ptr != '-' || month < 1 || month > 12) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t day; res = std::from_chars(ptr, last, day); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 9 > last || *ptr != 'T' || day < 1 || day > days_in_month(year, month)) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t hour; res = std::from_chars(ptr, last, hour); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 6 > last || *ptr != ':' || hour > 23) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t min; res = std::from_chars(ptr, last, min); ptr = res.ptr;
+    if (res.ec != NO_ERROR || ptr + 3 > last || *ptr != ':' || min > 59) { return ObjectId::NULL_ID; }
+    else { ptr++; }
+
+    uint8_t sec; res = std::from_chars(ptr, last, sec); ptr = res.ptr;
+    if (res.ec != NO_ERROR || sec > 59) { return ObjectId::NULL_ID; }
+
+    uint64_t fractional_seconds = 0;
+    if (ptr < last && *ptr == '.') {
+        ptr++;
+        if (ptr + 1 > last) { return ObjectId::NULL_ID; }
+        res = std::from_chars(ptr, last, fractional_seconds); ptr = res.ptr;
+        if (res.ec != NO_ERROR) { return ObjectId::NULL_ID; }
+    }
+
+    // local time does not contain time zone
+    if (ptr < last) {
+        return ObjectId::NULL_ID;
+    }
+
+    uint8_t has_tz  = 0;
+    uint8_t tz_sign = 0;
+    uint8_t tz_hour = 0;
+    uint8_t tz_min  = 0;
+    uint8_t tz0_z = 0;
+
+    // Handle years that do not fit in 14 bits using lower precision
+    if (year > 0x3FFF) {
+        ret |= year;
+        ret |= LOW_PRES;
+        return ret;
+    }
+
+    // Construct final representation
+    uint64_t dt = 0;
+    dt = (dt << 14) | year;
+    dt = (dt <<  4) | month;
+    dt = (dt <<  5) | day;
+    dt = (dt <<  5) | hour;
+    dt = (dt <<  6) | min;
+    dt = (dt <<  6) | sec;
+    dt = (dt <<  1) | has_tz;
+    dt = (dt <<  1) | tz_sign;
+    dt = (dt <<  5) | tz_hour;
+    dt = (dt <<  6) | tz_min;
+    dt = (dt <<  1) | tz0_z;
+
+    return ret | dt;
+}
+
+
 DateTime7Properties DateTime::create_7_properties() const noexcept {
     DateTime7Properties prop;
 

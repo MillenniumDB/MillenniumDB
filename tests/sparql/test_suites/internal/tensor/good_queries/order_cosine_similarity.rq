@@ -1,0 +1,7 @@
+PREFIX : <https://example.com/>
+
+SELECT ?s ?tensor (mdbfn:cosineSimilarity(?tensor, "[1, 0]"^^mdbtype:tensorDouble) as ?cosine)
+WHERE {
+    ?s :cosine ?tensor .
+}
+ORDER BY DESC(mdbfn:cosineSimilarity(?tensor, "[1, 0]"^^mdbtype:tensorDouble))

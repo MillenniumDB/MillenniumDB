@@ -1,14 +1,13 @@
 #include "dfs_enum.h"
 
-#include <cassert>
-
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::Any;
 
-template <bool MULTIPLE_FINAL>
-void DFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
+template<bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
@@ -18,9 +17,9 @@ void DFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
     visited.emplace(automaton.start_state, start_object_id, nullptr, true, ObjectId::get_null());
 }
 
-
-template <bool MULTIPLE_FINAL>
-bool DFSEnum<MULTIPLE_FINAL>::_next() {
+template<bool MULTIPLE_FINAL>
+bool DFSEnum<MULTIPLE_FINAL>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -35,7 +34,12 @@ bool DFSEnum<MULTIPLE_FINAL>::_next() {
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state]) {
             auto reached_state = Paths::Any::SearchState(
-                automaton.start_state, open.top().node_id, nullptr, true, ObjectId::get_null());
+                automaton.start_state,
+                open.top().node_id,
+                nullptr,
+                true,
+                ObjectId::get_null()
+            );
             if (MULTIPLE_FINAL) {
                 reached_final.insert(current_state.node_id.id);
             }
@@ -82,12 +86,11 @@ bool DFSEnum<MULTIPLE_FINAL>::_next() {
     return false;
 }
 
-
-template <bool MULTIPLE_FINAL>
-robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
-  DFSEnum<MULTIPLE_FINAL>::expand_neighbors(DFSSearchState& state)
+template<bool MULTIPLE_FINAL>
+boost::unordered_node_set<SearchState, std::hash<SearchState>>::iterator
+    DFSEnum<MULTIPLE_FINAL>::expand_neighbors(DFSSearchState& state)
 {
-    if (state.iter->at_end()) {  // Check if this is the first time that current_state is explored
+    if (state.iter->at_end()) { // Check if this is the first time that current_state is explored
         state.current_transition = 0;
         // Check if automaton state has transitions
         if (automaton.from_to_connections[state.state].size() == 0) {
@@ -103,12 +106,20 @@ robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
 
         // Iterate over records and return paths
         while (state.iter->next()) {
-            auto current_state = Paths::Any::SearchState(state.state, state.node_id, nullptr, true, ObjectId::get_null());
-            auto next_state = Paths::Any::SearchState(transition.to,
-                                                              ObjectId(state.iter->get_reached_node()),
-                                                              visited.find(current_state).operator->(),
-                                                              transition.inverse,
-                                                              transition.type_id);
+            auto current_state = Paths::Any::SearchState(
+                state.state,
+                state.node_id,
+                nullptr,
+                true,
+                ObjectId::get_null()
+            );
+            auto next_state = Paths::Any::SearchState(
+                transition.to,
+                ObjectId(state.iter->get_reached_node()),
+                visited.find(current_state).operator->(),
+                transition.inverse,
+                transition.type_id
+            );
 
             // Check if child state is not already visited
             auto inserted_state = visited.insert(next_state);
@@ -128,9 +139,9 @@ robin_hood::unordered_node_set<Paths::Any::SearchState>::iterator
     return visited.end();
 }
 
-
-template <bool MULTIPLE_FINAL>
-void DFSEnum<MULTIPLE_FINAL>::_reset() {
+template<bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::_reset()
+{
     // Empty open and visited
     stack<DFSSearchState> empty;
     open.swap(empty);
@@ -146,12 +157,19 @@ void DFSEnum<MULTIPLE_FINAL>::_reset() {
     visited.emplace(automaton.start_state, start_object_id, nullptr, true, ObjectId::get_null());
 }
 
-
-template <bool MULTIPLE_FINAL>
-void DFSEnum<MULTIPLE_FINAL>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+template<bool MULTIPLE_FINAL>
+void DFSEnum<MULTIPLE_FINAL>::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::Any::DFSEnum(path_var: " << path_var << ", start: " << start
+       << ", end: " << end << ")";
 }
-
 
 template class Paths::Any::DFSEnum<true>;
 template class Paths::Any::DFSEnum<false>;

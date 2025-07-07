@@ -1,0 +1,2 @@
+MATCH ((x)->(y))((y)->(z))(x)
+RETURN *

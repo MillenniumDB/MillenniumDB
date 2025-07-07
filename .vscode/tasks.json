@@ -1,0 +1,139 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Release Configure",
+            "type": "shell",
+            "command": "cmake -Bbuild/Release -DCMAKE_BUILD_TYPE=Release",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Release Build",
+            "type": "shell",
+            "command": "cmake --build build/Release",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "group": {
+                "kind": "build",
+            },
+            "dependsOn": [
+                "Release Configure"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Debug Configure",
+            "type": "shell",
+            "command": "cmake -Bbuild/Debug -DCMAKE_BUILD_TYPE=Debug",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Debug Build",
+            "type": "shell",
+            "command": "cmake --build build/Debug",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "group": {
+                "kind": "build",
+            },
+            "dependsOn": [
+                "Debug Configure"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Remove interactive-db and Debug Build",
+            "type": "shell",
+            "command": "rm -r tests/tmp/interactive-db",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "group": {
+                "kind": "build",
+            },
+            "dependsOn": [
+                "Debug Build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Truncate mdb-text-search files and Debug Build",
+            "type": "shell",
+            "command": "truncate --size 0 tests/tmp/interactive-db/text_search.trie tests/tmp/interactive-db/text_search.garbage",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "group": {
+                "kind": "build",
+            },
+            "dependsOn": [
+                "Debug Build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Release Clean",
+            "type": "shell",
+            "command": "cmake --build build/Release/ --target clean",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Debug Clean",
+            "type": "shell",
+            "command": "cmake --build build/Debug/ --target clean",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}

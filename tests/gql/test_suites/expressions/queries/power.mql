@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.base_value, x.exp_value, x.base_exp, POWER(x.base_value, x.exp_value) AS potencia

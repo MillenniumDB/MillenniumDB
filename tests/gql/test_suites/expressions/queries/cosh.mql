@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.cosh_value, COSH(x.in_value) AS cosenoh

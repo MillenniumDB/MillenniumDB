@@ -6,12 +6,10 @@ void Values::_begin(Binding& _parent_binding)
     current = 0;
 }
 
-
 void Values::_reset()
 {
     current = 0;
 }
-
 
 bool Values::_next()
 {
@@ -38,7 +36,6 @@ while_loop_begin:
     return false;
 }
 
-
 void Values::assign_nulls()
 {
     for (auto& [var_id, fixed] : vars) {
@@ -46,8 +43,39 @@ void Values::assign_nulls()
     }
 }
 
-
-void Values::accept_visitor(BindingIterVisitor& visitor)
+void Values::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "Values()\n";
+
+    os << "vars: ";
+
+    auto first = true;
+    for (auto& [var, fixed] : vars) {
+        if (first)
+            first = false;
+        else
+            os << ", ";
+        if (fixed)
+            os << "[";
+        os << "?" << get_query_ctx().get_var_name(var);
+        if (fixed)
+            os << "]";
+    }
+
+    os << "\n";
+
+    for (size_t i = 0; i < values.size(); i += vars.size()) {
+        os << std::string(indent, ' ') << '(';
+        for (size_t j = 0; j < vars.size(); j++) {
+            if (j != 0)
+                os << ", ";
+            os << values[i + j];
+        }
+        os << ")\n";
+    }
+
+    os << std::string(indent - 2, ' ') << ")\n";
 }

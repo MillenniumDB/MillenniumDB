@@ -13,52 +13,34 @@ using namespace Paths::ShortestKGroupsWalks;
 void BFSCheck::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-
-    // Store ID for end object
-    end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
-
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
 void BFSCheck::_reset()
 {
     // empty all structs
-    while(!open.empty()) {
+    while (!open.empty()) {
         open.pop();
     }
     visited.clear();
     iter_arena.clear();
     groups_counts.clear();
+}
 
+void BFSCheck::expand_first_state()
+{
     // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+    ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
 
     // Store ID for end object
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 
-    expand_first_state(start_object_id);
-}
-
-void BFSCheck::expand_first_state(ObjectId start)
-{
     iter = make_unique<NullIndexIterator>();
     solution = nullptr;
     first_next = true;
 
-    auto start_iter_transition = iter_arena.add(
-        nullptr,
-        false,
-        ObjectId::get_null()
-    );
-    auto state_inserted = visited.emplace(
-        start,
-        automaton.start_state,
-        0,
-        start_iter_transition
-    );
+    auto start_iter_transition = iter_arena.add(nullptr, false, ObjectId::get_null());
+    auto state_inserted = visited.emplace(start_oid, automaton.start_state, 0, start_iter_transition);
     open.push(state_inserted.first.operator->());
 
     // Check if first state is final
@@ -73,16 +55,12 @@ void BFSCheck::expand_first_state(ObjectId start)
     // Starting state is solution
     if (current_state->node_id == end_object_id) {
         if (automaton.is_final_state[automaton.start_state]) {
-            auto solution_iter_transition = iter_arena.add(
-                nullptr,
-                false,
-                ObjectId::get_null()
-            );
+            auto solution_iter_transition = iter_arena.add(nullptr, false, ObjectId::get_null());
             solution = std::make_unique<Solution>(
                 state_inserted.first.operator->(),
                 solution_iter_transition,
                 1, // num_groups
-                0  // last_group_len
+                0 // last_group_len
             );
         }
     }
@@ -153,20 +131,13 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
             NodeState current_ns(current_state.node_id.id, transition.from);
             NodeState reached_ns(reached_node, transition.to);
 
-            SearchState next_state(
-                ObjectId(reached_node),
-                transition.to,
-                current_state.distance + 1
-            );
+            SearchState next_state(ObjectId(reached_node), transition.to, current_state.distance + 1);
 
             auto visited_search = visited.find(next_state);
             if (visited_search != visited.end()) {
                 auto reached_state = visited_search.operator->();
-                auto new_iter_transition = iter_arena.add(
-                    &current_state,
-                    transition.inverse,
-                    transition.type_id
-                );
+                auto new_iter_transition = iter_arena
+                                               .add(&current_state, transition.inverse, transition.type_id);
                 reached_state->path_iter.add(new_iter_transition);
 
                 // Check if path is solution
@@ -199,21 +170,21 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
                     }
                 } else {
                     // groups count will be updated below
-                    groups_counts.insert({reached_ns, GroupsInfo(0, 0)});
+                    groups_counts.insert({ reached_ns, GroupsInfo(0, 0) });
                 }
 
-                auto new_iter_transition = iter_arena.add(
-                    &current_state,
-                    transition.inverse,
-                    transition.type_id
-                );
+                auto new_iter_transition = iter_arena
+                                               .add(&current_state, transition.inverse, transition.type_id);
                 // Add state to visited and open and keep going unless it's an optimal final state
-                auto reached_state = visited.emplace(
-                    ObjectId(reached_node),
-                    transition.to,
-                    current_state.distance + 1,
-                    new_iter_transition
-                ).first.operator->();
+                auto reached_state = visited
+                                         .emplace(
+                                             ObjectId(reached_node),
+                                             transition.to,
+                                             current_state.distance + 1,
+                                             new_iter_transition
+                                         )
+                                         .first.
+                                     operator->();
                 open.push(reached_state);
 
                 // update groups info
@@ -239,7 +210,7 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
                             // case 2:
                             solution->num_groups++;
                             solution->last_group_len = reached_state->distance;
-                            if (solution->num_groups == K+1) {
+                            if (solution->num_groups == K + 1) {
                                 return true;
                             }
                             auto solution_iter_transition = iter_arena.add(
@@ -257,7 +228,10 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
                             transition.type_id
                         );
                         solution = std::make_unique<Solution>(
-                            reached_state, solution_iter_transition, 1, reached_state->distance
+                            reached_state,
+                            solution_iter_transition,
+                            1,
+                            reached_state->distance
                         );
                     }
                 }
@@ -273,7 +247,15 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
     return false;
 }
 
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor)
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKGroupsWalks::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

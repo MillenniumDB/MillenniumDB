@@ -22,9 +22,7 @@ void SetStartBoundaryVariable::_reset()
     VarId end_var = get_query_ctx().get_var(".end", &found);
     ObjectId start_value = (*parent_binding)[end_var];
     parent_binding->add(start_var_to_set, start_value);
-
     child_iter->reset();
-    parent_binding->add(start_var_to_set, ObjectId::get_null());
 }
 
 void SetStartBoundaryVariable::assign_nulls()
@@ -33,7 +31,13 @@ void SetStartBoundaryVariable::assign_nulls()
     child_iter->assign_nulls();
 }
 
-void SetStartBoundaryVariable::accept_visitor(BindingIterVisitor& visitor)
+void SetStartBoundaryVariable::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "SetStartBoundaryVariable(";
+    os << "start: " << start_var_to_set;
+    os << ")\n";
+    child_iter->print(os, indent + 2, stats);
 }

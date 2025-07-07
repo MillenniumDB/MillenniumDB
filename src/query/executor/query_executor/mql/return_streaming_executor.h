@@ -11,9 +11,7 @@ namespace MQL {
  */
 class ReturnStreamingExecutor : public StreamingQueryExecutor {
 public:
-    ReturnStreamingExecutor(std::unique_ptr<BindingIter> iter,
-                            std::map<VarId, ObjectId>&&  set_vars,
-                            std::vector<VarId>&&         projection_vars);
+    ReturnStreamingExecutor(std::unique_ptr<BindingIter> iter, std::vector<VarId>&& projection_vars);
 
     const std::vector<VarId>& get_projection_vars() const override;
 
@@ -23,8 +21,6 @@ public:
 
 private:
     std::unique_ptr<BindingIter> iter;
-
-    std::map<VarId, ObjectId> set_vars;
 
     std::vector<VarId> projection_vars;
 };

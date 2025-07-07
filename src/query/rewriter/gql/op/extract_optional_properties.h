@@ -1,9 +1,9 @@
 #pragma once
 
-#include "query/parser/op/op_visitor.h"
-#include "query/parser/op/gql/ops.h"
-#include "query/var_id.h"
-#include <set>
+#include <vector>
+
+#include "query/parser/op/gql/graph_pattern/op_optional_properties.h"
+#include "query/parser/op/gql/op_visitor.h"
 
 namespace GQL {
 class ExtractOptionalProperties : public OpVisitor {
@@ -11,9 +11,11 @@ public:
     std::vector<OptPropertyValue> properties;
 
     void visit(OpReturn&) override;
+    void visit(OpFilterStatement&) override;
     void visit(OpOrderBy&) override;
 
-    void visit(OpFilter& op_filter) override;
+    void visit(OpQueryStatements& op) override;
+    void visit(OpFilter& op) override;
     void visit(OpGraphPattern& op) override;
     void visit(OpGraphPatternList& op) override;
     void visit(OpBasicGraphPattern& op) override;
@@ -26,6 +28,7 @@ public:
     void visit(OpNodeLabel&) override;
     void visit(OpEdgeLabel&) override;
     void visit(OpProperty&) override;
+    void visit(OpLet&) override;
 };
 
 } // namespace GQL

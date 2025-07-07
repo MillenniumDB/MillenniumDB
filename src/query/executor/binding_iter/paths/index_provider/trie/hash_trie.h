@@ -1,10 +1,11 @@
 #pragma once
 
-#include <ostream>
+// #include <ostream>
 #include <vector>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+
 #include "graph_models/object_id.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 /*
 This data structure assumes that the inserted elements are ordered lexicographically.
@@ -15,7 +16,7 @@ Ex: Edge(n1,p1,n2,e1), Edge(n1,p1,n2,e2)
 // Hash Trie index
 struct HashTrie {
     // Prefix to offset mapping
-    robin_hood::unordered_flat_map<uint64_t, std::pair<uint32_t, uint32_t>> offsets;
+    boost::unordered_flat_map<uint64_t, std::pair<uint32_t, uint32_t>> offsets;
     uint32_t data_count = 0;
     uint32_t last_offset = 0;
 

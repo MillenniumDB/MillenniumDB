@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 
 namespace SPARQL {
 class ExprCoalesce : public Expr {

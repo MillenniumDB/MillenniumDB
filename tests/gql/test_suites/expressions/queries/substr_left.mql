@@ -1,0 +1,2 @@
+MATCH (x: StringNode)
+RETURN x.word, LEFT(x.word, 2) AS subword

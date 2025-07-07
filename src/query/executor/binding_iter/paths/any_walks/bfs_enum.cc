@@ -5,25 +5,28 @@
 using namespace std;
 using namespace Paths::Any;
 
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     // first_next = true;
 
     // Add starting states to open and visited
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(automaton.start_state,
-                                          start_object_id,
-                                          nullptr,
-                                          true,
-                                          ObjectId::get_null());
+    auto state_inserted = visited.emplace(
+        automaton.start_state,
+        start_object_id,
+        nullptr,
+        true,
+        ObjectId::get_null()
+    );
     open.push(state_inserted.first.operator->());
     iter = make_unique<NullIndexIterator>();
 }
 
-
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_reset() {
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::_reset()
+{
     // Empty open and visited
     queue<const SearchState*> empty;
     open.swap(empty);
@@ -35,18 +38,20 @@ void BFSEnum<MULTIPLE_FINAL>::_reset() {
 
     // Add starting states to open and visited
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(automaton.start_state,
-                                          start_object_id,
-                                          nullptr,
-                                          true,
-                                          ObjectId::get_null());
+    auto state_inserted = visited.emplace(
+        automaton.start_state,
+        start_object_id,
+        nullptr,
+        true,
+        ObjectId::get_null()
+    );
     open.push(state_inserted.first.operator->());
     iter = make_unique<NullIndexIterator>();
 }
 
-
-template <bool MULTIPLE_FINAL>
-bool BFSEnum<MULTIPLE_FINAL>::_next() {
+template<bool MULTIPLE_FINAL>
+bool BFSEnum<MULTIPLE_FINAL>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -60,11 +65,13 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
 
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state]) {
-            auto reached_state = SearchState(automaton.start_state,
-                                             current_state->node_id,
-                                             nullptr,
-                                             true,
-                                             ObjectId::get_null());
+            auto reached_state = SearchState(
+                automaton.start_state,
+                current_state->node_id,
+                nullptr,
+                true,
+                ObjectId::get_null()
+            );
             if (MULTIPLE_FINAL) {
                 reached_final.insert(current_state->node_id.id);
             }
@@ -93,9 +100,9 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
     return false;
 }
 
-
-template <bool MULTIPLE_FINAL>
-const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& current_state) {
+template<bool MULTIPLE_FINAL>
+const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -113,11 +120,13 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            SearchState next_state(transition.to,
-                                   ObjectId(iter->get_reached_node()),
-                                   &current_state,
-                                   transition.inverse,
-                                   transition.type_id);
+            SearchState next_state(
+                transition.to,
+                ObjectId(iter->get_reached_node()),
+                &current_state,
+                transition.inverse,
+                transition.type_id
+            );
             auto visited_state = visited.insert(next_state);
 
             // If next state was visited for the first time
@@ -149,12 +158,19 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
     return nullptr;
 }
 
-
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::Any::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }
-
 
 template class Paths::Any::BFSEnum<true>;
 template class Paths::Any::BFSEnum<false>;

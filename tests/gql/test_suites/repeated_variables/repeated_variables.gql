@@ -1,0 +1,13 @@
+N0 name:"n0"
+N1 name:"n1"
+N2 name:"n2"
+N3 name:"n3"
+N4 name:"n4"
+N0->N1
+N0->N3
+N1->N2
+N1->N4
+N2->N2
+N2->N3
+N2->N4
+N4->N1

@@ -15,7 +15,7 @@ else
     source $VENV/bin/activate
 fi
 
-COMMANDS=(all sparql mql unit)
+COMMANDS=(all sparql mql gql unit)
 
 CMD=all
 if [[ ${1-} ]]; then
@@ -37,6 +37,8 @@ cmake --build build/Debug
 # Remove MQL tmp dir
 [[ -d  $TESTS/mql/tmp/ ]] && echo -e ${BLUE}Removing  $TESTS/mql/tmp/${NC} && rm -r  $TESTS/mql/tmp/
 
+# Remove GQL tmp dir
+[[ -d  $TESTS/gql/tmp/ ]] && echo -e ${BLUE}Removing  $TESTS/gql/tmp/${NC} && rm -r  $TESTS/gql/tmp/
 
 if [[ $CMD = "all" || $CMD = "sparql" ]]; then
     printf "${BLUE}RUNNING SPARQL INTEGRATION TESTS${NC}\n"
@@ -46,6 +48,11 @@ fi
 if [[ $CMD = "all" || $CMD = "mql" ]]; then
     printf "${BLUE}RUNNING MQL INTEGRATION TESTS${NC}\n"
     python3  $TESTS/mql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' >  $TESTS/mql/test-status-last.txt) || ERROR=true
+fi
+
+if [[ $CMD = "all" || $CMD = "gql" ]]; then
+    printf "${BLUE}RUNNING GQL INTEGRATION TESTS${NC}\n"
+    python3  $TESTS/gql/scripts/test.py | tee >(sed $'s/\033[[][^A-Za-z]*m//g' >  $TESTS/gql/test-status-last.txt) || ERROR=true
 fi
 
 if [[ $CMD = "all" || $CMD = "unit" ]]; then

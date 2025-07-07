@@ -4,6 +4,21 @@
 
 using namespace GQL;
 
+void RewriteRuleVisitor::visit(OpQueryStatements& op_simple_linear_query_statements)
+{
+    for (auto& rule : rules) {
+        for (auto& op : op_simple_linear_query_statements.ops) {
+            if (rule->is_possible_to_regroup(op)) {
+                op = rule->regroup(std::move(op));
+            }
+        }
+    }
+
+    for (auto& op : op_simple_linear_query_statements.ops) {
+        op->accept_visitor(*this);
+    }
+}
+
 void RewriteRuleVisitor::visit(OpReturn& op_return)
 {
     for (auto& rule : rules) {
@@ -24,7 +39,6 @@ void RewriteRuleVisitor::visit(OpOrderBy& op_order_by)
             has_rewritten = true;
         }
     }
-
     op_order_by.op->accept_visitor(*this);
 }
 

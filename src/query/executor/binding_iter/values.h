@@ -19,7 +19,7 @@ public:
 
     void assign_nulls() override;
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     // true means value is fixed by parent
     std::vector<std::pair<VarId, bool>> vars;

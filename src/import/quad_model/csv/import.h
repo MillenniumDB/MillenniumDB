@@ -1,79 +1,38 @@
 #pragma once
 
-#include "boost/unordered/unordered_flat_map.hpp"
 #include <boost/unordered/unordered_flat_set.hpp>
-#include <cctype>
 
 #include "graph_models/common/conversions.h"
-#include "graph_models/inliner.h"
 #include "graph_models/object_id.h"
 #include "graph_models/quad_model/quad_catalog.h"
 #include "import/disk_vector.h"
-#include "import/external_string.h"
+#include "import/quad_model/csv/aux_structs.h"
 #include "import/quad_model/csv/lexer/state.h"
 #include "import/quad_model/csv/lexer/token.h"
 #include "import/quad_model/csv/lexer/tokenizer.h"
+#include "import/external_helper.h"
 
 namespace Import { namespace QuadModel { namespace CSV {
-enum CSVType {
-    UNDEFINED,
-    ID,
-    START_ID,
-    END_ID,
-    TYPE,
-    LABEL,
-    STR,
-    INT,
-    DECIMAL,
-    DATE,
-    DATETIME
-};
-
-struct CSVColumn {
-    CSVType type;
-    std::string name;
-    uint64_t key_id;
-    char* value_str;
-    size_t value_size;
-
-    CSVColumn(CSVType type, std::string name, uint64_t key_id) :
-        type(type),
-        name(name),
-        key_id(key_id)
-    {
-        value_str = new char[64 * 1024 * 1024];
-        value_size = 0;
-    }
-
-    // Not allowed to generate copies
-    CSVColumn(const CSVColumn& other) = delete;
-
-    CSVColumn(CSVColumn&& other)
-    {
-        this->value_str = other.value_str;
-        other.value_str = nullptr;
-        this->type = other.type;
-        this->name = other.name;
-        this->key_id = other.key_id;
-        this->value_size = other.value_size;
-    }
-
-    ~CSVColumn()
-    {
-        if (value_str)
-            delete[] value_str;
-    }
-};
 
 class OnDiskImport {
 public:
-    OnDiskImport(const std::string& db_folder, uint64_t buffer_size);
+    static constexpr char PENDING_DECLARED_NODES_FILENAME_PREFIX[] = "tmp_pending_declared_nodes";
+    static constexpr char PENDING_LABELS_FILENAME_PREFIX[] = "tmp_pending_labels";
+    static constexpr char PENDING_PROPERTIES_FILENAME_PREFIX[] = "tmp_pending_properties";
+    static constexpr char PENDING_EDGES_FILENAME_PREFIX[] = "tmp_pending_edges";
+
+    OnDiskImport(
+        const std::string& db_folder,
+        uint64_t string_buffer_size,
+        uint64_t tensor_buffer_size,
+        char list_separator
+    );
 
     ~OnDiskImport();
 
     void start_import(
-        std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes,
-        std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges
+        std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes,
+        std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges
     );
 
     void print_error();
@@ -85,15 +44,14 @@ public:
     std::vector<std::string> split(const std::string& input, const std::string& delimiter);
 
 private:
-    void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_nodes);
-    void parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFiles>>& in_edges);
+    uint64_t strings_buffer_size;
+    uint64_t tensors_buffer_size;
 
-    uint64_t buffer_size;
     std::string db_folder;
 
     CSVTokenizer lexer;
     int current_line = 1;
-    int current_id = 0;
+    int current_anon_id = 0;
     int current_state = State::START_HEADER_NODES;
     int current_token;
     uint64_t edge_count = 0;
@@ -118,15 +76,16 @@ private:
     int current_column = 0;
 
     QuadCatalog catalog;
-    char* external_strings;
-    boost::unordered_flat_set<ExternalString, std::hash<ExternalString>> external_strings_set;
-    uint64_t external_strings_capacity;
-    uint64_t external_strings_end;
 
     boost::unordered_flat_map<std::string, uint64_t> csvid_global;
     uint64_t group_count = 0;
     std::vector<boost::unordered_flat_map<std::string, uint64_t>> csvid_groups;
     boost::unordered_flat_map<std::string, uint64_t> csvid_groups_index;
+
+    std::unique_ptr<DiskVector<1>> pending_declared_nodes;
+    std::unique_ptr<DiskVector<2>> pending_labels;
+    std::unique_ptr<DiskVector<3>> pending_properties;
+    std::unique_ptr<DiskVector<4>> pending_edges;
 
     DiskVector<1> declared_nodes;
     DiskVector<2> labels;
@@ -137,9 +96,16 @@ private:
     DiskVector<3> equal_to_type;
     DiskVector<2> equal_from_to_type;
 
+    // manager writing bytes to disk in a buffered manner
+    std::unique_ptr<ExternalHelper> external_helper;
+
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 
     int* state_transitions;
+
+    void save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& files);
+    void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes);
+    void parse_edge_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_edges);
 
     void create_automata();
 
@@ -159,13 +125,11 @@ private:
 
     void save_empty_body_column_to_buffer();
 
-    void save_node_to_disk();
+    void process_node_line();
 
-    void save_edge_to_disk();
+    void save_edge_line();
 
     void go_to_next_line();
-
-    uint64_t get_or_create_external_string_id(const std::string& input);
 
     void normalize_string_literal(CSVColumn& col);
 
@@ -185,6 +149,14 @@ private:
     {
         return Common::Conversions::pack_float(atof(num_str)).id;
     }
+
+    void try_save_declared_node(uint64_t node_id);
+
+    void try_save_label(uint64_t node_id, uint64_t label_id);
+
+    void try_save_property(uint64_t id1, uint64_t key_id, uint64_t value_id);
+
+    void try_save_quad(uint64_t from_id, uint64_t to_id, uint64_t type_id, uint64_t edge_id);
 };
 
 }}} // namespace Import::QuadModel::CSV

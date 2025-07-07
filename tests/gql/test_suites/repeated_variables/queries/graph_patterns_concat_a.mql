@@ -1,0 +1,2 @@
+MATCH ((x)->(y)->(z))((x)->(u)->(y))
+RETURN x.name, y.name, z.name, u.name

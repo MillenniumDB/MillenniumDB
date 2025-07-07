@@ -13,11 +13,9 @@ class ReturnExecutor : public QueryExecutor {
 public:
     ReturnExecutor(
         std::unique_ptr<BindingIter> iter,
-        std::map<VarId, ObjectId>&& set_vars,
         std::vector<VarId>&& projection_vars
     ) :
         iter(std::move(iter)),
-        set_vars(std::move(set_vars)),
         projection_vars(std::move(projection_vars))
     { }
 
@@ -30,8 +28,6 @@ public:
 
 private:
     std::unique_ptr<BindingIter> iter;
-
-    std::map<VarId, ObjectId> set_vars;
 
     std::vector<VarId> projection_vars;
 

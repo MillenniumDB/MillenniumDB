@@ -15,13 +15,13 @@ namespace Paths { namespace AllShortestSimple {
 AllShortestSimple::BFSCheck returns all the simple paths between two fixed nodes.
 If CYCLIC template is true, the path may have the same node for the start and end node
 */
-template <bool CYCLIC>
+template<bool CYCLIC>
 class BFSCheck : public BindingIter {
 private:
     // Attributes determined in the constructor
-    VarId         path_var;
-    Id            start;
-    Id            end;
+    VarId path_var;
+    Id start;
+    Id end;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
@@ -55,25 +55,20 @@ public:
     // Statistics
     uint_fast32_t idx_searches = 0;
 
-    BFSCheck(
-        VarId                          path_var,
-        Id                             start,
-        Id                             end,
-        RPQ_DFA                        automaton,
-        std::unique_ptr<IndexProvider> provider
-    ) :
-        path_var      (path_var),
-        start         (start),
-        end           (end),
-        automaton     (automaton),
-        provider      (std::move(provider)) { }
+    BFSCheck(VarId path_var, Id start, Id end, RPQ_DFA automaton, std::unique_ptr<IndexProvider> provider) :
+        path_var(path_var),
+        start(start),
+        end(end),
+        automaton(automaton),
+        provider(std::move(provider))
+    { }
 
     // Explore neighbors searching for a solution.
     // returns a pointer to the object added to visited when a solution is found
     // or nullptr when there are no more results
     const PathState* expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 
@@ -81,12 +76,14 @@ public:
 
     bool _next() override;
 
-    void assign_nulls() override {
+    void assign_nulls() override
+    {
         parent_binding->add(path_var, ObjectId::get_null());
     }
 
     // Set iterator for current node + transition
-    inline void set_iter(const SearchState& s) {
+    inline void set_iter(const SearchState& s)
+    {
         // Get current transition object from automaton
         auto& transition = automaton.from_to_connections[s.automaton_state][current_transition];
 

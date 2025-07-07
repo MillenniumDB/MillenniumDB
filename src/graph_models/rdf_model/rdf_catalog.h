@@ -6,14 +6,15 @@
 
 #include "graph_models/rdf_model/iri_prefixes.h"
 #include "storage/catalog/catalog.h"
-#include "storage/index/text_search/text_search_index_manager.h"
-
+#include "storage/index/hnsw/hnsw_index_manager.h"
+#include "storage/index/text_search/text_index_manager.h"
 
 class RdfCatalog : public Catalog {
 public:
-    static constexpr uint64_t MODEL_ID = 1;
+    static constexpr uint8_t MODEL_ID = 1;
 
-    static constexpr uint64_t VERSION  = 7;
+    static constexpr uint8_t MAJOR_VERSION = 1;
+    static constexpr uint8_t MINOR_VERSION = 0;
 
     // The database can handle more than MAX_LANG_AND_DTT languages and datatypes,
     // but the catalog can save up to this this many
@@ -60,7 +61,7 @@ public:
         blank_node_count = count;
     }
 
-    void set_predicate_stats(boost::unordered_map<uint64_t, uint64_t>&& predicate_stats) {
+    void set_predicate_stats(boost::unordered_flat_map<uint64_t, uint64_t>&& predicate_stats) {
         predicate2total_count = std::move(predicate_stats);
     }
 
@@ -91,10 +92,11 @@ public:
     // 6: SPO, POS, OSP, PSO, SOP, OPS
     uint64_t permutations;
 
-    TextSearch::TextSearchIndexManager text_search_index_manager;
-private:
-    bool has_changes = false;
+    TextSearch::TextIndexManager text_index_manager;
 
+    HNSW::HNSWIndexManager hnsw_index_manager;
+
+private:
     uint64_t blank_node_count;
 
     uint64_t triples_count;
@@ -104,5 +106,5 @@ private:
     uint64_t equal_so_count;
     uint64_t equal_po_count;
 
-    boost::unordered_map<uint64_t, uint64_t> predicate2total_count;
+    boost::unordered_flat_map<uint64_t, uint64_t> predicate2total_count;
 };

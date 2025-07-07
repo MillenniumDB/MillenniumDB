@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.ceil_exp, CEIL(x.exp_value) AS techo

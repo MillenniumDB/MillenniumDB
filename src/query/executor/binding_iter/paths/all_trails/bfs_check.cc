@@ -2,13 +2,13 @@
 
 #include <cassert>
 
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllTrails;
 
-void BFSCheck::_begin(Binding& _parent_binding) {
+void BFSCheck::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
     iter = make_unique<NullIndexIterator>();
@@ -22,8 +22,8 @@ void BFSCheck::_begin(Binding& _parent_binding) {
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-bool BFSCheck::_next() {
+bool BFSCheck::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -36,7 +36,9 @@ bool BFSCheck::_next() {
         }
 
         // Starting state is solution
-        if (automaton.is_final_state[automaton.start_state] && current_state.path_state->node_id == end_object_id) {
+        if (automaton.is_final_state[automaton.start_state]
+            && current_state.path_state->node_id == end_object_id)
+        {
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
             return true;
@@ -61,8 +63,8 @@ bool BFSCheck::_next() {
     return false;
 }
 
-
-const SearchState* BFSCheck::expand_neighbors(const SearchState& current_state) {
+const SearchState* BFSCheck::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -86,17 +88,19 @@ const SearchState* BFSCheck::expand_neighbors(const SearchState& current_state) 
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               ObjectId(iter->get_edge()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                ObjectId(iter->get_edge()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
             // Add new state to open
             auto reached_state = &open.emplace(new_visited_ptr, transition.to);
 
             // Check if new path is solution
-            if (automaton.is_final_state[reached_state->automaton_state] &&
-                reached_state->path_state->node_id == end_object_id)
+            if (automaton.is_final_state[reached_state->automaton_state]
+                && reached_state->path_state->node_id == end_object_id)
             {
                 return reached_state;
             }
@@ -111,8 +115,8 @@ const SearchState* BFSCheck::expand_neighbors(const SearchState& current_state) 
     return nullptr;
 }
 
-
-void BFSCheck::_reset() {
+void BFSCheck::_reset()
+{
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -129,7 +133,15 @@ void BFSCheck::_reset() {
     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
 }
 
-
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllTrails::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

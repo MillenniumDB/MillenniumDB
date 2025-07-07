@@ -1,0 +1,2 @@
+MATCH (a:Account {isBlocked: "yes"})
+RETURN (a.number = 0023 AND a.isBlocked = "no") AS result

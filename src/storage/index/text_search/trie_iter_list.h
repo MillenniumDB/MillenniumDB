@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <stack>
 #include <string>
-#include <cstdint>
 
 namespace TextSearch {
 

@@ -528,6 +528,15 @@ void BindingExprPrinter::visit(BindingExprCast& expr) {
     os << ')';
 }
 
+void BindingExprPrinter::visit(BindingExprCosineDistance& expr)
+{
+    os << "mdbfn:cosineDistance(";
+    expr.lhs->accept_visitor(*this);
+    os << ", ";
+    expr.rhs->accept_visitor(*this);
+    os << ')';
+}
+
 void BindingExprPrinter::visit(BindingExprCosineSimilarity& expr)
 {
     os << "mdbfn:cosineSimilarity(";

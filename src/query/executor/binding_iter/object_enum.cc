@@ -3,12 +3,13 @@
 #include "macros/likely.h"
 #include "query/exceptions.h"
 
-void ObjectEnum::_begin(Binding& parent_binding) {
+void ObjectEnum::_begin(Binding& parent_binding)
+{
     this->parent_binding = &parent_binding;
 }
 
-
-bool ObjectEnum::_next() {
+bool ObjectEnum::_next()
+{
     if (current_node < max_count) {
         if (MDB_unlikely(get_query_ctx().thread_info.interruption_requested)) {
             throw InterruptedException();
@@ -21,17 +22,24 @@ bool ObjectEnum::_next() {
     }
 }
 
-
-void ObjectEnum::_reset() {
-    current_node = default_start;
+void ObjectEnum::_reset()
+{
+    current_node = 0;
 }
 
-
-void ObjectEnum::assign_nulls() {
+void ObjectEnum::assign_nulls()
+{
     parent_binding->add(var, ObjectId::get_null());
 }
 
+void ObjectEnum::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "ObjectEnum(";
 
-void ObjectEnum::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+    os << "var: " << var;
+    os << ", max_count: " << max_count;
+    os << ")\n";
 }

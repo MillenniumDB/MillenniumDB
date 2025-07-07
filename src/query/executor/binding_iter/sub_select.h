@@ -24,7 +24,7 @@ public:
 
     void assign_nulls() override;
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     std::vector<VarId> projection_vars;
     std::vector<VarId> safe_assigned_vars;

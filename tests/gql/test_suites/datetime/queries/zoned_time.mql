@@ -1,0 +1,6 @@
+LET x1 = ZONED_TIME("15:10:17Z")
+LET x2 = CURRENT_TIME
+LET x3 = ZONED_TIME()
+
+LET future = ZONED_TIME("21:59:59+02:00")
+RETURN x1, future, x2 < future, x3 < future

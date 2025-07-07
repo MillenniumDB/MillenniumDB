@@ -2,9 +2,9 @@
 
 #include <set>
 
+#include "query/parser/op/sparql/op_visitor.h"
+#include "query/rewriter/sparql/op/default_expr_visitor.h"
 #include "query/var_id.h"
-#include "query/query_context.h"
-#include "query/parser/op/op_visitor.h"
 
 namespace SPARQL {
 /*
@@ -23,6 +23,7 @@ public:
     void visit(OpConstruct&)            override;
     void visit(OpDescribe&)             override;
     void visit(OpBasicGraphPattern&)    override;
+    void visit(OpProcedure&)            override;
     void visit(OpFilter&)               override;
     void visit(OpJoin&)                 override;
     void visit(OpSemiJoin&)             override;
@@ -44,4 +45,15 @@ public:
     void visit(OpValues&)               override;
     void visit(OpShow&)                 override;
 };
+
+class CheckScopedBlankNodesExpr : public DefaultExprVisitor {
+public:
+    CheckScopedBlankNodes& op_visitor;
+
+    CheckScopedBlankNodesExpr(CheckScopedBlankNodes& op_visitor) : op_visitor(op_visitor) {}
+
+    virtual void visit(ExprNotExists& e) override;
+    virtual void visit(ExprExists& e)    override;
+};
+
 } // namespace SPARQL

@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN COLLECT(DISTINCT x.number) AS values_list

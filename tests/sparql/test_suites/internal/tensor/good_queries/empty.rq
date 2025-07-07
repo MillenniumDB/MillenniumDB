@@ -1,0 +1,6 @@
+PREFIX : <https://example.com/>
+
+SELECT (?tensor = "[]"^^mdbtype:tensorFloat && ?tensor = "[]"^^mdbtype:tensorDouble AS ?isEmpty)
+WHERE {
+    ?s :empty ?tensor .
+}

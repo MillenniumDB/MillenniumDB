@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 
 
 class StreamingQueryExecutor;

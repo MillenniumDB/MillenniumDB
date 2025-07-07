@@ -1,8 +1,7 @@
 #pragma once
 
 #include "graph_models/object_id.h"
-#include "query/query_context.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 
 namespace SPARQL {
 class ExprTerm : public Expr {

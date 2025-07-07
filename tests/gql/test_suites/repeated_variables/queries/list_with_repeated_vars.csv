@@ -1,0 +1,17 @@
+x,y,z
+_n0,_n1,NULL
+_n0,_n3,NULL
+_n1,_n2,NULL
+_n1,_n4,NULL
+_n2,_n2,NULL
+_n2,_n3,NULL
+_n2,_n4,NULL
+_n4,_n1,NULL
+_n0,NULL,_n1
+_n0,NULL,_n3
+_n1,NULL,_n2
+_n1,NULL,_n4
+_n2,NULL,_n2
+_n2,NULL,_n3
+_n2,NULL,_n4
+_n4,NULL,_n1

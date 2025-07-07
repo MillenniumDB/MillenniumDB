@@ -1,0 +1,3 @@
+MATCH (?object)
+CALL HNSW_TOP_K(0, 0, 0, 0) YIELD ?object
+RETURN *

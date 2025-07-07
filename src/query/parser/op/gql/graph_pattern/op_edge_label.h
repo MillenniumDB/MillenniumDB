@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 class OpEdgeLabel : public Op {
@@ -28,21 +26,6 @@ public:
     std::set<VarId> get_all_vars() const override
     {
         return { edge_id };
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return { edge_id };
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Server",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/bin/mdb",
+            "args": [
+                "server",
+                "--timeout=3600",
+                "${workspaceFolder}/tests/tmp/interactive-db"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Debug Build"
+        },
+        {
+            "name": "Import",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/bin/mdb",
+            "args": [
+                "import",
+                "--prefixes",
+                "${workspaceFolder}/tests/sparql/test_suites/internal/example/example_prefixes.txt",
+                "${workspaceFolder}/tests/sparql/test_suites/internal/example/example.ttl",
+                "${workspaceFolder}/tests/tmp/interactive-db"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Remove interactive-db and Debug Build"
+        },
+        {
+            "name": "CLI Launch",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/bin/mdb",
+            "env": {"TERM": "xterm-256color"},
+            "args": [
+                "cli",
+                "${workspaceFolder}/tests/tmp/interactive-db"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Debug Build"
+        },
+        {
+            "name": "Unit Test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/tests/trie",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Debug Build"
+        },
+    ]
+}

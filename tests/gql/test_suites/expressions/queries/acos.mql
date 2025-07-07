@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.acos_value, ACOS(x.in_value) AS arcoseno

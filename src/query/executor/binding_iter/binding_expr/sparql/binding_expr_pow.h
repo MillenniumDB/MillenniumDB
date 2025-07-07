@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "graph_models/rdf_model/conversions.h"
+#include "graph_models/common/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -30,10 +31,12 @@ public:
         auto lhs = Conversions::to_tensor<T>(lhs_oid);
         if constexpr (std::is_same_v<T, float>) {
             const auto rhs = Conversions::to_float(rhs_oid);
-            return Conversions::pack_tensor<T>(lhs.pow(rhs));
+            lhs.pow(rhs);
+            return Conversions::pack_tensor<T>(lhs);
         } else if constexpr (std::is_same_v<T, double>) {
             const auto rhs = Conversions::to_double(rhs_oid);
-            return Conversions::pack_tensor<T>(lhs.pow(rhs));
+            lhs.pow(rhs);
+            return Conversions::pack_tensor<T>(lhs);
         } else {
             assert(false && "Unhandled tensor type");
             return ObjectId::get_null();
@@ -48,33 +51,25 @@ public:
         auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
 
         switch (optype) {
-        case Conversions::OPTYPE_INTEGER: {
-            auto lhs = Conversions::to_double(lhs_oid);
-            auto rhs = Conversions::to_double(rhs_oid);
-            return Conversions::pack_double(std::pow(lhs, rhs));
-        }
-        case Conversions::OPTYPE_DECIMAL: {
-            auto lhs = Conversions::to_decimal(lhs_oid);
-            auto rhs = Conversions::to_decimal(rhs_oid);
-            return Conversions::pack_decimal(lhs.pow(rhs));
-        }
-        case Conversions::OPTYPE_FLOAT: {
+        case Conversions::OpType::INTEGER:
+        case Conversions::OpType::DECIMAL:
+        case Conversions::OpType::FLOAT: {
             auto lhs = Conversions::to_float(lhs_oid);
             auto rhs = Conversions::to_float(rhs_oid);
             return Conversions::pack_float(std::pow(lhs, rhs));
         }
-        case Conversions::OPTYPE_DOUBLE: {
+        case Conversions::OpType::DOUBLE: {
             auto lhs = Conversions::to_double(lhs_oid);
             auto rhs = Conversions::to_double(rhs_oid);
             return Conversions::pack_double(std::pow(lhs, rhs));
         }
-        case Conversions::OPTYPE_TENSOR_FLOAT: {
+        case Conversions::OpType::TENSOR_FLOAT: {
             return handle_pow_tensors<float>(lhs_oid, rhs_oid);
         }
-        case Conversions::OPTYPE_TENSOR_DOUBLE: {
+        case Conversions::OpType::TENSOR_DOUBLE: {
             return handle_pow_tensors<double>(lhs_oid, rhs_oid);
         }
-        case Conversions::OPTYPE_INVALID: {
+        case Conversions::OpType::INVALID: {
             return ObjectId::get_null();
         }
         default:

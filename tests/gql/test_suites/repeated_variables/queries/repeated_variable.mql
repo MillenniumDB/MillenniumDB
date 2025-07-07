@@ -1,0 +1,2 @@
+MATCH (x)->(y)(x)
+RETURN x._id, y._id

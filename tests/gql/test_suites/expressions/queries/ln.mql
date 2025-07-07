@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.ln_exp, LN(x.exp_value) AS logaritmonatural

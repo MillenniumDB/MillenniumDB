@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 

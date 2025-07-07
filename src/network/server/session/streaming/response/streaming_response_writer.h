@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "graph_models/common/datatypes/datetime.h"
-#include "graph_models/common/datatypes/tensor.h"
+#include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/object_id.h"
 #include "network/server/protocol.h"
 #include "network/server/session/streaming/response/streaming_response_buffer.h"
@@ -42,7 +42,6 @@ public:
     std::string encode_null() const;
     std::string encode_bool(bool value) const;
     std::string encode_uint8(uint8_t value) const;
-    std::string encode_size(uint32_t value) const;
     std::string encode_float(float value) const;
     std::string encode_double(double value) const;
     std::string encode_uint32(uint32_t value) const;
@@ -54,7 +53,11 @@ public:
     std::string encode_time(DateTime datetime) const;
     std::string encode_datetime(DateTime datetime) const;
     template<typename T>
-    std::string encode_tensor(const Tensor<T>& tensor) const;
+    std::string encode_tensor(const tensor::Tensor<T>& tensor) const;
+
+    // utilities for composed types
+    std::string encode_int64_raw(int64_t value) const;
+    std::string encode_size(uint32_t value) const;
 
     // Helpers writing responses
     void write_variables(
@@ -64,14 +67,14 @@ public:
     );
     void write_records_success(
         uint64_t result_count,
-        uint64_t parser_duration_ms,
-        uint64_t optimizer_duration_ms,
-        uint64_t execution_duration
+        double parser_duration_ms,
+        double optimizer_duration_ms,
+        double execution_duration
     );
     void write_update_success(
-        uint64_t parser_duration_ms,
-        uint64_t optimizer_duration_ms,
-        uint64_t execution_duration_ms
+        double parser_duration_ms,
+        double optimizer_duration_ms,
+        double execution_duration_ms
     );
     void write_catalog_success();
     void write_cancel_success();

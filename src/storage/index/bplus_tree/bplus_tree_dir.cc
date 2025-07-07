@@ -11,7 +11,7 @@
 
 
 template <std::size_t N>
-BPlusTreeDir<N>::~BPlusTreeDir<N>() {
+BPlusTreeDir<N>::~BPlusTreeDir() {
     buffer_manager.unpin(*page);
 }
 

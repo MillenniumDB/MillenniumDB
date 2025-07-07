@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.cot_value, COT(x.in_value) AS cotangente

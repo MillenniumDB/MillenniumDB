@@ -20,13 +20,17 @@ public:
 
     std::unique_ptr<Op> tmp;
 
+    void visit(OpQueryStatements&) override;
+    void visit(OpFilterStatement&) override;
     void visit(OpGraphPattern&) override;
     void visit(OpGraphPatternList&) override;
     void visit(OpBasicGraphPattern&) override;
     void visit(OpRepetition&) override;
     void visit(OpReturn&) override;
+    void visit(OpLet&) override;
 
     void visit(OpOrderBy&) override;
+    void visit(OpOrderByStatement&) override;
     void visit(OpFilter&) override;
     void visit(OpOptProperties&) override;
     void visit(OpProperty&) override;

@@ -2,8 +2,9 @@
 
 #include <memory>
 
+#include "graph_models/quad_model/conversions.h"
+#include "misc/tensor_oid_op.h"
 #include "query/exceptions.h"
-#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
@@ -19,30 +20,36 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto optype = SPARQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
+        auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
 
         switch (optype) {
-        case SPARQL::Conversions::OPTYPE_INTEGER: {
-            auto lhs = SPARQL::Conversions::to_integer(lhs_oid);
-            auto rhs = SPARQL::Conversions::to_integer(rhs_oid);
-            return SPARQL::Conversions::pack_int(lhs - rhs);
+        case Conversions::OpType::INTEGER: {
+            auto lhs = Conversions::to_integer(lhs_oid);
+            auto rhs = Conversions::to_integer(rhs_oid);
+            return Conversions::pack_int(lhs - rhs);
         }
-        case SPARQL::Conversions::OPTYPE_DECIMAL: {
-            auto lhs = SPARQL::Conversions::to_decimal(lhs_oid);
-            auto rhs = SPARQL::Conversions::to_decimal(rhs_oid);
-            return SPARQL::Conversions::pack_decimal(lhs - rhs);
+        case Conversions::OpType::DECIMAL: {
+            auto lhs = Conversions::to_decimal(lhs_oid);
+            auto rhs = Conversions::to_decimal(rhs_oid);
+            return Conversions::pack_decimal(lhs - rhs);
         }
-        case SPARQL::Conversions::OPTYPE_FLOAT: {
-            auto lhs = SPARQL::Conversions::to_float(lhs_oid);
-            auto rhs = SPARQL::Conversions::to_float(rhs_oid);
-            return SPARQL::Conversions::pack_float(lhs - rhs);
+        case Conversions::OpType::FLOAT: {
+            auto lhs = Conversions::to_float(lhs_oid);
+            auto rhs = Conversions::to_float(rhs_oid);
+            return Conversions::pack_float(lhs - rhs);
         }
-        case SPARQL::Conversions::OPTYPE_DOUBLE: {
-            auto lhs = SPARQL::Conversions::to_double(lhs_oid);
-            auto rhs = SPARQL::Conversions::to_double(rhs_oid);
-            return SPARQL::Conversions::pack_double(lhs - rhs);
+        case Conversions::OpType::DOUBLE: {
+            auto lhs = Conversions::to_double(lhs_oid);
+            auto rhs = Conversions::to_double(rhs_oid);
+            return Conversions::pack_double(lhs - rhs);
         }
-        case SPARQL::Conversions::OPTYPE_INVALID: {
+        case Conversions::OpType::TENSOR_FLOAT: {
+            return misc::sub_oid_tensor<float>(lhs_oid, rhs_oid, Conversions::to_float);
+        }
+        case Conversions::OpType::TENSOR_DOUBLE: {
+            return misc::sub_oid_tensor<double>(lhs_oid, rhs_oid, Conversions::to_double);
+        }
+        case Conversions::OpType::INVALID: {
             return ObjectId::get_null();
         }
         default:

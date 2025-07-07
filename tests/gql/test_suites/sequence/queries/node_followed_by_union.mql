@@ -1,0 +1,2 @@
+MATCH (a {age:40})(~[:LivesWith]~(b)|~[:Knows]~(b))
+RETURN *

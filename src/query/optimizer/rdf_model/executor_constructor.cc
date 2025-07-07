@@ -14,7 +14,7 @@
 #include "query/executor/query_executor/sparql/tsv_select_executor.h"
 #include "query/executor/query_executor/sparql/xml_select_executor.h"
 #include "query/optimizer/rdf_model/binding_iter_constructor.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/op_select.h"
 
 using namespace SPARQL;
@@ -127,20 +127,23 @@ void ExecutorConstructor::visit(OpAsk& op_ask) {
 void ExecutorConstructor::visit(OpShow& op_show)
 {
     switch (response_type) {
-    case SPARQL::ResponseType::CSV:
-        if (op_show.type == OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<
-                SPARQL::ShowExecutor<SPARQL::ResponseType::CSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
-            break;
+    case SPARQL::ResponseType::CSV: {
+        if (op_show.type == OpShow::Type::HNSW_INDEX) {
+            executor = std::make_unique<ShowExecutor<ResponseType::CSV, OpShow::Type::HNSW_INDEX>>();
+        } else if (op_show.type == OpShow::Type::TEXT_INDEX) {
+            executor = std::make_unique<ShowExecutor<ResponseType::CSV, OpShow::Type::TEXT_INDEX>>();
         }
-
-    case SPARQL::ResponseType::TSV:
-        if (op_show.type == OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<
-                SPARQL::ShowExecutor<SPARQL::ResponseType::TSV, OpShow::Type::TEXT_SEARCH_INDEX>>();
-            break;
+        break;
+    }
+    case SPARQL::ResponseType::TSV: {
+        if (op_show.type == OpShow::Type::HNSW_INDEX) {
+            executor = std::make_unique<ShowExecutor<ResponseType::TSV, OpShow::Type::HNSW_INDEX>>();
+        } else if (op_show.type == OpShow::Type::TEXT_INDEX) {
+            executor = std::make_unique<ShowExecutor<ResponseType::TSV, OpShow::Type::TEXT_INDEX>>();
         }
+        break;
+    }
     default:
-        throw std::runtime_error("Unhandled SHOW");
+        throw LogicException("Unhandled SHOW in ExecutorConstructor::visit");
     }
 }

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/object_id.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
 class ExprHasEdgeLabel : public Expr {

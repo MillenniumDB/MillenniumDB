@@ -67,9 +67,9 @@ public:
 
     bool is_possible_to_regroup_op_graph_pattern(const OpGraphPattern* op_graph_pattern)
     {
-        return op_graph_pattern != nullptr && op_graph_pattern->mode.prefix == PathMode::ANY
-            && op_graph_pattern->mode.mode == PathMode::DEFAULT && op_graph_pattern->mode.path_count == 1
-            && !op_graph_pattern->path_var_id.has_value();
+        return op_graph_pattern != nullptr && op_graph_pattern->mode.selector == PathMode::ANY
+            && op_graph_pattern->mode.restrictor == PathMode::DEFAULT
+            && op_graph_pattern->mode.path_count == 1 && !op_graph_pattern->path_var_id.has_value();
     }
 };
 } // namespace GQL

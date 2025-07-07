@@ -1,5 +1,4 @@
 #include "return_streaming_executor.h"
-#include "query/executor/binding_iter_printer.h"
 
 using namespace GQL;
 
@@ -34,6 +33,5 @@ uint64_t ReturnStreamingExecutor::execute(MDBServer::StreamingResponseWriter& re
 void ReturnStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
 {
     os << std::string(indent, ' ') << "SelectStreamingExecutor()\n";
-    BindingIterPrinter printer(os, print_stats, indent + 2);
-    iter->accept_visitor(printer);
+    iter->print(os, indent + 2, print_stats);
 }

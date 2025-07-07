@@ -10,33 +10,44 @@ using namespace HashJoin::BGP;
 using namespace HashJoin::BGP::InMemory;
 
 Join1Var::Join1Var(
-    unique_ptr<BindingIter>  _build_rel,
-    unique_ptr<BindingIter>  _probe_rel,
-    VarId                    _join_var,
-    vector<VarId>&&          _build_vars,
-    vector<VarId>&&          _probe_vars
+    unique_ptr<BindingIter> _build_rel,
+    unique_ptr<BindingIter> _probe_rel,
+    VarId _join_var,
+    vector<VarId>&& _build_vars,
+    vector<VarId>&& _probe_vars
 ) :
-    probe_rel  (std::move(_probe_rel)),
-    build_rel  (std::move(_build_rel)),
-    join_var   (_join_var),
-    build_vars (std::move(_build_vars)),
-    probe_vars (std::move(_probe_vars))
+    probe_rel(std::move(_probe_rel)),
+    build_rel(std::move(_build_rel)),
+    join_var(_join_var),
+    build_vars(std::move(_build_vars)),
+    probe_vars(std::move(_probe_vars))
 {
     data_chunk = new uint64_t[(build_vars.size() + 1) * PPage::SIZE];
     data_chunks_dir.push_back(data_chunk);
     data_chunk_index = 0;
 }
 
-
-Join1Var::~Join1Var() {
+Join1Var::~Join1Var()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
 }
 
+void Join1Var::print(std::ostream& os, int indent, bool stats) const {
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(" ", indent) << "HashJoin::BGP::InMemory::Join1Var(";
+    os << "join_var: " << join_var;
+    os << ")\n";
+    build_rel->print(os, indent + 2, stats);
+    probe_rel->print(os, indent + 2, stats);
+}
 
-void Join1Var::_begin(Binding& _parent_binding) {
+void Join1Var::_begin(Binding& _parent_binding)
+{
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -47,8 +58,8 @@ void Join1Var::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
-bool Join1Var::_next() {
+bool Join1Var::_next()
+{
     while (true) {
         if (enumerating_rows != nullptr) {
             for (uint_fast32_t i = 0; i < build_vars.size(); i++) {
@@ -57,8 +68,7 @@ bool Join1Var::_next() {
 
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[build_vars.size()];
             return true;
-        }
-        else {
+        } else {
             if (probe_rel->next()) {
                 auto iterator = hash_table.find((*parent_binding)[join_var]);
                 if (iterator != hash_table.end()) {
@@ -71,8 +81,8 @@ bool Join1Var::_next() {
     }
 }
 
-
-void Join1Var::_reset() {
+void Join1Var::_reset()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -96,26 +106,21 @@ void Join1Var::_reset() {
     build_hash_table();
 }
 
-
-void Join1Var::assign_nulls() {
+void Join1Var::assign_nulls()
+{
     build_rel->assign_nulls();
     probe_rel->assign_nulls();
 }
 
-
-void Join1Var::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void Join1Var::build_hash_table() {
+void Join1Var::build_hash_table()
+{
     auto data_tuple_size = build_vars.size() + 1;
 
     while (build_rel->next()) {
         auto start_data_index = data_chunk_index * data_tuple_size;
         // Store data
         for (size_t i = 0; i < build_vars.size(); i++) {
-            data_chunk[start_data_index + i] =  (*parent_binding)[build_vars[i]].id;
+            data_chunk[start_data_index + i] = (*parent_binding)[build_vars[i]].id;
         }
         // Set last data value as a null pointer
         auto casted_chunk = reinterpret_cast<uint64_t**>(data_chunk);
@@ -132,10 +137,7 @@ void Join1Var::build_hash_table() {
             data_chunk_index = 0;
         }
 
-        auto iterator = hash_table.emplace((*parent_binding)[join_var],
-                                            Value(data_pointer,
-                                                    data_pointer)
-                                );
+        auto iterator = hash_table.emplace((*parent_binding)[join_var], Value(data_pointer, data_pointer));
         if (!(iterator.second)) {
             auto casted_tail = reinterpret_cast<uint64_t**>(iterator.first->second.tail);
             casted_tail[build_vars.size()] = data_pointer;

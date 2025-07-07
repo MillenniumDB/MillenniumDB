@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cassert>
 #include <memory>
-#include "query/exceptions.h"
 
 #include "graph_models/gql/conversions.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
@@ -19,7 +18,6 @@ public:
         str_len(std::move(str_len)),
         left(std::move(left))
     { }
-
 
     ObjectId eval(const Binding& binding) override
     {
@@ -38,7 +36,7 @@ public:
             if (static_cast<std::size_t>(len_int) > str.size()) {
                 return GQL::Conversions::pack_string_simple(str);
             }
-            if (left == true){
+            if (left == true) {
                 return GQL::Conversions::pack_string_simple(str.substr(0, len_int));
             } else {
                 return GQL::Conversions::pack_string_simple(str.substr(str.size() - len_int, len_int));

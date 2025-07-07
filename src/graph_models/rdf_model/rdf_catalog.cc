@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "graph_models/exceptions.h"
+#include "query/exceptions.h"
 #include "storage/index/text_search/rdf.h"
 
 using namespace std;
@@ -13,23 +13,12 @@ RdfCatalog::RdfCatalog(const std::string& filename) :
 {
     assert(!is_empty());
 
-    start_io();
-    auto model_id = read_uint64();
-    if (model_id != MODEL_ID) {
-        std::string error_msg = "Wrong MODEL_ID for RdfCatalog, expected: ";
-        error_msg += std::to_string(MODEL_ID);
-        error_msg += ", got: ";
-        error_msg += std::to_string(model_id);
-        throw WrongModelException(error_msg);
+    auto diff_minor_version = check_version("RDF", MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
+
+    if (diff_minor_version != 0) {
+        throw LogicException("Undefined catalog recovery");
     }
-    auto version_id = read_uint64();
-    if (version_id != VERSION) {
-        std::string error_msg = "Wrong version for RdfCatalog, expected: v";
-        error_msg += std::to_string(VERSION);
-        error_msg += ", got: v";
-        error_msg += std::to_string(version_id);
-        throw WrongCatalogVersionException(error_msg);
-    }
+
     permutations = read_uint64();
     blank_node_count = read_uint64();
     triples_count = read_uint64();
@@ -45,7 +34,7 @@ RdfCatalog::RdfCatalog(const std::string& filename) :
 
     predicate2total_count = read_map();
 
-    text_search_index_manager.init(
+    text_index_manager.init(
         TextSearch::RDF::index_predicate,
         TextSearch::RDF::index_single,
         TextSearch::RDF::remove_single,
@@ -54,11 +43,22 @@ RdfCatalog::RdfCatalog(const std::string& filename) :
     const auto text_index_name2metadata_size = read_uint64();
     for (uint_fast32_t i = 0; i < text_index_name2metadata_size; ++i) {
         const auto name = read_string();
-        TextSearch::TextSearchIndexManager::TextSearchIndexMetadata metadata;
+        TextSearch::TextIndexManager::TextIndexMetadata metadata;
         metadata.normalization_type = static_cast<TextSearch::NORMALIZE_TYPE>(read_uint8());
         metadata.tokenization_type = static_cast<TextSearch::TOKENIZE_TYPE>(read_uint8());
+        metadata.predicate_id = ObjectId(read_uint64());
         metadata.predicate = read_string();
-        text_search_index_manager.load_text_search_index(name, metadata);
+        text_index_manager.load_text_index(name, metadata);
+    }
+
+    hnsw_index_manager.init();
+    const auto hnsw_index_name2metadata_size = read_uint64();
+    for (uint_fast32_t i = 0; i < hnsw_index_name2metadata_size; ++i) {
+        const auto name = read_string();
+        HNSW::HNSWIndexManager::HNSWIndexMetadata metadata;
+        metadata.metric_type = static_cast<HNSW::MetricType>(read_uint8());
+        metadata.predicate = read_string();
+        hnsw_index_manager.load_hnsw_index(name, metadata);
     }
 }
 
@@ -81,17 +81,14 @@ RdfCatalog::RdfCatalog(const std::string& filename, size_t permutations) :
 
 RdfCatalog::~RdfCatalog()
 {
-    if (has_changes || text_search_index_manager.has_changes()) {
+    if (has_changes || text_index_manager.has_changes() || hnsw_index_manager.has_changes()) {
         save();
     }
 }
 
 void RdfCatalog::save()
 {
-    start_io();
-
-    write_uint64(MODEL_ID);
-    write_uint64(VERSION);
+    start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
     write_uint64(permutations);
     write_uint64(blank_node_count);
@@ -108,12 +105,21 @@ void RdfCatalog::save()
 
     write_map(predicate2total_count);
 
-    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
     write_uint64(text_index_name2metadata.size());
     for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
         write_uint8(static_cast<uint8_t>(metadata.normalization_type));
         write_uint8(static_cast<uint8_t>(metadata.tokenization_type));
+        write_uint64(metadata.predicate_id.id);
+        write_string(metadata.predicate);
+    }
+
+    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    write_uint64(hnsw_index_name2metadata.size());
+    for (const auto& [name, metadata] : hnsw_index_name2metadata) {
+        write_string(name);
+        write_uint8(static_cast<uint8_t>(metadata.metric_type));
         write_string(metadata.predicate);
     }
 }
@@ -147,13 +153,22 @@ void RdfCatalog::print(std::ostream& os)
         break;
     }
 
-    const auto& text_index_name2metadata = text_search_index_manager.get_name2metadata();
+    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
     if (!text_index_name2metadata.empty()) {
         os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : text_index_name2metadata) {
             os << "    " << name << ": " << metadata << "\n";
         }
     }
+
+    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    if (!hnsw_index_name2metadata.empty()) {
+        os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
+        for (const auto& [name, metadata] : hnsw_index_name2metadata) {
+            os << "    " << name << ": " << metadata << "\n";
+        }
+    }
+
     os << "-------------------------------------\n";
 }
 

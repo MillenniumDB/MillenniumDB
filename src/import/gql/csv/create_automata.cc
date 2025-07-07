@@ -11,7 +11,6 @@ void OnDiskImport::create_automata()
         }
     }
 
-    // TODO: Define all transitions for the automata
     // Transitions for nodes files
     set_transition(
         State::START_HEADER_NODES,
@@ -106,7 +105,7 @@ void OnDiskImport::create_automata()
         State::COLUMN_BODY_NODES_READ,
         Token::ENDLINE,
         State::START_BODY_NODES,
-        std::bind(&OnDiskImport::save_node_to_disk, this)
+        std::bind(&OnDiskImport::process_node_line, this)
     );
 
     // Transitions for edges files
@@ -198,13 +197,13 @@ void OnDiskImport::create_automata()
         State::COLUMN_BODY_EDGES_READ,
         Token::ENDLINE,
         State::START_BODY_EDGES,
-        std::bind(&OnDiskImport::save_edge_to_disk, this)
+        std::bind(&OnDiskImport::save_edge_line, this)
     );
 
     set_transition(
         State::COLUMN_BODY_EDGES_READ,
         Token::END_OF_FILE,
         State::START_BODY_EDGES,
-        std::bind(&OnDiskImport::save_edge_to_disk, this)
+        std::bind(&OnDiskImport::save_edge_line, this)
     );
 }

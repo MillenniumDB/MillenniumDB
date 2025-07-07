@@ -32,11 +32,47 @@ public:
             return in.gcount();
     }
 
-    bool error() override {
+    bool error() override
+    {
         return in.bad();
     }
 
     std::istream& in;
+};
+
+class MDBIstreamFile : public MDBIstream {
+public:
+    MDBIstreamFile(const std::string& filename) :
+        filename(filename)
+    {
+        in.open(filename, std::ios_base::in | std::ios_base::binary);
+    }
+
+    // try to read n bytes into buf, returns how many bytes were read
+    virtual size_t read(char* buf, size_t n) override
+    {
+        in.read(buf, n);
+
+        if (in)
+            return n;
+        else
+            return in.gcount();
+    }
+
+    bool error() override
+    {
+        return in.bad();
+    }
+
+    void rewind()
+    {
+        in.clear();
+        in.seekg(0);
+    }
+
+    std::ifstream in;
+
+    std::string filename;
 };
 
 class MDBIstreamFiles : public MDBIstream {
@@ -80,7 +116,8 @@ public:
         } while (true);
     }
 
-    bool error() override {
+    bool error() override
+    {
         return current_in.bad();
     }
 

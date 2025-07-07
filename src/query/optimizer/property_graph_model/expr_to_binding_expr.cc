@@ -1,8 +1,8 @@
 #include "expr_to_binding_expr.h"
 
 #include "query/executor/binding_iter/binding_expr/gql_binding_exprs.h"
-#include "query/optimizer/property_graph_model/binding_iter_constructor.h"
-#include "query/parser/expr/gql_exprs.h"
+#include "query/optimizer/property_graph_model/binding_list_iter_constructor.h"
+#include "query/parser/expr/gql/exprs.h"
 #include "query/executor/binding_iter/aggregation/gql/aggs.h"
 
 using namespace GQL;
@@ -66,6 +66,11 @@ void ExprToBindingExpr::visit(ExprHasEdgeLabel& expr)
     tmp = std::make_unique<BindingExprHasEdgeLabel>(expr.edge_id, expr.label_id);
 }
 
+void ExprToBindingExpr::visit(ExprWildcardLabel& expr)
+{
+    tmp = std::make_unique<BindingExprWildcardLabel>(expr.var_id, expr.type);
+}
+
 void ExprToBindingExpr::visit(ExprEquals& expr)
 {
     expr.lhs->accept_visitor(*this);
@@ -78,7 +83,11 @@ void ExprToBindingExpr::visit(ExprEquals& expr)
 
 void ExprToBindingExpr::visit(ExprProperty& expr)
 {
-    tmp = std::make_unique<BindingExprVar>(expr.value);
+    if (expr.type == VarType::Node) {
+        tmp = std::make_unique<BindingExprNodeProperty>(expr.object, expr.key, expr.value);
+    } else {
+        tmp = std::make_unique<BindingExprEdgeProperty>(expr.object, expr.key, expr.value);
+    }
 }
 
 void ExprToBindingExpr::visit(ExprConcat& expr)

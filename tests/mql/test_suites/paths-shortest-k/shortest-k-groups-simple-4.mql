@@ -1,0 +1,2 @@
+MATCH (John)<=[SHORTEST 5 GROUPS SIMPLE ?p :follows*/:works?]=(Joe)
+RETURN ?p

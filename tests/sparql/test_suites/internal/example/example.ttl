@@ -157,9 +157,9 @@ decinl:s decinl:p "-.100"^^xsd:decimal,
                   "+100"^^xsd:decimal .
 # 8.2.2. External
 @prefix decext: <http://www.decext.com/> .
-decext:s decext:p "-123456789123456789123456789123456789.123456789123456789123456789123456789"^^xsd:decimal,
-                  "-.123456789123456789123456789123456789123456789123456789123456789123456789"^^xsd:decimal,
-                  "+123456789123456789123456789123456789123456789123456789123456789123456789"^^xsd:decimal .
+decext:s decext:p "-123456789.123456789"^^xsd:decimal,
+                  "-.123456789123456789"^^xsd:decimal,
+                  "+123456789123456789"^^xsd:decimal .
 
 # 8.3. Boolean
 @prefix bool: <http://www.boolean.com/> .

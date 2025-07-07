@@ -95,7 +95,7 @@ public:
 
     static constexpr uint64_t MASK_EDGE                    = 0x80'00000000000000UL; // 0b1000'00'00  GENERIC
     static constexpr uint64_t MASK_PATH                    = 0x90'00000000000000UL; // 0b1001'00'00  GENERIC
-    static constexpr uint64_t MASK_NOT_FOUND               = 0xA0'00000000000000UL; // 0b1010'00'00  GENERIC
+    // static constexpr uint64_t MASK_NOT_FOUND               = 0xA0'00000000000000UL; // 0b1010'00'00  GENERIC
 
     static constexpr uint64_t MASK_IRI_UUID_LOWER          = 0xA1'00000000000000UL; // 0b1010'00'01
     static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP      = 0xA2'00000000000000UL; // 0b1010'00'10
@@ -118,15 +118,24 @@ public:
     static constexpr uint64_t MASK_TENSOR_DOUBLE_EXTERN    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
     static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
 
-    // TODO: reorganize IDs
-    static constexpr uint64_t MASK_NODE                    = 0xF0'00000000000000UL;
-    static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xF1'00000000000000UL;
-    static constexpr uint64_t MASK_UNDIRECTED_EDGE         = 0xF2'00000000000000UL;
-    static constexpr uint64_t MASK_NODE_LABEL              = 0xF3'00000000000000UL;
-    static constexpr uint64_t MASK_EDGE_LABEL              = 0xF4'00000000000000UL;
-    static constexpr uint64_t MASK_NODE_KEY                = 0xF5'00000000000000UL;
-    static constexpr uint64_t MASK_EDGE_KEY                = 0xF6'00000000000000UL;
-    static constexpr uint64_t MASK_LIST                    = 0xF7'00000000000000UL;
+    // GQL types
+    static constexpr uint64_t MASK_NODE                    = 0xC0'00000000000000UL; // 0b1100'00'00
+    static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xD0'00000000000000UL; // 0b1101'00'00
+    static constexpr uint64_t MASK_UNDIRECTED_EDGE         = 0xD4'00000000000000UL; // 0b1101'01'00
+    static constexpr uint64_t MASK_NODE_LABEL              = 0xE0'00000000000000UL; // 0b1110'00'00
+    static constexpr uint64_t MASK_EDGE_LABEL              = 0xE4'00000000000000UL; // 0b1110'01'00
+    static constexpr uint64_t MASK_NODE_KEY                = 0xE8'00000000000000UL; // 0b1110'10'00
+    static constexpr uint64_t MASK_EDGE_KEY                = 0xEC'00000000000000UL; // 0b1110'11'00
+    static constexpr uint64_t MASK_LIST                    = 0xF0'00000000000000UL; // 0b1111'00'00
+    static constexpr uint64_t MASK_GQL_PATH                = 0xF4'00000000000000UL; // 0b1111'01'00
+    static constexpr uint64_t MASK_DIRECTION               = 0xF8'00000000000000UL; // 0b1111'10'00
+
+    static constexpr uint64_t MASK_NOT_FOUND               = 0xFF'00000000000000UL; // 0b1111'11'11
+
+
+    static constexpr uint64_t DIRECTION_RIGHT       = MASK_DIRECTION | 0x0UL;
+    static constexpr uint64_t DIRECTION_LEFT        = MASK_DIRECTION | 0x1UL;
+    static constexpr uint64_t DIRECTION_UNDIRECTED  = MASK_DIRECTION | 0x2UL;
 
     static_assert(MASK_NEGATIVE_INT < MASK_POSITIVE_INT, "Integers won't be ordered properly in the B+Tree.");
     static_assert(MASK_NEGATIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");

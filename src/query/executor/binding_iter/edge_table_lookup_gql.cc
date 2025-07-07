@@ -5,11 +5,6 @@
 #include "macros/likely.h"
 #include "query/exceptions.h"
 
-void EdgeTableLookupGQL::accept_visitor(BindingIterVisitor& visitor)
-{
-    visitor.visit(*this);
-}
-
 void EdgeTableLookupGQL::_begin(Binding& parent_binding)
 {
     this->parent_binding = &parent_binding;
@@ -25,7 +20,6 @@ bool EdgeTableLookupGQL::_next()
             throw InterruptedException();
         }
         already_looked = true;
-        ++lookups;
 
         ObjectId edge_assignation = (*parent_binding)[edge];
 
@@ -82,4 +76,27 @@ void EdgeTableLookupGQL::assign_nulls()
         assert(to.is_var());
         parent_binding->add(to.get_var(), ObjectId::get_null());
     }
+}
+
+void EdgeTableLookupGQL::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "EdgeTableLookupGQL(";
+
+    os << "[" << edge << "]";
+    if (from_assigned) {
+        os << " [" << from << "]";
+    }
+    if (to_assigned) {
+        os << " [" << to << "]";
+    }
+    if (!from_assigned) {
+        os << " " << from;
+    }
+    if (!to_assigned) {
+        os << " " << to;
+    }
+    os << ")\n";
 }

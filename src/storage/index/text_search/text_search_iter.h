@@ -15,6 +15,9 @@ public:
     // Returns the table pointer associated with the current result
     virtual uint64_t get_table_pointer() const = 0;
 
+    // Returns the score associated with the current result
+    virtual uint64_t get_score() const = 0;
+
     virtual ~TextSearchIter() = default;
 };
 

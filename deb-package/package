@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e; set -u; set -o pipefail
+BLUE='\033[0;34m'; RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m';
+ERROR=
+
+
+DISTRIBUTIONS=(debian-10 debian-11 debian-12 ubuntu-20.04 ubuntu-22.04 ubuntu-24.04)
+
+
+if [[ ! ${1-} || ! ${2-} ]]; then
+    echo "Usage: package <crate/test> <distribution>"
+    echo "Currently supported distributions are: all, ${DISTRIBUTIONS[*]}"
+    exit 1
+fi
+
+
+case "$1" in
+    create|test) COMMAND=$1;;
+    *) echo "Unsupported command: \"$1\", supported commands are create and test"; exit 1;;
+esac
+
+
+if [[ " ${DISTRIBUTIONS[*]} " =~ " $2 " ]]; then
+    DISTRIBUTIONS=("$2")
+elif [[ $2 != all ]]; then
+    echo "Unsupported distribution: \"$2\""
+    echo "Currently supported distributions are: all, ${DISTRIBUTIONS[*]}"
+    exit 2
+fi
+
+BOOST_FILE=boost_1_82_0.tar.gz
+BOOST_URL=https://archives.boost.io/release/1.82.0/source/$BOOST_FILE
+[[ ! -f $BOOST_FILE ]] && echo Downloading $BOOST_FILE && wget -q --show-progress $BOOST_URL
+
+
+# $1 = create/test
+# $2 = distribution
+create_and_run_docker () {
+    docker build \
+        -f ./Dockerfile-$1 \
+        -t "mdb-$1-$2" \
+        --build-arg=IMAGE="${2%-*}" \
+        --build-arg=VERSION="${2#*-}" \
+        ..
+
+    docker run --rm -it \
+        --volume ${PWD}/output:/MillenniumDB/output \
+        --name "mdb-$1-$2" \
+        "mdb-$1-$2"
+}
+
+
+for DISTRIBUTION in "${DISTRIBUTIONS[@]}"; do
+    echo -e "${BLUE}CREATE $DISTRIBUTION PACKAGE${NC}"
+
+    create_and_run_docker create $DISTRIBUTION
+
+    if [[ $COMMAND = test ]]; then
+        echo -e "${BLUE}TEST $DISTRIBUTION PACKAGE${NC}"
+
+        if create_and_run_docker test $DISTRIBUTION; then
+            echo -e "${GREEN}ALL $DISTRIBUTION TESTS PASSED${NC}"
+        else
+            echo -e "${RED}$DISTRIBUTION TESTS FAILED${NC}"
+            ERROR=true
+        fi
+    fi
+done
+
+if [[ $COMMAND = test ]]; then
+    if [[ $ERROR ]]; then
+        echo -e "${RED}TESTS FAILED${NC}"
+        exit 1
+    else
+        echo -e "${GREEN}ALL TESTS PASSED${NC}"
+        exit 0
+    fi
+fi

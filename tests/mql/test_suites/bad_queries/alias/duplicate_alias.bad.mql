@@ -1,0 +1,2 @@
+MATCH (?x)-(?y)
+RETURN ?x as ?z, ?y as ?z

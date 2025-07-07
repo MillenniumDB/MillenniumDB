@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN x.value1, x.value2, x.value3, COALESCE(x.value1, x.value2, x.value3) AS coalesce_value

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "query/id.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -13,20 +13,24 @@ public:
     const Id edge;
 
     OpEdge(Id from, Id to, Id type, Id edge) :
-        from (from),
-        to   (to),
-        type (type),
-        edge (edge) { }
+        from(from),
+        to(to),
+        type(type),
+        edge(edge)
+    { }
 
-    std::unique_ptr<Op> clone() const override {
+    std::unique_ptr<Op> clone() const override
+    {
         return std::make_unique<OpEdge>(*this);
     }
 
-    void accept_visitor(OpVisitor& visitor) override {
+    void accept_visitor(OpVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    bool operator<(const OpEdge& other) const {
+    bool operator<(const OpEdge& other) const
+    {
         if (from < other.from) {
             return true;
         } else if (other.from < from) {
@@ -44,7 +48,8 @@ public:
         }
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res;
         if (from.is_var()) {
             res.insert(from.get_var());
@@ -61,19 +66,8 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override {
-        return get_all_vars();
-    }
-
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
+    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    {
         os << std::string(indent, ' ');
         os << "OpEdge(";
         os << from << ", ";

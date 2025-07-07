@@ -234,6 +234,5 @@ void TSVSelectExecutor::analyze(std::ostream& os, bool print_stats, int indent) 
     }
     os << ")\n";
 
-    BindingIterPrinter printer(os, print_stats, indent + 2);
-    root->accept_visitor(printer);
+    root->print(os, indent + 2, print_stats);
 }

@@ -171,6 +171,14 @@ void TranslatePropertyPaths::visit(OpOrderBy& op_order_by) {
     op_order_by.op->accept_visitor(*this);
 }
 
+void TranslatePropertyPaths::visit(OpProcedure& op_procedure)
+{
+    TranslatePropertyPathsExpr expr_visitor(*this);
+    for (auto& expr : op_procedure.argument_exprs) {
+        expr->accept_visitor(expr_visitor);
+    }
+}
+
 void TranslatePropertyPaths::visit(OpSelect& op_select) {
     op_select.op->accept_visitor(*this);
 }

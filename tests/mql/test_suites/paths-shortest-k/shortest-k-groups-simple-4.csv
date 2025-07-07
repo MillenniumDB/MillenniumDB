@@ -1,0 +1,2 @@
+p
+[(John)<-[:follows]-(Joe)]

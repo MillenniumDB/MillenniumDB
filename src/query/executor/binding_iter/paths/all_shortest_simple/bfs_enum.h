@@ -3,12 +3,13 @@
 #include <memory>
 #include <queue>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/search_state.h"
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
-#include "third_party/robin_hood/robin_hood.h"
 
 namespace Paths { namespace AllShortestSimple {
 
@@ -16,13 +17,13 @@ namespace Paths { namespace AllShortestSimple {
 AllShortestSimple::BFSEnum returns all the shortest Simple Paths to all
 reachable nodes from a fixed starting node.
 */
-template <bool CYCLIC>
+template<bool CYCLIC>
 class BFSEnum : public BindingIter {
 private:
     // Attributes determined in the constructor
-    VarId         path_var;
-    Id            start;
-    VarId         end;
+    VarId path_var;
+    Id start;
+    VarId end;
     const RPQ_DFA automaton;
     std::unique_ptr<IndexProvider> provider;
 
@@ -45,31 +46,26 @@ private:
     bool first_next = true;
 
     // Map of nodes reached with a final state + their optimal distance: NodeId -> OptimalDistance
-    robin_hood::unordered_map<uint64_t, uint32_t> optimal_distances;
+    boost::unordered_flat_map<uint64_t, uint32_t> optimal_distances;
 
 public:
     // Statistics
     uint_fast32_t idx_searches = 0;
 
-    BFSEnum(
-        VarId                          path_var,
-        Id                             start,
-        VarId                          end,
-        RPQ_DFA                        automaton,
-        std::unique_ptr<IndexProvider> provider
-    ) :
-        path_var      (path_var),
-        start         (start),
-        end           (end),
-        automaton     (automaton),
-        provider      (std::move(provider)) { }
+    BFSEnum(VarId path_var, Id start, VarId end, RPQ_DFA automaton, std::unique_ptr<IndexProvider> provider) :
+        path_var(path_var),
+        start(start),
+        end(end),
+        automaton(automaton),
+        provider(std::move(provider))
+    { }
 
     // Explore neighbors searching for a solution.
     // returns a pointer to the object added to visited when a solution is found
     // or nullptr when there are no more results
     const PathState* expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 
@@ -77,13 +73,15 @@ public:
 
     bool _next() override;
 
-    void assign_nulls() override {
+    void assign_nulls() override
+    {
         parent_binding->add(end, ObjectId::get_null());
         parent_binding->add(path_var, ObjectId::get_null());
     }
 
     // Set iterator for current node + transition
-    inline void set_iter(const SearchState& s) {
+    inline void set_iter(const SearchState& s)
+    {
         // Get current transition object from automaton
         auto& transition = automaton.from_to_connections[s.automaton_state][current_transition];
 

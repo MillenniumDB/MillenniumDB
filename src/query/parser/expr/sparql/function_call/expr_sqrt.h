@@ -3,7 +3,7 @@
 #include <memory>
 #include <set>
 
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/sparql/expr.h"
 
 namespace SPARQL {
 class ExprSqrt : public Expr {

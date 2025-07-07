@@ -1,0 +1,4 @@
+MATCH (x)
+LET name = x.name
+ORDER BY name
+RETURN x, name

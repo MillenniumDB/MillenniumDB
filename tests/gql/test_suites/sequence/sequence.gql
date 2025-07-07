@@ -1,0 +1,18 @@
+P0 :Person name:"Alice"   age:0
+P1 :Person name:"Bill"    age:10
+P2 :Person name:"Chris"   age:20
+P3 :Person name:"Daniel"  age:30
+P4 :Person name:"Elise"   age:40
+P5 :Person name:"Frank"   age:50
+C6 :Company name:"C6" age:100
+C7 :Company name:"C7" age:110
+C8 :Company name:"C8" age:120
+P1~P2 :Knows
+P1~P3 :Knows
+P1~P4 :Knows
+P2~P5 :Knows
+P3~P4 :LivesWith
+P4~P5 :LivesWith
+P1->C6 :WorksAt
+P3->C7 :WorksAt
+P4->C7 :WorksAt

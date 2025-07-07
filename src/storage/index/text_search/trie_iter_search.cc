@@ -57,7 +57,7 @@ bool TrieIterSearch<type, allow_errors>::next() {
             if (query_idx >= query.size())
             {
                 // We have reached the end of the prefix
-                if constexpr (type == SearchType::Match) {
+                if constexpr (type == SearchType::MATCH) {
                     if (allow_errors) {
                         // We are still allowed to make errors
                         auto next_error_count = inc(error_count, node->string_ptr[node_str_idx]);
@@ -65,7 +65,7 @@ bool TrieIterSearch<type, allow_errors>::next() {
                         maybe_add_search_state(node->clone(), query_idx, node_str_idx + 1, next_matched_len, next_error_count);
                     }
                 }
-                if constexpr (type == SearchType::Prefix) {
+                if constexpr (type == SearchType::PREFIX) {
                     auto next_matched_len = inc(matched_len, node->string_ptr[node_str_idx]);
                     priority_queue.emplace(node->clone(), query_idx, node_str_idx + 1, next_matched_len, error_count);
                 }
@@ -133,19 +133,19 @@ bool TrieIterSearch<type, allow_errors>::next() {
         } else {
             // At this point we have consumed the prefix and the string of this node
             // Check if we still have errors left
-            if (type == SearchType::Prefix || allow_errors) {
+            if (type == SearchType::PREFIX || allow_errors) {
                 for (size_t c = 0; c < *node->child_count_ptr; c++) {
                     auto child_ptr          = node->children_ptr + (c * Node::CHILD_SIZE);
                     auto child_char         = *child_ptr;
                     auto child_page_pointer = read_bytes(child_ptr + Node::CHILD_CHAR_SIZE, Node::CHILD_POINTER_SIZE);
                     auto child_node         = std::make_unique<Node>(node->trie, child_page_pointer);
 
-                    if constexpr (type == SearchType::Match) {
+                    if constexpr (type == SearchType::MATCH) {
                         auto next_error_count = inc(error_count, child_char);
                         auto next_matched_len = inc(matched_len, child_char);
                         maybe_add_search_state(std::move(child_node), query_idx, 0, next_matched_len, next_error_count);
                     }
-                    if constexpr (type == SearchType::Prefix) {
+                    if constexpr (type == SearchType::PREFIX) {
                         auto next_matched_len = inc(matched_len, child_char);
                         priority_queue.emplace(std::move(child_node), query_idx, 0, next_matched_len, error_count);
                     }
@@ -166,10 +166,10 @@ bool TrieIterSearch<type, allow_errors>::next() {
 }
 
 
-template class TrieIterSearch<SearchType::Match , true >;
-template class TrieIterSearch<SearchType::Match , false>;
-template class TrieIterSearch<SearchType::Prefix, true >;
-template class TrieIterSearch<SearchType::Prefix, false>;
+template class TrieIterSearch<SearchType::MATCH, true>;
+template class TrieIterSearch<SearchType::MATCH, false>;
+template class TrieIterSearch<SearchType::PREFIX, true>;
+template class TrieIterSearch<SearchType::PREFIX, false>;
 
 
 } // namespace TextSearch

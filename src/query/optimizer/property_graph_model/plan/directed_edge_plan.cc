@@ -1,18 +1,22 @@
 #include "directed_edge_plan.h"
 
 #include "graph_models/gql/gql_model.h"
+#include "query/executor/binding_iter/edge_direction_left.h"
+#include "query/executor/binding_iter/edge_direction_right.h"
 #include "query/executor/binding_iter/edge_table_lookup_gql.h"
 #include "query/executor/binding_iter/index_scan.h"
 
 using namespace GQL;
 
-DirectedEdgePlan::DirectedEdgePlan(Id edge, Id from, Id to) :
+DirectedEdgePlan::DirectedEdgePlan(Id edge, Id from, Id to, VarId direction_var, ObjectId direction) :
     edge(edge),
     from(from),
     to(to),
+    direction_var(direction_var),
     edge_assigned(edge.is_OID()),
     from_assigned(from.is_OID()),
-    to_assigned(to.is_OID())
+    to_assigned(to.is_OID()),
+    direction(direction)
 { }
 
 double DirectedEdgePlan::estimate_cost() const
@@ -56,7 +60,7 @@ void DirectedEdgePlan::set_input_vars(const std::set<VarId>& input_vars)
 std::unique_ptr<BindingIter> DirectedEdgePlan::get_binding_iter() const
 {
     if (edge_assigned) {
-        return std::make_unique<EdgeTableLookupGQL>(
+        return add_direction_iter(std::make_unique<EdgeTableLookupGQL>(
             *gql_model.directed_edges,
             edge.get_var(),
             from,
@@ -64,14 +68,14 @@ std::unique_ptr<BindingIter> DirectedEdgePlan::get_binding_iter() const
             from_assigned,
             to_assigned,
             ObjectId::MASK_DIRECTED_EDGE
-        );
+        ));
     }
 
     if (from == to) {
         std::array<std::unique_ptr<ScanRange>, 2> ranges;
         ranges[0] = ScanRange::get(from, from_assigned);
         ranges[1] = ScanRange::get(edge, edge_assigned);
-        return std::make_unique<IndexScan<2>>(*gql_model.equal_d_edge, std::move(ranges));
+        return add_direction_iter(std::make_unique<IndexScan<2>>(*gql_model.equal_d_edge, std::move(ranges)));
     }
 
     std::array<std::unique_ptr<ScanRange>, 3> ranges;
@@ -79,13 +83,23 @@ std::unique_ptr<BindingIter> DirectedEdgePlan::get_binding_iter() const
         ranges[0] = ScanRange::get(to, to_assigned);
         ranges[1] = ScanRange::get(from, from_assigned);
         ranges[2] = ScanRange::get(edge, edge_assigned);
-        return std::make_unique<IndexScan<3>>(*gql_model.to_from_edge, std::move(ranges));
+        return add_direction_iter(std::make_unique<IndexScan<3>>(*gql_model.to_from_edge, std::move(ranges)));
     } else {
         ranges[0] = ScanRange::get(from, from_assigned);
         ranges[1] = ScanRange::get(to, to_assigned);
         ranges[2] = ScanRange::get(edge, edge_assigned);
-        return std::make_unique<IndexScan<3>>(*gql_model.from_to_edge, std::move(ranges));
+        return add_direction_iter(std::make_unique<IndexScan<3>>(*gql_model.from_to_edge, std::move(ranges)));
     }
+}
+
+std::unique_ptr<BindingIter> DirectedEdgePlan::add_direction_iter(std::unique_ptr<BindingIter> iter) const
+{
+    if (direction.id == ObjectId::DIRECTION_RIGHT) {
+        return std::make_unique<EdgeDirectionRight>(std::move(iter), direction_var);
+    } else if (direction.id == ObjectId::DIRECTION_LEFT) {
+        return std::make_unique<EdgeDirectionLeft>(std::move(iter), direction_var);
+    }
+    throw LogicException("DirectedEdgePlan must have a valid direction.");
 }
 
 bool DirectedEdgePlan::get_leapfrog_iter(

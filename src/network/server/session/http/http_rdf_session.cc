@@ -17,30 +17,33 @@
 #include "system/buffer_manager.h"
 #include "update/sparql/update_executor.h"
 
-
+using namespace SPARQL;
 using namespace boost;
 using namespace MDBServer;
 namespace beast = boost::beast;
-namespace http  = beast::http;
+namespace http = beast::http;
 
-HttpRdfSession::HttpRdfSession(Server&                            server,
-                               stream_type&&                      stream,
-                               http::request<http::string_body>&& request,
-                               std::chrono::seconds               query_timeout) :
-    server        (server),
-    stream        (std::move(stream)),
-    request       (std::move(request)),
-    query_timeout (query_timeout) { }
+HttpRdfSession::HttpRdfSession(
+    Server& server,
+    stream_type&& stream,
+    http::request<http::string_body>&& request,
+    std::chrono::seconds query_timeout
+) :
+    server(server),
+    stream(std::move(stream)),
+    request(std::move(request)),
+    query_timeout(query_timeout)
+{ }
 
-
-HttpRdfSession::~HttpRdfSession() {
+HttpRdfSession::~HttpRdfSession()
+{
     if (stream.socket().is_open()) {
         stream.close();
     }
 }
 
-
-void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj) {
+void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj)
+{
     HttpResponseBuffer response_buffer(obj->stream);
 
     std::ostream response_ostream(&response_buffer);
@@ -102,10 +105,11 @@ void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj) {
     }
 }
 
-
-void HttpRdfSession::execute_readonly_query(const std::string&   query,
-                                            std::ostream&        os,
-                                            SPARQL::ResponseType response_type)
+void HttpRdfSession::execute_readonly_query(
+    const std::string& query,
+    std::ostream& os,
+    SPARQL::ResponseType response_type
+)
 {
     // Declared here because the destruction need to be after calling execute_query_plan
     auto version_scope = buffer_manager.init_version_readonly();
@@ -114,15 +118,14 @@ void HttpRdfSession::execute_readonly_query(const std::string&   query,
         std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
         get_query_ctx().prepare(*version_scope, query_timeout);
     }
-    logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index
-        << ' ' << get_query_ctx().cancellation_token;
+    logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
+                           << get_query_ctx().cancellation_token;
 
     std::unique_ptr<QueryExecutor> current_physical_plan;
     try {
         auto current_logical_plan = create_readonly_logical_plan(query);
         current_physical_plan = create_readonly_physical_plan(*current_logical_plan, response_type);
-    }
-    catch (const QueryParsingException& e) {
+    } catch (const QueryParsingException& e) {
         logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
                                 << e.what();
 
@@ -131,16 +134,14 @@ void HttpRdfSession::execute_readonly_query(const std::string&   query,
               "\r\n"
            << std::string(e.what());
         return;
-    }
-    catch (const QueryException& e) {
+    } catch (const QueryException& e) {
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
            << std::string(e.what());
-    }
-    catch (const LogicException& e) {
+    } catch (const LogicException& e) {
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
@@ -155,28 +156,30 @@ void HttpRdfSession::execute_readonly_query(const std::string&   query,
 
     try {
         execute_readonly_query_plan(*current_physical_plan, os, response_type);
-    }
-    catch (const ConnectionException& e) {
+    } catch (const ConnectionException& e) {
         logger(Category::Error) << "Connection Exception: " << e.what();
-    }
-    catch (const InterruptedException& e) {
+    } catch (const InterruptedException& e) {
         // Handled in execute_readonly_query_plan
-    }
-    catch (const QueryExecutionException& e) {
+    } catch (const QueryExecutionException& e) {
         // Handled in execute_readonly_query_plan
+    } catch (const std::exception& e) {
+        logger(Category::Error) << "Unexpected Exception: " << e.what();
+    } catch (...) {
+        logger(Category::Error) << "Unknown exception";
     }
 }
 
-
-std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::string& query) {
+std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::string& query)
+{
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
     parser_duration = std::chrono::system_clock::now() - start_parser;
     return logical_plan;
 }
 
-
-std::unique_ptr<QueryExecutor> HttpRdfSession::create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type) {
+std::unique_ptr<QueryExecutor>
+    HttpRdfSession::create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type)
+{
     const auto start_optimizer = std::chrono::system_clock::now();
 
     SPARQL::ExecutorConstructor executor_constructor(response_type);
@@ -186,10 +189,12 @@ std::unique_ptr<QueryExecutor> HttpRdfSession::create_readonly_physical_plan(Op&
     return std::move(executor_constructor.executor);
 }
 
-
-void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_plan,
-                                                 std::ostream&        os,
-                                                 SPARQL::ResponseType response_type) {
+void HttpRdfSession::execute_readonly_query_plan(
+    QueryExecutor& physical_plan,
+    std::ostream& os,
+    SPARQL::ResponseType response_type
+)
+{
     const auto execution_start = std::chrono::system_clock::now();
     try {
         os << "HTTP/1.1 200 OK\r\n"
@@ -212,10 +217,13 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             os << "Content-Type: application/turtle; charset=utf-8\r\n";
             break;
         default:
-            throw LogicException("Response type not implemented: " + SPARQL::response_type_to_string(response_type));
+            throw LogicException(
+                "Response type not implemented: " + SPARQL::response_type_to_string(response_type)
+            );
         }
         os << "Access-Control-Allow-Origin: *\r\n"
-              "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization\r\n"
+              "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, "
+              "Authorization\r\n"
               "Access-Control-Allow-Methods: GET, POST\r\n"
               "\r\n";
 
@@ -224,7 +232,7 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             os << '\n';
         });
 
-        const auto result_count  = physical_plan.execute(os);
+        const auto result_count = physical_plan.execute(os);
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
@@ -232,12 +240,17 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             os << '\n';
         });
 
-        logger(Category::Info) << "Results            : " << result_count << "\n"
-                                  "Parser duration    : " << parser_duration.count() << " ms\n"
-                                  "Optimizer duration : " << optimizer_duration.count() << " ms\n"
-                                  "Execution duration : " << execution_duration.count() << " ms";
-    }
-    catch (const InterruptedException& e) {
+        logger(Category::Info) << "Results            : " << result_count
+                               << "\n"
+                                  "Parser duration    : "
+                               << parser_duration.count()
+                               << " ms\n"
+                                  "Optimizer duration : "
+                               << optimizer_duration.count()
+                               << " ms\n"
+                                  "Execution duration : "
+                               << execution_duration.count() << " ms";
+    } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
@@ -245,20 +258,19 @@ void HttpRdfSession::execute_readonly_query_plan(QueryExecutor&       physical_p
             os << '\n';
         });
 
-        logger(Category::Info) << "Timeout thrown after "
-                               << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count()
-                               << " ms";
+        logger(Category::Info
+        ) << "Timeout thrown after "
+          << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
         throw e;
-    }
-    catch (const QueryExecutionException& e) {
+    } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
         logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
         throw e;
     }
 }
 
-
-void HttpRdfSession::execute_update_query(const std::string& query, std::ostream& os) {
+void HttpRdfSession::execute_update_query(const std::string& query, std::ostream& os)
+{
     // Mutex to allow only one write query at a time
     std::lock_guard<std::mutex> lock(server.update_execution_mutex);
 
@@ -272,17 +284,16 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
     std::unique_ptr<SPARQL::OpUpdate> current_logical_plan;
     try {
         current_logical_plan = create_update_logical_plan(query);
-    }
-    catch (const QueryParsingException& e) {
-        logger(Category::Error) << "Query Parsing Error. Line " << e.line << ", col: " << e.column << ": " << e.what();
+    } catch (const QueryParsingException& e) {
+        logger(Category::Error) << "Query Parsing Error. Line " << e.line << ", col: " << e.column << ": "
+                                << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
            << std::string(e.what());
         return;
-    }
-    catch (const QueryException& e) {
+    } catch (const QueryException& e) {
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
@@ -290,8 +301,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
               "\r\n"
            << std::string(e.what());
         return;
-    }
-    catch (const LogicException& e) {
+    } catch (const LogicException& e) {
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
@@ -314,22 +324,20 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
             os << "Update Stats\n";
             update_executor.print_stats(os);
         });
-    }
-    catch (const ConnectionException& e) {
+    } catch (const ConnectionException& e) {
         logger(Category::Error) << "Connection Exception: " << e.what();
         return;
-    }
-    catch (const InterruptedException& e) {
+    } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info)
-          << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(parser_duration + execution_duration).count()
+        logger(Category::Info
+        ) << "Timeout thrown after "
+          << std::chrono::duration_cast<std::chrono::milliseconds>(parser_duration + execution_duration)
+                 .count()
           << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
         return;
-    }
-    catch (const QueryExecutionException& e) {
+    } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
         logger(Category::Error) << "Query Execution Exception: " << e.what();
 
@@ -345,8 +353,8 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
                            << "Execution duration:" << execution_duration.count() << "ms";
 }
 
-
-std::unique_ptr<SPARQL::OpUpdate> HttpRdfSession::create_update_logical_plan(const std::string& query) {
+std::unique_ptr<SPARQL::OpUpdate> HttpRdfSession::create_update_logical_plan(const std::string& query)
+{
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = SPARQL::UpdateParser::get_query_plan(query);
     parser_duration = std::chrono::system_clock::now() - start_parser;

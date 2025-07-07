@@ -21,18 +21,9 @@ public:
 
         auto expr_subtype = GQL_OID::get_generic_sub_type(expr_oid);
 
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
-
-        if (expr_generic_type == GQL_OID::GenericType::NUMERIC) {
         switch (expr_subtype) {
-        case GQL_OID::GenericSubType::INTEGER: {
-            auto expr = GQL::Conversions::to_integer(expr_oid);
-            return GQL::Conversions::pack_float(log(expr));
-        }
-        case GQL_OID::GenericSubType::DECIMAL: {
-            auto expr = GQL::Conversions::to_decimal(expr_oid);
-            return GQL::Conversions::pack_decimal(expr.ln());
-        }
+        case GQL_OID::GenericSubType::INTEGER:
+        case GQL_OID::GenericSubType::DECIMAL:
         case GQL_OID::GenericSubType::FLOAT: {
             auto expr = GQL::Conversions::to_float(expr_oid);
             return GQL::Conversions::pack_float(log(expr));
@@ -42,12 +33,8 @@ public:
             return GQL::Conversions::pack_double(log(expr));
         }
         default: {
-            assert(false);
             return ObjectId::get_null();
         }
-        }
-        } else {
-            return ObjectId::get_null();
         }
     }
 

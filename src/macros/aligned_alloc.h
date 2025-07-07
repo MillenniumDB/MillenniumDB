@@ -1,4 +1,9 @@
 #pragma once
+
+#include <cstddef>
+
+constexpr std::size_t MDB_ALIGNMENT = 4096;
+
 #ifdef _MSC_VER
     #include <malloc.h>
 #else
@@ -6,11 +11,9 @@
 #endif
 
 #ifdef _MSC_VER
-    #define MDB_ALIGNED_ALLOC(SIZE) _aligned_malloc(SIZE, 4096)
-    #define MDB_ALIGNED_ALLOC_EX(ALIGNMENT, SIZE) _aligned_malloc(SIZE, ALIGNMENT)
+    #define MDB_ALIGNED_ALLOC(SIZE) _aligned_malloc(SIZE, MDB_ALIGNMENT)
 #else
-    #define MDB_ALIGNED_ALLOC(SIZE) std::aligned_alloc(4096, SIZE)
-    #define MDB_ALIGNED_ALLOC_EX(ALIGNMENT, SIZE) std::aligned_alloc(ALIGNMENT, SIZE)
+    #define MDB_ALIGNED_ALLOC(SIZE) std::aligned_alloc(MDB_ALIGNMENT, SIZE)
 #endif
 
 #ifdef _MSC_VER

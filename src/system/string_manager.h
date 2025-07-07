@@ -8,12 +8,13 @@
 
 #include <boost/unordered/unordered_flat_map.hpp>
 
-#include "macros/count_zeros.h"
 #include "storage/file_id.h"
 #include "storage/index/hash/strings_hash/strings_hash.h"
 
 class StringManager {
 public:
+    static constexpr char STRINGS_FILENAME[] = "strings.dat";
+
     static constexpr uint64_t MAX_STRING_SIZE = 1024 * 1024 * 64; // 64 MB
 
     static constexpr uint64_t BLOCK_SIZE = 1024 * 64; // 64 KB
@@ -70,71 +71,12 @@ public:
 
     static inline int compare(const char* lhs, const char* rhs, size_t lhs_size, size_t rhs_size)
     {
-        unsigned char c1, c2;
-        do {
-            if (lhs_size == 0 || rhs_size == 0)
-                return lhs_size - rhs_size;
-
-            c1 = static_cast<unsigned char>(*lhs);
-            c2 = static_cast<unsigned char>(*rhs);
-            lhs++;
-            rhs++;
-            lhs_size--;
-            rhs_size--;
-        } while (c1 == c2);
-
-        return c1 - c2;
-    }
-
-    // returns the encoded string length, and writes how many bytes were read
-    static uint64_t get_string_len(char* ptr, uint64_t* bytes_for_len)
-    {
-        auto decode_ptr = reinterpret_cast<unsigned char*>(ptr);
-        uint64_t decoded = 0;
-        uint64_t shift_size = 0;
-        *bytes_for_len = 0;
-        while (true) {
-            uint64_t b = *decode_ptr;
-            decode_ptr++;
-            (*bytes_for_len)++;
-
-            if (b <= 127) {
-                decoded |= b << shift_size;
-                break;
-            } else {
-                decoded |= (b & 0x7FUL) << shift_size;
-            }
-
-            shift_size += 7;
+        const auto min_size = std::min(lhs_size, rhs_size);
+        const auto cmp = std::memcmp(lhs, rhs, min_size);
+        if (cmp != 0) {
+            return cmp;
         }
-        return decoded;
-    }
-
-    // returns how many bytes are used to encode the length `str_len`.
-    static inline uint64_t get_bytes_for_len(uint64_t str_len)
-    {
-        uint64_t significant_bits = 64 - MDB_COUNT_LEADING_ZEROS_64(str_len);
-        return (significant_bits / 7) + (significant_bits % 7 != 0);
-    }
-
-    // assumes there is enough space in buffer to write the bytes of the encoded str_len
-    // returns how many bytes are used to encode the length `str_len`
-    static size_t write_encoded_strlen(char* buffer, uint64_t str_len)
-    {
-        size_t bytes_for_len = 0;
-        auto* ptr = buffer;
-        uint64_t remaining_len = str_len;
-        while (remaining_len != 0) {
-            if (remaining_len <= 127) {
-                *ptr = static_cast<char>(remaining_len);
-            } else {
-                *ptr = static_cast<char>(remaining_len & 0x7FUL) | 0x80;
-            }
-            remaining_len = remaining_len >> 7;
-            ptr++;
-            bytes_for_len++;
-        }
-        return bytes_for_len;
+        return lhs_size - rhs_size;
     }
 
 private:

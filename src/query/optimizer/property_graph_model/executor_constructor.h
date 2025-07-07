@@ -4,7 +4,7 @@
 
 #include "query/executor/query_executor/gql/return_executor.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/gql/op_visitor.h"
 
 namespace GQL {
 

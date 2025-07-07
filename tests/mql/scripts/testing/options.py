@@ -20,8 +20,7 @@ TESTING_DBS_DIR = ROOT_TEST_DIR / "tmp/dbs"
 SERVER_LOGS_DIR = ROOT_TEST_DIR / "tmp/server-logs"
 
 # Executables
-CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/mdb-import"
-SERVER_EXECUTABLE = CWD / "build/Debug/bin/mdb-server"
+EXECUTABLE = CWD / "build/Debug/bin/mdb"
 
 # Width of each column of test outputs
 OUTPUT_COLUMN_WIDTH = 50
@@ -46,6 +45,7 @@ TEST_SUITES: list[str] = [
     "is",
     "simple",
     "paths",
+    "paths-shortest-k",
     "bad_queries",
     "escape-unicode",
     "property_types_queries",

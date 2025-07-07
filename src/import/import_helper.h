@@ -35,29 +35,4 @@ inline void print_duration(const std::string& msg, std::chrono::system_clock::ti
     start = end;
 }
 
-// returns the encoded string length, and writes the string in the buffer.
-// assumes the string fits in the buffer and file read position is correct
-inline size_t read_str(std::fstream& file, char* buffer)
-{
-    size_t decoded_len = 0;
-    size_t shift_size = 0;
-
-    while (true) {
-        char c;
-        file.read(&c, 1);
-        auto decode_ptr = reinterpret_cast<unsigned char*>(&c);
-        uint64_t b = *decode_ptr;
-
-        if (b <= 127) {
-            decoded_len |= b << shift_size;
-            break;
-        } else {
-            decoded_len |= (b & 0x7FUL) << shift_size;
-        }
-        shift_size += 7;
-    }
-    file.read(buffer, decoded_len);
-    return decoded_len;
-}
-
 } // namespace Import

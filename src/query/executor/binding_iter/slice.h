@@ -23,7 +23,7 @@ public:
 
     void assign_nulls() override;
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     std::unique_ptr<BindingIter> child_iter;
     uint64_t offset;

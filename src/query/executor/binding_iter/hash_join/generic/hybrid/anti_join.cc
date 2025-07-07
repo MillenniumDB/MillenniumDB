@@ -12,18 +12,18 @@ using namespace HashJoin::Generic::Hybrid;
 AntiJoin::AntiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    original_lhs     (std::move(_lhs)),
-    original_rhs     (std::move(_rhs)),
-    join_vars        (std::move(_join_vars)),
-    lhs_vars         (std::move(_lhs_vars)),
-    rhs_vars         (std::move(_rhs_vars)),
-    N                (join_vars.size()),
-    pk_start         (new uint64_t[N]),
-    probe_key        (Key(pk_start, N))
+    original_lhs(std::move(_lhs)),
+    original_rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     for (auto var : join_vars) {
         all_lhs_vars.push_back(var);
@@ -33,17 +33,17 @@ AntiJoin::AntiJoin(
     }
 }
 
-
-AntiJoin::~AntiJoin() {
+AntiJoin::~AntiJoin()
+{
     // Avoid mem leaks
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
+    delete[] (pk_start);
 }
 
-
-void AntiJoin::_begin(Binding& _parent_binding) {
+void AntiJoin::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
 
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -70,18 +70,18 @@ void AntiJoin::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             join_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset rhs to iterate with 0 partition
         rhs->reset();
     }
-    for (auto& var: rhs_vars) {
+    for (auto& var : rhs_vars) {
         parent_binding->add(var, ObjectId::get_null());
-
     }
 }
 
-
-bool AntiJoin::_next() {
+bool AntiJoin::_next()
+{
     while (true) {
         if (lhs->next()) {
             // If enumerating rows is nullptr ask for the next probe relation row
@@ -104,7 +104,6 @@ bool AntiJoin::_next() {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
                 return true;
-
             }
 
         } else if (get_next_partition()) {
@@ -117,8 +116,8 @@ bool AntiJoin::_next() {
     }
 }
 
-
-void AntiJoin::_reset() {
+void AntiJoin::_reset()
+{
     hash_table.clear();
 
     // Spread reset to children
@@ -144,13 +143,14 @@ void AntiJoin::_reset() {
             all_lhs_vars,
             join_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         rhs->reset();
     }
 }
 
-
-void AntiJoin::assign_nulls() {
+void AntiJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -160,13 +160,8 @@ void AntiJoin::assign_nulls() {
     lhs->assign_nulls();
 }
 
-
-void AntiJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-bool AntiJoin::build_0_partition() {
+bool AntiJoin::build_0_partition()
+{
     while (original_rhs->next()) {
         auto start_key_index = key_chunk_index * N;
         auto current_key_pos = &key_chunk[start_key_index];
@@ -195,8 +190,8 @@ bool AntiJoin::build_0_partition() {
     return true;
 }
 
-
-void AntiJoin::build_hash_table() {
+void AntiJoin::build_hash_table()
+{
     while (rhs->next()) {
         auto start_key_index = key_chunk_index * N;
         auto current_key_pos = &key_chunk[start_key_index];
@@ -218,8 +213,8 @@ void AntiJoin::build_hash_table() {
     }
 }
 
-
-void AntiJoin::prepare_chunks_for_new_partition() {
+void AntiJoin::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -240,10 +235,9 @@ void AntiJoin::prepare_chunks_for_new_partition() {
     key_chunks_dir.push_back(key_chunk);
 }
 
-
-bool AntiJoin::get_next_partition() {
+bool AntiJoin::get_next_partition()
+{
     while (current_partition < partitions.size()) {
-
         lhs = partitions[current_partition].first.get();
         rhs = partitions[current_partition].second.get();
 

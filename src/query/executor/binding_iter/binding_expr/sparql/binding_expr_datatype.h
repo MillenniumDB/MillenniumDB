@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <memory>
-#include <sstream>
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"

@@ -1,11 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "query/executor/binding_iter.h"
 #include "query/parser/op/gql/graph_pattern/op_opt_labels.h"
-#include "storage/index/lists/tmp_lists.h"
 
 using namespace GQL;
 
@@ -16,7 +14,7 @@ public:
         opt_labels(opt_labels)
     { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     bool _next() override;
     void _reset() override;

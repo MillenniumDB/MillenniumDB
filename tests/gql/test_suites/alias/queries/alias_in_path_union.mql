@@ -1,0 +1,2 @@
+MATCH (a: path_union)(->|~)(b: path_union)
+RETURN *

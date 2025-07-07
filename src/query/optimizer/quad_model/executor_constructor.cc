@@ -87,21 +87,13 @@ void ExecutorConstructor::visit(OpDescribe& op_describe) {
 }
 
 
-void ExecutorConstructor::visit(OpSet& op_set) {
-    for (auto& set_item : op_set.set_items) {
-        set_vars.insert({ set_item.first, set_item.second });
-    }
-    op_set.op->accept_visitor(*this);
-}
-
-
 void ExecutorConstructor::visit(OpReturn& op_return) {
-    BindingIterConstructor visitor(set_vars);
+    BindingIterConstructor visitor;
     op_return.accept_visitor(visitor);
 
     std::vector<VarId> projection_vars;
     projection_vars.reserve(op_return.projection.size());
-    for (auto&& [var, _] : op_return.projection) {
+    for (auto&& [_, var] : op_return.projection) {
         projection_vars.push_back(var);
     }
 
@@ -109,11 +101,9 @@ void ExecutorConstructor::visit(OpReturn& op_return) {
 
     if (ret == MQL::ReturnType::CSV) {
         executor = std::make_unique<MQL::ReturnExecutor<MQL::ReturnType::CSV>>(std::move(visitor.tmp),
-                                                                               std::move(set_vars),
                                                                                std::move(projection_vars));
     } else {
         executor = std::make_unique<MQL::ReturnExecutor<MQL::ReturnType::TSV>>(std::move(visitor.tmp),
-                                                                               std::move(set_vars),
                                                                                std::move(projection_vars));
     }
 }
@@ -122,27 +112,21 @@ void ExecutorConstructor::visit(OpShow& op_show)
 {
     switch (ret) {
     case MQL::ReturnType::CSV:
-        if (op_show.type == MQL::OpShow::Type::TENSOR_STORE) {
-            executor = std::make_unique<
-                MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TENSOR_STORE>>();
-            break;
-        } else if (op_show.type == MQL::OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<
-                MQL::ShowExecutor<MQL::ReturnType::CSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
-            break;
+        if (op_show.type == OpShow::Type::HNSW_INDEX) {
+            executor = std::make_unique<ShowExecutor<ReturnType::CSV, OpShow::Type::HNSW_INDEX>>();
+        } else if (op_show.type == OpShow::Type::TEXT_INDEX) {
+            executor = std::make_unique<ShowExecutor<ReturnType::CSV, OpShow::Type::TEXT_INDEX>>();
         }
-    case MQL::ReturnType::TSV:
-        if (op_show.type == MQL::OpShow::Type::TENSOR_STORE) {
-            executor = std::make_unique<
-                MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TENSOR_STORE>>();
-            break;
+        break;
 
-        } else if (op_show.type == MQL::OpShow::Type::TEXT_SEARCH_INDEX) {
-            executor = std::make_unique<
-                MQL::ShowExecutor<MQL::ReturnType::TSV, MQL::OpShow::Type::TEXT_SEARCH_INDEX>>();
-            break;
+    case MQL::ReturnType::TSV:
+        if (op_show.type == OpShow::Type::HNSW_INDEX) {
+            executor = std::make_unique<ShowExecutor<ReturnType::TSV, OpShow::Type::HNSW_INDEX>>();
+        } else if (op_show.type == OpShow::Type::TEXT_INDEX) {
+            executor = std::make_unique<ShowExecutor<ReturnType::TSV, OpShow::Type::TEXT_INDEX>>();
         }
+        break;
     default:
-        throw std::runtime_error("Unhandled SHOW");
+        throw NotSupportedException("MQL::ExecutorConstructor::visit(OpShow&): Unhandled SHOW");
     }
 }

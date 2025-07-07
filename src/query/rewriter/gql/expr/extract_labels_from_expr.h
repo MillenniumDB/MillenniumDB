@@ -1,7 +1,6 @@
 #pragma once
 
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/gql_exprs.h"
+#include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/graph_pattern/op_edge_label.h"
 #include "query/parser/op/gql/graph_pattern/op_node_label.h"
 
@@ -9,7 +8,7 @@ namespace GQL {
 
 class ExtractLabelsFromExpr : public ExprVisitor {
 public:
-    std::vector<LabelOpId> labels;
+    std::set<LabelOpId> labels;
     std::unique_ptr<Expr> tmp;
 
     void clear_labels()
@@ -37,12 +36,17 @@ public:
 
     void visit(ExprHasNodeLabel& expr)
     {
-        labels.emplace_back(std::make_unique<OpNodeLabel>(expr.node_id, expr.label_id), expr.node_id);
+        labels.emplace(std::make_unique<OpNodeLabel>(expr.node_id, expr.label_id), expr.node_id, expr.label_id);
     }
 
     void visit(ExprHasEdgeLabel& expr)
     {
-        labels.emplace_back(std::make_unique<OpEdgeLabel>(expr.edge_id, expr.label_id), expr.edge_id);
+        labels.emplace(std::make_unique<OpEdgeLabel>(expr.edge_id, expr.label_id), expr.edge_id, expr.label_id);
+    }
+
+    void visit(ExprWildcardLabel& expr)
+    {
+        tmp = expr.clone();
     }
 
     void visit(ExprNot& expr)

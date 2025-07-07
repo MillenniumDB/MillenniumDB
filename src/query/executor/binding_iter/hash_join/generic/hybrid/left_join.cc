@@ -12,18 +12,18 @@ using namespace HashJoin::Generic::Hybrid;
 LeftJoin::LeftJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    original_lhs  (std::move(_lhs)),
-    original_rhs  (std::move(_rhs)),
-    join_vars     (std::move(_join_vars)),
-    lhs_vars      (std::move(_lhs_vars)),
-    rhs_vars      (std::move(_rhs_vars)),
-    N             (join_vars.size()),
-    pk_start      (new uint64_t[N]),
-    probe_key     (Key(pk_start, N))
+    original_lhs(std::move(_lhs)),
+    original_rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     for (auto var : join_vars) {
         all_lhs_vars.push_back(var);
@@ -37,20 +37,20 @@ LeftJoin::LeftJoin(
     }
 }
 
-
-LeftJoin::~LeftJoin() {
+LeftJoin::~LeftJoin()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
+    delete[] (pk_start);
 }
 
-
-void LeftJoin::_begin(Binding& _parent_binding) {
+void LeftJoin::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
 
     lhs_binding = make_unique<Binding>(parent_binding->size);
@@ -78,14 +78,15 @@ void LeftJoin::_begin(Binding& _parent_binding) {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         // Reset rhs to iterate with 0 partition
         rhs->reset();
     }
 }
 
-
-bool LeftJoin::_next() {
+bool LeftJoin::_next()
+{
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -138,8 +139,8 @@ bool LeftJoin::_next() {
     }
 }
 
-
-void LeftJoin::_reset() {
+void LeftJoin::_reset()
+{
     hash_table.clear();
     found_nulls = 0;
     found_not_nulls = 0;
@@ -168,13 +169,14 @@ void LeftJoin::_reset() {
             all_lhs_vars,
             all_rhs_vars,
             join_vars,
-            partitions);
+            partitions
+        );
         rhs->reset();
     }
 }
 
-
-void LeftJoin::assign_nulls() {
+void LeftJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -188,13 +190,8 @@ void LeftJoin::assign_nulls() {
     original_rhs->assign_nulls();
 }
 
-
-void LeftJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-bool LeftJoin::build_0_partition() {
+bool LeftJoin::build_0_partition()
+{
     auto data_tuple_size = rhs_vars.size() + 1;
 
     // Avoid ask for space to a new key in each iteration
@@ -214,7 +211,7 @@ bool LeftJoin::build_0_partition() {
         }
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: rhs_vars) {
+        for (auto& var : rhs_vars) {
             *current_data_pos = (*rhs_binding)[var].id;
             current_data_pos++;
         }
@@ -250,16 +247,16 @@ bool LeftJoin::build_0_partition() {
         }
         // Check if hash table does not exceed size limit
         if (hash_table.size() > MAX_HASH_TABLE_SIZE) {
-            delete[](start_key);
+            delete[] (start_key);
             return false;
         }
     }
-    delete[](start_key);
+    delete[] (start_key);
     return true;
 }
 
-
-void LeftJoin::build_hash_table() {
+void LeftJoin::build_hash_table()
+{
     auto data_tuple_size = rhs_vars.size() + 1;
     // Avoid ask for space to a new key in each iteration
     uint64_t* start_key = new uint64_t[N];
@@ -279,7 +276,7 @@ void LeftJoin::build_hash_table() {
 
         // Store data
         auto current_data_pos = &data_chunk[start_data_index];
-        for (auto& var: rhs_vars) {
+        for (auto& var : rhs_vars) {
             *current_data_pos = (*rhs_binding)[var].id;
             current_data_pos++;
         }
@@ -313,11 +310,11 @@ void LeftJoin::build_hash_table() {
             iterator.first->second.tail = data_pointer;
         }
     }
-    delete[](start_key);
+    delete[] (start_key);
 }
 
-
-void LeftJoin::prepare_chunks_for_new_partition() {
+void LeftJoin::prepare_chunks_for_new_partition()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -347,10 +344,9 @@ void LeftJoin::prepare_chunks_for_new_partition() {
     key_chunks_dir.push_back(key_chunk);
 }
 
-
-bool LeftJoin::get_next_partition() {
+bool LeftJoin::get_next_partition()
+{
     while (current_partition < partitions.size()) {
-
         lhs = partitions[current_partition].first.get();
         rhs = partitions[current_partition].second.get();
 

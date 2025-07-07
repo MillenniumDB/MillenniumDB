@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN x.number2_2, x.number_2 + x.number2_2 AS suma, MOD(x.number_2 + x.number2_2, x.number2_2) AS modulo

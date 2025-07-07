@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.sqrt_exp, SQRT(x.exp_value) AS raiz

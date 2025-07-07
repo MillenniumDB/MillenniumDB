@@ -2,17 +2,20 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
+#include "query/executor/binding_iter/aggregation/sparql/uagg_count.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
 
 namespace SPARQL {
 class AggCount : public Agg {
 public:
     using Agg::Agg;
-    void begin() override {
+    void begin() override
+    {
         count = 0;
     }
 
-    void process() override {
+    void process() override
+    {
         auto oid = expr->eval(*binding);
         if (oid.is_valid()) {
             count++;
@@ -20,16 +23,28 @@ public:
     }
 
     // indicates the end of a group
-    ObjectId get() override {
+    ObjectId get() override
+    {
         return Conversions::pack_int(count);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print_to_ostream(std::ostream& os) const override
+    {
         os << "COUNT(";
         BindingExprPrinter printer(os);
         expr->accept_visitor(printer);
         os << ")";
         return os;
+    }
+
+    bool is_pipelineble() const override
+    {
+        return true;
+    }
+
+    std::unique_ptr<UAgg> get_uagg() override
+    {
+        return std::make_unique<UAggCount>(var_id, expr.get());
     }
 
 private:

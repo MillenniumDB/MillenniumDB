@@ -3,17 +3,17 @@
 #include <optional>
 
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/parser/expr/expr.h"
-#include "query/parser/expr/expr_visitor.h"
+#include "query/parser/expr/gql/expr.h"
+#include "query/parser/expr/gql/expr_visitor.h"
 #include "query/var_id.h"
 
 namespace GQL {
 
-class BindingIterConstructor;
+class PathBindingIterConstructor;
 
 class ExprToBindingExpr : public ExprVisitor {
 public:
-    BindingIterConstructor* bic = nullptr;
+    PathBindingIterConstructor* bic = nullptr;
 
     // In expressions like "<expressions> AS <var>", as_var is <var>
     const std::optional<VarId> as_var;
@@ -33,7 +33,7 @@ public:
     { }
 
     // This constructor is used to visit expressions that can have aggregations or group variables.
-    ExprToBindingExpr(BindingIterConstructor* bic, std::optional<VarId> as_var) :
+    ExprToBindingExpr(PathBindingIterConstructor* bic, std::optional<VarId> as_var) :
         bic(bic),
         as_var(as_var)
     { }
@@ -46,6 +46,7 @@ public:
     void visit(ExprNot&) override;
     void visit(ExprHasNodeLabel&) override;
     void visit(ExprHasEdgeLabel&) override;
+    void visit(ExprWildcardLabel&) override;
 
     void visit(ExprEquals&) override;
     void visit(ExprVar&) override;

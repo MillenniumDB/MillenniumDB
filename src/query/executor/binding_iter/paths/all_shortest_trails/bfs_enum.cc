@@ -5,7 +5,8 @@
 using namespace std;
 using namespace Paths::AllShortestTrails;
 
-void BFSEnum::_begin(Binding& _parent_binding) {
+void BFSEnum::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     // first_next = true;
 
@@ -16,8 +17,8 @@ void BFSEnum::_begin(Binding& _parent_binding) {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-void BFSEnum::_reset() {
+void BFSEnum::_reset()
+{
     // Empty open and visited
     queue<SearchState> empty;
     open.swap(empty);
@@ -33,8 +34,8 @@ void BFSEnum::_reset() {
     iter = make_unique<NullIndexIterator>();
 }
 
-
-bool BFSEnum::_next() {
+bool BFSEnum::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -48,7 +49,8 @@ bool BFSEnum::_next() {
 
         // Starting state is solution
         if (automaton.is_final_state[automaton.start_state]) {
-            optimal_distances.insert({current_state.path_state->node_id.id, 0});  // Store optimal distance to node
+            optimal_distances.insert({ current_state.path_state->node_id.id, 0 }
+            ); // Store optimal distance to node
             auto path_id = path_manager.set_path(current_state.path_state, path_var);
             parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state.path_state->node_id);
@@ -74,8 +76,8 @@ bool BFSEnum::_next() {
     return false;
 }
 
-
-const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
+const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
         current_transition = 0;
@@ -99,23 +101,26 @@ const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
             }
 
             // Add new path state to visited
-            auto new_visited_ptr = visited.add(ObjectId(iter->get_reached_node()),
-                                               ObjectId(iter->get_edge()),
-                                               transition.type_id,
-                                               transition.inverse,
-                                               current_state.path_state);
+            auto new_visited_ptr = visited.add(
+                ObjectId(iter->get_reached_node()),
+                ObjectId(iter->get_edge()),
+                transition.type_id,
+                transition.inverse,
+                current_state.path_state
+            );
             // Add new state to open
             auto reached_state = &open.emplace(new_visited_ptr, transition.to, current_state.distance + 1);
 
             // Check if new path is solution
             if (automaton.is_final_state[reached_state->automaton_state]) {
-                auto node_reached_final = optimal_distances.find(iter->get_reached_node());  // Only return shortest paths
+                auto node_reached_final = optimal_distances.find(iter->get_reached_node()
+                ); // Only return shortest paths
                 if (node_reached_final != optimal_distances.end()) {
                     if (node_reached_final->second == current_state.distance + 1) {
                         return reached_state;
                     }
                 } else {
-                    optimal_distances.insert({iter->get_reached_node(), current_state.distance + 1});
+                    optimal_distances.insert({ iter->get_reached_node(), current_state.distance + 1 });
                     return reached_state;
                 }
             }
@@ -130,7 +135,15 @@ const SearchState* BFSEnum::expand_neighbors(const SearchState& current_state) {
     return nullptr;
 }
 
-
-void BFSEnum::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void BFSEnum::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllShortestTrails::BFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

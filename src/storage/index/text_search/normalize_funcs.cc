@@ -13,7 +13,6 @@ std::string noop_normalize(const std::string& token)
 
 std::string nfkd_casefold_normalize(const std::string& token)
 {
-    const auto* transliterator = Transliterator::get_instance();
-    return transliterator->nfkd_casefold(token);
+    return Transliterator::get_instance()->nfkd_casefold(token);
 }
 } // namespace TextSearch

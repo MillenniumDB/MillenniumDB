@@ -8,27 +8,25 @@ struct VarType {
         Node,
         Edge,
         Path,
-        Group,
-        Maybe,
+    };
+
+    enum Degree {
+        Unconditional,
+        Conditional,
+        Group
     };
 
     Type type;
+    Degree degree;
 
-    std::unique_ptr<VarType> child = nullptr;
-
-    VarType(Type type) :
-        type(type)
+    VarType(Type type = Node, Degree degree = Unconditional) :
+        type(type),
+        degree(degree)
     { }
 
     bool operator==(const VarType& other) const
     {
-        if (type != other.type) {
-            return false;
-        }
-        if (child != nullptr) {
-            return *child == *other.child;
-        }
-        return true;
+        return type == other.type && degree == other.degree;
     }
 
     bool operator!=(const VarType& rhs) const
@@ -43,52 +41,22 @@ struct VarType {
 
     inline bool is_group()
     {
-        return type == Group;
+        return degree == Group;
     }
 
     inline bool is_conditional()
     {
-        return type == Maybe;
+        return degree == Conditional;
+    }
+
+    inline bool is_unconditional()
+    {
+        return degree == Unconditional;
     }
 
     inline bool is_path()
     {
         return type == Path;
-    }
-};
-
-struct Node : VarType {
-    Node() :
-        VarType(Type::Node)
-    { }
-};
-
-struct Edge : VarType {
-    Edge() :
-        VarType(Type::Edge)
-    { }
-};
-
-struct Path : VarType {
-    Path() :
-        VarType(Type::Path)
-    { }
-};
-
-struct Group : VarType {
-    std::unique_ptr<VarType> child;
-    Group(std::unique_ptr<VarType>&& child) :
-        VarType(Type::Group)
-    {
-        VarType::child = std::move(child);
-    }
-};
-
-struct Maybe : VarType {
-    Maybe(std::unique_ptr<VarType>&& child) :
-        VarType(Type::Maybe)
-    {
-        VarType::child = std::move(child);
     }
 };
 

@@ -1,16 +1,19 @@
 #include "directed_left_right_edge_plan.h"
 
 #include "graph_models/gql/gql_model.h"
+#include "query/executor/binding_iter/edge_direction_left.h"
+#include "query/executor/binding_iter/edge_direction_right.h"
 #include "query/executor/binding_iter/edge_table_lookup_gql.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/union.h"
 
 using namespace GQL;
 
-DirectedLeftRightEdgePlan::DirectedLeftRightEdgePlan(Id edge, Id from, Id to) :
+DirectedLeftRightEdgePlan::DirectedLeftRightEdgePlan(Id edge, Id from, Id to, VarId direction_var) :
     edge(edge),
     from(from),
     to(to),
+    direction_var(direction_var),
     edge_assigned(edge.is_OID()),
     from_assigned(from.is_OID()),
     to_assigned(to.is_OID())
@@ -58,7 +61,7 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
 {
     if (edge_assigned) {
         if (from == to) {
-            return std::make_unique<EdgeTableLookupGQL>(
+            std::unique_ptr<BindingIter> iter = std::make_unique<EdgeTableLookupGQL>(
                 *gql_model.directed_edges,
                 edge.get_var(),
                 from,
@@ -67,8 +70,12 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
                 to_assigned,
                 ObjectId::MASK_DIRECTED_EDGE
             );
+            return std::make_unique<EdgeDirectionRight>(
+                std::move(iter),
+                direction_var
+            );
         }
-        auto directed_right = std::make_unique<EdgeTableLookupGQL>(
+        std::unique_ptr<BindingIter> directed_right = std::make_unique<EdgeTableLookupGQL>(
             *gql_model.directed_edges,
             edge.get_var(),
             from,
@@ -77,7 +84,9 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
             to_assigned,
             ObjectId::MASK_DIRECTED_EDGE
         );
-        auto directed_left = std::make_unique<EdgeTableLookupGQL>(
+        directed_right = std::make_unique<EdgeDirectionRight>(std::move(directed_right), direction_var);
+
+        std::unique_ptr<BindingIter> directed_left = std::make_unique<EdgeTableLookupGQL>(
             *gql_model.directed_edges,
             edge.get_var(),
             to,
@@ -86,6 +95,7 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
             from_assigned,
             ObjectId::MASK_DIRECTED_EDGE
         );
+        directed_left = std::make_unique<EdgeDirectionLeft>(std::move(directed_left), direction_var);
 
         std::vector<std::unique_ptr<BindingIter>> iters;
         iters.push_back(std::move(directed_left));
@@ -97,11 +107,17 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
         std::array<std::unique_ptr<ScanRange>, 2> ranges;
         ranges[0] = ScanRange::get(from, from_assigned);
         ranges[1] = ScanRange::get(edge, edge_assigned);
-        return std::make_unique<IndexScan<2>>(*gql_model.equal_d_edge, std::move(ranges));
+        auto iter = std::make_unique<IndexScan<2>>(*gql_model.equal_d_edge, std::move(ranges));
+        return std::make_unique<EdgeDirectionRight>(
+            std::move(iter),
+            direction_var
+        );
     }
 
     std::array<std::unique_ptr<ScanRange>, 3> ranges_right;
     std::array<std::unique_ptr<ScanRange>, 3> ranges_left;
+    std::unique_ptr<BindingIter> directed_right;
+    std::unique_ptr<BindingIter> directed_left;
 
     if (to_assigned) {
         ranges_right[0] = ScanRange::get(to, to_assigned);
@@ -111,6 +127,15 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
         ranges_left[0] = ScanRange::get(to, to_assigned);
         ranges_left[1] = ScanRange::get(from, from_assigned);
         ranges_left[2] = ScanRange::get(edge, edge_assigned);
+
+        directed_left = std::make_unique<EdgeDirectionLeft>(
+            std::make_unique<IndexScan<3>>(*gql_model.from_to_edge, std::move(ranges_left)),
+            direction_var
+        );
+        directed_right = std::make_unique<EdgeDirectionRight>(
+            std::make_unique<IndexScan<3>>(*gql_model.to_from_edge, std::move(ranges_right)),
+            direction_var
+        );
     } else {
         ranges_right[0] = ScanRange::get(from, from_assigned);
         ranges_right[1] = ScanRange::get(to, to_assigned);
@@ -119,10 +144,16 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
         ranges_left[0] = ScanRange::get(from, from_assigned);
         ranges_left[1] = ScanRange::get(to, to_assigned);
         ranges_left[2] = ScanRange::get(edge, edge_assigned);
-    }
 
-    auto directed_right = std::make_unique<IndexScan<3>>(*gql_model.from_to_edge, std::move(ranges_right));
-    auto directed_left = std::make_unique<IndexScan<3>>(*gql_model.to_from_edge, std::move(ranges_left));
+        directed_right = std::make_unique<EdgeDirectionRight>(
+            std::make_unique<IndexScan<3>>(*gql_model.from_to_edge, std::move(ranges_right)),
+            direction_var
+        );
+        directed_left = std::make_unique<EdgeDirectionLeft>(
+            std::make_unique<IndexScan<3>>(*gql_model.to_from_edge, std::move(ranges_left)),
+            direction_var
+        );
+    }
 
     std::vector<std::unique_ptr<BindingIter>> iters;
     iters.push_back(std::move(directed_right));

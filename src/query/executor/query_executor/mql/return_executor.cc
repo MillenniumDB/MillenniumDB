@@ -141,6 +141,20 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "time(\"" << datetime.get_value_string() << "\")";
         break;
     }
+    case ObjectId::MASK_TENSOR_FLOAT_INLINED:
+    case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
+    case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+        const auto tensor = Conversions::unpack_tensor<float>(oid);
+        os << "tensorFloat(\"" << tensor.to_string() << "\")";
+        break;
+    }
+    case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
+    case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
+    case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+        const auto tensor = Conversions::unpack_tensor<double>(oid);
+        os << "tensorDouble(\"" << tensor.to_string() << "\")";
+        break;
+    }
     default:
         throw std::logic_error("Unmanaged mask in ReturnExecutor print: "
             + std::to_string(mask));
@@ -176,9 +190,6 @@ uint64_t ReturnExecutor<ret>::execute(std::ostream& os) {
 
     uint64_t result_count = 0;
     Binding binding(get_query_ctx().get_var_size());
-    for (auto&& [var, value] : set_vars) {
-        binding.add(var, value);
-    }
 
     iter->begin(binding);
 
@@ -218,8 +229,7 @@ uint64_t ReturnExecutor<ret>::execute(std::ostream& os) {
 
 template<ReturnType ret>
 void ReturnExecutor<ret>::analyze(std::ostream& os, bool print_stats, int indent) const {
-    BindingIterPrinter printer(os, print_stats, indent);
-    iter->accept_visitor(printer);
+    iter->print(os, indent, print_stats);
 }
 
 

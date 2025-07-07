@@ -6,8 +6,9 @@
 using namespace std;
 using namespace Paths::AllShortestCount;
 
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     // first_next = true;
 
@@ -17,9 +18,9 @@ void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding) {
     open.push(start_state.first.operator->());
 }
 
-
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_reset() {
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::_reset()
+{
     // Empty open and visited
     queue<const SearchState*> empty;
     open.swap(empty);
@@ -36,9 +37,9 @@ void BFSEnum<MULTIPLE_FINAL>::_reset() {
     open.push(state_inserted.first.operator->());
 }
 
-
-template <bool MULTIPLE_FINAL>
-bool BFSEnum<MULTIPLE_FINAL>::_next() {
+template<bool MULTIPLE_FINAL>
+bool BFSEnum<MULTIPLE_FINAL>::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -53,7 +54,7 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
         // Starting state is solution
         if (MULTIPLE_FINAL) {
             if (automaton.is_final_state[automaton.start_state]) {
-                reached_final.insert({current_state->node_id.id, ResultInfo(1, 0)});
+                reached_final.insert({ current_state->node_id.id, ResultInfo(1, 0) });
             }
         }
     }
@@ -67,7 +68,10 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
             if (MULTIPLE_FINAL) {
                 auto found_reached_final = reached_final.find(current_state->node_id.id);
                 if (found_reached_final != reached_final.end()) {
-                    parent_binding->add(path_var, Common::Conversions::pack_int(found_reached_final->second.count));
+                    parent_binding->add(
+                        path_var,
+                        Common::Conversions::pack_int(found_reached_final->second.count)
+                    );
 
                     parent_binding->add(end, current_state->node_id);
                     open.pop();
@@ -88,9 +92,9 @@ bool BFSEnum<MULTIPLE_FINAL>::_next() {
     return false;
 }
 
-
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state) {
+template<bool MULTIPLE_FINAL>
+void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state)
+{
     for (size_t current_transition = 0;
          current_transition < automaton.from_to_connections[current_state.automaton_state].size();
          current_transition++)
@@ -103,10 +107,12 @@ void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state
 
         // Iterate over records while counting paths, until all neighbors of the current state are visited
         while (iter->next()) {
-            SearchState next_state(ObjectId(iter->get_reached_node()),
-                                   transition.to,
-                                   current_state.distance + 1,
-                                   current_state.count);
+            SearchState next_state(
+                ObjectId(iter->get_reached_node()),
+                transition.to,
+                current_state.distance + 1,
+                current_state.count
+            );
 
             // Check if next state has already been visited
             auto visited_search = visited.find(next_state);
@@ -118,7 +124,7 @@ void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state
                     // Check if current paths are solution, and add them if true
                     if (MULTIPLE_FINAL) {
                         if (automaton.is_final_state[next_state.automaton_state]) {
-                            auto node_reached_final = reached_final.find(next_state.node_id.id);  // must exist
+                            auto node_reached_final = reached_final.find(next_state.node_id.id); // must exist
                             if (node_reached_final->second.distance == next_state.distance) {
                                 node_reached_final->second.count += next_state.count;
                             }
@@ -127,10 +133,14 @@ void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state
                 }
             } else {
                 // Add state to visited and open
-                auto new_visited_state = visited.emplace(ObjectId(iter->get_reached_node()),
-                                                         transition.to,
-                                                         current_state.distance + 1,
-                                                         current_state.count).first;
+                auto new_visited_state = visited
+                                             .emplace(
+                                                 ObjectId(iter->get_reached_node()),
+                                                 transition.to,
+                                                 current_state.distance + 1,
+                                                 current_state.count
+                                             )
+                                             .first;
                 open.push(new_visited_state.operator->());
 
                 // Check if current paths are solution, and add them if true
@@ -142,7 +152,8 @@ void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state
                                 node_reached_final->second.count += next_state.count;
                             }
                         } else {
-                            reached_final.insert({next_state.node_id.id, ResultInfo(next_state.count, next_state.distance)});
+                            reached_final.insert({ next_state.node_id.id,
+                                                   ResultInfo(next_state.count, next_state.distance) });
                         }
                     }
                 }
@@ -150,13 +161,6 @@ void BFSEnum<MULTIPLE_FINAL>::explore_neighbors(const SearchState& current_state
         }
     }
 }
-
-
-template <bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
 
 template class Paths::AllShortestCount::BFSEnum<true>;
 template class Paths::AllShortestCount::BFSEnum<false>;

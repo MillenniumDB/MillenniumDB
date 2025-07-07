@@ -1,0 +1,2 @@
+MATCH (x: ArithmeticNode)
+RETURN x.exp_value, x.log10_exp, LOG10(x.exp_value) AS logaritmo10

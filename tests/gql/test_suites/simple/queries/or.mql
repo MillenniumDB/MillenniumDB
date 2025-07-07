@@ -1,0 +1,3 @@
+MATCH (n:Person)
+WHERE n.name = "p3" OR n.name = "1"
+RETURN n.name AS name

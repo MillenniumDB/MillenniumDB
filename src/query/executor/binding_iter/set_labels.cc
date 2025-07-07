@@ -54,7 +54,21 @@ void SetLabels::assign_nulls()
     child_iter->assign_nulls();
 }
 
-void SetLabels::accept_visitor(BindingIterVisitor& visitor)
+void SetLabels::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "SetLabels(";
+    bool first = true;
+    for (auto& var : opt_labels) {
+        if (first) {
+            first = false;
+        } else {
+            os << " ";
+        }
+        os << var.object;
+    }
+    os << ")\n";
+    child_iter->print(os, indent + 2, stats);
 }

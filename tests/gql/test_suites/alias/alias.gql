@@ -1,0 +1,8 @@
+N0 :node_alias :L1 :L2
+N1 :node_alias :L1
+N2 :node_alias :L2
+N3 :path_union :from1
+N4 :path_union :from2
+N5 :path_union :to
+N3->N5
+N4~N5

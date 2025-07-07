@@ -29,7 +29,7 @@ bool test_nfkd_casefold_normalize()
     }
 
     return true;
-};
+}
 
 bool test_ws_tokenizers()
 {

@@ -1,16 +1,17 @@
 #include "nested_loop_join.h"
 
-void NestedLoopJoin::_begin(Binding& parent_binding_) {
-    this->parent_binding = &parent_binding_;
+void NestedLoopJoin::_begin(Binding& _parent_binding)
+{
+    this->parent_binding = &_parent_binding;
 
-    lhs_binding = std::make_unique<Binding>(parent_binding_.size);
-    rhs_binding = std::make_unique<Binding>(parent_binding_.size);
+    lhs_binding = std::make_unique<Binding>(_parent_binding.size);
+    rhs_binding = std::make_unique<Binding>(_parent_binding.size);
 
     // copy assigned_safe_vars from parent_binding into lhs_binding and rhs_binding
     for (const auto& var : parent_safe_vars) {
-        lhs_binding->add(var, parent_binding_[var]);
-        rhs_binding->add(var, parent_binding_[var]);
+        rhs_binding->add(var, _parent_binding[var]);
     }
+    lhs_binding->add_all(_parent_binding);
 
     lhs->begin(*lhs_binding);
     if (lhs->next()) {
@@ -24,7 +25,8 @@ void NestedLoopJoin::_begin(Binding& parent_binding_) {
     original_rhs->begin(*rhs_binding);
 }
 
-bool NestedLoopJoin::_next() {
+bool NestedLoopJoin::_next()
+{
     while (true) {
         if (rhs->next()) {
             bool match = true;
@@ -46,19 +48,19 @@ bool NestedLoopJoin::_next() {
             }
 
             if (match) {
-                for (auto& var: lhs_only_vars) {
+                for (auto& var : lhs_only_vars) {
                     parent_binding->add(var, (*lhs_binding)[var]);
                 }
 
-                for (auto& var: rhs_only_vars) {
+                for (auto& var : rhs_only_vars) {
                     parent_binding->add(var, (*rhs_binding)[var]);
                 }
 
-                for (auto& var: safe_join_vars) {
+                for (auto& var : safe_join_vars) {
                     parent_binding->add(var, (*rhs_binding)[var]);
                 }
 
-                for (auto& var: unsafe_join_vars) {
+                for (auto& var : unsafe_join_vars) {
                     auto var_oid = (*lhs_binding)[var];
                     if (var_oid.is_null()) {
                         var_oid = (*rhs_binding)[var];
@@ -79,11 +81,12 @@ bool NestedLoopJoin::_next() {
     }
 }
 
-void NestedLoopJoin::_reset() {
+void NestedLoopJoin::_reset()
+{
     for (const auto& var : parent_safe_vars) {
-        lhs_binding->add(var, (*parent_binding)[var]);
         rhs_binding->add(var, (*parent_binding)[var]);
     }
+    lhs_binding->add_all(*parent_binding);
 
     lhs->reset();
     if (lhs->next()) {
@@ -97,13 +100,45 @@ void NestedLoopJoin::_reset() {
     }
 }
 
-
-void NestedLoopJoin::assign_nulls() {
+void NestedLoopJoin::assign_nulls()
+{
     lhs->assign_nulls();
     original_rhs->assign_nulls();
 }
 
+void NestedLoopJoin::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "NestedLoopJoin(";
 
-void NestedLoopJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+    os << "safe_join: [";
+    for (auto& var : safe_join_vars) {
+        os << ' ' << var;
+    }
+
+    os << " ] unsafe_join: [";
+    for (auto& var : unsafe_join_vars) {
+        os << ' ' << var;
+    }
+
+    os << " ] parent_safe: [";
+    for (auto& var : parent_safe_vars) {
+        os << ' ' << var;
+    }
+
+    os << " ] lhs_only: [";
+    for (auto& var : lhs_only_vars) {
+        os << ' ' << var;
+    }
+
+    os << " ] rhs_only: [";
+    for (auto& var : rhs_only_vars) {
+        os << ' ' << var;
+    }
+    os << " ])\n";
+
+    lhs->print(os, indent + 2, stats);
+    original_rhs->print(os, indent + 2, stats);
 }

@@ -1,0 +1,35 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "includePath": [
+                "${workspaceFolder}/src/",
+                "${workspaceFolder}/third_party/antlr4-runtime-4.13.1/src",
+                "${workspaceFolder}/third_party/boost_1_82/include",
+                "/usr/include/"
+            ],
+            "defines": [],
+            "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
+        },
+        {
+            "name": "Mac",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-arm64",
+            "includePath": [
+                "${workspaceFolder}/src/",
+                "${workspaceFolder}/third_party/antlr4-runtime-4.13.1/src",
+                "${workspaceFolder}/third_party/boost_1_82/include"
+            ],
+            "defines": [],
+            "macFrameworkPath": ["/System/Library/Frameworks", "/Library/Frameworks"],
+            "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
+          }
+    ],
+    "version": 4
+}

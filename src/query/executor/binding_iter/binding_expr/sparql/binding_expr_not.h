@@ -11,9 +11,11 @@ public:
     std::unique_ptr<BindingExpr> expr;
 
     BindingExprNot(std::unique_ptr<BindingExpr> expr) :
-        expr (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr_oid = expr->eval(binding);
 
         ObjectId expr_bool = Conversions::to_boolean(expr_oid);
@@ -27,7 +29,8 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 };

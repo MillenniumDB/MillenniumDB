@@ -1,9 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/op.h"
-#include "query/rewriter/gql/op/var_type.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 struct OptLabel {
@@ -54,24 +51,9 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return op->get_safe_vars();
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        return {};
+        return op->get_var_types();
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

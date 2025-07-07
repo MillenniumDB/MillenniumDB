@@ -1,0 +1,28 @@
+{
+  "head": {
+    "vars": [ "x", "xLabel", "xLang", "xLangIndex" ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": { "type": "uri", "value": "http://example.com/x" },
+        "xLabel": { "type": "literal", "value": "Popocatépetl", "xml:lang": "en" },
+        "xLang": { "type": "literal", "value": "en" },
+        "xLangIndex": { "type": "literal", "value": "1", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://example.com/x" },
+        "xLabel": { "type": "literal", "value": "Попокатепетль", "xml:lang": "ru" },
+        "xLang": { "type": "literal", "value": "ru" },
+        "xLangIndex": { "type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://example.com/x" },
+        "xLabel": { "type": "literal", "value": "ポポカテペトル山", "xml:lang": "jp" },
+        "xLang": { "type": "literal", "value": "jp" },
+        "xLangIndex": { "type": "literal", "value": "4", "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+        }
+      }
+    ]
+  }
+}

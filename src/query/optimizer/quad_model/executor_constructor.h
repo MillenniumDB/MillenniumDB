@@ -23,10 +23,6 @@ public:
 
     std::unique_ptr<QueryExecutor> executor;
 
-    // Contains mandatory equalities of variables with constants
-    // obtained from SET statement
-    std::map<VarId, ObjectId> set_vars;
-
     // // properties used in RETURN and ORDER BY. We need to remember them to add optional children in the OpMatch
     // std::set<std::pair<Var, std::string>> var_properties;
 
@@ -55,7 +51,6 @@ public:
     // possible Logical Plan roots
     void visit(OpDescribe&) override;
     void visit(OpReturn&)   override;
-    void visit(OpSet&)      override;
-    void visit(OpShow&) override;
+    void visit(OpShow&)     override;
 };
 } // namespace MQL

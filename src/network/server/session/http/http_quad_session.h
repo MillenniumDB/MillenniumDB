@@ -8,7 +8,7 @@
 #include "network/server/protocol.h"
 #include "query/executor/query_executor/mql/return_executor.h"
 #include "query/executor/query_executor/query_executor.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/mql/op.h"
 
 namespace MDBServer {
 
@@ -46,12 +46,12 @@ private:
 
     void execute_query(const std::string& query, std::ostream& os, MQL::ReturnType response_type);
 
-    std::unique_ptr<Op> create_logical_plan(const std::string& query);
+    std::unique_ptr<MQL::Op> create_logical_plan(const std::string& query);
 
-    std::unique_ptr<QueryExecutor> create_readonly_physical_plan(Op& logical_plan, MQL::ReturnType response_type);
+    std::unique_ptr<QueryExecutor> create_readonly_physical_plan(MQL::Op& logical_plan, MQL::ReturnType response_type);
 
     void execute_readonly_query_plan(QueryExecutor& physical_plan, std::ostream& os, MQL::ReturnType response_type);
 
-    void execute_update(Op& logical_plan, BufferManager::VersionScope& version_scope, std::ostream& os);
+    void execute_update(MQL::Op& logical_plan, BufferManager::VersionScope& version_scope, std::ostream& os);
 };
 } // namespace MDBServer

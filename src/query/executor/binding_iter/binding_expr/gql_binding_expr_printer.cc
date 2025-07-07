@@ -3,7 +3,8 @@
 
 namespace GQL {
 
-void BindingExprPrinter::visit(GQL::BindingExprOr& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprOr& expr)
+{
     os << '(';
     auto first = true;
     for (auto& e : expr.or_list) {
@@ -17,8 +18,8 @@ void BindingExprPrinter::visit(GQL::BindingExprOr& expr) {
     os << ")";
 }
 
-
-void BindingExprPrinter::visit(BindingExprAnd& expr) {
+void BindingExprPrinter::visit(BindingExprAnd& expr)
+{
     os << '(';
     auto first = true;
     for (auto& e : expr.and_list) {
@@ -32,28 +33,35 @@ void BindingExprPrinter::visit(BindingExprAnd& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprNot& expr) {
+void BindingExprPrinter::visit(BindingExprNot& expr)
+{
     os << "NOT(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprHasNodeLabel& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprHasNodeLabel& expr)
+{
     os << "HasNodeLabel(";
     os << expr.node_id << ", " << expr.label_id;
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprHasEdgeLabel& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprHasEdgeLabel& expr)
+{
     os << "HasEdgeLabel(";
     os << expr.edge_id << ", " << expr.label_id;
     os << ')';
 }
+  
+void BindingExprPrinter::visit(GQL::BindingExprWildcardLabel& expr)
+{
+    os << "HasWildcardLabel(" << expr.var_id << ')';
+}
 
 
-void BindingExprPrinter::visit(GQL::BindingExprEquals& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprEquals& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " = ";
@@ -61,15 +69,22 @@ void BindingExprPrinter::visit(GQL::BindingExprEquals& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprProperty& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprNodeProperty& expr)
+{
     os << '(';
     os << expr.property_var_id;
     os << ')';
 }
 
+void BindingExprPrinter::visit(GQL::BindingExprEdgeProperty& expr)
+{
+    os << '(';
+    os << expr.property_var_id;
+    os << ')';
+}
 
-void BindingExprPrinter::visit(GQL::BindingExprConcat& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprConcat& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " CONCAT ";
@@ -77,8 +92,8 @@ void BindingExprPrinter::visit(GQL::BindingExprConcat& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprGreaterOrEquals& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprGreaterOrEquals& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " >= ";
@@ -86,8 +101,8 @@ void BindingExprPrinter::visit(GQL::BindingExprGreaterOrEquals& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprGreater& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprGreater& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " > ";
@@ -95,8 +110,8 @@ void BindingExprPrinter::visit(GQL::BindingExprGreater& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprIs& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprIs& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " IS ";
@@ -104,8 +119,8 @@ void BindingExprPrinter::visit(GQL::BindingExprIs& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprLessOrEquals& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprLessOrEquals& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " <= ";
@@ -113,8 +128,8 @@ void BindingExprPrinter::visit(GQL::BindingExprLessOrEquals& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprLess& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprLess& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " < ";
@@ -122,8 +137,8 @@ void BindingExprPrinter::visit(GQL::BindingExprLess& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprNotEquals& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprNotEquals& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " != ";
@@ -131,8 +146,8 @@ void BindingExprPrinter::visit(GQL::BindingExprNotEquals& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprXor& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprXor& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " XOR ";
@@ -140,8 +155,8 @@ void BindingExprPrinter::visit(GQL::BindingExprXor& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprAddition& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprAddition& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " + ";
@@ -149,8 +164,8 @@ void BindingExprPrinter::visit(GQL::BindingExprAddition& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprSubtraction& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprSubtraction& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " - ";
@@ -158,8 +173,8 @@ void BindingExprPrinter::visit(GQL::BindingExprSubtraction& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprMultiplication& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprMultiplication& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " * ";
@@ -167,8 +182,8 @@ void BindingExprPrinter::visit(GQL::BindingExprMultiplication& expr) {
     os << ')';
 }
 
-
-void BindingExprPrinter::visit(GQL::BindingExprDivision& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprDivision& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " / ";
@@ -176,13 +191,15 @@ void BindingExprPrinter::visit(GQL::BindingExprDivision& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(BindingExprAbs& expr) {
+void BindingExprPrinter::visit(BindingExprAbs& expr)
+{
     os << "ABS(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(GQL::BindingExprModulo& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprModulo& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " % ";
@@ -190,79 +207,92 @@ void BindingExprPrinter::visit(GQL::BindingExprModulo& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(BindingExprSin& expr) {
+void BindingExprPrinter::visit(BindingExprSin& expr)
+{
     os << "SIN(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprCos& expr) {
+void BindingExprPrinter::visit(BindingExprCos& expr)
+{
     os << "COS(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprTan& expr) {
+void BindingExprPrinter::visit(BindingExprTan& expr)
+{
     os << "TAN(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprCot& expr) {
+void BindingExprPrinter::visit(BindingExprCot& expr)
+{
     os << "COT(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprSinh& expr) {
+void BindingExprPrinter::visit(BindingExprSinh& expr)
+{
     os << "SINH(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprCosh& expr) {
+void BindingExprPrinter::visit(BindingExprCosh& expr)
+{
     os << "COSH(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprTanh& expr) {
+void BindingExprPrinter::visit(BindingExprTanh& expr)
+{
     os << "TANH(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprAsin& expr) {
+void BindingExprPrinter::visit(BindingExprAsin& expr)
+{
     os << "ASIN(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprAcos& expr) {
+void BindingExprPrinter::visit(BindingExprAcos& expr)
+{
     os << "ACOS(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprAtan& expr) {
+void BindingExprPrinter::visit(BindingExprAtan& expr)
+{
     os << "ATAN(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprDegrees& expr) {
+void BindingExprPrinter::visit(BindingExprDegrees& expr)
+{
     os << "DEGREES(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprRadians& expr) {
+void BindingExprPrinter::visit(BindingExprRadians& expr)
+{
     os << "RADIANS(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(GQL::BindingExprLog& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprLog& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " LOG ";
@@ -270,25 +300,29 @@ void BindingExprPrinter::visit(GQL::BindingExprLog& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(BindingExprLog10& expr) {
+void BindingExprPrinter::visit(BindingExprLog10& expr)
+{
     os << "LOG10(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprLn& expr) {
+void BindingExprPrinter::visit(BindingExprLn& expr)
+{
     os << "LN(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprExp& expr) {
+void BindingExprPrinter::visit(BindingExprExp& expr)
+{
     os << "EXP(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(GQL::BindingExprPower& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprPower& expr)
+{
     os << '(';
     expr.lhs->accept_visitor(*this);
     os << " POWER ";
@@ -296,32 +330,37 @@ void BindingExprPrinter::visit(GQL::BindingExprPower& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(BindingExprSqrt& expr) {
+void BindingExprPrinter::visit(BindingExprSqrt& expr)
+{
     os << "SQRT(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprFloor& expr) {
+void BindingExprPrinter::visit(BindingExprFloor& expr)
+{
     os << "FLOOR(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprCeil& expr) {
+void BindingExprPrinter::visit(BindingExprCeil& expr)
+{
     os << "Ceil(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprLength& expr) {
+void BindingExprPrinter::visit(BindingExprLength& expr)
+{
     os << "CHAR_LENGTH(";
     expr.expr->accept_visitor(*this);
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprSubStr& expr) {
-    if (expr.left){
+void BindingExprPrinter::visit(BindingExprSubStr& expr)
+{
+    if (expr.left) {
         os << "LEFT";
     } else {
         os << "RIGHT";
@@ -333,8 +372,9 @@ void BindingExprPrinter::visit(BindingExprSubStr& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprFold& expr) {
-    if (expr.upper){
+void BindingExprPrinter::visit(BindingExprFold& expr)
+{
+    if (expr.upper) {
         os << "UPPER";
     } else {
         os << "LOWER";
@@ -344,7 +384,8 @@ void BindingExprPrinter::visit(BindingExprFold& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprSingleTrim& expr) {
+void BindingExprPrinter::visit(BindingExprSingleTrim& expr)
+{
     os << "TRIM(";
     os << expr.specification;
     if (expr.single_char == nullptr) {
@@ -357,7 +398,8 @@ void BindingExprPrinter::visit(BindingExprSingleTrim& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprMultiTrim& expr) {
+void BindingExprPrinter::visit(BindingExprMultiTrim& expr)
+{
     os << expr.specification;
     os << "(";
     expr.trim_src->accept_visitor(*this);
@@ -370,7 +412,8 @@ void BindingExprPrinter::visit(BindingExprMultiTrim& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(BindingExprNormalize& expr) {
+void BindingExprPrinter::visit(BindingExprNormalize& expr)
+{
     os << "NORMALIZE(";
     expr.expr->accept_visitor(*this);
     os << ",";
@@ -378,7 +421,8 @@ void BindingExprPrinter::visit(BindingExprNormalize& expr) {
     os << ")";
 }
 
-void BindingExprPrinter::visit(GQL::BindingExprNullIf& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprNullIf& expr)
+{
     os << "NULLIF(";
     expr.lhs->accept_visitor(*this);
     os << ", ";
@@ -386,7 +430,8 @@ void BindingExprPrinter::visit(GQL::BindingExprNullIf& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(GQL::BindingExprCoalesce& expr) {
+void BindingExprPrinter::visit(GQL::BindingExprCoalesce& expr)
+{
     os << "COALESCE(";
     for (const auto& expression : expr.expressions) {
         expression->accept_visitor(*this);
@@ -395,7 +440,8 @@ void BindingExprPrinter::visit(GQL::BindingExprCoalesce& expr) {
     os << ')';
 }
 
-void BindingExprPrinter::visit(BindingExprSimpleCase& expr) {
+void BindingExprPrinter::visit(BindingExprSimpleCase& expr)
+{
     os << "CASE ";
     expr.case_operand->accept_visitor(*this);
     for (const auto& clauses : expr.when_clauses) {
@@ -416,7 +462,8 @@ void BindingExprPrinter::visit(BindingExprSimpleCase& expr) {
     }
 }
 
-void BindingExprPrinter::visit(BindingExprSearchedCase& expr) {
+void BindingExprPrinter::visit(BindingExprSearchedCase& expr)
+{
     os << "CASE ";
     for (const auto& clause : expr.when_clauses) {
         os << " WHEN ";
@@ -432,7 +479,8 @@ void BindingExprPrinter::visit(BindingExprSearchedCase& expr) {
     }
 }
 
-void BindingExprPrinter::visit(BindingExprCast& expr) {
+void BindingExprPrinter::visit(BindingExprCast& expr)
+{
     os << "CAST(";
     expr.operand->accept_visitor(*this);
     os << " AS ";

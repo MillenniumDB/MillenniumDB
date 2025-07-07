@@ -1,0 +1,2 @@
+MATCH (x: StringNode)
+RETURN x.word, TRIM("x" FROM x.word) AS trimed

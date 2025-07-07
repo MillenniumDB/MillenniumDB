@@ -23,7 +23,7 @@ from .options import (
 from .types import ExecutionStats, ServerCrashedException, Test
 
 
-def create_db(create_db_executable: Path, qm_file: Path):
+def create_db(executable: Path, qm_file: Path):
     if not qm_file.is_file():
         log(Level.ERROR, f"File not found {qm_file}")
         sys.exit(1)
@@ -33,7 +33,7 @@ def create_db(create_db_executable: Path, qm_file: Path):
     if db_dir.exists():
         log(Level.WARNING, f'Database "{db_dir.relative_to(TESTING_DBS_DIR)}" already exists')
     else:
-        cmd: list[str] = [str(create_db_executable), str(qm_file), str(db_dir)]
+        cmd: list[str] = [str(executable), "import", str(qm_file), str(db_dir)]
 
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         log(Level.DEBUG, f'Database "{db_dir}" created')
@@ -44,7 +44,7 @@ def create_db(create_db_executable: Path, qm_file: Path):
 __log_file: TextIOWrapper | None = None
 
 
-def start_server(server_executable: Path, db_dir: Path):
+def start_server(executable: Path, db_dir: Path):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     address = (HOST, PORT)
 
@@ -65,7 +65,7 @@ def start_server(server_executable: Path, db_dir: Path):
 
     __log_file = log_path.open(mode="a+", encoding="utf-8")
 
-    cmd: list[str] = [str(server_executable), str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
+    cmd: list[str] = [str(executable), "server", str(db_dir), "--timeout", str(TIMEOUT), "--port", str(PORT)]
 
     server_process = subprocess.Popen(cmd, stdout=__log_file, stderr=__log_file)
 

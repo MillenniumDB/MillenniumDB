@@ -3,7 +3,7 @@
 #include <map>
 
 #include "query/id.h"
-#include "query/parser/op/op_visitor.h"
+#include "query/parser/op/sparql/op_visitor.h"
 
 namespace SPARQL {
 /*
@@ -41,9 +41,10 @@ public:
     void visit(OpTriple&)            override;
     void visit(OpPath&)              override;
 
-    void visit(OpUnitTable&)         override { }
     void visit(OpEmpty&)             override { }
+    void visit(OpProcedure&)         override { }
     void visit(OpShow&)              override { }
+    void visit(OpUnitTable&)         override { }
 
 private:
     std::map<VarId, ObjectId> assigned_values;

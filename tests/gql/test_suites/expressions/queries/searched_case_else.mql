@@ -1,0 +1,7 @@
+MATCH (x: CaseNode)
+RETURN x.value1, x.value2,
+CASE
+    WHEN x.value1 < 5 OR x.value2 > 6 THEN "Win"
+    WHEN x.value1 = "hola" THEN "Try again"
+    ELSE "Lose"
+END AS case_value

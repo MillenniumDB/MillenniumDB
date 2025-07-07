@@ -1,0 +1,6 @@
+p
+[(Joe)]
+[(Joe)-[:follows]->(John)-[:follows]->(Joe)]
+[(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)]
+[(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)]
+[(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)-[:follows]->(John)-[:follows]->(Joe)]

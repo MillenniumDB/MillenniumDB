@@ -1,0 +1,4 @@
+MATCH (x)
+MATCH (y)
+FILTER x = y
+RETURN x,y

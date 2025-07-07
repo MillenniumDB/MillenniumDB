@@ -315,6 +315,7 @@ procedureName
 
 labelName
    : identifier
+   | keyword
    ;
 
 functionName
@@ -323,10 +324,12 @@ functionName
 
 propertyName
    : identifier
+   | keyword
    ;
 
 fieldName
    : identifier
+   | keyword
    ;
 
 parameterName
@@ -373,6 +376,7 @@ valueVariable
 
 bindingVariable
    : identifier
+   | keyword
    ;
 
 predefinedTypeLiteral
@@ -385,8 +389,8 @@ predefinedTypeLiteral
    ;
 
 booleanLiteral
-   : TRUE
-   | FALSE
+   : K_TRUE
+   | K_FALSE
    | UNKNOWN
    ;
 
@@ -2233,8 +2237,8 @@ expressionAtom
    ;
 
 truthValue
-   : TRUE
-   | FALSE
+   : K_TRUE
+   | K_FALSE
    | UNKNOWN
    ;
 
@@ -2490,4 +2494,275 @@ recordLiteral
 
 recordFieldLiteral
    : key = variable COLON value = generalLiteral
+   ;
+
+keyword
+   : ABS
+   | ACOS
+   | ACYCLIC
+   | ALL
+   | ALL_DIFFERENT
+   | AND
+   | ANY
+   | ARRAY
+   | AS
+   | ASC
+   | ASCENDING
+   | ASIN
+   | AT
+   | ATAN
+   | AVG
+   | BIG
+   | BIGINT
+   | BINARY
+   | BINDING
+   | BINDINGS
+   | BOOL
+   | BOOLEAN
+   | BOTH
+   | BTRIM
+   | BY
+   | BYTE_LENGTH
+   | BYTES
+   | CALL
+   | CASE
+   | CAST
+   | CEIL
+   | CEILING
+   | CHAR_LENGTH
+   | CHARACTER_LENGTH
+   | CHARACTERISTICS
+   | CLOSE
+   | COALESCE
+   | COLLECT
+   | COMMIT
+   | CONNECTING
+   | COPY
+   | COS
+   | COSH
+   | COT
+   | COUNT
+   | CREATE
+   | CURRENT_DATE
+   | CURRENT_GRAPH
+   | CURRENT_PROPERTY_GRAPH
+   | CURRENT_SCHEMA
+   | CURRENT_TIME
+   | CURRENT_TIMESTAMP
+   | CURRENT_USER
+   | DATE
+   | DATETIME
+   | DEC
+   | DECIMAL
+   | DEGREES
+   | DELETE
+   | DESC
+   | DESCENDING
+   | DESTINATION
+   | DETACH
+   | DIFFERENT
+   | DIRECTED
+   | DISTINCT
+   | DOUBLE
+   | DROP
+   | DURATION
+   | DURATION_BETWEEN
+   | ELEMENT
+   | ELEMENT_ID
+   | ELEMENTS
+   | ELSE
+   | END
+   | EXCEPT
+   | EXISTS
+   | EXP
+   | K_FALSE
+   | FILTER
+   | FINISH
+   | FIRST
+   | FLOAT
+   | FLOAT128
+   | FLOAT16
+   | FLOAT256
+   | FLOAT32
+   | FLOAT64
+   | FLOOR
+   | FOR
+   | FROM
+   | GRAPH
+   | GROUP
+   | GROUPS
+   | HAVING
+   | HOME_GRAPH
+   | HOME_PROPERTY_GRAPH
+   | HOME_SCHEMA
+   | I_DONT_KNOW_1
+   | I_DONT_KNOW_2
+   | I_DONT_KNOW_3
+   | I_DONT_KNOW_4
+   | I_DONT_KNOW_5
+   | IF
+   | IN
+   | INSERT
+   | INT
+   | INT8
+   | INT16
+   | INT32
+   | INT64
+   | INT128
+   | INT256
+   | INTEGER
+   | INTEGER8
+   | INTEGER16
+   | INTEGER32
+   | INTEGER64
+   | INTEGER128
+   | INTEGER256
+   | INTERSECT
+   | IS
+   | KEEP
+   | LABEL
+   | LABELED
+   | LABELS
+   | LAST
+   | LEADING
+   | LEFT
+   | LET
+   | LIKE
+   | LIMIT
+   | LIST
+   | LN
+   | LOCAL
+   | LOCAL_DATETIME
+   | LOCAL_TIME
+   | LOCAL_TIMESTAMP
+   | LOG
+   | LOG10
+   | LOWER
+   | LTRIM
+   | MATCH
+   | MAX
+   | MIN
+   | MOD
+   | NEXT
+   | NFC
+   | NFD
+   | NFKC
+   | NFKD
+   | NO
+   | NODETACH
+   | NORMALIZE
+   | NORMALIZED
+   | NOT
+   | NULL
+   | NULLIF
+   | NULLS
+   | OCTET_LENGTH
+   | OF
+   | OFFSET
+   | SKIP_
+   | ONLY
+   | OPEN
+   | OPTIONAL
+   | OR
+   | ORDER
+   | ORDINALITY
+   | OTHERWISE
+   | PARAMETER
+   | PARAMETERS
+   | PATH
+   | PATH_LENGTH
+   | PATHS
+   | PERCENTILE_CONT
+   | PERCENTILE_DISC
+   | POWER
+   | PRECISION
+   | PROPERTY
+   | PROPERTY_EXISTS
+   | RADIANS
+   | READ
+   | REAL
+   | RECORD
+   | REMOVE
+   | REPEATABLE
+   | REPLACE
+   | RESET
+   | RETURN
+   | ROLLBACK
+   | RTRIM
+   | RIGHT
+   | SAME
+   | SCHEMA
+   | SELECT
+   | SESSION
+   | SET
+   | SHORTEST
+   | SIGNED
+   | SIMPLE
+   | SIN
+   | SINH
+   | SMALL
+   | SMALLINT
+   | SOURCE
+   | SQRT
+   | START
+   | STDDEV_POP
+   | STDDEV_SAMP
+   | STRING
+   | SUM
+   | TABLE
+   | TAN
+   | TANH
+   | TEMP
+   | THEN
+   | TIME
+   | TIMESTAMP
+   | TIMEZONE
+   | TO
+   | TRAIL
+   | TRAILING
+   | TRANSACTION
+   | TRIM
+   | K_TRUE
+   | TYPE
+   | TYPED
+   | UBIGINT
+   | UINT
+   | UINT128
+   | UINT16
+   | UINT256
+   | UINT32
+   | UINT64
+   | UINT8
+   | UNDIRECTED
+   | UNION
+   | UNKNOWN
+   | UNSIGNED
+   | UPPER
+   | USE
+   | USMALLINT
+   | VALUE
+   | VARBINARY
+   | VARCHAR
+   | VARIABLE
+   | WALK
+   | WHEN
+   | WHERE
+   | WITH
+   | WITHOUT
+   | WRITE
+   | XOR
+   | YIELD
+   | ZONE
+   | ZONED
+   | ZONED_DATETIME
+   | ZONED_TIME
+   | INTERVAL_DAY
+   | INTERVAL_WEEK
+   | INTERVAL_MONTH
+   | INTERVAL_YEAR
+   | EDGE_SYNONYM
+   | EDGES_SYNONYM
+   | NODE_SYNONYM
+   | KEY_WORD
+   | PRE_RESERVED_WORD
    ;

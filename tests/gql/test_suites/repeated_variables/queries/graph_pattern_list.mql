@@ -1,0 +1,2 @@
+MATCH (x {_id:"N0"})->(y)->(z), (a)
+RETURN *

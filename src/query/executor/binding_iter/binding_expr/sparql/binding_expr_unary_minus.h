@@ -22,8 +22,7 @@ public:
         }
         case RDF_OID::GenericSubType::DECIMAL: {
             auto d = Conversions::unpack_decimal(expr_oid);
-            d.sign = !d.sign;
-            return Conversions::pack_decimal(d);
+            return Conversions::pack_decimal(-d);
         }
         case RDF_OID::GenericSubType::FLOAT: {
             auto f = Conversions::unpack_float(expr_oid);
@@ -35,11 +34,13 @@ public:
         }
         case RDF_OID::GenericSubType::TENSOR_FLOAT: {
             auto tensor = Conversions::unpack_tensor<float>(expr_oid);
-            return Conversions::pack_tensor<float>(tensor.negate());
+            tensor.negate();
+            return Conversions::pack_tensor<float>(tensor);
         }
         case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
             auto tensor = Conversions::unpack_tensor<double>(expr_oid);
-            return Conversions::pack_tensor<double>(tensor.negate());
+            tensor.negate();
+            return Conversions::pack_tensor<double>(tensor);
         }
         default:
             return ObjectId::get_null();

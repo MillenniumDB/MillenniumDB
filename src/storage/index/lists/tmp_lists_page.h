@@ -35,8 +35,9 @@ public:
 
     uint64_t insert_offset;
 
+    static const uint64_t OID_SIZE = sizeof(uint64_t);
+
 private:
     PPage& page;
     char* page_start;
-    static const uint64_t OID_SIZE = sizeof(uint64_t);
 };

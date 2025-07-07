@@ -40,7 +40,7 @@ public:
     static uint64_t inline_iri(const char* str) {
         uint64_t res = 0;
         int shift_size = 8*5;
-        for (const char* i = str; *i != '\0'; i++) { // TODO: possible overflow
+        for (const char* i = str; *i != '\0' && shift_size >= 0; i++) {
             // MUST convert to uint8_t and then to uint64_t.
             // Shift with shift_size >=32 is undefined behaviour.
             uint8_t byte = *i;

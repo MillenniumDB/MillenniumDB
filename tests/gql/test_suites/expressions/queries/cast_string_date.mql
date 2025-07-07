@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN CAST("2004-04-12T13:20:00" AS DATE) AS case_value

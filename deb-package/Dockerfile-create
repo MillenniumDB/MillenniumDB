@@ -1,0 +1,49 @@
+ARG IMAGE=ubuntu
+ARG VERSION=24.04
+FROM ${IMAGE}:${VERSION}
+
+# Define variables for this stage
+ARG IMAGE
+ARG VERSION
+ENV PACKAGE=millenniumdb_0.2-1_${IMAGE}-${VERSION}_amd64
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Update and install dependencies
+RUN apt-get update && apt-get -y install dpkg-dev g++ cmake libssl-dev libncurses-dev libicu-dev
+
+WORKDIR /MillenniumDB
+
+# Add Boost
+COPY deb-package/boost_1_82_0.tar.gz boost_1_82_0.tar.gz
+RUN tar -xf boost_1_82_0.tar.gz && \
+    mkdir -p third_party/boost_1_82/include && \
+    mv boost_1_82_0/boost third_party/boost_1_82/include/boost && \
+    rm -r boost_1_82_0.tar.gz boost_1_82_0
+
+# Add ANTLR runtime
+COPY third_party/antlr4-runtime-4.13.1 third_party/antlr4-runtime-4.13.1
+
+# Add source files
+COPY src src
+COPY CMakeLists.txt CMakeLists.txt
+
+# Configure, compile and install MillenniumDB
+RUN cmake -B build/Release -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=$PACKAGE/usr/ && \
+    cmake --build build/Release -j $(($(getconf _NPROCESSORS_ONLN)-1)) --target install && \
+    rm -r build
+
+# Copy package config files
+COPY deb-package/DEBIAN/ $PACKAGE/DEBIAN/
+
+# Detect dependencies nad update control file
+RUN mkdir debian && touch debian/control && \
+    dpkg-shlibdeps -O ${PACKAGE}/usr/bin/* | \
+    sed 's/^shlibs:Depends=/Depends: locales, less, /' >> $PACKAGE/DEBIAN/control
+
+# Create package
+RUN dpkg-deb --build --root-owner-group $PACKAGE
+
+# Copy package into output volume
+VOLUME output
+CMD cp ${PACKAGE}.deb output

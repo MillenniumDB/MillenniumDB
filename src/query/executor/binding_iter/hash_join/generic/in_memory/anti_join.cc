@@ -9,35 +9,35 @@ using namespace HashJoin::Generic::InMemory;
 AntiJoin::AntiJoin(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    lhs           (std::move(_lhs)),
-    rhs           (std::move(_rhs)),
-    join_vars     (std::move(_join_vars)),
-    lhs_vars      (std::move(_lhs_vars)),
-    rhs_vars      (std::move(_rhs_vars)),
-    N             (join_vars.size()),
-    pk_start      (new uint64_t[N]),
-    probe_key     (Key(pk_start, N))
+    lhs(std::move(_lhs)),
+    rhs(std::move(_rhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    probe_key(Key(pk_start, N))
 {
     key_chunk = new uint64_t[N * PPage::SIZE];
     key_chunks_dir.push_back(key_chunk);
     key_chunk_index = 0;
 }
 
-
-AntiJoin::~AntiJoin() {
+AntiJoin::~AntiJoin()
+{
     // Avoid mem leaks
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
+    delete[] (pk_start);
 }
 
-
-void AntiJoin::_begin(Binding& _parent_binding) {
+void AntiJoin::_begin(Binding& _parent_binding)
+{
     // set hash join in start state, always must be non enumerating_row
     this->parent_binding = &_parent_binding;
     rhs_binding = make_unique<Binding>(parent_binding->size);
@@ -48,8 +48,8 @@ void AntiJoin::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
-bool AntiJoin::_next() {
+bool AntiJoin::_next()
+{
     while (lhs->next()) {
         for (size_t i = 0; i < N; i++) {
             probe_key.start[i] = (*lhs_binding)[join_vars[i]].id;
@@ -69,8 +69,8 @@ bool AntiJoin::_next() {
     return false;
 }
 
-
-void AntiJoin::_reset() {
+void AntiJoin::_reset()
+{
     hash_table.clear();
 
     for (size_t i = 1; i < key_chunks_dir.size(); i++) {
@@ -95,11 +95,10 @@ void AntiJoin::_reset() {
     lhs->reset();
 
     build_hash_table();
-
 }
 
-
-void AntiJoin::assign_nulls() {
+void AntiJoin::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -109,13 +108,8 @@ void AntiJoin::assign_nulls() {
     lhs->assign_nulls();
 }
 
-
-void AntiJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void AntiJoin::build_hash_table() {
+void AntiJoin::build_hash_table()
+{
     // Only to avoid seg fault in fist iteration due to IdHashWrapper comparision
     uint64_t* dummy_last_key = new uint64_t[N];
     for (size_t i = 0; i < N; i++) {
@@ -126,7 +120,6 @@ void AntiJoin::build_hash_table() {
     // Avoid ask for space to a new key in each iteration
     uint64_t* key_pointer = new uint64_t[N];
     Key key(key_pointer, N);
-
 
     while (rhs->next()) {
         // Get start index to store key and data

@@ -19,8 +19,7 @@ TEST_SUITE_DIR = ROOT_TEST_DIR / "test_suites"
 SERVER_LOGS_DIR = ROOT_TEST_DIR / "tmp/server-logs"
 
 # Executables
-CREATE_DB_EXECUTABLE = CWD / "build/Debug/bin/mdb-import"
-SERVER_EXECUTABLE = CWD / "build/Debug/bin/mdb-server"
+EXECUTABLE = CWD / "build/Debug/bin/mdb"
 
 # Empty database used for some tests
 EMPTY_DB_DATA = TEST_SUITE_DIR / "empty_db.ttl"
@@ -57,7 +56,6 @@ INTERNAL_TESTS: List[str] = [
     "agg01",
     "agg-numeric2",
     "misc",
-    "bind_official",
     "compression-old",
     "construct",
     "datetime",
@@ -65,9 +63,11 @@ INTERNAL_TESTS: List[str] = [
     "escape-unicode",
     "example",
     "existence",
+    "existence2",
     "ill-typed",
     "minus",
     "nested",
+    "nested_select",
     "optional",
     "paths",
     "union",

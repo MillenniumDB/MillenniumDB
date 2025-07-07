@@ -1,0 +1,2 @@
+MATCH (n:Account)
+RETURN n.number * 2 AS doubleNumber

@@ -2,78 +2,39 @@
 
 #include <cassert>
 
-#include "query/exceptions.h"
 #include "graph_models/object_id.h"
+#include "misc/set_operations.h"
 #include "query/parser/op/sparql/ops.h"
 
 using namespace SPARQL;
+using namespace misc;
 
-void ReplaceUnscopedVariables::visit(OpSelect& op_select) {
-    op_select.op->accept_visitor(*this);
-    for (auto& var : op_select.vars) {
-        vars_in_scope.insert(var);
-    }
-}
-
-
-void ReplaceUnscopedVariables::visit(OpDescribe& op_describe) {
+void ReplaceUnscopedVariables::visit(OpDescribe& op_describe)
+{
     if (op_describe.op) {
         op_describe.op->accept_visitor(*this);
     }
-
-    std::vector<VarId> new_vars;
-    new_vars.reserve(op_describe.vars.size());
-
-    for (auto& var : op_describe.vars) {
-        if (vars_in_scope.find(var) != vars_in_scope.end()) {
-            // Only keep variable if it is in scope.
-            // If it is not in scope then it would always be unassigned.
-            new_vars.push_back(var);
-        }
-    }
-
-    op_describe.vars = std::move(new_vars);
 }
 
-
-void ReplaceUnscopedVariables::visit(OpConstruct& op_construct) {
+void ReplaceUnscopedVariables::visit(OpConstruct& op_construct)
+{
     op_construct.op->accept_visitor(*this);
 }
 
-
-void ReplaceUnscopedVariables::visit(OpAsk& op_ask) {
+void ReplaceUnscopedVariables::visit(OpAsk& op_ask)
+{
     op_ask.op->accept_visitor(*this);
 }
 
-void ReplaceUnscopedVariables::visit(OpEmpty& op_empty) {
+void ReplaceUnscopedVariables::visit(OpEmpty& op_empty)
+{
     if (op_empty.deleted_op.has_value()) {
         op_empty.deleted_op.value()->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariables::visit(OpBasicGraphPattern& op_basic_graph_pattern) {
-    for (auto& var : op_basic_graph_pattern.get_scope_vars()) {
-        vars_in_scope.insert(var);
-    }
-}
-
-void ReplaceUnscopedVariables::visit(OpFilter& op_filter) {
-    op_filter.op->accept_visitor(*this);
-
-    ReplaceUnscopedVariablesExpr visitor(vars_in_scope);
-    for (auto& filter : op_filter.filters) {
-        visitor.visit_and_replace_if_necessary(filter);
-    }
-}
-
-
-void ReplaceUnscopedVariables::visit(OpOptional& op_optional) {
-    op_optional.lhs->accept_visitor(*this);
-    op_optional.rhs->accept_visitor(*this);
-}
-
-
-void ReplaceUnscopedVariables::visit(OpOrderBy& op_order_by) {
+void ReplaceUnscopedVariables::visit(OpOrderBy& op_order_by)
+{
     op_order_by.op->accept_visitor(*this);
 }
 
@@ -87,355 +48,432 @@ void ReplaceUnscopedVariables::visit(OpGraph& op_graph)
     op_graph.op->accept_visitor(*this);
 }
 
-void ReplaceUnscopedVariables::visit(OpGroupBy& op_group_by) {
+void ReplaceUnscopedVariables::visit(OpGroupBy& op_group_by)
+{
     op_group_by.op->accept_visitor(*this);
 }
 
-void ReplaceUnscopedVariables::visit(OpHaving& op_having) {
+void ReplaceUnscopedVariables::visit(OpHaving& op_having)
+{
     op_having.op->accept_visitor(*this);
 }
 
-void ReplaceUnscopedVariables::visit(OpService& op_service) {
-    for (auto& var : op_service.get_scope_vars()) {
-        vars_in_scope.insert(var);
+void ReplaceUnscopedVariables::visit(OpFilter& op_filter)
+{
+    op_filter.op->accept_visitor(*this);
+
+    auto scope_vars = set_union(op_filter.op->get_scope_vars(), parent_vars_in_scope);
+    ReplaceUnscopedVariablesExpr visitor(scope_vars);
+    for (auto& filter : op_filter.filters) {
+        visitor.visit_and_replace_if_necessary(filter);
     }
 }
 
-void ReplaceUnscopedVariables::visit(OpJoin& op_join) {
-    auto original_vars_in_scope = vars_in_scope;
+void ReplaceUnscopedVariables::visit(OpSelect& op_select)
+{
+    auto original_parent_vars_in_scope = parent_vars_in_scope;
+    parent_vars_in_scope = {};
+    op_select.op->accept_visitor(*this);
+    parent_vars_in_scope = original_parent_vars_in_scope;
+}
 
+void ReplaceUnscopedVariables::visit(OpJoin& op_join)
+{
     op_join.lhs->accept_visitor(*this);
-    auto after_lhs_vars_in_scope = std::move(vars_in_scope);
-
-    vars_in_scope = std::move(original_vars_in_scope);
     op_join.rhs->accept_visitor(*this);
-
-    for (auto& var : after_lhs_vars_in_scope) {
-        vars_in_scope.insert(var);
-    }
 }
 
-void ReplaceUnscopedVariables::visit(OpSemiJoin& op_semi_join) {
+void ReplaceUnscopedVariables::visit(OpOptional& op_optional)
+{
+    auto original_parent_vars_in_scope = parent_vars_in_scope;
+    op_optional.lhs->accept_visitor(*this);
+
+    parent_vars_in_scope = set_union(parent_vars_in_scope, op_optional.lhs->get_scope_vars());
+    op_optional.rhs->accept_visitor(*this);
+
+    parent_vars_in_scope = original_parent_vars_in_scope;
+}
+
+void ReplaceUnscopedVariables::visit(OpSemiJoin& op_semi_join)
+{
+    auto original_parent_vars_in_scope = parent_vars_in_scope;
     op_semi_join.lhs->accept_visitor(*this);
-    auto after_lhs_vars_in_scope = vars_in_scope;
 
+    parent_vars_in_scope = set_union(parent_vars_in_scope, op_semi_join.lhs->get_scope_vars());
     op_semi_join.rhs->accept_visitor(*this);
-    vars_in_scope = std::move(after_lhs_vars_in_scope);
+    parent_vars_in_scope = original_parent_vars_in_scope;
 }
 
-void ReplaceUnscopedVariables::visit(OpMinus& op_minus) {
+void ReplaceUnscopedVariables::visit(OpMinus& op_minus)
+{
     op_minus.lhs->accept_visitor(*this);
-    auto after_lhs_vars_in_scope = vars_in_scope;
-
     op_minus.rhs->accept_visitor(*this);
-    vars_in_scope = std::move(after_lhs_vars_in_scope);
 }
 
-
-void ReplaceUnscopedVariables::visit(OpNotExists& op_not_exists) {
+void ReplaceUnscopedVariables::visit(OpNotExists& op_not_exists)
+{
+    auto original_parent_vars_in_scope = parent_vars_in_scope;
     op_not_exists.lhs->accept_visitor(*this);
-    auto after_lhs_vars_in_scope = vars_in_scope;
 
+    parent_vars_in_scope = set_union(parent_vars_in_scope, op_not_exists.lhs->get_scope_vars());
     op_not_exists.rhs->accept_visitor(*this);
-    vars_in_scope = std::move(after_lhs_vars_in_scope);
+    parent_vars_in_scope = original_parent_vars_in_scope;
 }
 
-
-void ReplaceUnscopedVariables::visit(OpUnion& op_union) {
-    for (auto &child : op_union.unions) {
+void ReplaceUnscopedVariables::visit(OpUnion& op_union)
+{
+    for (auto& child : op_union.unions) {
         child->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariables::visit(OpSequence& op_sequence) {
+void ReplaceUnscopedVariables::visit(OpSequence& op_sequence)
+{
     for (auto& op : op_sequence.ops) {
         op->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariables::visit(OpBind& op_bind) {
+void ReplaceUnscopedVariables::visit(OpBind& op_bind)
+{
     op_bind.op->accept_visitor(*this);
-    vars_in_scope.insert(op_bind.var);
 }
+
+void ReplaceUnscopedVariables::visit(OpBasicGraphPattern&) { }
+
+void ReplaceUnscopedVariables::visit(OpProcedure&) { }
 
 void ReplaceUnscopedVariables::visit(OpUnitTable&) { }
 
-
-void ReplaceUnscopedVariables::visit(OpValues& op_values) {
-    for (auto& var : op_values.vars) {
-        vars_in_scope.insert(var);
-    }
-}
+void ReplaceUnscopedVariables::visit(OpValues&) { }
 
 void ReplaceUnscopedVariables::visit(OpShow&) { }
+
+void ReplaceUnscopedVariables::visit(OpService&) { }
 
 // +---------------------------------------------------------------------------+
 // |                            ExprVisitor                                    |
 // +---------------------------------------------------------------------------+
-void ReplaceUnscopedVariablesExpr::visit_and_replace_if_necessary(std::unique_ptr<Expr>& expr) {
+void ReplaceUnscopedVariablesExpr::visit_and_replace_if_necessary(std::unique_ptr<Expr>& expr)
+{
     if (auto expr_var = dynamic_cast<ExprVar*>(expr.get())) {
         if (vars_in_scope.find(expr_var->var) == vars_in_scope.end()) {
-            expr = std::make_unique<SPARQL::ExprTerm>(ObjectId::get_null());
+            expr = std::make_unique<ExprTerm>(ObjectId::get_null());
         }
     } else if (auto expr_bound = dynamic_cast<ExprBound*>(expr.get())) {
         if (vars_in_scope.find(expr_bound->var) == vars_in_scope.end()) {
             // std::cout << "REPLACING BOUND(?" << get_query_ctx().get_var_name(expr_bound->var) << ") WITH false\n";
-            expr = std::make_unique<SPARQL::ExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
+            expr = std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
         }
     } else {
         expr->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprVar&) {
+void ReplaceUnscopedVariablesExpr::visit(ExprVar&)
+{
     // This should have been handled in visit_and_replace_if_necessary()
     assert(false);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprTerm&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprTerm&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprEqual& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprEqual& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprNotEqual& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprNotEqual& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprNot& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprNot& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprUnaryMinus& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprUnaryMinus& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprUnaryPlus& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprUnaryPlus& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprMultiplication& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprMultiplication& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprDivision& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprDivision& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAddition& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAddition& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSubtraction& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSubtraction& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAnd& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAnd& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprOr& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprOr& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprLess& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprLess& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprGreater& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprGreater& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprLessOrEqual& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprLessOrEqual& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprGreaterOrEqual& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprGreaterOrEqual& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIn& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIn& expr)
+{
     visit_and_replace_if_necessary(expr.lhs_expr);
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprNotIn& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprNotIn& expr)
+{
     visit_and_replace_if_necessary(expr.lhs_expr);
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprExists& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprExists& expr)
+{
     ReplaceUnscopedVariables visitor;
+    visitor.parent_vars_in_scope = this->vars_in_scope;
     expr.op->accept_visitor(visitor);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprNotExists& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprNotExists& expr)
+{
     ReplaceUnscopedVariables visitor;
+    visitor.parent_vars_in_scope = this->vars_in_scope;
     expr.op->accept_visitor(visitor);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggAvg& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggAvg& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggCount& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggCount& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggCountAll&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprAggCountAll&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggGroupConcat& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggGroupConcat& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggMax& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggMax& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggMin& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggMin& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggSample& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggSample& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAggSum& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAggSum& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprAbs& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprAbs& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprBNode& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprBNode& expr)
+{
     if (expr.expr) {
         visit_and_replace_if_necessary(expr.expr);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprBound&) {
+void ReplaceUnscopedVariablesExpr::visit(ExprBound&)
+{
     // This should have been handled in visit_and_replace_if_necessary()
     assert(false);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCeil& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprCeil& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCoalesce& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprCoalesce& expr)
+{
     for (auto& e : expr.exprs) {
         visit_and_replace_if_necessary(e);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprConcat& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprConcat& expr)
+{
     for (auto& e : expr.exprs) {
         visit_and_replace_if_necessary(e);
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprContains& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprContains& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprDatatype& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprDatatype& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprDay& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprDay& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprEncodeForUri& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprEncodeForUri& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprFloor& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprFloor& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprHours& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprHours& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIf& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIf& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
     visit_and_replace_if_necessary(expr.expr3);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIRI& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIRI& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIsBlank& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIsBlank& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIsIRI& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIsIRI& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIsLiteral& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIsLiteral& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIsNumeric& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIsNumeric& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprIsURI& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprIsURI& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprLang& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprLang& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprLangMatches& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprLangMatches& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprLCase& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprLCase& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprMD5& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprMD5& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprMinutes& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprMinutes& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprMonth& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprMonth& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprNow&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprNow&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprRand&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprRand&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprRegex& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprRegex& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
     if (expr.expr3) {
@@ -443,7 +481,8 @@ void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprRegex& expr) {
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprReplace& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprReplace& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
     visit_and_replace_if_necessary(expr.expr3);
@@ -452,141 +491,169 @@ void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprReplace& expr) {
     }
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprRound& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprRound& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSameTerm& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSameTerm& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSeconds& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSeconds& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSHA1& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSHA1& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSHA256& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSHA256& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSHA384& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSHA384& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSHA512& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSHA512& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrAfter& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrAfter& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrBefore& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrBefore& expr)
+{
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrDT& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrDT& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrEnds& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrEnds& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrLang& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrLang& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrLen& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrLen& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrStarts& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStrStarts& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStrUUID&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprStrUUID&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprStr& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprStr& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSubStr& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprSubStr& expr)
+{
     visit_and_replace_if_necessary(expr.expr1);
     visit_and_replace_if_necessary(expr.expr2);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprTimezone& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprTimezone& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprTZ& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprTZ& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprUCase& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprUCase& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprURI& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprURI& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprUUID&) { }
+void ReplaceUnscopedVariablesExpr::visit(ExprUUID&) { }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprYear& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprYear& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCast& expr) {
+void ReplaceUnscopedVariablesExpr::visit(ExprCast& expr)
+{
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprCosineSimilarity& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprCosineDistance& expr)
 {
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprDot& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprCosineSimilarity& expr)
 {
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprEuclideanDistance& expr)
-{
-    visit_and_replace_if_necessary(expr.lhs);
-    visit_and_replace_if_necessary(expr.rhs);
-}
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprManhattanDistance& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprDot& expr)
 {
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprPow& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprEuclideanDistance& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+void ReplaceUnscopedVariablesExpr::visit(ExprManhattanDistance& expr)
 {
     visit_and_replace_if_necessary(expr.lhs);
     visit_and_replace_if_necessary(expr.rhs);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSqrt& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprPow& expr)
+{
+    visit_and_replace_if_necessary(expr.lhs);
+    visit_and_replace_if_necessary(expr.rhs);
+}
+
+void ReplaceUnscopedVariablesExpr::visit(ExprSqrt& expr)
 {
     visit_and_replace_if_necessary(expr.expr);
 }
 
-void ReplaceUnscopedVariablesExpr::visit(SPARQL::ExprSum& expr)
+void ReplaceUnscopedVariablesExpr::visit(ExprSum& expr)
 {
     visit_and_replace_if_necessary(expr.expr);
 }

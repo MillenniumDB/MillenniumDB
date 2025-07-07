@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN PERCENTILE_Cont(x.number2, 0.25) AS percentile_value;

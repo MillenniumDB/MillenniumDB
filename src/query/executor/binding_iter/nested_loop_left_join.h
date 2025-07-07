@@ -25,7 +25,7 @@ public:
         lhs_only_vars      (std::move(lhs_only_vars)),
         rhs_only_vars      (std::move(rhs_only_vars)) { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
     void _begin(Binding& parent_binding) override;
     bool _next() override;
     void _reset() override;

@@ -23,7 +23,7 @@ uint32_t TmpLists::get_file_id()
 
 uint64_t TmpLists::insert(const std::vector<ObjectId>& list)
 {
-    TmpListsPage list_page(file_id, current_page);
+    TmpListsPage list_page(file_id, current_page, page_insert_offset);
     uint64_t initial_page = current_page;
 
     uint64_t remaining_bytes;
@@ -35,17 +35,25 @@ uint64_t TmpLists::insert(const std::vector<ObjectId>& list)
         list_page.insert(list, remaining_bytes, &remaining_bytes);
     }
 
+    // increase the page number if there is no available space in the page
+    if (list_page.insert_offset == PPage::SIZE) {
+        current_page = ++total_pages;
+    }
+
+    page_insert_offset = (page_offset + list.size() * TmpListsPage::OID_SIZE + 1) % PPage::SIZE;
+
     return PPage::SIZE * initial_page + page_offset;
 }
 
 void TmpLists::get(std::vector<ObjectId>& out, uint64_t offset)
 {
     uint64_t page = offset / PPage::SIZE;
+    uint64_t page_offset = offset % PPage::SIZE;
 
     TmpListsPage list_page(file_id, page);
 
     uint64_t remaining_bytes;
-    uint64_t buffer_pos = list_page.get(offset, buffer, 0, &remaining_bytes);
+    uint64_t buffer_pos = list_page.get(page_offset, buffer, 0, &remaining_bytes);
 
     while (remaining_bytes) {
         TmpListsPage list_page(file_id, ++page);
@@ -53,7 +61,7 @@ void TmpLists::get(std::vector<ObjectId>& out, uint64_t offset)
         buffer_pos += list_page.get(0, buffer, buffer_pos, remaining_bytes, &remaining_bytes);
     }
 
-    uint64_t list_size = list_page.get_list_size(offset);
+    uint64_t list_size = list_page.get_list_size(page_offset);
 
     for (uint64_t i = 0; i < list_size; ++i) {
         ObjectId* oid = reinterpret_cast<ObjectId*>(buffer + i * sizeof(ObjectId));

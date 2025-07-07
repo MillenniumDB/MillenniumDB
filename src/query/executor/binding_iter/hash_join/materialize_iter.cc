@@ -7,23 +7,21 @@
 using namespace std;
 using namespace HashJoin;
 
-MaterializeIter::MaterializeIter(
-    const vector<VarId>& vars,
-    uint64_t             depth
-) :
-    depth                (depth),
-    vars                 (vars),
-    tmp_file             (buffer_manager.get_tmp_file_id()),
-    max_tuples_per_page  (PPage::SIZE / (vars.size() * sizeof(ObjectId))) { }
+MaterializeIter::MaterializeIter(const vector<VarId>& vars, uint64_t depth) :
+    depth(depth),
+    vars(vars),
+    tmp_file(buffer_manager.get_tmp_file_id()),
+    max_tuples_per_page(PPage::SIZE / (vars.size() * sizeof(ObjectId)))
+{ }
 
-
-MaterializeIter::~MaterializeIter() {
+MaterializeIter::~MaterializeIter()
+{
     buffer_manager.unpin(*current_page);
     buffer_manager.remove_tmp(tmp_file);
 }
 
-
-void MaterializeIter::_begin(Binding& _parent_binding) {
+void MaterializeIter::_begin(Binding& _parent_binding)
+{
     this->parent_binding = &_parent_binding;
 
     current_page_number = 0;
@@ -35,9 +33,9 @@ void MaterializeIter::_begin(Binding& _parent_binding) {
     start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
 }
 
-
 // begin must be called before add
-void MaterializeIter::add() {
+void MaterializeIter::add()
+{
     if (current_page_index == max_tuples_per_page) {
         current_page_number++;
         current_page_index = 0;
@@ -58,8 +56,8 @@ void MaterializeIter::add() {
     current_page_index++;
 }
 
-
-unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_vars) {
+unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_vars)
+{
     uint64_t separator = pow(2, depth);
     depth++;
 
@@ -119,8 +117,8 @@ unique_ptr<MaterializeIter> MaterializeIter::split(const vector<VarId>& join_var
     return new_split;
 }
 
-
-bool MaterializeIter::_next() {
+bool MaterializeIter::_next()
+{
     // Check no return invalid tuples due to not full page
     if (tuples_returned < total_tuples) {
         if (current_page_index == max_tuples_per_page) {
@@ -144,8 +142,8 @@ bool MaterializeIter::_next() {
     return false;
 }
 
-
-void MaterializeIter::_reset() {
+void MaterializeIter::_reset()
+{
     current_page_number = 0;
     current_page_index = 0;
     tuples_returned = 0;
@@ -154,14 +152,7 @@ void MaterializeIter::_reset() {
     start_page_pointer = reinterpret_cast<ObjectId*>(current_page->get_bytes());
 }
 
-
-void MaterializeIter::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
 void MaterializeIter::assign_nulls() { }
-
 
 void MaterializeIter::make_partitions(
     BindingIter* lhs,
@@ -174,7 +165,8 @@ void MaterializeIter::make_partitions(
     const vector<VarId>& rhs_vars,
     const vector<VarId>& join_vars,
     vector<pair<unique_ptr<MaterializeIter>, unique_ptr<MaterializeIter>>>& partitions
-) {
+)
+{
     size_t N = join_vars.size();
     uint64_t* key = new uint64_t[N];
     auto mask = ((1ul << depth) - 1ul);
@@ -204,15 +196,13 @@ void MaterializeIter::make_partitions(
     }
 
     for (size_t i = 0; i < partitions.size(); i++) {
-        if (partitions[i].first->total_tuples > max_hash_table_size &&
-            partitions[i].second->total_tuples > max_hash_table_size)
+        if (partitions[i].first->total_tuples > max_hash_table_size
+            && partitions[i].second->total_tuples > max_hash_table_size)
         {
             auto lhs_split = partitions[i].first->split(join_vars);
             auto rhs_split = partitions[i].second->split(join_vars);
             // Avoid add partitions with trivially 0 results
-            if (partitions[i].first->total_tuples == 0 ||
-                partitions[i].second->total_tuples == 0)
-            {
+            if (partitions[i].first->total_tuples == 0 || partitions[i].second->total_tuples == 0) {
                 partitions[i].first = std::move(lhs_split);
                 partitions[i].second = std::move(rhs_split);
             } else if (lhs_split->total_tuples != 0 && rhs_split->total_tuples != 0) {
@@ -221,5 +211,5 @@ void MaterializeIter::make_partitions(
             i--;
         }
     }
-    delete[](key);
+    delete[] (key);
 }

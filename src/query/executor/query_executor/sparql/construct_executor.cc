@@ -105,7 +105,6 @@ void ConstructExecutor::analyze(std::ostream & os, bool print_stats, int indent)
 
     os << ")\n";
     if (child_iter) {
-        BindingIterPrinter printer(os, print_stats, indent + 2);
-        child_iter->accept_visitor(printer);
+        child_iter->print(os, indent + 2, print_stats);
     }
 }

@@ -1,0 +1,2 @@
+MATCH (x: TestNode)
+RETURN DISTINCT x.number + x.number2 AS unique_sums

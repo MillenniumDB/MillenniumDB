@@ -49,7 +49,6 @@ public:
     }
 
     RDPQAutomaton get_rdpq_base_automaton() const override {
-        // TODO: implement this
         throw std::runtime_error("PathKleenePlus::get_rpq_base_automaton() not implemented");
     }
 

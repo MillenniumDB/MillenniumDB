@@ -1,14 +1,7 @@
 #include "index_left_outer_join.h"
 
-#include <algorithm>
-
-#include "graph_models/object_id.h"
-#include "query/var_id.h"
-#include "query/executor/binding_iter/empty_binding_iter.h"
-
-using namespace std;
-
-void IndexLeftOuterJoin::_begin(Binding& parent_binding) {
+void IndexLeftOuterJoin::_begin(Binding& parent_binding)
+{
     this->parent_binding = &parent_binding;
 
     lhs->begin(parent_binding);
@@ -22,8 +15,8 @@ void IndexLeftOuterJoin::_begin(Binding& parent_binding) {
     original_rhs->begin(parent_binding);
 }
 
-
-bool IndexLeftOuterJoin::_next() {
+bool IndexLeftOuterJoin::_next()
+{
     while (true) {
         if (rhs->next()) {
             must_return_null = false;
@@ -48,8 +41,8 @@ bool IndexLeftOuterJoin::_next() {
     }
 }
 
-
-void IndexLeftOuterJoin::_reset() {
+void IndexLeftOuterJoin::_reset()
+{
     lhs->reset();
     if (lhs->next()) {
         must_return_null = true;
@@ -61,13 +54,18 @@ void IndexLeftOuterJoin::_reset() {
     }
 }
 
-
-void IndexLeftOuterJoin::assign_nulls() {
+void IndexLeftOuterJoin::assign_nulls()
+{
     lhs->assign_nulls();
     original_rhs->assign_nulls();
 }
 
-
-void IndexLeftOuterJoin::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void IndexLeftOuterJoin::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        print_generic_stats(os, indent);
+    }
+    os << std::string(indent, ' ') << "IndexLeftOuterJoin()\n";
+    lhs->print(os, indent + 2, stats);
+    original_rhs->print(os, indent + 2, stats);
 }

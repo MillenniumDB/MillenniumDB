@@ -126,51 +126,14 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         if (lhs_sub_t == ObjectId::MASK_INT && rhs_sub_t == ObjectId::MASK_INT) {
             return static_cast<int64_t>(lhs_oid.id) - static_cast<int64_t>(rhs_oid.id);
         }
-        // Decimal inlined optimization
-        if (lhs_oid.get_type() == ObjectId::MASK_DECIMAL_INLINED
-            && rhs_oid.get_type() == ObjectId::MASK_DECIMAL_INLINED)
-        {
-            auto lhs_sep = lhs_oid.id & Conversions::DECIMAL_SEPARATOR_MASK;
-            auto rhs_sep = rhs_oid.id & Conversions::DECIMAL_SEPARATOR_MASK;
-
-            auto lhs_num = static_cast<int64_t>((lhs_oid.id & Conversions::DECIMAL_NUMBER_MASK) >> 4);
-            auto rhs_num = static_cast<int64_t>((rhs_oid.id & Conversions::DECIMAL_NUMBER_MASK) >> 4);
-
-            auto lhs_sign = static_cast<int64_t>((lhs_oid.id & Conversions::DECIMAL_SIGN_MASK) >> 55);
-            auto rhs_sign = static_cast<int64_t>((rhs_oid.id & Conversions::DECIMAL_SIGN_MASK) >> 55);
-
-            lhs_num *= (1 - 2 * lhs_sign);
-            rhs_num *= (1 - 2 * rhs_sign);
-
-            if (lhs_sep == rhs_sep) {
-                return lhs_num - rhs_num;
-            } else {
-                int64_t swap = 1;
-                if (rhs_sep > lhs_sep) {
-                    std::swap(lhs_sep, rhs_sep);
-                    std::swap(lhs_num, rhs_num);
-                    swap = -1;
-                }
-
-                int64_t diff      = lhs_sep - rhs_sep;
-                int64_t div       = static_cast<int64_t>(std::pow(10, diff));
-                int64_t division  = lhs_num / div;
-                int64_t remainder = lhs_num % div;
-                if (division == rhs_num) {
-                    return remainder * swap;
-                } else {
-                    return (division - rhs_num) * swap;
-                }
-            }
-        }
 
         auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
 
         switch (optype) {
-        case Conversions::OPTYPE_INTEGER: {
+        case Conversions::OpType::INTEGER: {
             throw LogicException("This should have been handled by the Integer optimization.");
         }
-        case Conversions::OPTYPE_DECIMAL: {
+        case Conversions::OpType::DECIMAL: {
             auto lhs = Conversions::to_decimal(lhs_oid);
             auto rhs = Conversions::to_decimal(rhs_oid);
             if (lhs == rhs) {
@@ -181,7 +144,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
                 return 1;
             }
         }
-        case Conversions::OPTYPE_FLOAT: {
+        case Conversions::OpType::FLOAT: {
             auto lhs = Conversions::to_float(lhs_oid);
             auto rhs = Conversions::to_float(rhs_oid);
             // Cant just return subtraction and implicit cast to int
@@ -194,7 +157,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
                 return 1;
             }
         }
-        case Conversions::OPTYPE_DOUBLE: {
+        case Conversions::OpType::DOUBLE: {
             auto lhs = Conversions::to_double(lhs_oid);
             auto rhs = Conversions::to_double(rhs_oid);
             // Cant just return subtraction and implicit cast to int
@@ -227,15 +190,15 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
     case RDF_OID::GenericType::TENSOR: {
         const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
         switch (optype) {
-        case Conversions::OPTYPE_TENSOR_FLOAT: {
+        case Conversions::OpType::TENSOR_FLOAT: {
             const auto lhs = Conversions::to_tensor<float>(lhs_oid);
             const auto rhs = Conversions::to_tensor<float>(rhs_oid);
-            return Tensor<float>::compare(lhs, rhs);
+            return tensor::Tensor<float>::compare(lhs, rhs);
         }
-        case Conversions::OPTYPE_TENSOR_DOUBLE: {
+        case Conversions::OpType::TENSOR_DOUBLE: {
             const auto lhs = Conversions::to_tensor<double>(lhs_oid);
             const auto rhs = Conversions::to_tensor<double>(rhs_oid);
-            return Tensor<double>::compare(lhs, rhs);
+            return tensor::Tensor<double>::compare(lhs, rhs);
         }
         default: {
             throw LogicException("This should never happen");

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
-#include "query/parser/expr/expr.h"
+#include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
 class ExprCast : public Expr {

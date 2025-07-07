@@ -2,7 +2,6 @@
 
 #include "network/server/session/streaming/response/streaming_response_writer.h"
 
-
 class StreamingQueryExecutor {
 public:
     virtual ~StreamingQueryExecutor() = default;

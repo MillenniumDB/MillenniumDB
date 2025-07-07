@@ -8,7 +8,7 @@
 
 namespace TextSearch { namespace RDF {
 
-std::tuple<uint_fast32_t, uint_fast32_t> index_predicate(
+std::tuple<uint_fast32_t, uint_fast32_t, ObjectId> index_predicate(
     Trie& trie,
     BPlusTree<2>& bpt,
     Table& table,
@@ -40,7 +40,7 @@ std::tuple<uint_fast32_t, uint_fast32_t> index_predicate(
         }
     }
 
-    return { total_inserted_elements, total_inserted_tokens };
+    return { total_inserted_elements, total_inserted_tokens, predicate_val };
 }
 
 uint_fast32_t index_single(
@@ -113,7 +113,7 @@ uint_fast32_t remove_single(
     // Store { bpt_record, table_row} to remove
     std::vector<std::tuple<Record<2>, uint64_t>> to_remove_data;
     for (const auto& token : processed_tokens) {
-        const auto trie_iter = trie.search<SearchType::Match, false>(token);
+        const auto trie_iter = trie.search<SearchType::MATCH, false>(token);
         while (trie_iter->next()) {
             const auto trie_node_id = trie_iter->get_node_id();
 

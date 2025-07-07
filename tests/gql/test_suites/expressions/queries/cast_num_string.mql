@@ -1,0 +1,2 @@
+MATCH (x: CaseNode)
+RETURN CAST(1 AS STRING) AS case_value

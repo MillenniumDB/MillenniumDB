@@ -1,0 +1,13 @@
+x.value1,x.value2,case_value
+NULL,5,"Win"
+1,1,"Win"
+2,2,"Win"
+5,4,"Lose"
+5,5,"Lose"
+5,6,"Lose"
+"hola","hola","Try again"
+4,NULL,"Win"
+6,6,"Lose"
+NULL,NULL,"Win"
+8,9,"Win"
+"test","not","Lose"

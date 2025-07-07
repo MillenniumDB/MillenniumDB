@@ -1,0 +1,2 @@
+MATCH (x)-[e]->(y)
+RETURN x, e, y

@@ -1,0 +1,12 @@
+N0 :aaa
+N1 :aaa
+N2 :aaa
+N3 :bbb
+N4 :bbb
+N5 :ccc
+N0~N1 :aaa
+N0->N2 :aaa
+N1->N2 :bbb
+N1->N4 :bbb
+N3->N4 :ccc
+N3->N2 :ccc

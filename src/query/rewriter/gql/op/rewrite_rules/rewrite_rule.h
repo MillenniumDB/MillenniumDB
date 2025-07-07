@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/expr/expr.h"
-#include "query/parser/op/op.h"
+#include "query/parser/expr/gql/expr.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 

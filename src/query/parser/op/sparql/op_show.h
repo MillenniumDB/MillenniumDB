@@ -1,20 +1,23 @@
 #pragma once
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 
 class OpShow : public Op {
 public:
     enum class Type : uint8_t {
-        TEXT_SEARCH_INDEX
+        TEXT_INDEX,
+        HNSW_INDEX
     };
 
     static std::string get_type_string(Type type)
     {
         switch (type) {
-        case Type::TEXT_SEARCH_INDEX:
-            return "TEXT_SEARCH_INDEX";
+        case Type::TEXT_INDEX:
+            return "TEXT_INDEX";
+        case Type::HNSW_INDEX:
+            return "HNSW_INDEX";
         default:
             return "UNKNOWN";
         }

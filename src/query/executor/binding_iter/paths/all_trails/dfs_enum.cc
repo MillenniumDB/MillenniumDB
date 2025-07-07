@@ -1,24 +1,31 @@
 #include "dfs_enum.h"
 
-#include <cassert>
-
-#include "query/var_id.h"
 #include "system/path_manager.h"
 
 using namespace std;
 using namespace Paths::AllTrails;
 
-void DFSEnum::_begin(Binding& _parent_binding) {
+void DFSEnum::_begin(Binding& _parent_binding)
+{
     parent_binding = &_parent_binding;
     first_next = true;
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        start_object_id,
+        ObjectId(),
+        ObjectId(),
+        false,
+        nullptr
+    );
 }
 
-
-bool DFSEnum::_next() {
+bool DFSEnum::_next()
+{
     // Check if first state is final
     if (first_next) {
         first_next = false;
@@ -63,8 +70,8 @@ bool DFSEnum::_next() {
     return false;
 }
 
-
-SearchStateDFS* DFSEnum::expand_neighbors(SearchStateDFS& current_state) {
+SearchStateDFS* DFSEnum::expand_neighbors(SearchStateDFS& current_state)
+{
     // Check if this is the first time that current_state is explored
     if (current_state.iter->at_end()) {
         // Check if automaton state has transitions
@@ -77,7 +84,8 @@ SearchStateDFS* DFSEnum::expand_neighbors(SearchStateDFS& current_state) {
     // Iterate over the remaining transitions of current_state
     // Don't start from the beginning, resume where it left thanks to state transition + iter (pipeline)
     while (current_state.transition < automaton.from_to_connections[current_state.automaton_state].size()) {
-        auto& transition = automaton.from_to_connections[current_state.automaton_state][current_state.transition];
+        auto& transition = automaton
+                               .from_to_connections[current_state.automaton_state][current_state.transition];
 
         // Iterate over records and return trails
         while (current_state.iter->next()) {
@@ -95,7 +103,8 @@ SearchStateDFS* DFSEnum::expand_neighbors(SearchStateDFS& current_state) {
                 ObjectId(current_state.iter->get_edge()),
                 transition.type_id,
                 transition.inverse,
-                &current_state);
+                &current_state
+            );
         }
 
         // Construct new iter with the next transition (if there exists one)
@@ -107,8 +116,8 @@ SearchStateDFS* DFSEnum::expand_neighbors(SearchStateDFS& current_state) {
     return nullptr;
 }
 
-
-void DFSEnum::_reset() {
+void DFSEnum::_reset()
+{
     // Empty open
     stack<SearchStateDFS> empty;
     open.swap(empty);
@@ -118,10 +127,27 @@ void DFSEnum::_reset() {
 
     // Add starting state to open
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    open.emplace(automaton.start_state, 0, make_unique<NullIndexIterator>(), start_object_id, ObjectId(), ObjectId(), false, nullptr);
+    open.emplace(
+        automaton.start_state,
+        0,
+        make_unique<NullIndexIterator>(),
+        start_object_id,
+        ObjectId(),
+        ObjectId(),
+        false,
+        nullptr
+    );
 }
 
-
-void DFSEnum::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
+void DFSEnum::print(std::ostream& os, int indent, bool stats) const
+{
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::AllTrails::DFSEnum(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

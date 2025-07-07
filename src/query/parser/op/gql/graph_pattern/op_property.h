@@ -1,10 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/gql/graph_pattern/op_optional_properties.h"
-#include "query/parser/op/op.h"
-#include "query/rewriter/gql/op/var_type.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
@@ -37,26 +33,6 @@ public:
     std::set<VarId> get_all_vars() const override
     {
         return { property.object };
-    }
-
-    std::set<VarId> get_scope_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        return { property.object };
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        return {};
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

@@ -2,8 +2,6 @@
 
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
-#include "query/executor/binding_iter_visitor.h"
-
 
 // Abstract class
 class BindingIter {
@@ -19,27 +17,29 @@ public:
 
     // Starts with -1 to account for the last next being false
     uint64_t results = 0;
-    // uint64_t elapsed_time;
 
     virtual ~BindingIter() = default;
 
     // parent_binding is the input and the iter will write its results there.
     // It will look at the parent_binding to know the value of the assigned variables
-    inline void begin(Binding& parent_binding) {
+    inline void begin(Binding& parent_binding)
+    {
         stat_begin++;
         _begin(parent_binding);
     }
 
     // Iterator starts again.
     // It will look at the parent_binding to know the value of the assigned variables
-    inline void reset() {
+    inline void reset()
+    {
         stat_reset++;
         _reset();
     }
 
     // Returns true if there is a next binding or false otherwise.
     // It modifies the parent_binding to include the new results.
-    inline bool next() {
+    inline bool next()
+    {
         stat_next++;
 
         bool result = _next();
@@ -47,8 +47,14 @@ public:
         return result;
     }
 
+    void print_generic_stats(std::ostream& os, int indent) const
+    {
+        os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+           << " reset: " << stat_reset << " results: " << results << "]\n";
+    }
+
     // Every var that the iter sets in the binding when next() returns true is set to null
     virtual void assign_nulls() = 0;
 
-    virtual void accept_visitor(BindingIterVisitor&) = 0;
+    virtual void print(std::ostream& os, int indent, bool stats) const = 0;
 };

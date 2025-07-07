@@ -1,0 +1,19 @@
+PREFIX prop: <http://example.org/property/>
+PREFIX item: <http://example.org/item/>
+
+SELECT ?propertyLabel ?propertyDescription ?count WHERE {
+   {
+     SELECT ?propertyclaim (COUNT(?person) AS ?count) WHERE {
+       ?person prop:hasOccupation item:engineer .
+       ?person ?propertyclaim ?value .
+     }
+     GROUP BY ?propertyclaim
+   }
+   ?property a prop:ExternalID .
+   ?property prop:category prop:External .
+   ?property prop:claim ?propertyclaim .
+   ?property prop:label ?propertyLabel .
+   ?property prop:description ?propertyDescription .
+}
+ORDER BY DESC(?count)
+LIMIT 100

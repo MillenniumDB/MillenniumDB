@@ -14,7 +14,8 @@ public:
         lhs           (std::move(lhs)),
         original_rhs  (std::move(rhs)) { }
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
+
     void _begin(Binding& parent_binding) override;
     bool _next() override;
     void _reset() override;

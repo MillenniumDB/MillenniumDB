@@ -8,16 +8,8 @@ using namespace Paths::ShortestKTrails;
 void BFSCheck::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-
-    // Store ID for end object
-    end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
-
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
-
 
 void BFSCheck::_reset()
 {
@@ -27,20 +19,20 @@ void BFSCheck::_reset()
     visited.clear();
     solutions.clear();
 
-    // Add starting states to open and visited
-    ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-
-    // Store ID for end object
-    end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
-
-    expand_first_state(start_object_id);
+    expand_first_state();
 }
 
-void BFSCheck::expand_first_state(ObjectId start)
+void BFSCheck::expand_first_state()
 {
     iter = make_unique<NullIndexIterator>();
 
-    auto start_node_visited = visited.add(start, ObjectId(), ObjectId(), false, nullptr);
+     // Add starting states to open and visited
+     ObjectId start_oid = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
+
+     // Store ID for end object
+     end_object_id = end.is_var() ? (*parent_binding)[end.get_var()] : end.get_OID();
+
+    auto start_node_visited = visited.add(start_oid, ObjectId(), ObjectId(), false, nullptr);
     open.emplace(start_node_visited, automaton.start_state);
 
     // Check if first state is final
@@ -135,9 +127,7 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
             open.emplace(new_visited_ptr, transition.to);
 
             // Check if new path is solution
-            if (automaton.is_final_state[transition.to]
-                && reached_node == end_object_id)
-            {
+            if (automaton.is_final_state[transition.to] && reached_node == end_object_id) {
                 solutions.push_back(new_visited_ptr);
                 return true;
             }
@@ -152,8 +142,15 @@ bool BFSCheck::expand_neighbors(const SearchState& current_state)
     return false;
 }
 
-
-void BFSCheck::accept_visitor(BindingIterVisitor& visitor)
+void BFSCheck::print(std::ostream& os, int indent, bool stats) const
 {
-    visitor.visit(*this);
+    if (stats) {
+        if (stats) {
+            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+               << "]\n";
+        }
+    }
+    os << std::string(indent, ' ') << "Paths::ShortestKTrails::BFSCheck(path_var: " << path_var
+       << ", start: " << start << ", end: " << end << ")";
 }

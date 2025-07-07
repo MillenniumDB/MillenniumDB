@@ -1,0 +1,2 @@
+MATCH (x: TrigNode)
+RETURN x.in_value, x.cos_value, COS(x.in_value) AS coseno

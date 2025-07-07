@@ -3,9 +3,6 @@
 #include <cstdint>
 #include <ostream>
 
-#include "query/executor/binding_iter_printer.h"
-#include "query/query_context.h"
-
 class QueryExecutor {
 public:
     virtual ~QueryExecutor() = default;

@@ -3,10 +3,10 @@
 #include <memory>
 #include <queue>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <boost/unordered/unordered_node_map.hpp>
 #include <boost/unordered/unordered_node_set.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 
 #include "misc/arena.h"
 #include "query/executor/binding_iter.h"
@@ -44,7 +44,7 @@ private:
     // Reached {NodeId, State} -> PathCount
     // Used to ensure the exploration (expand_neighbors) terminates
     // without an infinite loop
-    boost::unordered_map<NodeState, size_t, NodeStateHasher> path_counts;
+    boost::unordered_flat_map<NodeState, size_t, NodeStateHasher> path_counts;
 
     // NodeId -> {paths, count}
     boost::unordered_node_map<uint64_t, Solution> solutions;
@@ -52,7 +52,7 @@ private:
     Arena<IterTransition> iter_arena;
 
     // save the NodeId of the reached path solution
-    boost::unordered_set<uint64_t> pending_finals;
+    boost::unordered_flat_set<uint64_t> pending_finals;
 
     // counter for results for the current reached_final_states
     // so it does not exceed K solutions
@@ -85,7 +85,7 @@ public:
     // Returns nullptr when the exploration ends without finding a result.
     Solution* expand_neighbors(const SearchState& current_state);
 
-    void accept_visitor(BindingIterVisitor& visitor) override;
+    void print(std::ostream& os, int indent, bool stats) const override;
 
     void _begin(Binding& parent_binding) override;
 
@@ -111,6 +111,6 @@ public:
     }
 
 private:
-    void expand_first_state(ObjectId start);
+    void expand_first_state();
 };
 }} // namespace Paths::ShortestKWalks

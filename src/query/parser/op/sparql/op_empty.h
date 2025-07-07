@@ -2,10 +2,9 @@
 
 #include <memory>
 #include <set>
-#include <vector>
 #include <optional>
 
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
 
@@ -23,7 +22,7 @@ public:
         visitor.visit(*this);
     }
 
-    std::unique_ptr<Op> clone() const  override {
+    std::unique_ptr<Op> clone() const override {
         if (deleted_op.has_value()) {
             auto op = deleted_op.value()->clone();
             return std::make_unique<OpEmpty>(op);

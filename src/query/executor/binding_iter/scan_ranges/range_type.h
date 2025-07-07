@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/executor/binding_iter/scan_ranges/scan_range.h"
-#include "query/query_context.h"
 
 enum class propertyType : uint64_t {
     TYPE_NULL = 1 << 4, // 10000

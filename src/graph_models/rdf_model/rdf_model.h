@@ -5,7 +5,7 @@
 #include "graph_models/model_destroyer.h"
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
-#include "query/parser/op/op.h"
+#include "query/parser/op/sparql/op.h"
 #include "query/parser/paths/regular_path_expr.h"
 
 template <std::size_t N> class BPlusTree;
@@ -34,7 +34,7 @@ public:
 
     RdfCatalog catalog;
 
-    uint64_t MAX_LIMIT = Op::DEFAULT_LIMIT;
+    uint64_t MAX_LIMIT = SPARQL::Op::DEFAULT_LIMIT;
 
     // Path mode to use
     PathSearchMode path_mode = PathSearchMode::BFS;
@@ -49,7 +49,6 @@ public:
         { "geo", "http://www.opengis.net/ont/geosparql#" },
         { "hint", "http://www.bigdata.com/queryHints#" },
         { "mdbfn", std::string(SPARQL::MDBExtensions::Function::FUNCTION_PREFIX_IRI) },
-        { "mdbproc", std::string(SPARQL::MDBExtensions::Procedure::PROCEDURE_PREFIX_IRI) },
         { "mdbtype", std::string(SPARQL::MDBExtensions::Type::TYPE_PREFIX_IRI) },
         { "ontolex", "http://www.w3.org/ns/lemon/ontolex#" },
         { "owl", "http://www.w3.org/2002/07/owl#" },

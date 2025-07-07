@@ -12,20 +12,20 @@ using namespace HashJoin::Generic::InMemory;
 Join::Join(
     unique_ptr<BindingIter> _lhs,
     unique_ptr<BindingIter> _rhs,
-    vector<VarId>&&         _join_vars,
-    vector<VarId>&&         _lhs_vars,
-    vector<VarId>&&         _rhs_vars
+    vector<VarId>&& _join_vars,
+    vector<VarId>&& _lhs_vars,
+    vector<VarId>&& _rhs_vars
 ) :
-    rhs             (std::move(_rhs)),
-    lhs             (std::move(_lhs)),
-    join_vars       (std::move(_join_vars)),
-    lhs_vars        (std::move(_lhs_vars)),
-    rhs_vars        (std::move(_rhs_vars)),
-    N               (join_vars.size()),
-    pk_start        (new uint64_t[N]),
-    last_pk_start   (new uint64_t[N]),
-    rhs_key         (Key(pk_start, N)),
-    last_rhs_key    (Key(last_pk_start, N))
+    rhs(std::move(_rhs)),
+    lhs(std::move(_lhs)),
+    join_vars(std::move(_join_vars)),
+    lhs_vars(std::move(_lhs_vars)),
+    rhs_vars(std::move(_rhs_vars)),
+    N(join_vars.size()),
+    pk_start(new uint64_t[N]),
+    last_pk_start(new uint64_t[N]),
+    rhs_key(Key(pk_start, N)),
+    last_rhs_key(Key(last_pk_start, N))
 {
     // Size of data row:  lhs attr  + 1 (one space to reserve next pointer)
     data_chunk = new uint64_t[(lhs_vars.size() + 1) * PPage::SIZE];
@@ -40,24 +40,23 @@ Join::Join(
     key_chunks_dir.push_back(key_chunk);
     // Set chunk index in 0
     key_chunk_index = 0;
-
 }
 
-
-Join::~Join() {
+Join::~Join()
+{
     // Avoid mem leaks
     for (auto block : data_chunks_dir) {
-        delete[](block);
+        delete[] (block);
     }
-    for (auto block: key_chunks_dir) {
-        delete[](block);
+    for (auto block : key_chunks_dir) {
+        delete[] (block);
     }
-    delete[](pk_start);
-    delete[](last_pk_start);
+    delete[] (pk_start);
+    delete[] (last_pk_start);
 }
 
-
-void Join::_begin(Binding& _parent_binding) {
+void Join::_begin(Binding& _parent_binding)
+{
     // set hash join in start state, always must be non enumerating_row
     enumerating_rows = nullptr;
 
@@ -76,8 +75,8 @@ void Join::_begin(Binding& _parent_binding) {
     build_hash_table();
 }
 
-
-bool Join::_next() {
+bool Join::_next()
+{
     while (true) {
         // If enumerating rows != nullptr, then a row must be returned
         if (enumerating_rows != nullptr) {
@@ -88,8 +87,7 @@ bool Join::_next() {
             // Update enumerating row to next value
             enumerating_rows = reinterpret_cast<uint64_t**>(enumerating_rows)[lhs_vars.size()];
             return true;
-        }
-        else {
+        } else {
             // If enumerating rows is nullptr ask for the next rhs relation row
             // if has an entry in the hash table
             if (rhs->next()) {
@@ -128,16 +126,15 @@ bool Join::_next() {
                         last_rhs_key.start[i] = rhs_key.start[i];
                     }
                 }
-            }
-            else {
+            } else {
                 return false;
             }
         }
     }
 }
 
-
-void Join::_reset() {
+void Join::_reset()
+{
     hash_table.clear();
 
     // Delete chunks except first to avoid an unnecessary
@@ -178,8 +175,8 @@ void Join::_reset() {
     build_hash_table();
 }
 
-
-void Join::assign_nulls() {
+void Join::assign_nulls()
+{
     for (auto& var : join_vars) {
         parent_binding->add(var, ObjectId::get_null());
     }
@@ -193,13 +190,8 @@ void Join::assign_nulls() {
     rhs->assign_nulls();
 }
 
-
-void Join::accept_visitor(BindingIterVisitor& visitor) {
-    visitor.visit(*this);
-}
-
-
-void Join::build_hash_table() {
+void Join::build_hash_table()
+{
     auto data_tuple_size = lhs_vars.size() + 1;
 
     // Only to avoid seg fault in fist iteration due to Key comparision
@@ -230,7 +222,7 @@ void Join::build_hash_table() {
         }
         // Store data
         for (size_t i = 0; i < lhs_vars.size(); i++) {
-            data_chunk[start_data_index + i] =  (*lhs_binding)[lhs_vars[i]].id;
+            data_chunk[start_data_index + i] = (*lhs_binding)[lhs_vars[i]].id;
         }
         // Set last data value as a null pointer
         auto casted_chunk = reinterpret_cast<uint64_t**>(data_chunk);
@@ -265,10 +257,7 @@ void Join::build_hash_table() {
             }
 
             // Try to create a new entry in the hash table
-            auto iterator = hash_table.emplace(key,
-                                               Value(data_pointer,
-                                                     data_pointer)
-                                    );
+            auto iterator = hash_table.emplace(key, Value(data_pointer, data_pointer));
             // If the key already has been inserted, iterator.second = false
             if (!(iterator.second)) {
                 // If the key already exists, get the value of the hash table
@@ -282,6 +271,6 @@ void Join::build_hash_table() {
             last_key.start = key.start;
         }
     }
-    delete[](dummy_last_key);
-    delete[](start_key);
+    delete[] (dummy_last_key);
+    delete[] (start_key);
 }

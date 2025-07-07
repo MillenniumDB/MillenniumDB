@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-
-#include "query/parser/op/op.h"
+#include "query/parser/op/gql/op.h"
 
 namespace GQL {
 
@@ -38,43 +36,24 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override
+    std::map<VarId, GQL::VarType> get_var_types() const override
     {
-        return get_all_vars();
-    }
-
-    std::set<VarId> get_safe_vars() const override
-    {
-        std::set<VarId> res;
-        for (auto& pattern : patterns) {
-            res.merge(pattern->get_safe_vars());
-        }
-        return res;
-    }
-
-    std::set<VarId> get_fixable_vars() const override
-    {
-        return get_all_vars();
-    }
-
-    std::map<VarId, std::unique_ptr<GQL::VarType>> get_var_types() const override
-    {
-        std::map<VarId, std::unique_ptr<GQL::VarType>> res;
+        std::map<VarId, GQL::VarType> result;
 
         for (auto& pattern : patterns) {
             auto pattern_types = pattern->get_var_types();
 
             for (auto& [var, type] : pattern_types) {
-                if (res[var] && (*res[var] != *type || !res[var]->is_singleton())) {
+                if (result.count(var) && (result[var] != type || !result[var].is_singleton())) {
                     throw QuerySemanticException(
                         "Variable \"" + get_query_ctx().get_var_name(var) + "\" has more than one type."
                     );
                 }
-                res[var] = std::move(type);
+                result[var] = type;
             }
         }
 
-        return res;
+        return result;
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override

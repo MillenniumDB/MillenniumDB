@@ -5,8 +5,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <new> // placement new
-#include <type_traits> // aligned_storage
+#include <type_traits>
 
 #include "storage/file_id.h"
 #include "storage/filesystem.h"

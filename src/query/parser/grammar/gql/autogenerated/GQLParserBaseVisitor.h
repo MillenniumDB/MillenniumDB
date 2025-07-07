@@ -2295,6 +2295,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitKeyword(GQLParser::KeywordContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
 
 };
 
