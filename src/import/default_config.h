@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <string>
 #include <sys/stat.h>
-#include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <unistd.h>
 

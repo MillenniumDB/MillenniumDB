@@ -102,8 +102,8 @@ Import::GQL::Token GQLTokenizer::_get_token()
             l_arrow      { return Import::GQL::Token::L_ARROW; }
             r_arrow      { return Import::GQL::Token::R_ARROW; }
             undirected   { return Import::GQL::Token::UNDIRECTED; }
-            true         { return Import::GQL::Token::TRUE; }
-            false        { return Import::GQL::Token::FALSE; }
+            true         { return Import::GQL::Token::K_TRUE; }
+            false        { return Import::GQL::Token::K_FALSE; }
             string       { return Import::GQL::Token::STRING; }
             typed_string { return Import::GQL::Token::TYPED_STRING; }
             identifier   { return Import::GQL::Token::IDENTIFIER; }

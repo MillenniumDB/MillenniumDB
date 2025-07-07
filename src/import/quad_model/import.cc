@@ -417,13 +417,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::LINE_BEGIN,
-        Token::TRUE,
+        Token::K_TRUE,
         State::FIRST_ID,
         std::bind(&OnDiskImport::save_first_id_true, this)
     );
     set_transition(
         State::LINE_BEGIN,
-        Token::FALSE,
+        Token::K_FALSE,
         State::FIRST_ID,
         std::bind(&OnDiskImport::save_first_id_false, this)
     );
@@ -513,13 +513,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::EXPECT_NODE_PROP_VALUE,
-        Token::FALSE,
+        Token::K_FALSE,
         State::NODE_DEFINED,
         std::bind(&OnDiskImport::add_node_prop_false, this)
     );
     set_transition(
         State::EXPECT_NODE_PROP_VALUE,
-        Token::TRUE,
+        Token::K_TRUE,
         State::NODE_DEFINED,
         std::bind(&OnDiskImport::add_node_prop_true, this)
     );
@@ -581,13 +581,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::EXPECT_EDGE_SECOND,
-        Token::TRUE,
+        Token::K_TRUE,
         State::EXPECT_EDGE_TYPE_COLON,
         std::bind(&OnDiskImport::save_second_id_true, this)
     );
     set_transition(
         State::EXPECT_EDGE_SECOND,
-        Token::FALSE,
+        Token::K_FALSE,
         State::EXPECT_EDGE_TYPE_COLON,
         std::bind(&OnDiskImport::save_second_id_false, this)
     );
@@ -652,13 +652,13 @@ void OnDiskImport::create_automata()
     );
     set_transition(
         State::EXPECT_EDGE_PROP_VALUE,
-        Token::FALSE,
+        Token::K_FALSE,
         State::EDGE_DEFINED,
         std::bind(&OnDiskImport::add_edge_prop_false, this)
     );
     set_transition(
         State::EXPECT_EDGE_PROP_VALUE,
-        Token::TRUE,
+        Token::K_TRUE,
         State::EDGE_DEFINED,
         std::bind(&OnDiskImport::add_edge_prop_true, this)
     );

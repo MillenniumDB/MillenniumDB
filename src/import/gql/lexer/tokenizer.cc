@@ -1116,7 +1116,7 @@ yy42:
 	}
 yy43:
 #line 105 "tokenizer_template.cpp"
-	{ return Import::GQL::Token::TRUE; }
+	{ return Import::GQL::Token::K_TRUE; }
 #line 1121 "tokenizer.cc"
 yy44:
 	++cur;
@@ -1198,7 +1198,7 @@ yy45:
 	}
 yy46:
 #line 106 "tokenizer_template.cpp"
-	{ return Import::GQL::Token::FALSE; }
+	{ return Import::GQL::Token::K_FALSE; }
 #line 1203 "tokenizer.cc"
 }
 #line 115 "tokenizer_template.cpp"
