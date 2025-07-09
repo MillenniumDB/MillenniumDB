@@ -1,0 +1,15 @@
+LICENSE for Cora Dataset
+
+The Cora dataset is provided by the LINQS group (UCSC) for non-commercial
+academic and research use only.
+
+Original source: <https://linqs.org/>
+
+Please cite:
+McCallum, A.K., Nigam, K., Rennie, J., & Seymore, K. (2000).
+Automating the construction of internet portals with machine learning.
+Information Retrieval, 3(2), 127-163.
+
+This tutorial code is under the MIT License.
+
+No warranty; use at your own risk.

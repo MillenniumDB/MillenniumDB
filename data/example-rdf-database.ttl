@@ -1,9 +1,0 @@
-@prefix : <http://www.path.com/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-
-:data-types :numeric 123.4, -7.3e2, 382, "2.34"^^xsd:float ;
-            :boolean true, false, "true"^^xsd:boolean, "false"^^xsd:boolean ;
-            :datetime "2020-02-21"^^xsd:date, "23:02:31Z"^^xsd:time, "2020-02-21T23:02:31Z"^^xsd:dateTime ;
-            :strings "simple literal", "typed literal"^^xsd::string, "literal with language"@en, "custom datatype"^^:custom-datatype ;
-            :blank-nodes [], _:23 .
