@@ -86,7 +86,9 @@ third_party/boost_1_82
 /Notes.md
 /query.rq
 
-/data/
+/data/*
+!/data/example
+
 /tests/tmp
 /tests/sparql/tmp
 /tests/sparql/test-status-last.txt
