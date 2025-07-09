@@ -1,0 +1,325 @@
+a0 :Author name:"John Doe" age:82 location:"Stephenview"
+a1 :Author name:"Jane Doe" age:42 location:"South Anthonyfurt"
+a2 :Editor name:"Jamie Herring" age:67 location:"Romeroborough"
+a3 :Illustrator name:"Timothy Diaz" age:58 location:"North Kaylee"
+a4 :Author name:"Angela Everett" age:22 location:"Romeroborough"
+a5 :Author name:"Robert Li" age:59 location:"East Crystalport"
+a6 :Illustrator name:"Robert Smith" age:10 location:"Tracytown"
+a7 :Editor name:"Amber Buchanan" age:44 location:"Williamsshire"
+a8 :Author name:"Mark Greene" age:85 location:"South Anthonyfurt"
+a9 :Editor name:"Linda Reid" age:13 location:"New Melanie"
+a10 :Author name:"Andrea White" age:79 location:"New Melanie"
+a11 :Editor name:"Christopher Arnold" age:37 location:"East Crystalport"
+a12 :Illustrator name:"Melissa Galvan" age:13 location:"Justinfort"
+a13 :Author name:"Antonio Acevedo" age:66 location:"Romeroborough"
+a14 :Illustrator name:"Chad Parrish" age:39 location:"Farleytown"
+a15 :Author name:"Shawn Webster" age:38 location:"Hollandburgh"
+a16 :Editor name:"Juan Adams" age:47 location:"New Kimberly"
+a17 :Author name:"Laura Lopez" age:63 location:"South Willie"
+a18 :Illustrator name:"Kelly Jackson" age:22 location:"Adamsbury"
+a19 :Illustrator name:"Jonathan Crane" age:47 location:"South Anthonyfurt"
+a20 :Illustrator name:"Diane Wong" age:52 location:"South Kristenhaven"
+a21 :Illustrator name:"Kelly Park" age:74 location:"New Kimberly"
+a22 :Editor name:"Tyler Wilson" age:74 location:"South Willie"
+a23 :Illustrator name:"Larry Cooper" age:34 location:"Transtad"
+a24 :Editor name:"Laura Green" age:85 location:"South Kristenhaven"
+a25 :Editor name:"Jon Cross" age:74 location:"Monroeside"
+a26 :Author :Illustrator name:"Tiffany Sheppard" age:71 location:"South Glendachester"
+a27 :Editor :Illustrator name:"Ryan Cantrell" age:63 location:"Port Frankfurt"
+a28 :Author :Editor name:"Jeremiah Sanders" age:80 location:"South Kristenhaven"
+a29 :Editor :Illustrator name:"Austin Choi" age:21 location:"Lake Marvinhaven"
+a30 :Author :Illustrator name:"Sean Hunter" age:30 location:"Justinfort"
+a31 :Editor :Illustrator name:"Ronald Collier" age:72 location:"Williamsshire"
+a32 :Author :Editor name:"Tiffany Mccoy" age:15 location:"Transtad"
+a33 :Editor :Illustrator name:"Heather Hayes" age:31 location:"Adamsbury"
+a34 :Author :Illustrator name:"Alexandria Johnson" age:11 location:"Hollandburgh"
+a35 :Author :Illustrator name:"Emily Lara" age:61 location:"Justinfort"
+a36 :Editor :Illustrator name:"Donna Simmons" age:68 location:"New Kimberly"
+a37 :Author :Editor name:"Joan Martinez" age:59 location:"North Kaylee"
+a38 :Author :Illustrator name:"Jason Williams" age:76 location:"Hollandburgh"
+a39 :Author :Illustrator name:"Chad Jones" age:64 location:"West Davidmouth"
+a40 :Editor :Illustrator name:"Sally Evans" age:82 location:"Chapmanton"
+a41 :Author :Editor name:"Eric Cunningham" age:72 location:"South Willie"
+a42 :Editor :Illustrator name:"David Castro" age:54 location:"New Melanie"
+a43 :Editor :Illustrator name:"Melissa Garza" age:68 location:"Ortegastad"
+a44 :Author :Illustrator name:"Jeff Lester" age:32 location:"Chapmanton"
+a45 :Author :Illustrator name:"Steven Carey" age:21 location:"North Kaylee"
+a46 :Editor :Illustrator name:"Molly Deleon" age:14 location:"South Willie"
+a47 :Author :Illustrator name:"Cindy Johnson" age:20 location:"Stephenview"
+a48 :Author :Editor name:"James Garcia" age:11 location:"Hollandburgh"
+a49 :Author :Editor name:"Ashley Mosley" age:44 location:"South Anthonyfurt"
+r0 :Reader name:"Brittany Vasquez" email:"brittany.vasquez@price.org"
+r1 :Reader name:"Monica Yoder" email:"monica.yoder@moore.org"
+r2 :Reader name:"Kirsten Morgan" email:"kirsten.morgan@adams.biz"
+r3 :Reader name:"Sarah Cooper" email:"sarah.cooper@ferguson.com"
+r4 :Reader name:"Jessica Miller" email:"jessica.miller@jackson.com"
+r5 :Reader name:"Joseph Cook" email:"joseph.cook@randall.com"
+r6 :Reader name:"Joe Raymond" email:"joe.raymond@clay.com"
+r7 :Reader name:"Malik Russell" email:"malik.russell@cline-french.com"
+r8 :Reader name:"Matthew Gilbert" email:"matthew.gilbert@jones-pierce.org"
+r9 :Reader name:"Christopher Adams" email:"christopher.adams@elliott-buckley.info"
+r10 :Reader name:"Peggy Rodriguez" email:"peggy.rodriguez@carey.org"
+r11 :Reader name:"Ellen Davis" email:"ellen.davis@mckenzie.com"
+r12 :Reader name:"John Mcneil" email:"john.mcneil@martin-hayes.com"
+r13 :Reader name:"Erik Kirk" email:"erik.kirk@bartlett-gray.net"
+r14 :Reader name:"Regina Carter" email:"regina.carter@dawson-edwards.com"
+r15 :Reader name:"Denise Williams" email:"denise.williams@buchanan.org"
+r16 :Reader name:"Luke Myers" email:"luke.myers@brown-gentry.org"
+r17 :Reader name:"Tara Rodriguez" email:"tara.rodriguez@glover.info"
+r18 :Reader name:"Dorothy Green" email:"dorothy.green@clark.com"
+r19 :Reader name:"Christopher Mullins" email:"christopher.mullins@pearson.com"
+r20 :Reader name:"Shelley Myers" email:"shelley.myers@williams-lopez.org"
+r21 :Reader name:"Patricia Turner" email:"patricia.turner@garcia-carr.org"
+r22 :Reader name:"Christopher Robinson" email:"christopher.robinson@morales.net"
+r23 :Reader name:"Mikayla Daniel" email:"mikayla.daniel@reid.com"
+r24 :Reader name:"Trevor Huffman" email:"trevor.huffman@garcia.com"
+r25 :Reader name:"William Ortega" email:"william.ortega@parsons.com"
+r26 :Reader name:"Kevin Fletcher" email:"kevin.fletcher@carter.com"
+r27 :Reader name:"Kimberly Nicholson" email:"kimberly.nicholson@lara.com"
+r28 :Reader name:"Gregory Reynolds" email:"gregory.reynolds@williams.com"
+r29 :Reader name:"Johnny Brown" email:"johnny.brown@stokes-dunn.net"
+r30 :Reader name:"Scott Medina" email:"scott.medina@foster.com"
+r31 :Reader name:"Jonathan Johnson" email:"jonathan.johnson@cantu.com"
+r32 :Reader name:"Betty Watkins" email:"betty.watkins@green.biz"
+r33 :Reader name:"Anne Jackson" email:"anne.jackson@hall.com"
+r34 :Reader name:"Allison Mason" email:"allison.mason@knapp.com"
+r35 :Reader name:"John Simpson" email:"john.simpson@frye-marquez.com"
+r36 :Reader name:"Ann Meadows" email:"ann.meadows@hill.com"
+r37 :Reader name:"Kathryn Brewer" email:"kathryn.brewer@moore-miranda.com"
+r38 :Reader name:"Larry Schwartz" email:"larry.schwartz@watson.org"
+r39 :Reader name:"Christopher Martinez" email:"christopher.martinez@choi.com"
+r40 :Reader name:"Ronald David" email:"ronald.david@todd.com"
+r41 :Reader name:"Patrick Bruce" email:"patrick.bruce@blair.com"
+r42 :Reader name:"Courtney Adams" email:"courtney.adams@chung.org"
+r43 :Reader name:"Meagan Keller" email:"meagan.keller@miller.biz"
+r44 :Reader name:"Shelby Berger" email:"shelby.berger@martin-nguyen.com"
+r45 :Reader name:"Cindy Freeman" email:"cindy.freeman@wilson.net"
+r46 :Reader name:"Ricky Wilson" email:"ricky.wilson@ramirez-gray.net"
+r47 :Reader name:"Adam Lee" email:"adam.lee@riley-johnson.org"
+r48 :Reader name:"John Green" email:"john.green@mitchell.com"
+r49 :Reader name:"Joshua Willis" email:"joshua.willis@collier-griffin.com"
+b0 :Book title:"Ground information business decade these daughter specific." rating:10
+b1 :Book title:"Brother section nation." rating:3
+b2 :Book title:"Away health south join." rating:6
+b3 :Book title:"Serve food buy responsibility go much." rating:5
+b4 :Book title:"Situation raise manage positive help daughter." rating:2
+b5 :Book title:"Yes player reveal." rating:3
+b6 :Book title:"Current type over might visit Republican would." rating:3
+b7 :Book title:"Last protect culture moment." rating:5
+b8 :Book title:"Often wife from perform window record." rating:9
+b9 :Book title:"Manage second policy possible." rating:3
+b10 :Book title:"Again return choose single however establish concern available." rating:5
+b11 :Book title:"Act tree sometimes in rate field left else." rating:5
+b12 :Book title:"Level animal member seat." rating:8
+b13 :Book title:"Attorney attack kind clearly report claim." rating:6
+b14 :Book title:"I read painting decade." rating:8
+b15 :Book title:"Down free attention recognize travel." rating:8
+b16 :Book title:"Life newspaper anyone father same you." rating:2
+b17 :Book title:"Especially participant discussion night common smile term." rating:1
+b18 :Book title:"Respond else particular each produce system." rating:5
+b19 :Book title:"I up value eat especially authority run that." rating:7
+b20 :Book title:"Kitchen tree rock paper energy money catch catch." rating:6
+b21 :Book title:"Guess seem drive responsibility responsibility figure." rating:7
+b22 :Book title:"Direction focus up western." rating:4
+b23 :Book title:"Area our threat." rating:5
+b24 :Book title:"Raise manager more rich thought." rating:2
+b25 :Book title:"Garden study brother realize believe hundred." rating:5
+b26 :Book title:"Last seek wind dog exist natural hope." rating:9
+b27 :Book title:"Resource form order travel yes animal something." rating:4
+b28 :Book title:"Floor himself oil try hundred they serve." rating:10
+b29 :Book title:"Soldier air hold then." rating:7
+b30 :Book title:"Arm here candidate leg style town along." rating:1
+b31 :Book title:"Modern can value sit." rating:4
+b32 :Book title:"Before agree point seat rather suffer." rating:1
+b33 :Book title:"Hope piece wide political during art very." rating:7
+b34 :Book title:"Compare investment recently point wide toward natural Mrs." rating:3
+b35 :Book title:"Interest production require sea return sell edge." rating:1
+b36 :Book title:"Character try take system." rating:3
+b37 :Book title:"Pm treatment mention." rating:8
+b38 :Book title:"Have world always mother kitchen campaign house." rating:9
+b39 :Book title:"Agency modern bed song beat alone his." rating:7
+b40 :Book title:"Finish candidate some southern task." rating:9
+b41 :Book title:"Behind subject me day type." rating:4
+b42 :Book title:"Situation what once bit present large write." rating:9
+b43 :Book title:"Red movie to story fact church have minute." rating:8
+b44 :Book title:"Important call ask feel." rating:4
+b45 :Book title:"Finish fear good foot security may moment." rating:9
+b46 :Book title:"First risk six of." rating:1
+b47 :Book title:"Woman look tree until wide spring understand." rating:7
+b48 :Book title:"Soon care model offer yeah six reflect second." rating:10
+b49 :Book title:"Wrong someone have film our future." rating:6
+a42~a40 :Knows since:"1998-03-07"
+a27~a3 :Knows since:"1971-08-13"
+a47~a19 :Knows since:"1983-11-21"
+a8~a13 :Knows since:"1982-04-12"
+a3~a19 :Knows since:"1977-05-29"
+a47~a10 :Knows since:"1976-04-05"
+a26~a36 :Knows since:"2012-07-19"
+a16~a8 :Knows since:"2022-02-22"
+a0~a35 :Knows since:"2004-05-28"
+a2~a37 :Knows since:"2015-01-25"
+a13~a36 :Knows since:"2024-05-01"
+a29~a10 :Knows since:"2007-10-30"
+a49~a45 :Knows since:"2009-09-05"
+a39~a32 :Knows since:"1981-05-06"
+a2~a24 :Knows since:"1973-09-16"
+a12~a22 :Knows since:"2001-09-18"
+a6~a13 :Knows since:"2005-08-04"
+a36~a43 :Knows since:"2017-06-24"
+a27~a37 :Knows since:"2014-02-04"
+a12~a31 :Knows since:"1982-01-26"
+a6~a42 :Knows since:"2016-07-16"
+a24~a18 :Knows since:"1998-05-26"
+a32~a31 :Knows since:"1993-12-28"
+a1~a20 :Knows since:"2002-10-11"
+a39~a25 :Knows since:"2019-12-21"
+a18~a1 :Knows since:"1997-01-08"
+a10~a12 :Knows since:"2014-10-31"
+a20~a36 :Knows since:"1982-03-19"
+a8~a21 :Knows since:"1981-02-15"
+a27~a13 :Knows since:"1997-05-28"
+a17~a43 :Knows since:"2019-11-27"
+a6~a24 :Knows since:"1983-01-23"
+a35~a22 :Knows since:"1995-02-08"
+a43~a34 :Knows since:"1990-05-21"
+a31~a49 :Knows since:"2020-09-01"
+a34~a15 :Knows since:"1980-06-26"
+a4~a46 :Knows since:"1996-10-08"
+a2~a5 :Knows since:"1974-01-14"
+a8~a10 :Knows since:"2016-09-06"
+a10~a34 :Knows since:"2024-03-16"
+a13~a17 :Knows since:"1992-08-12"
+a48~a21 :Knows since:"1970-06-17"
+a38~a32 :Knows since:"1999-07-16"
+a16~a23 :Knows since:"1991-02-20"
+a7~a18 :Knows since:"2018-08-22"
+a15~a38 :Knows since:"1974-03-30"
+a31~a8 :Knows since:"2004-03-11"
+a37~a35 :Knows since:"1998-04-27"
+a49~a6 :Knows since:"2002-02-08"
+a20~a2 :Knows since:"1993-08-18"
+r26->r4 :Follows since:"1989-07-14"
+r24->r9 :Follows since:"2024-11-06"
+r8->r21 :Follows since:"1970-05-10"
+r7->r39 :Follows since:"2023-05-01"
+r37->r24 :Follows since:"2008-08-22"
+r4->r36 :Follows since:"2005-08-25"
+r35->r14 :Follows since:"2000-01-10"
+r36->r5 :Follows since:"2015-08-19"
+r17->r23 :Follows since:"1998-06-15"
+r18->r36 :Follows since:"2025-03-08"
+r34->r7 :Follows since:"1987-07-10"
+r29->r17 :Follows since:"2013-02-11"
+r6->r2 :Follows since:"2005-10-24"
+r18->r0 :Follows since:"2025-03-05"
+r39->r42 :Follows since:"1985-09-07"
+r0->r5 :Follows since:"1992-11-04"
+r26->r7 :Follows since:"2022-03-03"
+r2->r12 :Follows since:"2021-06-16"
+r15->r37 :Follows since:"1998-10-02"
+r26->r10 :Follows since:"2003-06-20"
+r7->r28 :Follows since:"2002-04-06"
+r10->r43 :Follows since:"1995-02-15"
+r15->r10 :Follows since:"1977-04-09"
+r47->r6 :Follows since:"1994-08-30"
+r27->r24 :Follows since:"1977-10-16"
+r34->r18 :Follows since:"2012-11-21"
+r35->r16 :Follows since:"2024-02-09"
+r45->r30 :Follows since:"1984-01-13"
+r20->r6 :Follows since:"1970-07-14"
+r13->r41 :Follows since:"1993-07-20"
+r20->r2 :Follows since:"2006-09-24"
+r1->r0 :Follows since:"1972-01-06"
+r18->r46 :Follows since:"1993-05-14"
+r38->r20 :Follows since:"1985-08-19"
+r28->r25 :Follows since:"2006-08-03"
+r20->r25 :Follows since:"2011-09-12"
+r20->r38 :Follows since:"1971-01-07"
+r29->r7 :Follows since:"1975-01-09"
+r16->r13 :Follows since:"1974-12-31"
+r39->r49 :Follows since:"1970-04-08"
+r34->r44 :Follows since:"1984-12-05"
+r30->r42 :Follows since:"1985-02-05"
+r22->r16 :Follows since:"2013-05-23"
+r11->r34 :Follows since:"2005-04-20"
+r13->r19 :Follows since:"2017-04-26"
+r12->r15 :Follows since:"2012-09-03"
+r23->r5 :Follows since:"1991-07-27"
+r17->r5 :Follows since:"2014-08-12"
+r48->r28 :Follows since:"1996-11-09"
+r5->r41 :Follows since:"1978-01-13"
+a41->b41 :Published
+a28->b14 :Published
+a32->b19 :Published
+a1->b20 :Published
+a10->b20 :Published
+a41->b19 :Published
+a15->b21 :Published
+a5->b34 :Published
+a44->b37 :Published
+a44->b5 :Published
+a15->b14 :Published
+a0->b15 :Published
+a32->b4 :Published
+a17->b35 :Published
+a4->b46 :Published
+a4->b1 :Published
+a0->b40 :Published
+a0->b18 :Published
+a30->b31 :Published
+a37->b9 :Published
+a5->b32 :Published
+a28->b4 :Published
+a38->b42 :Published
+a10->b11 :Published
+a8->b9 :Published
+a28->b19 :Published
+a5->b45 :Published
+a38->b38 :Published
+a26->b8 :Published
+a13->b9 :Published
+a39->b46 :Published
+a1->b49 :Published
+a28->b39 :Published
+a47->b35 :Published
+a49->b44 :Published
+a13->b11 :Published
+a26->b27 :Published
+a39->b10 :Published
+a1->b45 :Published
+a47->b15 :Published
+a17->b49 :Published
+a4->b43 :Published
+a35->b27 :Published
+a39->b16 :Published
+a39->b28 :Published
+a39->b29 :Published
+a0->b25 :Published
+a28->b10 :Published
+a17->b31 :Published
+a0->b41 :Published
+r26->b36 :Collected status:"Planning"
+r3->b44 :Collected status:"Reading"
+r37->b8 :Collected status:"Completed"
+r8->b8 :Collected status:"Reading"
+r17->b25 :Collected status:"Completed"
+r25->b11 :Collected status:"Completed"
+r5->b14 :Collected status:"Reading"
+r0->b11 :Collected status:"Completed"
+r20->b32 :Collected status:"Completed"
+r28->b43 :Collected status:"Completed"
+r46->b14 :Collected status:"Planning"
+r20->b31 :Collected status:"Completed"
+r30->b14 :Collected status:"Completed"
+r26->b21 :Collected status:"Completed"
+r39->b46 :Collected status:"Completed"
+r17->b41 :Collected status:"Planning"
+r3->b4 :Collected status:"Completed"
+r41->b23 :Collected status:"Planning"
+r32->b49 :Collected status:"Planning"
+r19->b19 :Collected status:"Completed"
+r19->b35 :Collected status:"Reading"
+r10->b44 :Collected status:"Completed"
+r47->b29 :Collected status:"Completed"
+r5->b7 :Collected status:"Completed"
+r32->b36 :Collected status:"Reading"
