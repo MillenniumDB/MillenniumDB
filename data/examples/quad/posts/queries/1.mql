@@ -1,2 +1,0 @@
-MATCH (?a)-[?e: ?t]->(?b)
-RETURN *
