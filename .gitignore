@@ -87,8 +87,7 @@ third_party/boost_1_82
 /query.rq
 
 /data/*
-!data/example
-!data/dbs
+!/data/example
 
 /tests/tmp
 /tests/sparql/tmp
