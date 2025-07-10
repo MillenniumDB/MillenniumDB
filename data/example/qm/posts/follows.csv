@@ -1,4 +1,4 @@
-:START_ID,:END_ID,:TYPE,since:DATE
+:START_ID:users,:END_ID:users,:TYPE,since:DATE
 n17,n33,Follows,1995-08-01
 n15,n13,Follows,1990-08-13
 n43,n37,Follows,1991-03-23

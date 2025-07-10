@@ -1,4 +1,4 @@
-:START_ID,:END_ID,:LABEL,via
+:START_ID:users,:END_ID:posts,:LABEL,via
 n43,n13,Posted,web
 n43,n10,Posted,web
 n21,n33,Posted,mobile
