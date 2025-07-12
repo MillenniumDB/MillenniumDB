@@ -357,6 +357,7 @@ inline SystemConfig get_system_config(const std::string& db_directory, const Sys
     try_replace(res.admin_password, args.admin_password, db_config.admin_password);
     try_replace(res.port, args.port, db_config.port);
     try_replace(res.browser_port, args.browser_port, db_config.browser_port);
+    try_replace(res.workers, args.browser_port, db_config.workers);
     try_replace(res.limit, args.limit, db_config.limit);
     try_replace(res.strings_static_buffer, args.strings_static_buffer, db_config.strings_static_buffer);
     try_replace(res.strings_dynamic_buffer, args.strings_dynamic_buffer, db_config.strings_dynamic_buffer);
