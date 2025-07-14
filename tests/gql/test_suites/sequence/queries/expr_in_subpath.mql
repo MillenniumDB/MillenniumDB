@@ -1,0 +1,2 @@
+MATCH (a:Person)(-[e:WorksAt]-> WHERE e.since = "2021")(b)
+RETURN a,e,b

@@ -7,17 +7,17 @@
 namespace GQL {
 class ExprCoalesce : public Expr {
 public:
-    std::vector<std::unique_ptr<Expr>> expressions;
+    std::vector<std::unique_ptr<Expr>> exprs;
 
     ExprCoalesce(std::vector<std::unique_ptr<Expr>> expressions) :
-        expressions(std::move(expressions))
+        exprs(std::move(expressions))
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
         std::vector<std::unique_ptr<Expr>> cloned_expressions;
 
-        for (const auto& expr : expressions) {
+        for (const auto& expr : exprs) {
             cloned_expressions.push_back(expr ? expr->clone() : nullptr);
         }
 
@@ -32,7 +32,7 @@ public:
     bool has_aggregation() const override
     {
         bool agg = false;
-        for (const auto& expr : expressions) {
+        for (const auto& expr : exprs) {
             if (expr->has_aggregation()) {
                 agg = true;
                 break;
@@ -44,7 +44,7 @@ public:
     std::set<VarId> get_all_vars() const override
     {
         std::set<VarId> res;
-        for (const auto& expr : expressions) {
+        for (const auto& expr : exprs) {
             if (expr != nullptr) {
                 for (auto& var : expr->get_all_vars()) {
                     res.insert(var);

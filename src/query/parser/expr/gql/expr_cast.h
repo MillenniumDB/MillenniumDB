@@ -6,17 +6,17 @@
 namespace GQL {
 class ExprCast : public Expr {
 public:
-    std::unique_ptr<Expr> operand;
+    std::unique_ptr<Expr> expr;
     GQL_OID::GenericType targetType;
 
     ExprCast(std::unique_ptr<Expr> operand, GQL_OID::GenericType targetType) :
-        operand(std::move(operand)),
+        expr(std::move(operand)),
         targetType(std::move(targetType))
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprCast>(operand->clone(), targetType);
+        return std::make_unique<ExprCast>(expr->clone(), targetType);
     }
 
     void accept_visitor(ExprVisitor& visitor) override
@@ -26,12 +26,12 @@ public:
 
     bool has_aggregation() const override
     {
-        return operand->has_aggregation();
+        return expr->has_aggregation();
     }
 
     std::set<VarId> get_all_vars() const override
     {
-        return operand->get_all_vars();
+        return expr->get_all_vars();
     }
 };
 } // namespace GQL

@@ -264,7 +264,7 @@ public:
 
     void visit(ExprCoalesce& expr)
     {
-        for (const auto& expression : expr.expressions) {
+        for (const auto& expression : expr.exprs) {
             if (expression != nullptr) {
                 expression->accept_visitor(*this);
             }
@@ -298,7 +298,7 @@ public:
 
     void visit(ExprCast& expr)
     {
-        expr.operand->accept_visitor(*this);
+        expr.expr->accept_visitor(*this);
     }
 
     void visit(ExprAggCount& expr)

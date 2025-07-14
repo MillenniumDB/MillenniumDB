@@ -336,8 +336,9 @@ std::any QueryVisitor::visitParenthesizedPathPatternExpression(
 
     if (ctx->parenthesizedPathPatternWhereClause()) {
         visit(ctx->parenthesizedPathPatternWhereClause());
-        current_expr_list.push_back(std::move(current_expr));
-        current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(current_expr_list));
+        std::vector<std::unique_ptr<Expr>> expr_list;
+        expr_list.push_back(std::move(current_expr));
+        current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(expr_list));
     }
 
     current_pattern = Subpath;
@@ -744,8 +745,9 @@ std::any QueryVisitor::visitGraphPatternWhereClause(GQLParser::GraphPatternWhere
 {
     LOG_VISITOR
     visitChildren(ctx);
-    current_expr_list.push_back(std::move(current_expr));
-    current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(current_expr_list));
+    std::vector<std::unique_ptr<Expr>> expr_list;
+    expr_list.push_back(std::move(current_expr));
+    current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(expr_list));
     return 0;
 }
 

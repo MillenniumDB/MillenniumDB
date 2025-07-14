@@ -431,7 +431,7 @@ void ExprToBindingExpr::visit(ExprNullIf& expr)
 void ExprToBindingExpr::visit(ExprCoalesce& expr)
 {
     std::vector<std::unique_ptr<BindingExpr>> expressions;
-    for (const auto& expression : expr.expressions) {
+    for (const auto& expression : expr.exprs) {
         if (expression != nullptr) {
             expression->accept_visitor(*this);
             expressions.push_back(std::move(tmp));
@@ -491,7 +491,7 @@ void ExprToBindingExpr::visit(ExprSearchedCase& expr)
 
 void ExprToBindingExpr::visit(ExprCast& expr)
 {
-    expr.operand->accept_visitor(*this);
+    expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCast>(std::move(tmp), std::move(expr.targetType));
 }
 

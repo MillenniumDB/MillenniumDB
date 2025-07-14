@@ -13,6 +13,6 @@ P1~P4 :Knows
 P2~P5 :Knows
 P3~P4 :LivesWith
 P4~P5 :LivesWith
-P1->C6 :WorksAt
-P3->C7 :WorksAt
-P4->C7 :WorksAt
+P1->C6 :WorksAt since:"2021"
+P3->C7 :WorksAt since:"2021"
+P4->C7 :WorksAt since:"2020"
