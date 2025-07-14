@@ -495,34 +495,26 @@ private:
     {
         static_assert(N == 1 || N == 2 || N == 3 || N == 4, "Unsupported N");
         assert(current_permutation.size() == new_permutation.size());
+
+        if (current_permutation == new_permutation) {
+            return;
+        }
+
         auto end_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer + read_size);
 
-        if (N == 1) return;
-
         if (N == 2) {
-            if (current_permutation[0] == new_permutation[0]) {
-                assert(current_permutation[1] == new_permutation[1]);
-            }
-            else {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
-                     ++key_ptr)
-                {
-                    std::swap((*key_ptr)[0], (*key_ptr)[1]);
-                }
+            for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
+                    key_ptr < end_ptr;
+                    ++key_ptr)
+            {
+                std::swap((*key_ptr)[0], (*key_ptr)[1]);
             }
         }
 
         if (N == 3) {
-            if (current_permutation[0] == new_permutation[0]
-             && current_permutation[1] == new_permutation[1]
-             && current_permutation[2] == new_permutation[2])
-            {
-                // do nothing
-            }
-            else if (new_permutation[0] == current_permutation[1]
-                  && new_permutation[1] == current_permutation[2]
-                  && new_permutation[2] == current_permutation[0])
+            if (new_permutation[0] == current_permutation[1]
+                && new_permutation[1] == current_permutation[2]
+                && new_permutation[2] == current_permutation[0])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
                      key_ptr < end_ptr;
@@ -566,17 +558,10 @@ private:
         }
 
         if (N == 4) {
-            if (current_permutation[0] == new_permutation[0]
-             && current_permutation[1] == new_permutation[1]
-             && current_permutation[2] == new_permutation[2]
-             && current_permutation[3] == new_permutation[3])
-            {
-                // do nothing
-            }
-            else if (new_permutation[0] == current_permutation[1]
-                  && new_permutation[1] == current_permutation[2]
-                  && new_permutation[2] == current_permutation[0]
-                  && new_permutation[3] == current_permutation[3])
+            if (new_permutation[0] == current_permutation[1]
+                && new_permutation[1] == current_permutation[2]
+                && new_permutation[2] == current_permutation[0]
+                && new_permutation[3] == current_permutation[3])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
                      key_ptr < end_ptr;
@@ -600,6 +585,23 @@ private:
                     auto aux      = (*key_ptr)[1];
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
+                }
+            }
+            else if (new_permutation[0] == current_permutation[3] // edge
+                  && new_permutation[1] == current_permutation[2] // from
+                  && new_permutation[2] == current_permutation[1]  // to
+                  && new_permutation[3] == current_permutation[0]) // type
+            {
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
+                     key_ptr < end_ptr;
+                     ++key_ptr)
+                {
+                    auto aux0     = (*key_ptr)[0];
+                    auto aux1     = (*key_ptr)[1];
+                    (*key_ptr)[0] = (*key_ptr)[3];
+                    (*key_ptr)[1] = (*key_ptr)[2];
+                    (*key_ptr)[2] = aux1;
+                    (*key_ptr)[3] = aux0;
                 }
             }
             else {

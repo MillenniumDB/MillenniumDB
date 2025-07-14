@@ -6,7 +6,6 @@
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
-#include "storage/index/random_access_table/edge_table_mem_import.h"
 
 using namespace Import::QuadModel::CSV;
 
@@ -209,12 +208,9 @@ void OnDiskImport::start_import(
             nodes_set.insert(tuple[0]);
         }
 
-        EdgeTableMemImport<4> table_writer(db_folder + "/edges.table");
-
         edges.begin_tuple_iter();
         while (edges.has_next_tuple()) {
             auto& tuple = edges.next_tuple();
-            table_writer.insert_tuple(tuple);
             if (nodes_set.insert(tuple[0]).second) {
                 declared_nodes.push_back({ tuple[0] });
             }
@@ -241,21 +237,21 @@ void OnDiskImport::start_import(
     equal_to_type.start_indexing(buffer, buffer_size, { 0, 1, 2 });
 
     { // Nodes B+Tree
-        size_t COL_NODE = 0;
+        size_t C_NODE = 0;
         NoStat<1> no_stat;
 
-        declared_nodes.create_bpt(db_folder + "/nodes", { COL_NODE }, no_stat);
+        declared_nodes.create_bpt(db_folder + "/nodes", { C_NODE }, no_stat);
     }
 
     { // Labels B+Tree
-        size_t COL_NODE = 0, COL_LABEL = 1;
+        size_t C_NODE = 0, C_LABEL = 1;
 
         NoStat<2> no_stat;
         DictCountStat<2> label_stat;
 
-        labels.create_bpt(db_folder + "/node_label", { COL_NODE, COL_LABEL }, no_stat);
+        labels.create_bpt(db_folder + "/node_label", { C_NODE, C_LABEL }, no_stat);
 
-        labels.create_bpt(db_folder + "/label_node", { COL_LABEL, COL_NODE }, label_stat);
+        labels.create_bpt(db_folder + "/label_node", { C_LABEL, C_NODE }, label_stat);
         catalog.label_count = label_stat.all;
         label_stat.end();
 
@@ -263,14 +259,14 @@ void OnDiskImport::start_import(
     }
 
     { // Properties B+Tree
-        size_t COL_OBJ = 0, COL_KEY = 1, COL_VALUE = 2;
+        size_t C_OBJ = 0, C_KEY = 1, C_VALUE = 2;
 
         NoStat<3> no_stat;
         PropStat prop_stat;
 
-        properties.create_bpt(db_folder + "/object_key_value", { COL_OBJ, COL_KEY, COL_VALUE }, no_stat);
+        properties.create_bpt(db_folder + "/object_key_value", { C_OBJ, C_KEY, C_VALUE }, no_stat);
 
-        properties.create_bpt(db_folder + "/key_value_object", { COL_KEY, COL_VALUE, COL_OBJ }, prop_stat);
+        properties.create_bpt(db_folder + "/key_value_object", { C_KEY, C_VALUE, C_OBJ }, prop_stat);
         catalog.properties_count = prop_stat.all;
         prop_stat.end();
 
@@ -278,35 +274,31 @@ void OnDiskImport::start_import(
     }
 
     { // Quad B+Trees
-        size_t COL_FROM = 0, COL_TO = 1, COL_TYPE = 2, COL_EDGE = 3;
+        size_t C_FROM = 0, C_TO = 1, C_TYPE = 2, C_EDGE = 3;
 
         NoStat<4> no_stat;
         AllStat<4> all_stat;
         DictCountStat<4> dict_count_stat;
 
-        edges
-            .create_bpt(db_folder + "/from_to_type_edge", { COL_FROM, COL_TO, COL_TYPE, COL_EDGE }, all_stat);
+        edges.create_bpt(db_folder + "/from_to_type_edge", { C_FROM, C_TO, C_TYPE, C_EDGE }, all_stat);
+
+        edges.create_bpt(db_folder + "/to_type_from_edge", { C_TO, C_TYPE, C_FROM, C_EDGE }, no_stat);
+
+        edges.create_bpt(db_folder + "/type_from_to_edge", { C_TYPE, C_FROM, C_TO, C_EDGE }, dict_count_stat);
+
+        edges.create_bpt(db_folder + "/type_to_from_edge", { C_TYPE, C_TO, C_FROM, C_EDGE }, no_stat);
+
+        edges.create_bpt(db_folder + "/edge_from_to_type", { C_EDGE, C_FROM, C_TO, C_TYPE }, no_stat);
+
         catalog.edge_count = all_stat.all;
-
-        edges.create_bpt(db_folder + "/to_type_from_edge", { COL_TO, COL_TYPE, COL_FROM, COL_EDGE }, no_stat);
-
-        edges.create_bpt(
-            db_folder + "/type_from_to_edge",
-            { COL_TYPE, COL_FROM, COL_TO, COL_EDGE },
-            dict_count_stat
-        );
-
-        edges.create_bpt(db_folder + "/type_to_from_edge", { COL_TYPE, COL_TO, COL_FROM, COL_EDGE }, no_stat);
-
         catalog.type2total_count = std::move(dict_count_stat.dict);
     }
 
     { // FROM=TO=TYPE EDGE
-        size_t COL_FROM_TO_TYPE = 0, COL_EDGE = 1;
+        size_t C_FROM_TO_TYPE = 0, C_EDGE = 1;
 
         DictCountStat<2> stat;
-        equal_from_to_type
-            .create_bpt(db_folder + "/equal_from_to_type", { COL_FROM_TO_TYPE, COL_EDGE }, stat);
+        equal_from_to_type.create_bpt(db_folder + "/equal_from_to_type", { C_FROM_TO_TYPE, C_EDGE }, stat);
         catalog.equal_from_to_type_count = stat.all;
 
         stat.end();
@@ -314,14 +306,13 @@ void OnDiskImport::start_import(
     }
 
     { // FROM=TO TYPE EDGE
-        size_t COL_FROM_TO = 0, COL_TYPE = 1, COL_EDGE = 2;
+        size_t C_FROM_TO = 0, C_TYPE = 1, C_EDGE = 2;
 
         NoStat<3> no_stat;
-        equal_from_to.create_bpt(db_folder + "/equal_from_to", { COL_FROM_TO, COL_TYPE, COL_EDGE }, no_stat);
+        equal_from_to.create_bpt(db_folder + "/equal_from_to", { C_FROM_TO, C_TYPE, C_EDGE }, no_stat);
 
         DictCountStat<3> stat;
-        equal_from_to
-            .create_bpt(db_folder + "/equal_from_to_inverted", { COL_TYPE, COL_FROM_TO, COL_EDGE }, stat);
+        equal_from_to.create_bpt(db_folder + "/equal_from_to_inverted", { C_TYPE, C_FROM_TO, C_EDGE }, stat);
         stat.end();
 
         catalog.equal_from_to_count = stat.all;
@@ -329,34 +320,31 @@ void OnDiskImport::start_import(
     }
 
     { // FROM=TYPE TO EDGE
-        size_t COL_FROM_TYPE = 0, COL_TO = 1, COL_EDGE = 2;
+        size_t C_FROM_TYPE = 0, C_TO = 1, C_EDGE = 2;
 
         DictCountStat<3> stat;
-        equal_from_type.create_bpt(db_folder + "/equal_from_type", { COL_FROM_TYPE, COL_TO, COL_EDGE }, stat);
+        equal_from_type.create_bpt(db_folder + "/equal_from_type", { C_FROM_TYPE, C_TO, C_EDGE }, stat);
         stat.end();
         catalog.equal_from_type_count = stat.all;
         catalog.type2equal_from_type_count = std::move(stat.dict);
 
         NoStat<3> no_stat;
-        equal_from_type.create_bpt(
-            db_folder + "/equal_from_type_inverted",
-            { COL_TO, COL_FROM_TYPE, COL_EDGE },
-            no_stat
-        );
+        equal_from_type
+            .create_bpt(db_folder + "/equal_from_type_inverted", { C_TO, C_FROM_TYPE, C_EDGE }, no_stat);
     }
 
     { // TO=TYPE FROM EDGE
-        size_t COL_TO_TYPE = 0, COL_FROM = 1, COL_EDGE = 2;
+        size_t C_TO_TYPE = 0, C_FROM = 1, C_EDGE = 2;
 
         DictCountStat<3> stat;
-        equal_to_type.create_bpt(db_folder + "/equal_to_type", { COL_TO_TYPE, COL_FROM, COL_EDGE }, stat);
+        equal_to_type.create_bpt(db_folder + "/equal_to_type", { C_TO_TYPE, C_FROM, C_EDGE }, stat);
         stat.end();
         catalog.equal_to_type_count = stat.all;
         catalog.type2equal_to_type_count = std::move(stat.dict);
 
         NoStat<3> no_stat;
         equal_to_type
-            .create_bpt(db_folder + "/equal_to_type_inverted", { COL_FROM, COL_TO_TYPE, COL_EDGE }, no_stat);
+            .create_bpt(db_folder + "/equal_to_type_inverted", { C_FROM, C_TO_TYPE, C_EDGE }, no_stat);
     }
     // calling finish_indexing() closes and removes the file.
     declared_nodes.finish_indexing();

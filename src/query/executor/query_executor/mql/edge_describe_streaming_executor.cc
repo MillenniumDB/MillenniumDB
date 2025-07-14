@@ -2,7 +2,6 @@
 
 #include "graph_models/quad_model/quad_model.h"
 #include "network/server/protocol.h"
-#include "storage/index/random_access_table/random_access_table.h"
 
 using namespace MQL;
 
@@ -41,11 +40,12 @@ uint64_t EdgeDescribeStreamingExecutor::execute(MDBServer::StreamingResponseWrit
     const auto edge_id = ObjectId::VALUE_MASK & object_id.id;
 
     // from, to, type
-    Record<3>* record = (*quad_model.edge_table)[edge_id];
-    const bool edge_exists = record != nullptr;
-    if (!edge_exists) {
-        return 0;
-    }
+    // Record<3>* record = (*quad_model.edge_table)[edge_id];
+    // const bool edge_exists = record != nullptr;
+    // if (!edge_exists) {
+    //     return 0;
+    // }
+    Record<3>* record; // TODO:
 
     response_writer.write_map_header(2UL);
     response_writer.write_string("type", MDBServer::Protocol::DataType::STRING);
