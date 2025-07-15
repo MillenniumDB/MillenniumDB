@@ -3,6 +3,7 @@
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/edge_lookup.h"
 #include "query/executor/binding_iter/index_scan.h"
+#include "query/query_context.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
@@ -278,9 +279,9 @@ bool EdgePlan::get_leapfrog_iter(
     vector<VarId> enumeration_vars;
 
     // index = INT32_MAX means enumeration, index = -1 means term or assigned_var
-    int_fast32_t from_index, to_index, type_index, edge_index;
+    int from_index, to_index, type_index, edge_index;
 
-    auto assign_index = [](int_fast32_t& index, const Id& id, bool assigned) -> void {
+    auto assign_index = [](int& index, const Id& id, bool assigned) -> void {
         if (!id.is_var() || assigned) {
             index = -1;
         } else {

@@ -61,7 +61,7 @@ bool EdgeLookup<N>::_next()
         return true;
     };
 
-    size_t i = 0;
+    size_t i = 1;
     for (auto& info : id_assigned_info) {
         if (!check_id(*parent_binding, info.id, info.assigned, ObjectId((*record)[i]))) {
             return false;
