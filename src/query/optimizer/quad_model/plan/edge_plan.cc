@@ -141,21 +141,6 @@ std::set<VarId> EdgePlan::get_vars() const
     return result;
 }
 
-/** FTYE | TYFE | YFTE
- * ╔═╦══════════════╦════════════╦═══════════════╦═════════════════╦══════════╗
- * ║ ║ FromAssigned ║ ToAssigned ║ tYpeAssigned  ║  EdgeAssigned   ║  index   ║
- * ╠═╬══════════════╬════════════╬═══════════════╬═════════════════╬══════════╣
- * ║1║      yes     ║     yes    ║      yes      ║      no         ║  YFTE    ║
- * ║2║      yes     ║     yes    ║      no       ║      no         ║  FTYE    ║
- * ║3║      yes     ║     no     ║      yes      ║      no         ║  YFTE    ║
- * ║4║      yes     ║     no     ║      no       ║      no         ║  FTYE    ║
- * ║5║      no      ║     yes    ║      yes      ║      no         ║  TYFE    ║
- * ║6║      no      ║     yes    ║      no       ║      no         ║  TYFE    ║
- * ║7║      no      ║     no     ║      yes      ║      no         ║  YFTE    ║
- * ║8║      no      ║     no     ║      no       ║      no         ║  YFTE    ║
- * ║9║      *       ║     *      ║      *        ║      yes        ║  table   ║
- * ╚═╩══════════════╩════════════╩═══════════════╩═════════════════╩══════════╝
- */
 unique_ptr<BindingIter> EdgePlan::get_binding_iter() const
 {
     if (edge_assigned) {
@@ -224,15 +209,13 @@ unique_ptr<BindingIter> EdgePlan::get_binding_iter() const
         ranges[3] = ScanRange::get(edge, edge_assigned);
 
         if (from_assigned) {
-            if (type_assigned) { // CASES 1 and 3 => YFTE
-                // cout << "using type from to edge\n";
+            if (type_assigned) {
                 ranges[0] = ScanRange::get(type, type_assigned);
                 ranges[1] = ScanRange::get(from, from_assigned);
                 ranges[2] = ScanRange::get(to, to_assigned);
 
                 return make_unique<IndexScan<4>>(*quad_model.type_from_to_edge, std::move(ranges));
-            } else { // CASES 2 and 4 => FTYE
-                // cout << "using from to type edge\n";
+            } else {
                 ranges[0] = ScanRange::get(from, from_assigned);
                 ranges[1] = ScanRange::get(to, to_assigned);
                 ranges[2] = ScanRange::get(type, type_assigned);
@@ -240,15 +223,13 @@ unique_ptr<BindingIter> EdgePlan::get_binding_iter() const
                 return make_unique<IndexScan<4>>(*quad_model.from_to_type_edge, std::move(ranges));
             }
         } else {
-            if (to_assigned) { // CASES 5 and 6 => TYFE
-                // cout << "using to type from edge\n";
+            if (to_assigned) {
                 ranges[0] = ScanRange::get(to, to_assigned);
                 ranges[1] = ScanRange::get(type, type_assigned);
                 ranges[2] = ScanRange::get(from, from_assigned);
 
                 return make_unique<IndexScan<4>>(*quad_model.to_type_from_edge, std::move(ranges));
-            } else { // CASES 7 and 8 => YFTE
-                // cout << "using type from to edge\n";
+            } else {
                 ranges[0] = ScanRange::get(type, type_assigned);
                 ranges[1] = ScanRange::get(from, from_assigned);
                 ranges[2] = ScanRange::get(to, to_assigned);

@@ -10,7 +10,7 @@
 class QuadCatalog : public Catalog {
 public:
     static constexpr uint8_t MODEL_ID = 0;
-    static constexpr uint8_t MAJOR_VERSION = 1;
+    static constexpr uint8_t MAJOR_VERSION = 2;
     static constexpr uint8_t MINOR_VERSION = 0;
 
     QuadCatalog(const std::string& filename);
