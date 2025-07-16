@@ -5,7 +5,6 @@
 #include "query/parser/paths/regular_path_expr.h"
 
 template <std::size_t N> class BPlusTree;
-template <std::size_t N> class RandomAccessTable;
 
 namespace MQL {
     class OpInsert;
@@ -13,7 +12,7 @@ namespace MQL {
 
 class QuadModel {
 public:
-    std::unique_ptr<RandomAccessTable<3>> edge_table;
+    QuadCatalog catalog;
 
     std::unique_ptr<BPlusTree<1>> nodes;
 
@@ -27,6 +26,7 @@ public:
     std::unique_ptr<BPlusTree<4>> to_type_from_edge;
     std::unique_ptr<BPlusTree<4>> type_from_to_edge;
     std::unique_ptr<BPlusTree<4>> type_to_from_edge;
+    std::unique_ptr<BPlusTree<4>> edge_from_to_type;
 
     // special cases
     std::unique_ptr<BPlusTree<3>> equal_from_to;      // (from=to,      type, edge)
@@ -37,8 +37,6 @@ public:
     std::unique_ptr<BPlusTree<3>> equal_from_to_inverted;   // (type, from=to,   edge)
     std::unique_ptr<BPlusTree<3>> equal_from_type_inverted; // (to,   from=type, edge)
     std::unique_ptr<BPlusTree<3>> equal_to_type_inverted;   // (from, to=type,   edge)
-
-    QuadCatalog catalog;
 
     uint64_t MAX_LIMIT = UINT64_MAX;
 

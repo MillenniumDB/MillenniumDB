@@ -3,7 +3,7 @@
 #include "query/executor/binding_iter/bind.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/cross_product.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/distinct_hash.h" // IWYU pragma: keep
-#include "query/executor/binding_iter/edge_table_lookup.h" // IWYU pragma: keep
+#include "query/executor/binding_iter/edge_lookup.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/empty_binding_iter.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/expr_evaluator.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/filter.h" // IWYU pragma: keep

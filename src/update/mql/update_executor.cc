@@ -8,7 +8,6 @@
 #include "query/parser/op/mql/update/op_create_text_index.h"
 #include "query/parser/op/mql/update/op_insert.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/random_access_table/random_access_table.h"
 #include "storage/index/text_search/text_index.h"
 #include "storage/index/text_search/text_index_manager.h"
 
@@ -140,9 +139,7 @@ void UpdateExecutor::visit(OpInsert& op)
         quad_model.to_type_from_edge->insert({ to.id, type.id, from.id, edge.id });
         quad_model.type_from_to_edge->insert({ type.id, from.id, to.id, edge.id });
         quad_model.type_to_from_edge->insert({ type.id, to.id, from.id, edge.id });
-
-        // TODO: only works when always appending, if reusing deleted edge ids this need to be changed
-        quad_model.edge_table->append_record({ from.id, to.id, type.id });
+        quad_model.edge_from_to_type->insert({ edge.id, from.id, to.id, type.id });
 
         if (from == to) {
             quad_model.equal_from_to->insert({ from.id, type.id, edge.id });

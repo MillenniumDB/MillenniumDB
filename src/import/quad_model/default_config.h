@@ -34,6 +34,8 @@ inline void create_default_params(const std::string& db_folder)
                                                 + get_file_size(db_folder + "/type_to_from_edge.dir")
                                                 + get_file_size(db_folder + "/type_from_to_edge.leaf")
                                                 + get_file_size(db_folder + "/type_from_to_edge.dir")
+                                                + get_file_size(db_folder + "/edge_from_to_type.dir")
+                                                + get_file_size(db_folder + "/edge_from_to_type.leaf")
                                                 + get_file_size(db_folder + "/object_key_value.dir")
                                                 + get_file_size(db_folder + "/object_key_value.leaf")
                                                 + get_file_size(db_folder + "/key_value_object.dir")
@@ -43,8 +45,7 @@ inline void create_default_params(const std::string& db_folder)
                                                 + get_file_size(db_folder + "/label_node.dir")
                                                 + get_file_size(db_folder + "/label_node.leaf")
                                                 + get_file_size(db_folder + "/nodes.dir")
-                                                + get_file_size(db_folder + "/nodes.leaf")
-                                                + get_file_size(db_folder + "/edges.table");
+                                                + get_file_size(db_folder + "/nodes.leaf");
     uint64_t ideal_unversioned_pages_buffer_bytes = get_file_size(db_folder + "/str_hash.dat")
                                                   + get_file_size(db_folder + "/tensor_hash.dat");
 

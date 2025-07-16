@@ -10,10 +10,12 @@ namespace MQL {
  */
 class EdgeDescribeStreamingExecutor : public StreamingQueryExecutor {
 public:
-    EdgeDescribeStreamingExecutor(std::unique_ptr<BindingIter> key_value_iter,
-                                  uint64_t                     properties_limit,
-                                  std::vector<VarId>&&         virtual_vars,
-                                  ObjectId                     object_id);
+    EdgeDescribeStreamingExecutor(
+        std::unique_ptr<BindingIter> key_value_iter,
+        uint64_t properties_limit,
+        std::vector<VarId>&& virtual_vars,
+        ObjectId object_id
+    );
 
     const std::vector<VarId>& get_projection_vars() const override;
 
