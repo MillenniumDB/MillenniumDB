@@ -1,0 +1,4 @@
+LET thresh = 100
+MATCH (a:TestNode), (b:TestNode)
+WHERE a.number + b.number >= thresh
+RETURN a.number, b.number
