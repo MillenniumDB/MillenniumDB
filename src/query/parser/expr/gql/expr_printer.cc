@@ -382,7 +382,7 @@ void ExprPrinter::visit(ExprNullIf& expr)
 
 void ExprPrinter::visit(ExprCoalesce& expr) {
     os << "COALESCE(";
-    for (const auto& expression : expr.expressions) {
+    for (const auto& expression : expr.exprs) {
         if (expression != nullptr) {
             expression->accept_visitor(*this);
         } else {
@@ -432,7 +432,7 @@ void ExprPrinter::visit(ExprSearchedCase& expr) {
 
 void ExprPrinter::visit(ExprCast& expr) {
     os << "CAST(";
-    expr.operand->accept_visitor(*this);
+    expr.expr->accept_visitor(*this);
     os << " AS ";
     if (expr.targetType == GQL_OID::GenericType::BOOL) {
         os << "BOOL";

@@ -1,0 +1,5 @@
+MATCH (a: TestNode)
+LET s1 = a.number + a.number2
+LET s2 = a.number * a.number2
+LET s3 = EXP(a.number2)
+RETURN a, s1, s2
