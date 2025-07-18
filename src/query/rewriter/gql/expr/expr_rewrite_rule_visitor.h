@@ -129,7 +129,19 @@ public:
 
     void visit(GQL::ExprCoalesce& expr) override
     {
-        visit_expr_with_exprs<ExprCoalesce>(expr);
+        for (auto& rule : rules) {
+            for (auto& child : expr.exprs) {
+                if (child != nullptr && rule->is_possible_to_regroup(child)) {
+                    child = rule->regroup(std::move(child));
+                    has_rewritten = true;
+                }
+            }
+        }
+        for (auto& child : expr.exprs) {
+            if (child != nullptr) {
+                child->accept_visitor(*this);
+            }
+        }
     }
 
     void visit(GQL::ExprCos& expr) override
@@ -205,21 +217,19 @@ public:
     void visit(GQL::ExprMultiTrim& expr) override
     {
         for (auto& rule : rules) {
-            if (rule->is_possible_to_regroup(expr.delim_str)) {
-                expr.delim_str = rule->regroup(std::move(expr.delim_str));
-                has_rewritten = true;
-            }
             if (rule->is_possible_to_regroup(expr.trim_src)) {
                 expr.trim_src = rule->regroup(std::move(expr.trim_src));
                 has_rewritten = true;
             }
+            if (expr.delim_str != nullptr && rule->is_possible_to_regroup(expr.delim_str)) {
+                expr.delim_str = rule->regroup(std::move(expr.delim_str));
+                has_rewritten = true;
+            }
         }
 
+        expr.trim_src->accept_visitor(*this);
         if (expr.delim_str != nullptr) {
             expr.delim_str->accept_visitor(*this);
-        }
-        if (expr.trim_src != nullptr) {
-            expr.trim_src->accept_visitor(*this);
         }
     }
 
@@ -256,14 +266,14 @@ public:
                     has_rewritten = true;
                 }
             }
+            if (expr.else_clause != nullptr && rule->is_possible_to_regroup(expr.else_clause)) {
+                expr.else_clause = rule->regroup(std::move(expr.else_clause));
+                has_rewritten = true;
+            }
         }
         for (auto& [k, v] : expr.when_clauses) {
-            if (k != nullptr) {
-                k->accept_visitor(*this);
-            }
-            if (v != nullptr) {
-                v->accept_visitor(*this);
-            }
+            k->accept_visitor(*this);
+            v->accept_visitor(*this);
         }
         if (expr.else_clause != nullptr) {
             expr.else_clause->accept_visitor(*this);
@@ -289,24 +299,19 @@ public:
                     has_rewritten = true;
                 }
             }
-            if (rule->is_possible_to_regroup(expr.else_expr)) {
+            if (expr.else_expr != nullptr && rule->is_possible_to_regroup(expr.else_expr)) {
                 expr.else_expr = rule->regroup(std::move(expr.else_expr));
                 has_rewritten = true;
             }
         }
 
-        if (expr.case_operand != nullptr) {
-            expr.case_operand->accept_visitor(*this);
-        }
+        expr.case_operand->accept_visitor(*this);
+
         for (auto& child : expr.when_clauses) {
             for (auto& sub_expr : child.first.second) {
-                if (sub_expr != nullptr) {
-                    sub_expr->accept_visitor(*this);
-                }
+                sub_expr->accept_visitor(*this);
             }
-            if (child.second != nullptr) {
-                child.second->accept_visitor(*this);
-            }
+            child.second->accept_visitor(*this);
         }
         if (expr.else_expr != nullptr) {
             expr.else_expr->accept_visitor(*this);
@@ -325,15 +330,13 @@ public:
                 expr.str = rule->regroup(std::move(expr.str));
                 has_rewritten = true;
             }
-            if (rule->is_possible_to_regroup(expr.single_char)) {
+            if (expr.single_char != nullptr && rule->is_possible_to_regroup(expr.single_char)) {
                 expr.single_char = rule->regroup(std::move(expr.single_char));
                 has_rewritten = true;
             }
         }
 
-        if (expr.str != nullptr) {
-            expr.str->accept_visitor(*this);
-        }
+        expr.str->accept_visitor(*this);
         if (expr.single_char != nullptr) {
             expr.single_char->accept_visitor(*this);
         }
@@ -369,6 +372,57 @@ public:
         visit_expr_with_expr<ExprTanh>(expr);
     }
 
+    virtual void visit(GQL::ExprAggCount& expr) override
+    {
+        visit_expr_with_expr<ExprAggCount>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggAvg& expr) override
+    {
+        visit_expr_with_expr<ExprAggAvg>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggMax& expr) override
+    {
+        visit_expr_with_expr<ExprAggMax>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggMin& expr) override
+    {
+        visit_expr_with_expr<ExprAggMin>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggSum& expr) override
+    {
+        visit_expr_with_expr<ExprAggSum>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggStddevPop& expr) override
+    {
+        visit_expr_with_expr<ExprAggStddevPop>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggStddevSamp& expr) override
+    {
+        visit_expr_with_expr<ExprAggStddevSamp>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggCollect& expr) override
+    {
+        visit_expr_with_expr<ExprAggCollect>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggPercentileCont& expr) override
+    {
+        visit_expr_with_expr<ExprAggPercentileCont>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggPercentileDisc& expr) override
+    {
+        visit_expr_with_expr<ExprAggPercentileDisc>(expr);
+    }
+
+    virtual void visit(GQL::ExprAggCountAll&) override { }
     void visit(GQL::ExprTerm&) override { }
     void visit(GQL::ExprHasNodeLabel&) override { }
     void visit(GQL::ExprHasEdgeLabel&) override { }
@@ -386,8 +440,7 @@ private:
                 has_rewritten = true;
             }
         }
-        if (expr.expr != nullptr)
-            expr.expr->accept_visitor(*this);
+        expr.expr->accept_visitor(*this);
     }
 
     template<typename T>
@@ -402,9 +455,7 @@ private:
             }
         }
         for (auto& child : expr.exprs) {
-            if (child != nullptr) {
-                child->accept_visitor(*this);
-            }
+            child->accept_visitor(*this);
         }
     }
 
@@ -422,12 +473,8 @@ private:
             }
         }
 
-        if (expr.lhs != nullptr) {
-            expr.lhs->accept_visitor(*this);
-        }
-        if (expr.rhs != nullptr) {
-            expr.rhs->accept_visitor(*this);
-        }
+        expr.lhs->accept_visitor(*this);
+        expr.rhs->accept_visitor(*this);
     }
 };
 

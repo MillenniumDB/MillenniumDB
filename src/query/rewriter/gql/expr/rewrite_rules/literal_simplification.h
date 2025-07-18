@@ -19,7 +19,7 @@ private:
 public:
     bool is_possible_to_regroup(std::unique_ptr<Expr>& unknown_expr) override
     {
-        if (unknown_expr->get_all_vars().size() == 0) {
+        if (unknown_expr->get_all_vars().size() == 0 && !unknown_expr->has_aggregation()) {
             // Already simplified.
             if (is_castable_to<ExprTerm>(unknown_expr))
                 return false;

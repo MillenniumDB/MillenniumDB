@@ -1,3 +1,0 @@
-MATCH (a: TestNode)
-LET s = a.number + a.number2
-RETURN a, s
