@@ -2,7 +2,7 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 namespace MQL {
 class AggSum : public Agg {

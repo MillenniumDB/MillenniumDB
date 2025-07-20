@@ -1,7 +1,6 @@
 #pragma once
 
 #include "graph_models/gql/comparisons.h"
-#include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
 

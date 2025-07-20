@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/optimizer/plan/plan.h"
-#include "query/query_context.h"
 
 class PropertyTypePlan : public Plan {
 public:

@@ -3,6 +3,7 @@
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
+#include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace GQL {
 class AggCollectDistinct : public Agg {

@@ -38,6 +38,16 @@ public:
     void visit(OpValues&) override;
     void visit(OpShow&) override;
 
+    void visit(OpPath&) override { }
+    void visit(OpTriple&) override { }
+    void visit(OpSequence&) override { }
+
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
+    void visit(OpDeleteData&) override { }
+    void visit(OpInsertData&) override { }
+    void visit(OpUpdate&) override { }
+
 private:
     template<typename T>
     static bool is_castable_to(std::unique_ptr<Op>& unknown_op)

@@ -2,7 +2,7 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
 
 namespace MQL {

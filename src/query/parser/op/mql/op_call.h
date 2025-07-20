@@ -1,5 +1,6 @@
 #pragma once
 
+#include "query/exceptions.h"
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"

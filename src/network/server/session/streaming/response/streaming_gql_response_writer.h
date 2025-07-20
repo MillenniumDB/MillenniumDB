@@ -166,8 +166,12 @@ public:
         case GQL_OID::Type::EDGE_KEY: {
             return encode_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
         }
-        case GQL_OID::Type::LIST:
+        case GQL_OID::Type::LIST: {
             return encode_gql_list(oid);
+        }
+        default: {
+            return encode_null();
+        }
         }
     }
 };
