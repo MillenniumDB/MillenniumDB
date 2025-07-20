@@ -182,7 +182,7 @@ std::unique_ptr<QueryExecutor>
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
-    SPARQL::ExecutorConstructor executor_constructor(response_type);
+    ExecutorConstructor executor_constructor(response_type);
     logical_plan.accept_visitor(executor_constructor);
 
     optimizer_duration = std::chrono::system_clock::now() - start_optimizer;
@@ -314,7 +314,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
     const auto execution_start = std::chrono::system_clock::now();
 
     try {
-        SPARQL::UpdateExecutor update_executor;
+        UpdateExecutor update_executor;
         for (auto& update : current_logical_plan->updates) {
             update->accept_visitor(update_executor);
         }

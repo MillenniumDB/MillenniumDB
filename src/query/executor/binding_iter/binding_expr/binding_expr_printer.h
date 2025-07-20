@@ -13,9 +13,6 @@ class BindingExprPrinter : public BindingExprVisitor {
 public:
     std::ostream& os;
 
-    // Expressions like EXISTS and NOT EXISTS may add elements to ops
-    std::vector<BindingIter*> ops;
-
     BindingExprPrinter(std::ostream& os) :
         os(os)
     { }
@@ -31,4 +28,9 @@ public:
     {
         os << expr.var;
     }
+
+// protected:
+    // Expressions like EXISTS and NOT EXISTS may add elements to ops
+    std::vector<BindingIter*> ops;
+
 };

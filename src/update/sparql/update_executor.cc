@@ -231,7 +231,7 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
     }
 }
 
-void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
+void UpdateExecutor::visit(OpInsertData& op_insert_data)
 {
     // Store all the inserts that will be necessary for the indexes
     using Name2InsertsMap = boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>;
@@ -384,7 +384,7 @@ void UpdateExecutor::visit(SPARQL::OpInsertData& op_insert_data)
     }
 }
 
-void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
+void UpdateExecutor::visit(OpDeleteData& op_delete_data)
 {
     // Store all the deletes that will be necessary for the indexes
     using Name2DeletesMap = boost::unordered_map<std::string, std::vector<std::tuple<ObjectId, ObjectId>>>;
@@ -540,7 +540,7 @@ void UpdateExecutor::visit(SPARQL::OpDeleteData& op_delete_data)
     }
 }
 
-void UpdateExecutor::visit(SPARQL::OpCreateTextIndex& op_create_text_index)
+void UpdateExecutor::visit(OpCreateTextIndex& op_create_text_index)
 {
     try {
         auto& text_search_index_manager = rdf_model.catalog.text_index_manager;
@@ -563,7 +563,7 @@ void UpdateExecutor::visit(SPARQL::OpCreateTextIndex& op_create_text_index)
     }
 }
 
-void UpdateExecutor::visit(SPARQL::OpCreateHNSWIndex& op_create_hnsw_index)
+void UpdateExecutor::visit(OpCreateHNSWIndex& op_create_hnsw_index)
 {
     try {
         auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;

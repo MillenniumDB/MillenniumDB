@@ -19,7 +19,6 @@
 #include "query/optimizer/quad_model/plan/label_plan.h"
 #include "query/optimizer/quad_model/plan/path_plan.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
-#include "query/optimizer/quad_model/plan/property_type_plan.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/op_visitor.h"
 #include "query/parser/op/mql/op_where.h"
@@ -242,30 +241,30 @@ void BindingIterConstructor::visit(OpCall& op_call)
     }
 
     switch (op_call.procedure_type) {
-    case MQL::OpCall::ProcedureType::HNSW_TOP_K:
+    case OpCall::ProcedureType::HNSW_TOP_K:
         tmp = std::make_unique<Procedure::HNSWTopK>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.hnsw_index_manager,
-            &MQL::Conversions::unpack_string,
-            &MQL::Conversions::unpack_int
+            &Conversions::unpack_string,
+            &Conversions::unpack_int
         );
         break;
-    case MQL::OpCall::ProcedureType::HNSW_SCAN:
+    case OpCall::ProcedureType::HNSW_SCAN:
         tmp = std::make_unique<Procedure::HNSWScan>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.hnsw_index_manager,
-            &MQL::Conversions::unpack_string,
-            &MQL::Conversions::unpack_int
+            &Conversions::unpack_string,
+            &Conversions::unpack_int
         );
         break;
-    case MQL::OpCall::ProcedureType::TEXT_SEARCH:
+    case OpCall::ProcedureType::TEXT_SEARCH:
         tmp = std::make_unique<Procedure::TextSearchMultiScan>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.text_index_manager,
-            &MQL::Conversions::unpack_string
+            &Conversions::unpack_string
         );
         break;
     default:
@@ -327,7 +326,7 @@ void BindingIterConstructor::visit(OpWhere& op_where)
 
         std::vector<std::unique_ptr<BindingExpr>> exprs;
         exprs.push_back(std::move(binding_expr));
-        tmp = std::make_unique<Filter>(&MQL::Conversions::to_boolean, std::move(tmp), std::move(exprs));
+        tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
 }
 
@@ -509,7 +508,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
             std::move(order_by_saved_vars),
             std::move(order_by_vars),
             std::move(op_order_by->ascending_order),
-            &MQL::Comparisons::compare
+            &Comparisons::compare
         );
     }
 
@@ -529,7 +528,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
     }
 }
 
-void BindingIterConstructor::visit(MQL::OpSequence& op_sequence)
+void BindingIterConstructor::visit(OpSequence& op_sequence)
 {
     assert(!op_sequence.sequence.empty());
 

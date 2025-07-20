@@ -1,11 +1,7 @@
 #pragma once
 
-#include <vector>
-
 #include "query/executor/binding_iter/binding_expr/binding_expr_visitor.h"
 #include "query/executor/binding_iter/binding_expr/sparql_binding_exprs.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 
 namespace SPARQL {
 

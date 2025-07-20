@@ -167,26 +167,26 @@ public:
     virtual void visit(BindingExprTerm&) = 0;
     virtual void visit(BindingExprVar&) = 0;
 
-    virtual void visit(MQL::BindingExprAddition&)          { throw LogicException("visits MQL::BindingExprAddition not implemented"); }
-    virtual void visit(MQL::BindingExprAnd&)               { throw LogicException("visits MQL::BindingExprAnd not implemented"); }
-    virtual void visit(MQL::BindingExprDivision&)          { throw LogicException("visits MQL::BindingExprDivision not implemented"); }
-    virtual void visit(MQL::BindingExprEquals&)            { throw LogicException("visits MQL::BindingExprEquals not implemented"); }
-    virtual void visit(MQL::BindingExprIs&)                { throw LogicException("visits MQL::BindingExprIs not implemented"); }
-    virtual void visit(MQL::BindingExprLessOrEquals&)      { throw LogicException("visits MQL::BindingExprLessOrEquals not implemented"); }
-    virtual void visit(MQL::BindingExprLess&)              { throw LogicException("visits MQL::BindingExprLess not implemented"); }
-    virtual void visit(MQL::BindingExprModulo&)            { throw LogicException("visits MQL::BindingExprModulo not implemented"); }
-    virtual void visit(MQL::BindingExprMultiplication&)    { throw LogicException("visits MQL::BindingExprMultiplication not implemented"); }
-    virtual void visit(MQL::BindingExprNotEquals&)         { throw LogicException("visits MQL::BindingExprNotEquals not implemented"); }
-    virtual void visit(MQL::BindingExprNot&)               { throw LogicException("visits MQL::BindingExprNot not implemented"); }
-    virtual void visit(MQL::BindingExprOr&)                { throw LogicException("visits MQL::BindingExprOr not implemented"); }
-    virtual void visit(MQL::BindingExprSubtraction&)       { throw LogicException("visits MQL::BindingExprSubtraction not implemented"); }
-    virtual void visit(MQL::BindingExprUnaryMinus&)        { throw LogicException("visits MQL::BindingExprUnaryMinus not implemented"); }
-    virtual void visit(MQL::BindingExprUnaryPlus&)         { throw LogicException("visits MQL::BindingExprUnaryPlus not implemented"); }
-    virtual void visit(MQL::BindingExprRegex&)             { throw LogicException("visits MQL::BindingExprRegex not implemented"); }
-    virtual void visit(MQL::BindingExprCosineSimilarity&)  { throw LogicException("visits MQL::BindingExprCosineSimilarity not implemented"); }
-    virtual void visit(MQL::BindingExprCosineDistance&)    { throw LogicException("visits MQL::BindingExprCosineDistance not implemented"); }
-    virtual void visit(MQL::BindingExprManhattanDistance&) { throw LogicException("visits MQL::BindingExprManhattanDistance not implemented"); }
-    virtual void visit(MQL::BindingExprEuclideanDistance&) { throw LogicException("visits MQL::BindingExprEuclideanDistance not implemented"); }
+    virtual void visit(MQL::BindingExprAddition&)          { throw LogicException("visit MQL::BindingExprAddition not implemented"); }
+    virtual void visit(MQL::BindingExprAnd&)               { throw LogicException("visit MQL::BindingExprAnd not implemented"); }
+    virtual void visit(MQL::BindingExprDivision&)          { throw LogicException("visit MQL::BindingExprDivision not implemented"); }
+    virtual void visit(MQL::BindingExprEquals&)            { throw LogicException("visit MQL::BindingExprEquals not implemented"); }
+    virtual void visit(MQL::BindingExprIs&)                { throw LogicException("visit MQL::BindingExprIs not implemented"); }
+    virtual void visit(MQL::BindingExprLessOrEquals&)      { throw LogicException("visit MQL::BindingExprLessOrEquals not implemented"); }
+    virtual void visit(MQL::BindingExprLess&)              { throw LogicException("visit MQL::BindingExprLess not implemented"); }
+    virtual void visit(MQL::BindingExprModulo&)            { throw LogicException("visit MQL::BindingExprModulo not implemented"); }
+    virtual void visit(MQL::BindingExprMultiplication&)    { throw LogicException("visit MQL::BindingExprMultiplication not implemented"); }
+    virtual void visit(MQL::BindingExprNotEquals&)         { throw LogicException("visit MQL::BindingExprNotEquals not implemented"); }
+    virtual void visit(MQL::BindingExprNot&)               { throw LogicException("visit MQL::BindingExprNot not implemented"); }
+    virtual void visit(MQL::BindingExprOr&)                { throw LogicException("visit MQL::BindingExprOr not implemented"); }
+    virtual void visit(MQL::BindingExprSubtraction&)       { throw LogicException("visit MQL::BindingExprSubtraction not implemented"); }
+    virtual void visit(MQL::BindingExprUnaryMinus&)        { throw LogicException("visit MQL::BindingExprUnaryMinus not implemented"); }
+    virtual void visit(MQL::BindingExprUnaryPlus&)         { throw LogicException("visit MQL::BindingExprUnaryPlus not implemented"); }
+    virtual void visit(MQL::BindingExprRegex&)             { throw LogicException("visit MQL::BindingExprRegex not implemented"); }
+    virtual void visit(MQL::BindingExprCosineSimilarity&)  { throw LogicException("visit MQL::BindingExprCosineSimilarity not implemented"); }
+    virtual void visit(MQL::BindingExprCosineDistance&)    { throw LogicException("visit MQL::BindingExprCosineDistance not implemented"); }
+    virtual void visit(MQL::BindingExprManhattanDistance&) { throw LogicException("visit MQL::BindingExprManhattanDistance not implemented"); }
+    virtual void visit(MQL::BindingExprEuclideanDistance&) { throw LogicException("visit MQL::BindingExprEuclideanDistance not implemented"); }
 
     virtual void visit(SPARQL::BindingExprAbs&)            { throw LogicException("visit SPARQL::BindingExprAbs not implemented"); }
     virtual void visit(SPARQL::BindingExprAddition&)       { throw LogicException("visit SPARQL::BindingExprAddition not implemented"); }

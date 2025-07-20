@@ -1,7 +1,5 @@
 #pragma once
 
-#include "query/exceptions.h"
-
 namespace MQL {
 
 class ExprVar;
@@ -42,129 +40,36 @@ class ExprVisitor {
 public:
     virtual ~ExprVisitor() = default;
 
-    virtual void visit(MQL::ExprVar&)
-    {
-        throw LogicException("visit MQL::ExprVar not implemented");
-    }
-    virtual void visit(MQL::ExprVarProperty&)
-    {
-        throw LogicException("visit MQL::ExprVarProperty not implemented");
-    }
-    virtual void visit(MQL::ExprConstant&)
-    {
-        throw LogicException("visit MQL::ExprConstant not implemented");
-    }
-    virtual void visit(MQL::ExprAddition&)
-    {
-        throw LogicException("visit MQL::ExprAddition not implemented");
-    }
-    virtual void visit(MQL::ExprDivision&)
-    {
-        throw LogicException("visit MQL::ExprDivision not implemented");
-    }
-    virtual void visit(MQL::ExprModulo&)
-    {
-        throw LogicException("visit MQL::ExprModulo not implemented");
-    }
-    virtual void visit(MQL::ExprMultiplication&)
-    {
-        throw LogicException("visit MQL::ExprMultiplication not implemented");
-    }
-    virtual void visit(MQL::ExprSubtraction&)
-    {
-        throw LogicException("visit MQL::ExprSubtraction not implemented");
-    }
-    virtual void visit(MQL::ExprUnaryMinus&)
-    {
-        throw LogicException("visit MQL::ExprUnaryMinus not implemented");
-    }
-    virtual void visit(MQL::ExprUnaryPlus&)
-    {
-        throw LogicException("visit MQL::ExprUnaryPlus not implemented");
-    }
-    virtual void visit(MQL::ExprEquals&)
-    {
-        throw LogicException("visit MQL::ExprEquals not implemented");
-    }
-    virtual void visit(MQL::ExprGreaterOrEquals&)
-    {
-        throw LogicException("visit MQL::ExprGreaterOrEquals not implemented");
-    }
-    virtual void visit(MQL::ExprGreater&)
-    {
-        throw LogicException("visit MQL::ExprGreater not implemented");
-    }
-    virtual void visit(MQL::ExprIs&)
-    {
-        throw LogicException("visit MQL::ExprIs not implemented");
-    }
-    virtual void visit(MQL::ExprLessOrEquals&)
-    {
-        throw LogicException("visit MQL::ExprLessOrEquals not implemented");
-    }
-    virtual void visit(MQL::ExprLess&)
-    {
-        throw LogicException("visit MQL::ExprLess not implemented");
-    }
-    virtual void visit(MQL::ExprNotEquals&)
-    {
-        throw LogicException("visit MQL::ExprNotEquals not implemented");
-    }
-    virtual void visit(MQL::ExprAnd&)
-    {
-        throw LogicException("visit MQL::ExprAnd not implemented");
-    }
-    virtual void visit(MQL::ExprNot&)
-    {
-        throw LogicException("visit MQL::ExprNot not implemented");
-    }
-    virtual void visit(MQL::ExprOr&)
-    {
-        throw LogicException("visit MQL::ExprOr not implemented");
-    }
-    virtual void visit(MQL::ExprAggAvg&)
-    {
-        throw LogicException("visit MQL::ExprAggAvg not implemented");
-    }
-    virtual void visit(MQL::ExprAggCountAll&)
-    {
-        throw LogicException("visit MQL::ExprAggCountAll not implemented");
-    }
-    virtual void visit(MQL::ExprAggCount&)
-    {
-        throw LogicException("visit MQL::ExprAggCount not implemented");
-    }
-    virtual void visit(MQL::ExprAggMax&)
-    {
-        throw LogicException("visit MQL::ExprAggMax not implemented");
-    }
-    virtual void visit(MQL::ExprAggMin&)
-    {
-        throw LogicException("visit MQL::ExprAggMin not implemented");
-    }
-    virtual void visit(MQL::ExprAggSum&)
-    {
-        throw LogicException("visit MQL::ExprAggSum not implemented");
-    }
-    virtual void visit(MQL::ExprRegex&)
-    {
-        throw LogicException("visit MQL::ExprRegex not implemented");
-    }
-    virtual void visit(MQL::ExprCosineSimilarity&)
-    {
-        throw LogicException("visit MQL::ExprCosineSimilarity not implemented");
-    }
-    virtual void visit(MQL::ExprCosineDistance&)
-    {
-        throw LogicException("visit MQL::ExprCosineDistance not implemented");
-    }
-    virtual void visit(MQL::ExprManhattanDistance&)
-    {
-        throw LogicException("visit MQL::ExprManhattanDistance not implemented");
-    }
-    virtual void visit(MQL::ExprEuclideanDistance&)
-    {
-        throw LogicException("visit MQL::ExprEuclideanDistance not implemented");
-    }
+    virtual void visit(MQL::ExprVar&) = 0;
+    virtual void visit(MQL::ExprVarProperty&) = 0;
+    virtual void visit(MQL::ExprConstant&) = 0;
+    virtual void visit(MQL::ExprAddition&) = 0;
+    virtual void visit(MQL::ExprDivision&) = 0;
+    virtual void visit(MQL::ExprModulo&) = 0;
+    virtual void visit(MQL::ExprMultiplication&) = 0;
+    virtual void visit(MQL::ExprSubtraction&) = 0;
+    virtual void visit(MQL::ExprUnaryMinus&) = 0;
+    virtual void visit(MQL::ExprUnaryPlus&) = 0;
+    virtual void visit(MQL::ExprEquals&) = 0;
+    virtual void visit(MQL::ExprGreaterOrEquals&) = 0;
+    virtual void visit(MQL::ExprGreater&) = 0;
+    virtual void visit(MQL::ExprIs&) = 0;
+    virtual void visit(MQL::ExprLessOrEquals&) = 0;
+    virtual void visit(MQL::ExprLess&) = 0;
+    virtual void visit(MQL::ExprNotEquals&) = 0;
+    virtual void visit(MQL::ExprAnd&) = 0;
+    virtual void visit(MQL::ExprNot&) = 0;
+    virtual void visit(MQL::ExprOr&) = 0;
+    virtual void visit(MQL::ExprAggAvg&) = 0;
+    virtual void visit(MQL::ExprAggCountAll&) = 0;
+    virtual void visit(MQL::ExprAggCount&) = 0;
+    virtual void visit(MQL::ExprAggMax&) = 0;
+    virtual void visit(MQL::ExprAggMin&) = 0;
+    virtual void visit(MQL::ExprAggSum&) = 0;
+    virtual void visit(MQL::ExprRegex&) = 0;
+    virtual void visit(MQL::ExprCosineSimilarity&) = 0;
+    virtual void visit(MQL::ExprCosineDistance&) = 0;
+    virtual void visit(MQL::ExprManhattanDistance&) = 0;
+    virtual void visit(MQL::ExprEuclideanDistance&) = 0;
 };
 } // namespace MQL

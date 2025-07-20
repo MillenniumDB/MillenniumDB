@@ -283,9 +283,11 @@ OpEdge QueryVisitor::create_edge(
     case EdgeLeftOrRight: {
         return OpEdge(left_node, right_node, edge_id, direction_var, OpEdge::DirectedLeftOrRight);
     }
-    case EdgeAnyDirection:
+    case EdgeAnyDirection: {
         return OpEdge(left_node, right_node, edge_id, direction_var, OpEdge::AnyDirection);
     }
+    }
+    throw QuerySemanticException("Unrecognized edge type");
 }
 
 std::any QueryVisitor::visitPathPattern(GQLParser::PathPatternContext* ctx)

@@ -30,38 +30,44 @@ namespace SPARQL {
  *  https://www.w3.org/TR/sparql11-query/#sparqlTranslatePathPatterns
  */
 class TranslatePropertyPaths : public OpVisitor {
-// Whether to apply the translation rules on path sequences
-static constexpr bool TRANSFORM_SEQUENCE = true;
+    // Whether to apply the translation rules on path sequences
+    static constexpr bool TRANSFORM_SEQUENCE = true;
 
 public:
-    void visit(OpAsk&)               override;
+    void visit(OpAsk&) override;
     void visit(OpBasicGraphPattern&) override;
-    void visit(OpBind&)              override;
-    void visit(OpConstruct&)         override;
-    void visit(OpDescribe&)          override;
-    void visit(OpEmpty&)             override;
-    void visit(OpFilter&)            override;
-    void visit(OpFrom&)              override;
-    void visit(OpGraph&)             override;
-    void visit(OpGroupBy&)           override;
-    void visit(OpHaving&)            override;
-    void visit(OpJoin&)              override;
-    void visit(OpMinus&)             override;
-    void visit(OpNotExists&)         override;
-    void visit(OpOptional&)          override;
-    void visit(OpOrderBy&)           override;
-    void visit(OpProcedure&)         override;
-    void visit(OpSelect&)            override;
-    void visit(OpSemiJoin&)          override;
-    void visit(OpSequence&)          override;
-    void visit(OpService&)           override;
-    void visit(OpUnion&)             override;
+    void visit(OpBind&) override;
+    void visit(OpConstruct&) override;
+    void visit(OpDescribe&) override;
+    void visit(OpEmpty&) override;
+    void visit(OpFilter&) override;
+    void visit(OpFrom&) override;
+    void visit(OpGraph&) override;
+    void visit(OpGroupBy&) override;
+    void visit(OpHaving&) override;
+    void visit(OpJoin&) override;
+    void visit(OpMinus&) override;
+    void visit(OpNotExists&) override;
+    void visit(OpOptional&) override;
+    void visit(OpOrderBy&) override;
+    void visit(OpProcedure&) override;
+    void visit(OpSelect&) override;
+    void visit(OpSemiJoin&) override;
+    void visit(OpSequence&) override;
+    void visit(OpService&) override;
+    void visit(OpUnion&) override;
 
-    void visit(OpPath&)      override { }
-    void visit(OpTriple&)    override { }
+    void visit(OpPath&) override { }
+    void visit(OpTriple&) override { }
     void visit(OpUnitTable&) override { }
-    void visit(OpValues&)    override { }
-    void visit(OpShow&)      override { }
+    void visit(OpValues&) override { }
+    void visit(OpShow&) override { }
+
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
+    void visit(OpDeleteData&) override { }
+    void visit(OpInsertData&) override { }
+    void visit(OpUpdate&) override { }
 
 private:
     // Apply translation rules to the OpPath, that could lead into creating new triples and paths
@@ -72,7 +78,9 @@ class TranslatePropertyPathsExpr : public DefaultExprVisitor {
 public:
     TranslatePropertyPaths& op_visitor;
 
-    TranslatePropertyPathsExpr(TranslatePropertyPaths& op_visitor) : op_visitor(op_visitor) {}
+    TranslatePropertyPathsExpr(TranslatePropertyPaths& op_visitor) :
+        op_visitor(op_visitor)
+    { }
 
     virtual void visit(ExprNotExists& e) override;
 

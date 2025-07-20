@@ -1,6 +1,5 @@
 #pragma once
 
-#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/mql_binding_expr_printer.h"
 
