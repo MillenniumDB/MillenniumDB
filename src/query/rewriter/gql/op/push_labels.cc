@@ -88,6 +88,12 @@ void PushLabels::visit(OpReturn& op)
     );
 }
 
+void PushLabels::visit(OpGroupBy& op)
+{
+    op.op->accept_visitor(*this);
+    tmp = std::make_unique<OpGroupBy>(std::move(tmp), std::move(op.exprs));
+}
+
 void PushLabels::visit(OpLet& op)
 {
     tmp = std::make_unique<OpLet>(std::move(op.items));

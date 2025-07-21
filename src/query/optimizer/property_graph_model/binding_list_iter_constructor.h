@@ -7,6 +7,7 @@
 #include "query/executor/binding_iter/gql/path_binding_iter.h"
 #include "query/optimizer/plan/plan.h"
 #include "query/parser/expr/gql/expr.h"
+#include "query/parser/expr/gql/expr_property.h"
 #include "query/parser/op/gql/graph_pattern/op_optional_properties.h"
 #include "query/parser/op/gql/op_visitor.h"
 
@@ -27,6 +28,7 @@ public:
     void visit(OpLet& op) override;
     void visit(OpOrderBy&) override;
     void visit(OpOrderByStatement&) override;
+    void visit(OpGroupBy&) override;
 
     void visit(OpReturn&) override;
     void visit(OpGraphPattern&) override;
@@ -48,15 +50,21 @@ public:
     std::unique_ptr<BindingIter> tmp_iter;
 
     bool grouping = false;
+    std::set<VarId> group_saved_vars;
     std::map<VarId, std::unique_ptr<Agg>> aggregations;
 
+    std::map<ExprProperty, bool> used_properties;
+
 private:
+    std::unique_ptr<BindingIter> get_pending_properties(std::unique_ptr<BindingIter> binding_iter);
+
     bool is_first_iter = true;
     bool is_first_gp = true;
 
     std::vector<VarId> return_op_vars;
 
     std::set<VarId> group_vars;
+    bool has_group_by = false;
 
     std::set<VarId> seen_nodes;
     std::set<VarId> possible_disjoint_nodes;

@@ -1,0 +1,2 @@
+MATCH (a:Person)
+RETURN a.location AS location, AVG(a.age) AS age_avg GROUP BY location

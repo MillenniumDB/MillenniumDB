@@ -48,6 +48,11 @@ void CheckUnboundedRepetition::visit(OpReturn& op)
     op.op->accept_visitor(*this);
 }
 
+void CheckUnboundedRepetition::visit(OpGroupBy& op)
+{
+    op.op->accept_visitor(*this);
+}
+
 void CheckUnboundedRepetition::visit(OpQueryStatements& op)
 {
     for (auto& pattern : op.ops) {

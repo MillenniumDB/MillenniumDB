@@ -77,6 +77,18 @@ void CheckVarExistence::visit(GQL::OpReturn& op_return)
     check_expr_variables(expr_variables);
 }
 
+void CheckVarExistence::visit(OpGroupBy& op_group_by)
+{
+    op_group_by.op->accept_visitor(*this);
+
+    // TODO:
+    // std::set<VarId> expr_variables;
+    // for (auto& expr : op_group_by.exprs) {
+    //     expr_variables.merge(expr->get_all_vars());
+    // }
+    // check_expr_variables(expr_variables);
+}
+
 void CheckVarExistence::visit(GQL::OpLet& op_let)
 {
     std::set<VarId> expr_variables;

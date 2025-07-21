@@ -30,6 +30,7 @@ public:
     void visit(GQL::OpNode&) override;
     void visit(GQL::OpEdge&) override;
     void visit(GQL::OpLet&) override;
+    void visit(GQL::OpGroupBy&) override;
 
     void visit(GQL::OpEdgeLabel&) override { }
     void visit(GQL::OpNodeLabel&) override { }

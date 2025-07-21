@@ -54,7 +54,8 @@ TEST_SUITES: list[str] = [
     "order_by_statement",
     "datetime",
     "path_binding",
+    "group_by",
 ]
 
 # Tests with the following query files fill be ignored
-IGNORED_TESTS: set[str] = {}
+IGNORED_TESTS: set[str] = set()

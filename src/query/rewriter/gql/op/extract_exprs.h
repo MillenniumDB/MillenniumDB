@@ -26,6 +26,7 @@ private:
     void visit(OpProperty& op) override;
     void visit(OpPathUnion& op) override;
     void visit(OpLinearPattern& op) override;
+    void visit(OpGroupBy& op) override;
 
     void visit(OpOrderByStatement& op) override;
     void visit(OpFilterStatement& op) override;

@@ -3,16 +3,15 @@
 void SetVariableValues::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
-    returned = false;
+    child->begin(_parent_binding);
 }
 
 bool SetVariableValues::_next()
 {
-    if (returned) {
+    if (!child->next()) {
         return false;
     }
 
-    returned = true;
     for (auto& item : items) {
         ObjectId value = item.second->eval(*parent_binding);
         parent_binding->add(item.first, value);
@@ -22,11 +21,12 @@ bool SetVariableValues::_next()
 
 void SetVariableValues::_reset()
 {
-    returned = false;
+    child->reset();
 }
 
 void SetVariableValues::assign_nulls()
 {
+    child->assign_nulls();
     for (auto& item : items) {
         parent_binding->add(item.first, ObjectId::get_null());
     }
@@ -50,4 +50,5 @@ void SetVariableValues::print(std::ostream& os, int indent, bool stats) const
         pair.second->accept_visitor(*printer);
     }
     os << ")\n";
+    child->print(os, indent + 2, stats);
 }

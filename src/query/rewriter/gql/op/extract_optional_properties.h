@@ -22,6 +22,7 @@ public:
     void visit(OpRepetition& op) override;
     void visit(OpOptProperties&) override;
     void visit(OpPathUnion& op) override;
+    void visit(OpGroupBy& op) override;
 
     void visit(OpNode&) override;
     void visit(OpEdge&) override;

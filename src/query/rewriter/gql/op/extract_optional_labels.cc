@@ -30,6 +30,21 @@ void ExtractOptionalLabels::visit(OpReturn& op_return)
     }
 }
 
+void ExtractOptionalLabels::visit(OpGroupBy& op_group_by)
+{
+    op_group_by.op->accept_visitor(*this);
+
+    ExtractVarWithLabelsFromExpr expr_visitor;
+
+    for (auto& expr : op_group_by.exprs) {
+        expr->accept_visitor(expr_visitor);
+    }
+
+    if (!expr_visitor.vars.empty()) {
+        op_group_by.op = std::make_unique<OpOptLabels>(std::move(op_group_by.op), std::move(expr_visitor.vars));
+    }
+}
+
 void ExtractOptionalLabels::visit(OpFilter& op_filter)
 {
     op_filter.op->accept_visitor(*this);

@@ -7,6 +7,7 @@
 #include "query/executor/binding_iter/distinct_hash.h"
 #include "query/executor/binding_iter/expr_evaluator.h"
 #include "query/executor/binding_iter/filter.h"
+#include "query/executor/binding_iter/gql/assign_properties.h"
 #include "query/executor/binding_iter/gql/check_repeated_variable.h"
 #include "query/executor/binding_iter/gql/extend_right.h"
 #include "query/executor/binding_iter/gql/linear_pattern_path.h"
@@ -17,6 +18,7 @@
 #include "query/executor/binding_iter/object_enum.h"
 #include "query/executor/binding_iter/order_by.h"
 #include "query/executor/binding_iter/set_variable_value.h"
+#include "query/executor/binding_iter/single_result_binding_iter.h"
 #include "query/executor/binding_iter/slice.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
 #include "query/optimizer/plan/join_order/selinger_optimizer.h"
@@ -36,6 +38,26 @@
 
 using namespace GQL;
 
+std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
+    get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>& exprs)
+{
+    std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> res;
+
+    for (auto&& [var, e] : exprs) {
+        auto casted_expr_var = dynamic_cast<BindingExprVar*>(e.get());
+        if (casted_expr_var) {
+            if (casted_expr_var->var == var) {
+                // avoid redundant assignation
+                continue;
+            }
+        }
+
+        res.emplace_back(var, std::move(e));
+    }
+    exprs.clear();
+    return res;
+}
+
 void PathBindingIterConstructor::visit(OpReturn& op_return)
 {
     for (auto& item : op_return.return_items) {
@@ -45,7 +67,7 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
         }
     }
 
-    for (auto& var : op_return.get_all_vars()) {
+    for (auto& var : op_return.get_expr_vars()) {
         return_op_vars.push_back(var);
     }
     op_return.op->accept_visitor(*this);
@@ -54,11 +76,31 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
 
     for (auto& item : op_return.return_items) {
         if (item.alias.has_value()) {
-            ExprToBindingExpr expr_to_binding_expr(this, item.alias.value());
+            ExprToBindingExpr expr_to_binding_expr(this, item.alias.value(), true);
             item.expr->accept_visitor(expr_to_binding_expr);
 
             projection_exprs.emplace_back(item.alias.value(), std::move(expr_to_binding_expr.tmp));
         }
+    }
+
+    tmp_iter = get_pending_properties(std::move(tmp_iter));
+
+    auto non_redundant_exprs = get_non_redundant_exprs(projection_exprs);
+    if (non_redundant_exprs.size() > 0) {
+        tmp_iter = std::make_unique<ExprEvaluator>(std::move(tmp_iter), std::move(non_redundant_exprs));
+    }
+
+    if (has_group_by) {
+        std::vector<bool> ascending(group_vars.size(), true);
+        std::vector<VarId> group_vars_vector(group_vars.begin(), group_vars.end());
+
+        tmp_iter = std::make_unique<OrderBy>(
+            std::move(tmp_iter),
+            std::move(group_saved_vars),
+            std::move(group_vars_vector),
+            std::move(ascending),
+            &OrderBy::internal_compare
+        );
     }
 
     if (aggregations.size() > 0 || group_vars.size() > 0) {
@@ -67,10 +109,6 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
             std::move(aggregations),
             std::move(group_vars)
         );
-    }
-
-    if (projection_exprs.size() > 0) {
-        tmp_iter = std::make_unique<ExprEvaluator>(std::move(tmp_iter), std::move(projection_exprs));
     }
 
     if (op_return.distinct) {
@@ -96,11 +134,13 @@ void PathBindingIterConstructor::visit(OpFilterStatement& op_filter)
 {
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr;
+    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
     for (auto& expr : op_filter.exprs) {
         expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.push_back(std::move(expr_to_binding_expr.tmp));
     }
+
+    tmp_iter = get_pending_properties(std::move(tmp_iter));
 
     tmp_iter = std::make_unique<Filter>(
         &Conversions::to_boolean,
@@ -170,7 +210,7 @@ void PathBindingIterConstructor::handle_order_by(
             order_vars.push_back(casted_expr_property->value);
             order_saved_vars.insert(casted_expr_property->value);
 
-            ExprToBindingExpr expr_to_binding_expr;
+            ExprToBindingExpr expr_to_binding_expr(this, {}, true);
             casted_expr_property->accept_visitor(expr_to_binding_expr);
             exprs_to_eval.emplace_back(casted_expr_property->value, std::move(expr_to_binding_expr.tmp));
         } else {
@@ -180,11 +220,14 @@ void PathBindingIterConstructor::handle_order_by(
             order_vars.push_back(var);
             order_saved_vars.insert(var);
 
-            ExprToBindingExpr expr_to_binding_expr;
+            ExprToBindingExpr expr_to_binding_expr(this, {}, true);
             expr->accept_visitor(expr_to_binding_expr);
             exprs_to_eval.emplace_back(var, std::move(expr_to_binding_expr.tmp));
         }
     }
+
+    tmp_iter = get_pending_properties(std::move(tmp_iter));
+
     if (!exprs_to_eval.empty()) {
         tmp_iter = std::make_unique<ExprEvaluator>(std::move(tmp_iter), std::move(exprs_to_eval));
     }
@@ -211,6 +254,23 @@ void PathBindingIterConstructor::handle_order_by(
     }
 }
 
+void PathBindingIterConstructor::visit(OpGroupBy& op_group_by)
+{
+    op_group_by.op->accept_visitor(*this);
+    grouping = true;
+    has_group_by = true;
+
+    for (auto& e : op_group_by.exprs) {
+        Expr* expr = e.get();
+        if (auto casted = dynamic_cast<ExprVar*>(expr); casted != nullptr) {
+            auto var = casted->id;
+            group_vars.insert(var);
+        } else {
+            // TODO: impossible case for now
+        }
+    }
+}
+
 void PathBindingIterConstructor::visit(OpOptProperties& op_opt_properties)
 {
     op_opt_properties.op->accept_visitor(*this);
@@ -220,19 +280,19 @@ void PathBindingIterConstructor::visit(OpLet& op_let)
 {
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr;
+    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
     for (auto& let_item : op_let.items) {
         let_item.expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.emplace_back(let_item.var_id, std::move(expr_to_binding_expr.tmp));
     }
 
+    auto cur_iter = get_pending_properties(std::make_unique<SingleResultBindingIter>());
+    cur_iter = std::make_unique<SetVariableValues>(std::move(cur_iter), std::move(binding_exprs));
+
     if (tmp_iter != nullptr) {
-        tmp_iter = std::make_unique<IndexNestedLoopJoin>(
-            std::move(tmp_iter),
-            std::make_unique<SetVariableValues>(std::move(binding_exprs))
-        );
+        tmp_iter = std::make_unique<IndexNestedLoopJoin>(std::move(tmp_iter), std::move(cur_iter));
     } else {
-        tmp_iter = std::make_unique<SetVariableValues>(std::move(binding_exprs));
+        tmp_iter = std::move(cur_iter);
     }
 }
 
@@ -307,11 +367,13 @@ void PathBindingIterConstructor::visit(OpFilter& op_filter)
 
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr;
+    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
     for (auto& expr : op_filter.exprs) {
         expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.push_back(std::move(expr_to_binding_expr.tmp));
     }
+
+    tmp_iter = get_pending_properties(std::move(tmp_iter));
 
     tmp_iter = std::make_unique<Filter>(
         &GQL::Conversions::to_boolean,
@@ -506,4 +568,22 @@ void PathBindingIterConstructor::visit(OpProperty& op_property)
             op_property.property.value
         ));
     }
+}
+
+std::unique_ptr<BindingIter>
+    PathBindingIterConstructor::get_pending_properties(std::unique_ptr<BindingIter> binding_iter)
+{
+    std::vector<ExprProperty> var_properties;
+    for (auto& [expr_var_property, assigned] : used_properties) {
+        if (!assigned) {
+            assigned = true;
+            var_properties.push_back(expr_var_property);
+        }
+    }
+
+    if (var_properties.size() > 0) {
+        return std::make_unique<AssignProperties>(std::move(binding_iter), std::move(var_properties));
+    }
+
+    return binding_iter;
 }

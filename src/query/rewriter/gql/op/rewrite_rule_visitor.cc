@@ -31,6 +31,17 @@ void RewriteRuleVisitor::visit(OpReturn& op_return)
     op_return.op->accept_visitor(*this);
 }
 
+void RewriteRuleVisitor::visit(OpGroupBy& op_group_by)
+{
+    for (auto& rule : rules) {
+        if (rule->is_possible_to_regroup(op_group_by.op)) {
+            op_group_by.op = rule->regroup(std::move(op_group_by.op));
+            has_rewritten = true;
+        }
+    }
+    op_group_by.op->accept_visitor(*this);
+}
+
 void RewriteRuleVisitor::visit(OpOrderBy& op_order_by)
 {
     for (auto& rule : rules) {

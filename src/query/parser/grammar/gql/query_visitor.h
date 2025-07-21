@@ -101,6 +101,7 @@ public:
     std::any visitPrimitiveResultStatement(GQLParser::PrimitiveResultStatementContext* ctx) override;
     std::any visitReturnStatementBody(GQLParser::ReturnStatementBodyContext* ctx) override;
     std::any visitReturnItemList(GQLParser::ReturnItemListContext* ctx) override;
+    std::any visitGroupingElementList(GQLParser::GroupingElementListContext* ctx) override;
     std::any visitMatchStatement(GQLParser::MatchStatementContext* ctx) override;
     std::any visitLetStatement(GQLParser::LetStatementContext* ctx) override;
     std::any visitLetVariableDefinitionList(GQLParser::LetVariableDefinitionListContext* ctx) override;

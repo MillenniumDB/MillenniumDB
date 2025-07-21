@@ -37,6 +37,31 @@ void ExtractOptionalProperties::visit(GQL::OpReturn& op_return)
     }
 }
 
+void ExtractOptionalProperties::visit(GQL::OpGroupBy& op_group_by)
+{
+    ExtractOptionalPropertiesFromExpr expr_visitor;
+
+    for (auto& expr : op_group_by.exprs) {
+        expr->accept_visitor(expr_visitor);
+    }
+
+    for (auto& property : expr_visitor.properties) {
+        if (std::find(properties.begin(), properties.end(), property) != properties.end()) {
+            continue;
+        }
+        properties.push_back(property);
+    }
+
+    op_group_by.op->accept_visitor(*this);
+
+    if (!properties.empty()) {
+        auto op_property = std::make_unique<OpOptProperties>(std::move(op_group_by.op), properties);
+
+        op_group_by.op = std::move(op_property);
+        properties.clear();
+    }
+}
+
 void ExtractOptionalProperties::visit(GQL::OpOrderBy& op_order_by)
 {
     ExtractOptionalPropertiesFromExpr expr_visitor;

@@ -9,6 +9,11 @@ void AddStartingEnum::visit(OpReturn& op)
     op.op->accept_visitor(*this);
 }
 
+void AddStartingEnum::visit(OpGroupBy& op)
+{
+    op.op->accept_visitor(*this);
+}
+
 void AddStartingEnum::visit(OpQueryStatements& op)
 {
     for (auto& statement : op.ops) {

@@ -26,6 +26,12 @@ void PushProperties::visit(OpReturn& op_return)
     );
 }
 
+void PushProperties::visit(OpGroupBy& op_group_by)
+{
+    op_group_by.op->accept_visitor(*this);
+    tmp = std::make_unique<OpGroupBy>(std::move(tmp), std::move(op_group_by.exprs));
+}
+
 void PushProperties::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);

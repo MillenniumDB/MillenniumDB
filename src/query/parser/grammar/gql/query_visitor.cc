@@ -204,6 +204,13 @@ std::any QueryVisitor::visitReturnStatementBody(GQLParser::ReturnStatementBodyCo
         visit(ctx->returnItemList());
     }
 
+    if (ctx->groupByClause()) {
+        visit(ctx->groupByClause()->groupingElementList());
+        if (!current_expr_list.empty()) {
+            current_op = std::make_unique<OpGroupBy>(std::move(current_op), std::move(current_expr_list));
+        }
+    }
+
     current_op = std::make_unique<OpReturn>(std::move(current_op), std::move(return_items), distinct);
     return 0;
 }
@@ -224,6 +231,17 @@ std::any QueryVisitor::visitReturnItemList(GQLParser::ReturnItemListContext* ctx
             alias = get_query_ctx().get_or_create_var(alias_str);
         }
         return_items.emplace_back(std::move(current_expr), alias);
+    }
+    return 0;
+}
+
+std::any QueryVisitor::visitGroupingElementList(GQLParser::GroupingElementListContext* ctx)
+{
+    LOG_VISITOR
+    current_expr_list.clear();
+    for (auto& elem : ctx->groupingElement()) {
+        VarId group_var = get_query_ctx().get_or_create_var(elem->getText());
+        current_expr_list.push_back(std::make_unique<ExprVar>(group_var));
     }
     return 0;
 }

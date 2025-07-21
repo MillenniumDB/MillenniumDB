@@ -23,6 +23,7 @@ class OpFilterStatement;
 class OpLet;
 class OpOrderByStatement;
 class OpQueryStatements;
+class OpGroupBy;
 
 class OpVisitor {
 public:
@@ -107,6 +108,10 @@ public:
     virtual void visit(OpQueryStatements&)
     {
         throw LogicException("visit GQL::OpQueryStatements not implemented");
+    }
+    virtual void visit(OpGroupBy&)
+    {
+        throw LogicException("visit GQL::OpGroupBy not implemented");
     }
 };
 } // namespace GQL

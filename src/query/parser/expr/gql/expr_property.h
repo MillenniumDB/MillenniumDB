@@ -39,5 +39,19 @@ public:
         // only returns the var with the property
         return { value };
     }
+
+    bool operator<(const ExprProperty& other) const
+    {
+        if (type != other.type) {
+            return type < other.type;
+
+        } else if (object != other.object) {
+            return object < other.object;
+
+        } else if (key != other.key) {
+            return key < other.key;
+        }
+        return value < other.value;
+    }
 };
 } // namespace GQL
