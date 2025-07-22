@@ -18,20 +18,20 @@ B7 :Book name:"B7"
 B8 :Book name:"B8"
 B9 :Book name:"B9"
 B10 :Book name:"B10"
-N0->N1 :Follows name:"F0"
-N0->N2 :Follows name:"F1"
-N1->N3 :Follows name:"F2"
-N1->N4 :Follows name:"F3"
-N2->N0 :Follows name:"F4"
-N2->N3 :Follows name:"F5"
-N2->N5 :Follows name:"F6"
-N3->N4 :Follows name:"F7"
-N4->N1 :Follows name:"F8"
-N0->B9 :Owns name:"O9"
-N1->B9 :Owns name:"O10"
-N2->B6 :Owns name:"O11"
-N2->B7 :Owns name:"O12"
-N2->B8 :Owns name:"O13"
-N3->B7 :Owns name:"O14"
-N4->B6 :Owns name:"O15"
-N4->B8 :Owns name:"O16"
+N0->N1 :Follows name:"F0" year:2001
+N0->N2 :Follows name:"F1" year:2002
+N1->N3 :Follows name:"F2" year:2002
+N1->N4 :Follows name:"F3" year:2010
+N2->N0 :Follows name:"F4" year:2010
+N2->N3 :Follows name:"F5" year:2010
+N2->N5 :Follows name:"F6" year:2005
+N3->N4 :Follows name:"F7" year:2000
+N4->N1 :Follows name:"F8" year:2010
+N0->B9 :Owns name:"O9"  year:2012
+N1->B9 :Owns name:"O10" year:2014
+N2->B6 :Owns name:"O11" year:2000
+N2->B7 :Owns name:"O12" year:2001
+N2->B8 :Owns name:"O13" year:2000
+N3->B7 :Owns name:"O14" year:2014
+N4->B6 :Owns name:"O15" year:2005
+N4->B8 :Owns name:"O16" year:2005

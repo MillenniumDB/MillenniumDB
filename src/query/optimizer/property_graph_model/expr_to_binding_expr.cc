@@ -87,11 +87,7 @@ void ExprToBindingExpr::visit(ExprEquals& expr)
 
 void ExprToBindingExpr::visit(ExprProperty& expr)
 {
-    if (expr.type == VarType::Node) {
-        tmp = std::make_unique<BindingExprNodeProperty>(expr.object, expr.key, expr.value);
-    } else {
-        tmp = std::make_unique<BindingExprEdgeProperty>(expr.object, expr.key, expr.value);
-    }
+    tmp = std::make_unique<BindingExprVar>(expr.value);
 
     if (bic != nullptr) {
         bic->used_properties.emplace(expr, false);

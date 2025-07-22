@@ -1,0 +1,2 @@
+MATCH -[e]->
+RETURN e.year as y, count(e) GROUP BY y

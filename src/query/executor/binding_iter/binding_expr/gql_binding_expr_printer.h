@@ -21,8 +21,6 @@ public:
     void visit(GQL::BindingExprHasEdgeLabel&) override;
     void visit(GQL::BindingExprWildcardLabel&) override;
     void visit(GQL::BindingExprEquals&) override;
-    void visit(GQL::BindingExprNodeProperty&) override;
-    void visit(GQL::BindingExprEdgeProperty&) override;
     void visit(GQL::BindingExprConcat&) override;
     void visit(GQL::BindingExprGreaterOrEquals&) override;
     void visit(GQL::BindingExprGreater&) override;

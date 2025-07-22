@@ -134,7 +134,7 @@ void PathBindingIterConstructor::visit(OpFilterStatement& op_filter)
 {
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+    ExprToBindingExpr expr_to_binding_expr(this, {}, false);
     for (auto& expr : op_filter.exprs) {
         expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.push_back(std::move(expr_to_binding_expr.tmp));
@@ -210,7 +210,7 @@ void PathBindingIterConstructor::handle_order_by(
             order_vars.push_back(casted_expr_property->value);
             order_saved_vars.insert(casted_expr_property->value);
 
-            ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+            ExprToBindingExpr expr_to_binding_expr(this, {}, false);
             casted_expr_property->accept_visitor(expr_to_binding_expr);
             exprs_to_eval.emplace_back(casted_expr_property->value, std::move(expr_to_binding_expr.tmp));
         } else {
@@ -220,7 +220,7 @@ void PathBindingIterConstructor::handle_order_by(
             order_vars.push_back(var);
             order_saved_vars.insert(var);
 
-            ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+            ExprToBindingExpr expr_to_binding_expr(this, {}, false);
             expr->accept_visitor(expr_to_binding_expr);
             exprs_to_eval.emplace_back(var, std::move(expr_to_binding_expr.tmp));
         }
@@ -280,7 +280,7 @@ void PathBindingIterConstructor::visit(OpLet& op_let)
 {
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+    ExprToBindingExpr expr_to_binding_expr(this, {}, false);
     for (auto& let_item : op_let.items) {
         let_item.expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.emplace_back(let_item.var_id, std::move(expr_to_binding_expr.tmp));
@@ -367,7 +367,7 @@ void PathBindingIterConstructor::visit(OpFilter& op_filter)
 
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 
-    ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+    ExprToBindingExpr expr_to_binding_expr(this, {}, false);
     for (auto& expr : op_filter.exprs) {
         expr->accept_visitor(expr_to_binding_expr);
         binding_exprs.push_back(std::move(expr_to_binding_expr.tmp));

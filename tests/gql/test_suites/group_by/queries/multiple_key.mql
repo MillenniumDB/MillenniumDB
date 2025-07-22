@@ -1,0 +1,2 @@
+MATCH (a: Person)
+RETURN a.name AS name, a.location AS location GROUP BY name, location

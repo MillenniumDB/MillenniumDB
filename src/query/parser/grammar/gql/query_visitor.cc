@@ -191,6 +191,11 @@ std::any QueryVisitor::visitReturnStatementBody(GQLParser::ReturnStatementBodyCo
     }
 
     if (ctx->ASTERISK()) {
+        if (ctx->groupByClause()) {
+            throw QuerySemanticException("A query that contains an asterisk (*) in the RETURN statement "
+                                         "cannot contain the GROUP BY clause");
+        }
+
         auto vars = current_op->get_all_vars();
         for (auto& var : vars) {
             std::string var_name = get_query_ctx().get_var_name(var);

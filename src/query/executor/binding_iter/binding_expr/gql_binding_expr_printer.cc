@@ -53,12 +53,11 @@ void BindingExprPrinter::visit(GQL::BindingExprHasEdgeLabel& expr)
     os << expr.edge_id << ", " << expr.label_id;
     os << ')';
 }
-  
+
 void BindingExprPrinter::visit(GQL::BindingExprWildcardLabel& expr)
 {
     os << "HasWildcardLabel(" << expr.var_id << ')';
 }
-
 
 void BindingExprPrinter::visit(GQL::BindingExprEquals& expr)
 {
@@ -66,20 +65,6 @@ void BindingExprPrinter::visit(GQL::BindingExprEquals& expr)
     expr.lhs->accept_visitor(*this);
     os << " = ";
     expr.rhs->accept_visitor(*this);
-    os << ')';
-}
-
-void BindingExprPrinter::visit(GQL::BindingExprNodeProperty& expr)
-{
-    os << '(';
-    os << expr.property_var_id;
-    os << ')';
-}
-
-void BindingExprPrinter::visit(GQL::BindingExprEdgeProperty& expr)
-{
-    os << '(';
-    os << expr.property_var_id;
     os << ')';
 }
 

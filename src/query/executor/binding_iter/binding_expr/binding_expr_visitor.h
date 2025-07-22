@@ -112,8 +112,6 @@ class BindingExprHasNodeLabel;
 class BindingExprHasEdgeLabel;
 class BindingExprWildcardLabel;
 class BindingExprEquals;
-class BindingExprNodeProperty;
-class BindingExprEdgeProperty;
 class BindingExprConcat;
 class BindingExprGreaterOrEquals;
 class BindingExprGreater;
@@ -269,8 +267,6 @@ public:
     virtual void visit(GQL::BindingExprHasEdgeLabel&) { throw LogicException("visit GQL::BindingExprHasEdgeLabel not implemented"); }
     virtual void visit(GQL::BindingExprWildcardLabel&) { throw LogicException("visit GQL::BindingExprWildcardLabel not implemented"); }
     virtual void visit(GQL::BindingExprEquals&) { throw LogicException("visit GQL::BindingExprEquals not implemented"); }
-    virtual void visit(GQL::BindingExprNodeProperty&) { throw LogicException("visit GQL::BindingExprNodeProperty not implemented"); }
-    virtual void visit(GQL::BindingExprEdgeProperty&) { throw LogicException("visit GQL::BindingExprNodeProperty not implemented"); }
     virtual void visit(GQL::BindingExprConcat&) { throw LogicException("visit GQL::BindingExprConcat not implemented"); }
     virtual void visit(GQL::BindingExprGreaterOrEquals&) { throw LogicException("visit GQL::BindingExprGreaterOrEquals not implemented"); }
     virtual void visit(GQL::BindingExprGreater&) { throw LogicException("visit GQL::BindingExprGreater not implemented"); }

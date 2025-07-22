@@ -65,28 +65,41 @@ void CheckVarExistence::visit(GQL::OpGraphPattern& op_graph_pattern)
 
 void CheckVarExistence::visit(GQL::OpReturn& op_return)
 {
+    // we store the op return vars, because the OpGroupBy references them
+    std::vector<VarId> op_return_vars_vec = op_return.get_expr_vars();
+    op_return_vars = std::set<VarId>(op_return_vars_vec.begin(), op_return_vars_vec.end());
+
     op_return.op->accept_visitor(*this);
 
     std::set<VarId> expr_variables;
     for (auto& item : op_return.return_items) {
         expr_variables.merge(item.expr->get_all_vars());
     }
+    check_expr_variables(expr_variables);
+
+    // we add the op return vars, because the OpOrderBy that goes after the OpReturn might reference them
+    variables.merge(op_return_vars);
+
     if (op_return.op_order_by != nullptr) {
         op_return.op_order_by->accept_visitor(*this);
     }
-    check_expr_variables(expr_variables);
 }
 
 void CheckVarExistence::visit(OpGroupBy& op_group_by)
 {
     op_group_by.op->accept_visitor(*this);
 
-    // TODO:
-    // std::set<VarId> expr_variables;
-    // for (auto& expr : op_group_by.exprs) {
-    //     expr_variables.merge(expr->get_all_vars());
-    // }
-    // check_expr_variables(expr_variables);
+    std::set<VarId> expr_variables;
+    for (auto& expr : op_group_by.exprs) {
+        expr_variables.merge(expr->get_all_vars());
+    }
+
+    std::set<VarId> previous_vars = variables;
+
+    variables.insert(op_return_vars.begin(), op_return_vars.end());
+
+    check_expr_variables(expr_variables);
+    variables = previous_vars;
 }
 
 void CheckVarExistence::visit(GQL::OpLet& op_let)

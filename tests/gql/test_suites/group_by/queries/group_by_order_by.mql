@@ -1,0 +1,4 @@
+MATCH (a)-[e]->(c)
+RETURN a.location as location, e.year as t, count(a) as qty
+GROUP BY location, t
+ORDER BY qty, t
