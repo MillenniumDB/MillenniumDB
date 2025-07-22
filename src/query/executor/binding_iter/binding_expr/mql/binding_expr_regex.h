@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <memory>
 #include <regex>
 
@@ -15,12 +14,18 @@ public:
     std::unique_ptr<BindingExpr> expr2;
     std::unique_ptr<BindingExpr> expr3;
 
-    BindingExprRegex(std::unique_ptr<BindingExpr> expr1,
-                     std::unique_ptr<BindingExpr> expr2,
-                     std::unique_ptr<BindingExpr> expr3) :
-        expr1(std::move(expr1)), expr2(std::move(expr2)), expr3(std::move(expr3)) { }
+    BindingExprRegex(
+        std::unique_ptr<BindingExpr> expr1,
+        std::unique_ptr<BindingExpr> expr2,
+        std::unique_ptr<BindingExpr> expr3
+    ) :
+        expr1(std::move(expr1)),
+        expr2(std::move(expr2)),
+        expr3(std::move(expr3))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr1_oid = expr1->eval(binding);
         auto expr2_oid = expr2->eval(binding);
 
@@ -43,7 +48,8 @@ public:
             return ObjectId::get_null();
         }
 
-        if (expr3 != nullptr && (expr3_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE) {
+        if (expr3 != nullptr && (expr3_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE)
+        {
             return ObjectId::get_null();
         }
 
@@ -82,8 +88,22 @@ public:
         return Conversions::pack_bool(res);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "REGEX(";
+        expr1->print(os, ops);
+        os << ", ";
+        expr2->print(os, ops);
+        if (expr3 != nullptr) {
+            os << ", ";
+            expr3->print(os, ops);
+        }
+        os << ")";
     }
 };
 } // namespace MQL

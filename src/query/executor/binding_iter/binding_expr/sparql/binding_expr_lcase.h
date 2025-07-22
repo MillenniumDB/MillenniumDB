@@ -3,14 +3,15 @@
 #include <memory>
 #include <string>
 
-#include "misc/transliterator.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "misc/transliterator.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprLCase : public BindingExpr {
 private:
-    static std::string lcase(const std::string& str) {
+    static std::string lcase(const std::string& str)
+    {
         return Transliterator::lowercase(str);
     }
 
@@ -18,9 +19,11 @@ public:
     std::unique_ptr<BindingExpr> expr;
 
     BindingExprLCase(std::unique_ptr<BindingExpr> expr) :
-        expr (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr_oid = expr->eval(binding);
 
         switch (RDF_OID::get_generic_sub_type(expr_oid)) {
@@ -41,8 +44,16 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "LCASE(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

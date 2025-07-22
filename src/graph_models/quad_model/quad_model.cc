@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "query/executor/binding_iter/binding_expr/mql_binding_expr_printer.h"
+#include "query/query_context.h"
 #include "query/executor/query_executor/mql/return_executor.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
@@ -19,11 +19,6 @@ std::unique_ptr<ModelDestroyer> QuadModel::init()
     return std::make_unique<ModelDestroyer>([]() { quad_model.~QuadModel(); });
 }
 
-std::unique_ptr<BindingExprPrinter> create_quad_binding_expr_printer(std::ostream& os)
-{
-    return std::make_unique<MQL::BindingExprPrinter>(os);
-}
-
 std::ostream& debug_print(std::ostream& os, ObjectId oid)
 {
     MQL::ReturnExecutor<MQL::ReturnType::CSV>::print(os, oid);
@@ -34,7 +29,6 @@ QuadModel::QuadModel() :
     catalog("catalog.dat")
 {
     QueryContext::_debug_print = debug_print;
-    QueryContext::create_binding_expr_printer = create_quad_binding_expr_printer;
 
     nodes = make_unique<BPlusTree<1>>("nodes");
 

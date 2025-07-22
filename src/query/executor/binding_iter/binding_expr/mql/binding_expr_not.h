@@ -11,9 +11,11 @@ public:
     std::unique_ptr<BindingExpr> expr;
 
     BindingExprNot(std::unique_ptr<BindingExpr> expr) :
-        expr (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto oid = expr->eval(binding);
 
         if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
@@ -25,8 +27,15 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "!";
+        expr->print(os, ops);
     }
 };
 } // namespace MQL

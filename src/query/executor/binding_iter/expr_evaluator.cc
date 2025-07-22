@@ -1,5 +1,7 @@
 #include "expr_evaluator.h"
 
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
+
 void ExprEvaluator::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
@@ -43,27 +45,23 @@ void ExprEvaluator::print(std::ostream& os, int indent, bool stats) const
     }
     os << std::string(indent, ' ') << "ExprEvaluator(exprs: ";
 
-    auto printer = get_query_ctx().create_binding_expr_printer(os);
-    auto first = true;
-    for (auto& [var, expr] : exprs) {
-        if (first)
-            first = false;
-        else
-            os << ", ";
+    {
+        BindingExprPrinter printer(os, indent, stats);
+        auto first = true;
+        for (auto& [var, expr] : exprs) {
+            if (first)
+                first = false;
+            else
+                os << ", ";
 
-        os << var;
-        if (expr) {
-            os << '=';
-            expr->accept_visitor(*printer);
+            os << var;
+            if (expr) {
+                os << '=';
+                printer.print(*expr);
+            }
         }
-    }
 
-    os << ")\n";
-    if (printer->ops.size() > 0) {
-        for (size_t i = 0; i < printer->ops.size(); i++) {
-            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
-            printer->ops[i]->print(os, indent + 4, stats);
-        }
+        os << ")\n";
     }
 
     child_iter->print(os, indent + 2, stats);

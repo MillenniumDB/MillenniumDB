@@ -14,12 +14,13 @@ public:
 
     std::vector<std::unique_ptr<BindingExpr>> exprs;
 
-    BindingExprIn(std::unique_ptr<BindingExpr> lhs_expr,
-                  std::vector<std::unique_ptr<BindingExpr>> exprs) :
-        lhs_expr (std::move(lhs_expr)),
-        exprs    (std::move(exprs)) { }
+    BindingExprIn(std::unique_ptr<BindingExpr> lhs_expr, std::vector<std::unique_ptr<BindingExpr>> exprs) :
+        lhs_expr(std::move(lhs_expr)),
+        exprs(std::move(exprs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         bool error = false;
 
         auto lhs_oid = lhs_expr->eval(binding);
@@ -43,8 +44,25 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << '(';
+        lhs_expr->print(os, ops);
+        os << " IN (";
+        auto first = true;
+        for (auto& e : exprs) {
+            if (first)
+                first = false;
+            else
+                os << ", ";
+            e->print(os, ops);
+        }
+        os << "))";
     }
 };
 } // namespace SPARQL

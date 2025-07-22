@@ -1,36 +1,37 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
-#include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_visitor.h"
-#include "query/query_context.h"
+#include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
-class BindingIter;
-
-class BindingExprPrinter : public BindingExprVisitor {
+class BindingExprPrinter {
 public:
     std::ostream& os;
 
-    BindingExprPrinter(std::ostream& os) :
-        os(os)
+    const size_t base_indentation;
+
+    const bool stats;
+
+    BindingExprPrinter(std::ostream& os, size_t base_indentation = 0, bool stats = false) :
+        os(os),
+        base_indentation(base_indentation),
+        stats(stats)
     { }
 
-    virtual ~BindingExprPrinter() = default;
-
-    void visit(BindingExprTerm& expr) override
+    ~BindingExprPrinter()
     {
-        os << expr.object_id;
+        for (size_t i = 0; i < ops.size(); i++) {
+            os << std::string(base_indentation + 2, ' ') << "_Op_" << i << "_:\n";
+            ops[i]->print(os, base_indentation + 4, stats);
+        }
     }
 
-    void visit(BindingExprVar& expr) override
+    void print(const BindingExpr& binding_expr)
     {
-        os << expr.var;
+        binding_expr.print(os, ops);
     }
 
-// protected:
-    // Expressions like EXISTS and NOT EXISTS may add elements to ops
     std::vector<BindingIter*> ops;
-
 };

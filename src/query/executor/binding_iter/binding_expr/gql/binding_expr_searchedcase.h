@@ -1,10 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-#include "graph_models/common/datatypes/datetime.h"
-#include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
@@ -16,7 +14,7 @@ public:
     BindingExprSearchedCase(
         std::vector<std::pair<std::unique_ptr<BindingExpr>, std::unique_ptr<BindingExpr>>> when_clauses,
         std::unique_ptr<BindingExpr> else_clause
-        ) :
+    ) :
         when_clauses(std::move(when_clauses)),
         else_clause(std::move(else_clause))
     { }
@@ -35,6 +33,23 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "CASE ";
+        for (const auto& clause : when_clauses) {
+            os << " WHEN ";
+            clause.first->print(os, ops);
+            os << " THEN ";
+            clause.first->print(os, ops);
+        }
+        os << " ELSE ";
+        if (else_clause == nullptr) {
+            os << "NULL";
+        } else {
+            else_clause->print(os, ops);
+        }
     }
 };
 } // namespace GQL

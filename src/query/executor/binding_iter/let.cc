@@ -1,5 +1,7 @@
 #include "let.h"
 
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
+
 void Let::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
@@ -38,16 +40,18 @@ void Let::print(std::ostream& os, int indent, bool stats) const
         print_generic_stats(os, indent);
     }
 
-    auto expr_printer = get_query_ctx().create_binding_expr_printer(os);
+    {   // scope to control printer destruction (before child_iter->print)
+        BindingExprPrinter printer(os, indent, stats);
 
-    os << std::string(indent, ' ') << "Let(";
-    os << var_binding_expr[0].first << '=';
-    var_binding_expr[0].second->accept_visitor(*expr_printer);
+        os << std::string(indent, ' ') << "Let(";
+        os << var_binding_expr[0].first << '=';
+        printer.print(*var_binding_expr[0].second);
 
-    for (std::size_t i = 0; i < var_binding_expr.size(); ++i) {
-        os << ", ";
-        os << var_binding_expr[i].first << '=';
-        var_binding_expr[i].second->accept_visitor(*expr_printer);
+        for (std::size_t i = 0; i < var_binding_expr.size(); ++i) {
+            os << ", ";
+            os << var_binding_expr[i].first << '=';
+            printer.print(*var_binding_expr[i].second);
+        }
     }
     os << ")\n";
 }

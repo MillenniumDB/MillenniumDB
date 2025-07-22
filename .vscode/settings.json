@@ -87,6 +87,7 @@
         "mdbtype",
         "millenniumdb",
         "mvcc",
+        "nfkc",
         "nfkd",
         "nullptr",
         "ofstreams",

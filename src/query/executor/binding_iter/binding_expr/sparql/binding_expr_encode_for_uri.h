@@ -14,9 +14,11 @@ public:
     std::unique_ptr<BindingExpr> expr;
 
     BindingExprEncodeForUri(std::unique_ptr<BindingExpr> expr) :
-        expr (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr_oid = expr->eval(binding);
 
         std::string str;
@@ -42,7 +44,7 @@ public:
 
         for (const char cc : str) {
             const unsigned char c = static_cast<unsigned char>(cc);
-            if (c < 0x80 && (std::isalnum(c) || c == '-' || c == '.'  || c == '_'|| c == '~')) {
+            if (c < 0x80 && (std::isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~')) {
                 ss << c;
                 continue;
             }
@@ -55,8 +57,16 @@ public:
         return Conversions::pack_string_simple(ss.str());
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "ENCODE_FOR_URI(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

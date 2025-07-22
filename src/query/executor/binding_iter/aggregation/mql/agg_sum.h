@@ -9,11 +9,13 @@ class AggSum : public Agg {
 public:
     using Agg::Agg;
 
-    void begin() override {
+    void begin() override
+    {
         sum = 0;
     }
 
-    void process() override {
+    void process() override
+    {
         auto oid = expr->eval(*binding);
         auto type = Conversions::calculate_optype(oid);
 
@@ -28,15 +30,17 @@ public:
     }
 
     // indicates the end of a group
-    ObjectId get() override {
+    ObjectId get() override
+    {
         float sum_f = sum;
         return Conversions::pack_float(sum_f);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print(std::ostream& os) const override
+    {
         os << "SUM(";
         BindingExprPrinter printer(os);
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

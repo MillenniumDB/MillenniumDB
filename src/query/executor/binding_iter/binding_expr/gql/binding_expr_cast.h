@@ -95,6 +95,23 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "CAST(";
+        operand->print(os, ops);
+        os << " AS ";
+        if (targetType == GQL_OID::GenericType::BOOL) {
+            os << "BOOL";
+        } else if (targetType == GQL_OID::GenericType::NUMERIC) {
+            os << "NUMERIC";
+        } else if (targetType == GQL_OID::GenericType::DATE) {
+            os << "DATE";
+        } else if (targetType == GQL_OID::GenericType::STRING) {
+            os << "STRING";
+        }
+        os << ")";
+    }
 };
 
 } // namespace GQL

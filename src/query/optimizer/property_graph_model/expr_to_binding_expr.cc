@@ -1,9 +1,9 @@
 #include "expr_to_binding_expr.h"
 
+#include "query/executor/binding_iter/aggregation/gql/aggs.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_exprs.h"
 #include "query/optimizer/property_graph_model/binding_list_iter_constructor.h"
 #include "query/parser/expr/gql/exprs.h"
-#include "query/executor/binding_iter/aggregation/gql/aggs.h"
 
 using namespace GQL;
 
@@ -373,7 +373,11 @@ void ExprToBindingExpr::visit(ExprSubStr& expr)
     expr.str_len->accept_visitor(*this);
     auto str_len_binding_expr = std::move(tmp);
 
-    tmp = std::make_unique<BindingExprSubStr>(std::move(str_binding_expr), std::move(str_len_binding_expr), std::move(expr.left));
+    tmp = std::make_unique<BindingExprSubStr>(
+        std::move(str_binding_expr),
+        std::move(str_len_binding_expr),
+        std::move(expr.left)
+    );
 }
 
 void ExprToBindingExpr::visit(ExprFold& expr)
@@ -394,7 +398,11 @@ void ExprToBindingExpr::visit(ExprSingleTrim& expr)
         char_binding_expr = std::move(tmp);
     }
 
-    tmp = std::make_unique<BindingExprSingleTrim>(std::move(str_binding_expr), std::move(char_binding_expr), std::move(expr.specification));
+    tmp = std::make_unique<BindingExprSingleTrim>(
+        std::move(str_binding_expr),
+        std::move(char_binding_expr),
+        std::move(expr.specification)
+    );
 }
 
 void ExprToBindingExpr::visit(ExprMultiTrim& expr)
@@ -409,7 +417,11 @@ void ExprToBindingExpr::visit(ExprMultiTrim& expr)
         delim_binding_expr = std::move(tmp);
     }
 
-    tmp = std::make_unique<BindingExprMultiTrim>(std::move(str_binding_expr), std::move(delim_binding_expr), std::move(expr.specification));
+    tmp = std::make_unique<BindingExprMultiTrim>(
+        std::move(str_binding_expr),
+        std::move(delim_binding_expr),
+        std::move(expr.specification)
+    );
 }
 
 void ExprToBindingExpr::visit(ExprNormalize& expr)
@@ -445,16 +457,19 @@ void ExprToBindingExpr::visit(ExprSimpleCase& expr)
 {
     expr.case_operand->accept_visitor(*this);
     auto case_operand_binding_expr = std::move(tmp);
-    std::vector<std::pair<std::pair<std::string, std::vector<std::unique_ptr<BindingExpr>>>, std::unique_ptr<BindingExpr>>> when_clauses_binding;
+    std::vector<std::pair<
+        std::pair<std::string, std::vector<std::unique_ptr<BindingExpr>>>,
+        std::unique_ptr<BindingExpr>>>
+        when_clauses_binding;
     for (const auto& clauses : expr.when_clauses) {
         std::vector<std::unique_ptr<BindingExpr>> clauses_binding;
         for (const auto& clause : clauses.first.second) {
             clause->accept_visitor(*this);
             clauses_binding.push_back(std::move(tmp));
         }
-        std::pair clause_binding = {clauses.first.first, std::move(clauses_binding)};
+        std::pair clause_binding = { clauses.first.first, std::move(clauses_binding) };
         clauses.second->accept_visitor(*this);
-        std::pair final_clause_bindings = {std::move(clause_binding), std::move(tmp)};
+        std::pair final_clause_bindings = { std::move(clause_binding), std::move(tmp) };
         when_clauses_binding.push_back(std::move(final_clause_bindings));
     }
     std::unique_ptr<BindingExpr> else_binding_expr;
@@ -465,13 +480,17 @@ void ExprToBindingExpr::visit(ExprSimpleCase& expr)
         else_binding_expr = std::move(tmp);
     }
 
-    tmp = std::make_unique<BindingExprSimpleCase>(std::move(case_operand_binding_expr), std::move(when_clauses_binding), std::move(else_binding_expr));
+    tmp = std::make_unique<BindingExprSimpleCase>(
+        std::move(case_operand_binding_expr),
+        std::move(when_clauses_binding),
+        std::move(else_binding_expr)
+    );
 }
 
 void ExprToBindingExpr::visit(ExprSearchedCase& expr)
 {
     std::vector<std::pair<std::unique_ptr<BindingExpr>, std::unique_ptr<BindingExpr>>> when_clauses;
-    for (auto& clause : expr.when_clauses){
+    for (auto& clause : expr.when_clauses) {
         clause.first->accept_visitor(*this);
         auto condition = std::move(tmp);
         clause.second->accept_visitor(*this);
@@ -495,7 +514,8 @@ void ExprToBindingExpr::visit(ExprCast& expr)
     tmp = std::make_unique<BindingExprCast>(std::move(tmp), std::move(expr.targetType));
 }
 
-void ExprToBindingExpr::visit(ExprAggCountAll&) {
+void ExprToBindingExpr::visit(ExprAggCountAll&)
+{
     check_and_make_aggregate<AggCountAll>(nullptr);
 }
 
@@ -508,7 +528,8 @@ void ExprToBindingExpr::visit(ExprAggCount& expr)
     }
 }
 
-void ExprToBindingExpr::visit(ExprAggAvg& expr) {
+void ExprToBindingExpr::visit(ExprAggAvg& expr)
+{
     if (expr.distinct) {
         check_and_make_aggregate<AggAvgDistinct>(expr.expr.get());
     } else {
@@ -516,15 +537,18 @@ void ExprToBindingExpr::visit(ExprAggAvg& expr) {
     }
 }
 
-void ExprToBindingExpr::visit(ExprAggMin& expr) {
+void ExprToBindingExpr::visit(ExprAggMin& expr)
+{
     check_and_make_aggregate<AggMin>(expr.expr.get());
 }
 
-void ExprToBindingExpr::visit(ExprAggMax& expr) {
+void ExprToBindingExpr::visit(ExprAggMax& expr)
+{
     check_and_make_aggregate<AggMax>(expr.expr.get());
 }
 
-void ExprToBindingExpr::visit(ExprAggSum& expr) {
+void ExprToBindingExpr::visit(ExprAggSum& expr)
+{
     if (expr.distinct) {
         check_and_make_aggregate<AggSumDistinct>(expr.expr.get());
     } else {
@@ -532,7 +556,8 @@ void ExprToBindingExpr::visit(ExprAggSum& expr) {
     }
 }
 
-void ExprToBindingExpr::visit(ExprAggStddevPop& expr) {
+void ExprToBindingExpr::visit(ExprAggStddevPop& expr)
+{
     if (expr.distinct) {
         check_and_make_aggregate<AggStddevPopDistinct>(expr.expr.get());
     } else {
@@ -540,7 +565,8 @@ void ExprToBindingExpr::visit(ExprAggStddevPop& expr) {
     }
 }
 
-void ExprToBindingExpr::visit(ExprAggStddevSamp& expr) {
+void ExprToBindingExpr::visit(ExprAggStddevSamp& expr)
+{
     if (expr.distinct) {
         check_and_make_aggregate<AggStddevSampDistinct>(expr.expr.get());
     } else {
@@ -579,8 +605,9 @@ void ExprToBindingExpr::visit(ExprAggPercentileDisc& expr)
     }
 }
 
-template<typename AggType, class ... Args>
-void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args) {
+template<typename AggType, class... Args>
+void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
+{
     if (bic == nullptr) {
         throw QuerySemanticException("Aggregation where it is not allowed");
     }
@@ -612,7 +639,7 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args) {
         agg = std::make_unique<AggType>(var, nullptr, std::forward<Args>(args)...);
     }
 
-    bic->aggregations.insert({var, std::move(agg)});
+    bic->aggregations.insert({ var, std::move(agg) });
 
     // auto agg_ptr = static_cast<AggType*>(bic->aggregations.at(var).get());
 

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "query/executor/binding_iter.h"
-
-using namespace GQL;
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 class SetVariableValues : public BindingIter {
 public:

@@ -2,7 +2,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/unordered_agg.h"
-#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 namespace SPARQL {
 class UAggCount : public UAgg {
@@ -40,11 +40,11 @@ public:
         return Conversions::pack_int(data->count);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override
+    std::ostream& print(std::ostream& os) const override
     {
         os << "COUNT(";
         BindingExprPrinter printer(os);
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

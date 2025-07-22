@@ -6,7 +6,6 @@
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
-
 namespace SPARQL {
 
 enum class ConcatStatus {
@@ -27,9 +26,11 @@ public:
     std::vector<std::unique_ptr<BindingExpr>> exprs;
 
     BindingExprConcat(std::vector<std::unique_ptr<BindingExpr>> exprs) :
-        exprs(std::move(exprs)) { }
+        exprs(std::move(exprs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         std::string res;
         std::string res_lang;
 
@@ -84,8 +85,23 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "CONCAT(";
+        bool first = true;
+        for (auto& expr : exprs) {
+            if (first)
+                first = false;
+            else
+                os << ", ";
+            expr->print(os, ops);
+        }
+        os << ')';
     }
 };
 } // namespace SPARQL

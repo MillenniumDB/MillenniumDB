@@ -1,10 +1,6 @@
 #pragma once
 
-#include <algorithm>
-#include <cctype>
-#include <cmath>
 #include <memory>
-#include <set>
 
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
@@ -68,8 +64,7 @@ public:
             }
         }
 
-        if (lhs_generic_type == GQL_OID::GenericType::BOOL
-            && rhs_generic_type == GQL_OID::GenericType::BOOL)
+        if (lhs_generic_type == GQL_OID::GenericType::BOOL && rhs_generic_type == GQL_OID::GenericType::BOOL)
         {
             auto lhs = GQL::Conversions::to_boolean(lhs_oid);
             auto rhs = GQL::Conversions::to_boolean(rhs_oid);
@@ -163,6 +158,15 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "NULLIF(";
+        lhs->print(os, ops);
+        os << ", ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace GQL

@@ -31,11 +31,11 @@ public:
         return false;
     }
 
-    virtual std::ostream& print_to_ostream(std::ostream& os) const = 0;
+    virtual std::ostream& print(std::ostream& os) const = 0;
 
     friend std::ostream& operator<<(std::ostream& os, const Agg& a)
     {
-        return a.print_to_ostream(os);
+        return a.print(os);
     }
 
     // must be overriden if is_pipelineble() returns true

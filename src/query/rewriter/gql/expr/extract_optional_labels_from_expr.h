@@ -3,7 +3,7 @@
 #include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/graph_pattern/op_opt_labels.h"
 
-using namespace GQL;
+namespace GQL {
 
 class ExtractVarWithLabelsFromExpr : public ExprVisitor {
 public:
@@ -31,7 +31,6 @@ public:
         vars.insert({ expr.edge_id, labels_var, VarType::Edge });
     }
 
-
     void visit(ExprAnd& expr)
     {
         for (auto& expr : expr.exprs) {
@@ -39,8 +38,9 @@ public:
         }
     }
 
-    void visit(ExprOr& expr) {
-        bool previous_or = or;
+    void visit(ExprOr& expr)
+    {
+        bool previous_or = or ;
 
         for (auto& expr : expr.exprs) {
             or = true;
@@ -49,7 +49,8 @@ public:
         or = previous_or;
     }
 
-    void visit(ExprNot& expr) {
+    void visit(ExprNot& expr)
+    {
         negation = !negation;
         expr.expr->accept_visitor(*this);
         negation = !negation;
@@ -117,3 +118,4 @@ public:
     void visit(ExprAggPercentileCont&) { }
     void visit(ExprAggPercentileDisc&) { }
 };
+} // namespace GQL

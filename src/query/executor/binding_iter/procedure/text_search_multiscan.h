@@ -2,6 +2,7 @@
 
 #include "misc/min_max_heap.h"
 #include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/var_id.h"
 #include "storage/index/text_search/text_index.h"
 #include "storage/index/text_search/text_index_manager.h"

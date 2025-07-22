@@ -28,11 +28,11 @@ public:
     // gets the final result of the aggregation
     virtual ObjectId get(void* state_data) = 0;
 
-    virtual std::ostream& print_to_ostream(std::ostream& os) const = 0;
+    virtual std::ostream& print(std::ostream& os) const = 0;
 
     friend std::ostream& operator<<(std::ostream& os, const UAgg& a)
     {
-        return a.print_to_ostream(os);
+        return a.print(os);
     }
 
 protected:

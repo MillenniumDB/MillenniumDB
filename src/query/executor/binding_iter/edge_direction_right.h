@@ -2,8 +2,6 @@
 
 #include "query/executor/binding_iter.h"
 
-using namespace GQL;
-
 class EdgeDirectionRight : public BindingIter {
 public:
     EdgeDirectionRight(std::unique_ptr<BindingIter>&& iter, VarId direction_var) :

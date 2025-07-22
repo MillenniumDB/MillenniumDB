@@ -1,5 +1,7 @@
 #include "bind.h"
 
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
+
 void Bind::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
@@ -33,13 +35,10 @@ void Bind::print(std::ostream& os, int indent, bool stats) const
     }
 
     os << std::string(indent, ' ') << "Bind(" << var << '=';
-    auto expr_printer = get_query_ctx().create_binding_expr_printer(os);
-    expr->accept_visitor(*expr_printer);
-    os << ")\n";
-
-    for (size_t i = 0; i < expr_printer->ops.size(); i++) {
-        os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
-        expr_printer->ops[i]->print(os, indent + 4, stats);
+    {  // scope to control printer destruction (before child_iter->print)
+        BindingExprPrinter printer(os, indent, stats);
+        printer.print(*expr);
+        os << ")\n";
     }
 
     child_iter->print(os, indent + 2, stats);
