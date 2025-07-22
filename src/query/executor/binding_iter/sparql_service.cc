@@ -1,4 +1,5 @@
 #include "sparql_service.h"
+#include "query/exceptions.h"
 
 #include <string>
 

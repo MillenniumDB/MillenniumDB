@@ -7,6 +7,8 @@
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
 #include "misc/set_operations.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iter/mql/assign_properties.h"
 #include "query/executor/binding_iters.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
@@ -93,42 +95,37 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
     // Process Labels
     for (auto& op_label : op_basic_graph_pattern.labels) {
-        base_plans.push_back(
-            std::make_unique<LabelPlan>(op_label.node, op_label.label)
-        );
+        base_plans.push_back(std::make_unique<LabelPlan>(op_label.node, op_label.label));
     }
 
     // Process properties (value is fixed)
     for (auto& op_property : op_basic_graph_pattern.properties) {
-        base_plans.push_back(std::make_unique<PropertyPlan>(
-            op_property.node,
-            op_property.key,
-            op_property.value
-        ));
+        base_plans.push_back(
+            std::make_unique<PropertyPlan>(op_property.node, op_property.key, op_property.value)
+        );
     }
 
     // Process connections
     for (auto& op_edge : op_basic_graph_pattern.edges) {
-        base_plans.push_back(std::make_unique<EdgePlan>(
-            op_edge.from,
-            op_edge.to,
-            op_edge.type,
-            op_edge.edge
-        ));
+        base_plans.push_back(
+            std::make_unique<EdgePlan>(op_edge.from, op_edge.to, op_edge.type, op_edge.edge)
+        );
     }
 
     // Process property paths
     for (auto& path : op_basic_graph_pattern.paths) {
-        base_plans.push_back(std::make_unique<PathPlan>(
-            begin_at_left,
-            path.direction,
-            path.var,
-            path.from,
-            path.to,
-            *path.path,
-            path.semantic,
-            path.K
-        ));
+        base_plans.push_back(
+            std::make_unique<PathPlan>(
+                begin_at_left,
+                path.direction,
+                path.var,
+                path.from,
+                path.to,
+                *path.path,
+                path.semantic,
+                path.K
+            )
+        );
     }
 
     std::set<VarId> join_vars;
@@ -279,14 +276,15 @@ void BindingIterConstructor::visit(OpCall& op_call)
     }
 }
 
-void BindingIterConstructor::visit(OpLet& op_let) {
+void BindingIterConstructor::visit(OpLet& op_let)
+{
     Let::VarBindingExprType var_binding_expr;
 
     for (auto& [var, expr] : op_let.var_expr) {
         ExprToBindingExpr expr_to_binding_expr(this, {}, false);
         expr->accept_visitor(expr_to_binding_expr);
         var_binding_expr.emplace_back(var, std::move(expr_to_binding_expr.tmp)),
-        safe_assigned_vars.emplace(var);
+            safe_assigned_vars.emplace(var);
     }
 
     tmp = std::make_unique<Let>(std::move(var_binding_expr));

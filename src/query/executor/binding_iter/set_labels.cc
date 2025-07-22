@@ -4,6 +4,8 @@
 #include "graph_models/gql/gql_model.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 
+using namespace GQL;
+
 void SetLabels::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;

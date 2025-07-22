@@ -3,8 +3,6 @@
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/index_scan.h"
 
-using namespace GQL;
-
 NodeLabelPlan::NodeLabelPlan(const NodeLabelPlan& other) :
     node(other.node),
     label(other.label),

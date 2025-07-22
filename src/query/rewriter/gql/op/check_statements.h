@@ -2,7 +2,7 @@
 
 #include "query/parser/op/gql/ops.h"
 
-using namespace GQL;
+namespace GQL {
 
 class CheckStatements : public OpVisitor {
 private:
@@ -18,3 +18,4 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpOrderByStatement&) override;
 };
+} // namespace GQL

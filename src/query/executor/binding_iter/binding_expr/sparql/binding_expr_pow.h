@@ -3,8 +3,8 @@
 #include <cmath>
 #include <memory>
 
-#include "graph_models/rdf_model/conversions.h"
 #include "graph_models/common/conversions.h"
+#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -81,6 +81,15 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "mdbfn:pow(";
+        lhs->print(os, ops);
+        os << ", ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

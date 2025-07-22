@@ -5,7 +5,7 @@
 #include "graph_models/gql/conversions.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 namespace GQL {
 //Returns a continuous percentile value interpolated between two values in the ordered dataset.
@@ -70,13 +70,13 @@ public:
         return Conversions::pack_double(result);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override
+    std::ostream& print(std::ostream& os) const override
     {
         os << "PERCENTILE_CONT(";
         BindingExprPrinter printer(os);
-        percentile->accept_visitor(printer);
+        printer.print(*percentile);
         os << ", ";
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

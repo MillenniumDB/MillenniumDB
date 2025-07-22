@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include <cmath>
+#include <math.h>
 #include <memory>
 
 #include "graph_models/gql/conversions.h"
@@ -42,6 +42,13 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "COT(";
+        expr->print(os, ops);
+        os << ")";
     }
 };
 } // namespace GQL

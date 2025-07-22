@@ -4,7 +4,7 @@
 
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
-#include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 namespace GQL {
 // Returns the sample standard deviation of all non-null numeric values in the given expression.
@@ -57,11 +57,11 @@ public:
         return Conversions::pack_double(sqrt(M2 / (count - 1)));
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override
+    std::ostream& print(std::ostream& os) const override
     {
         os << "STDDEV_SAMP(";
         BindingExprPrinter printer(os);
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

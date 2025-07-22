@@ -2,8 +2,6 @@
 
 #include "query/executor/binding_iter.h"
 
-using namespace GQL;
-
 class SetEndBoundaryVariable : public BindingIter {
 public:
     SetEndBoundaryVariable(std::unique_ptr<BindingIter>&& iter, VarId end_var) :

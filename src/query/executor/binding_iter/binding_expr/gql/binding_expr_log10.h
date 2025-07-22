@@ -41,5 +41,12 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "LOG10(";
+        expr->print(os, ops);
+        os << ")";
+    }
 };
 } // namespace GQL

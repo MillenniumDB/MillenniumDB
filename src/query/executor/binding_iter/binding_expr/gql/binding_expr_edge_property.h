@@ -2,8 +2,8 @@
 
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/query_context.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "query/rewriter/gql/op/var_type.h"
 
 namespace GQL {
 
@@ -42,6 +42,13 @@ public:
             return value;
         }
         return ObjectId::get_null();
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*>) const override
+    {
+        os << '(';
+        os << property_var_id;
+        os << ')';
     }
 };
 } // namespace GQL

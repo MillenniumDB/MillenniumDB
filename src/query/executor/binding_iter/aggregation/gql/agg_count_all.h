@@ -7,20 +7,24 @@ namespace GQL {
 class AggCountAll : public Agg {
 public:
     using Agg::Agg;
-    void begin() override {
+    void begin() override
+    {
         count = 0;
     }
 
-    void process() override {
+    void process() override
+    {
         count++;
     }
 
     // indicates the end of a group
-    ObjectId get() override {
+    ObjectId get() override
+    {
         return Conversions::pack_int(count);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print(std::ostream& os) const override
+    {
         os << "COUNT(*)";
         return os;
     }

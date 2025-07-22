@@ -1,10 +1,8 @@
 #pragma once
 
-#include <cstddef>
 #include <memory>
 #include <regex>
 
-#include "query/exceptions.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
@@ -22,9 +20,11 @@ public:
     ) :
         expr1(std::move(expr1)),
         expr2(std::move(expr2)),
-        expr3(std::move(expr3)) { }
+        expr3(std::move(expr3))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr1_oid = expr1->eval(binding);
         auto expr2_oid = expr2->eval(binding);
 
@@ -55,8 +55,8 @@ public:
         if (RDF_OID::get_generic_sub_type(expr2_oid) != RDF_OID::GenericSubType::STRING_SIMPLE) {
             return ObjectId::get_null();
         }
-        if (expr3 != nullptr &&
-            RDF_OID::get_generic_sub_type(expr3_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
+        if (expr3 != nullptr
+            && RDF_OID::get_generic_sub_type(expr3_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
         {
             return ObjectId::get_null();
         }
@@ -69,7 +69,10 @@ public:
             for (auto& f : expr3_str) {
                 // TODO: implement all flags
                 switch (f) {
-                case 'i': { flags |= std::regex::icase; break; }
+                case 'i': {
+                    flags |= std::regex::icase;
+                    break;
+                }
                 // TODO: this should be in C++17 but does not compile
                 // case 'm': { flags |= std::regex::multiline ; break; }
                 default: {
@@ -93,8 +96,22 @@ public:
         return Conversions::pack_bool(res);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "REGEX(";
+        expr1->print(os, ops);
+        os << ", ";
+        expr2->print(os, ops);
+        if (expr3 != nullptr) {
+            os << ", ";
+            expr3->print(os, ops);
+        }
+        os << ')';
     }
 };
 } // namespace SPARQL

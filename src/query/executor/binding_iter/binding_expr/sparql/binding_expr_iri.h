@@ -13,12 +13,15 @@ public:
     std::string base_iri;
 
     BindingExprIRI(std::unique_ptr<BindingExpr> expr, std::string base_iri) :
-        expr(std::move(expr)), base_iri(base_iri) { }
+        expr(std::move(expr)),
+        base_iri(base_iri)
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto expr_oid = expr->eval(binding);
 
-        switch(RDF_OID::get_generic_sub_type(expr_oid)) {
+        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
         case RDF_OID::GenericSubType::IRI: {
             // IRIs remain unchanged
             return expr_oid;
@@ -42,8 +45,16 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "IRI(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

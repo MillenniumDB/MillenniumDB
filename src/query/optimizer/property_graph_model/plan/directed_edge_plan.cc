@@ -1,6 +1,7 @@
 #include "directed_edge_plan.h"
 
 #include "graph_models/gql/gql_model.h"
+#include "query/exceptions.h"
 #include "query/executor/binding_iter/edge_direction_left.h"
 #include "query/executor/binding_iter/edge_direction_right.h"
 #include "query/executor/binding_iter/edge_table_lookup_gql.h"

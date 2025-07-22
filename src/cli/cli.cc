@@ -1805,7 +1805,7 @@ void CLI::ProcessGQLQuery(std::ostream& os, const std::string& query) {
         auto version_scope = buffer_manager.init_version_readonly();
         get_query_ctx().prepare(*version_scope, timeout);
 
-        std::unique_ptr<Op> logical_plan;
+        std::unique_ptr<GQL::Op> logical_plan;
         logical_plan = GQL::QueryParser::get_query_plan(query);
 
         auto query_optimizer = GQL::ExecutorConstructor(GQL::ReturnType::TSV);

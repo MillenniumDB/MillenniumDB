@@ -41,5 +41,16 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "IF(";
+        expr_cond->print(os, ops);
+        os << ", ";
+        expr_then->print(os, ops);
+        os << ", ";
+        expr_else->print(os, ops);
+        os << ')';
+    }
 };
 } // namespace SPARQL

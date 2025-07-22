@@ -47,8 +47,8 @@ public:
                     switch (case_type) {
                     case GQL_OID::GenericType::STRING:
                         is_match =
-                            (Conversions::unpack_string(case_value) == Conversions::unpack_string(when_value)
-                            );
+                            (Conversions::unpack_string(case_value)
+                             == Conversions::unpack_string(when_value));
                         break;
                     case GQL_OID::GenericType::NUMERIC: {
                         auto numeric_type = GQL_OID::get_generic_sub_type(case_value);
@@ -63,12 +63,12 @@ public:
                                      != Conversions::to_integer(when_value));
                             } else if (clause.first.first == ">") {
                                 is_match =
-                                    (Conversions::to_integer(case_value) > Conversions::to_integer(when_value)
-                                    );
+                                    (Conversions::to_integer(case_value)
+                                     > Conversions::to_integer(when_value));
                             } else if (clause.first.first == "<") {
                                 is_match =
-                                    (Conversions::to_integer(case_value) < Conversions::to_integer(when_value)
-                                    );
+                                    (Conversions::to_integer(case_value)
+                                     < Conversions::to_integer(when_value));
                             } else if (clause.first.first == ">=") {
                                 is_match =
                                     (Conversions::to_integer(case_value)
@@ -101,12 +101,12 @@ public:
                         } else if (numeric_type == GQL_OID::GenericSubType::DOUBLE) {
                             if (clause.first.first == "=") {
                                 is_match =
-                                    (Conversions::to_double(case_value) == Conversions::to_double(when_value)
-                                    );
+                                    (Conversions::to_double(case_value)
+                                     == Conversions::to_double(when_value));
                             } else if (clause.first.first == "!=") {
                                 is_match =
-                                    (Conversions::to_double(case_value) != Conversions::to_double(when_value)
-                                    );
+                                    (Conversions::to_double(case_value)
+                                     != Conversions::to_double(when_value));
                             } else if (clause.first.first == ">") {
                                 is_match =
                                     (Conversions::to_double(case_value) > Conversions::to_double(when_value));
@@ -115,12 +115,12 @@ public:
                                     (Conversions::to_double(case_value) < Conversions::to_double(when_value));
                             } else if (clause.first.first == ">=") {
                                 is_match =
-                                    (Conversions::to_double(case_value) >= Conversions::to_double(when_value)
-                                    );
+                                    (Conversions::to_double(case_value)
+                                     >= Conversions::to_double(when_value));
                             } else if (clause.first.first == "<=") {
                                 is_match =
-                                    (Conversions::to_double(case_value) <= Conversions::to_double(when_value)
-                                    );
+                                    (Conversions::to_double(case_value)
+                                     <= Conversions::to_double(when_value));
                             }
                         } else if (numeric_type == GQL_OID::GenericSubType::DECIMAL) {
                             if (clause.first.first == "=") {
@@ -133,12 +133,12 @@ public:
                                      != Conversions::to_decimal(when_value));
                             } else if (clause.first.first == ">") {
                                 is_match =
-                                    (Conversions::to_decimal(case_value) > Conversions::to_decimal(when_value)
-                                    );
+                                    (Conversions::to_decimal(case_value)
+                                     > Conversions::to_decimal(when_value));
                             } else if (clause.first.first == "<") {
                                 is_match =
-                                    (Conversions::to_decimal(case_value) < Conversions::to_decimal(when_value)
-                                    );
+                                    (Conversions::to_decimal(case_value)
+                                     < Conversions::to_decimal(when_value));
                             } else if (clause.first.first == ">=") {
                                 is_match =
                                     (Conversions::to_decimal(case_value)
@@ -184,6 +184,28 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "CASE ";
+        case_operand->print(os, ops);
+        for (const auto& clauses : when_clauses) {
+            os << " WHEN ";
+            for (const auto& clause : clauses.first.second) {
+                os << clauses.first.first;
+                clause->print(os, ops);
+                os << ", ";
+            }
+            os << " THEN ";
+            clauses.second->print(os, ops);
+        }
+        os << " ELSE ";
+        if (else_expr == nullptr) {
+            os << "NULL";
+        } else {
+            else_expr->print(os, ops);
+        }
     }
 };
 } // namespace GQL

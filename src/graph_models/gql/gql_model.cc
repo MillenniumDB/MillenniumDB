@@ -3,7 +3,6 @@
 #include <type_traits>
 
 #include "graph_models/gql/conversions.h"
-#include "query/executor/binding_iter/binding_expr/gql_binding_expr_printer.h"
 #include "query/query_context.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/random_access_table/random_access_table.h"
@@ -20,16 +19,10 @@ std::unique_ptr<ModelDestroyer> GQLModel::init()
     return std::make_unique<ModelDestroyer>([]() { gql_model.~GQLModel(); });
 }
 
-std::unique_ptr<BindingExprPrinter> create_gql_binding_expr_printer(std::ostream& os)
-{
-    return std::make_unique<GQL::BindingExprPrinter>(os);
-}
-
 GQLModel::GQLModel() :
     catalog("catalog.dat")
 {
     QueryContext::_debug_print = GQL::Conversions::debug_print;
-    QueryContext::create_binding_expr_printer = create_gql_binding_expr_printer;
 
     directed_edges = std::make_unique<RandomAccessTable<2>>("d_edges.table");
     undirected_edges = std::make_unique<RandomAccessTable<2>>("u_edges.table");
