@@ -7,7 +7,7 @@
 
 namespace MQL {
 
-class OpCreateHNSWIndex : public Op {
+class OpCreateHNSWIndex : public Update {
 public:
     const std::string index_name;
     const std::string property;
@@ -32,7 +32,7 @@ public:
         metric_type { metric_type }
     { }
 
-    std::unique_ptr<Op> clone() const override
+    std::unique_ptr<Update> clone() const override
     {
         auto text_search_index_name_clone = index_name;
         auto property_clone = property;
@@ -44,11 +44,6 @@ public:
             max_candidates,
             metric_type
         );
-    }
-
-    bool read_only() const override
-    {
-        return false;
     }
 
     void accept_visitor(OpVisitor& visitor) override

@@ -49,16 +49,10 @@ public:
     void visit(OpBasicGraphPattern&) override { }
     void visit(OpCall&) override { }
     void visit(OpDescribe&) override { }
-    void visit(OpEdge&) override { }
     void visit(OpGroupBy&) override { }
-    void visit(OpDisjointTerm&) override { }
-    void visit(OpDisjointVar&) override { }
-    void visit(OpLabel&) override { }
     void visit(OpLet&) override { }
     void visit(OpOptional&) override { }
     void visit(OpOrderBy&) override { }
-    void visit(OpPath&) override { }
-    void visit(OpProperty&) override { }
     void visit(OpReturn&) override { }
     void visit(OpSequence&) override { }
     void visit(OpShow&) override { }

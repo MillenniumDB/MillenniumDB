@@ -1,7 +1,5 @@
 #pragma once
 
-#include <map>
-
 #include "query/executor/binding_iter.h"
 #include "query/executor/query_executor/streaming_query_executor.h"
 

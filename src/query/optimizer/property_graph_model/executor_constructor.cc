@@ -1,8 +1,8 @@
 #include "executor_constructor.h"
+
 #include "query/executor/query_executor/gql/return_executor.h"
 #include "query/optimizer/property_graph_model/binding_list_iter_constructor.h"
 #include "query/parser/op/gql/op_return.h"
-#include "system/path_manager.h"
 
 using namespace GQL;
 
@@ -19,43 +19,9 @@ void ExecutorConstructor::visit(OpReturn& op_return)
         projection_vars.push_back(var);
     }
 
-    // path_manager.begin(std::move(visitor.begin_at_left));
-
     executor = std::make_unique<ReturnExecutor>(
         std::move(binding_iter),
         std::move(projection_vars),
         return_type
     );
 }
-
-void ExecutorConstructor::visit(OpGraphPattern&) { }
-
-void ExecutorConstructor::visit(OpGraphPatternList&) { }
-
-void ExecutorConstructor::visit(OpWhere&) { }
-
-void ExecutorConstructor::visit(OpBasicGraphPattern&) { }
-
-void ExecutorConstructor::visit(OpNode&) { }
-
-void ExecutorConstructor::visit(OpEdge&) { }
-
-void ExecutorConstructor::visit(OpPathUnion&) { }
-
-void ExecutorConstructor::visit(OpRepetition&) { }
-
-void ExecutorConstructor::visit(OpLinearPattern&) { }
-
-void ExecutorConstructor::visit(OpFilter&) { }
-
-void ExecutorConstructor::visit(OpLet&) { }
-
-void ExecutorConstructor::visit(OpOrderBy&) { }
-
-void ExecutorConstructor::visit(OpQueryStatements&) { }
-
-void ExecutorConstructor::visit(OpGroupBy&) { }
-
-void ExecutorConstructor::visit(OpUnitTable&) { }
-
-void ExecutorConstructor::visit(OpEmpty&) { }

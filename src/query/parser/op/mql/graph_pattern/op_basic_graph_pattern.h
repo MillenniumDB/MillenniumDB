@@ -2,12 +2,12 @@
 
 #include <set>
 
-#include "query/parser/op/mql/graph_pattern/op_disjoint_term.h"
-#include "query/parser/op/mql/graph_pattern/op_disjoint_var.h"
-#include "query/parser/op/mql/graph_pattern/op_edge.h"
-#include "query/parser/op/mql/graph_pattern/op_label.h"
-#include "query/parser/op/mql/graph_pattern/op_path.h"
-#include "query/parser/op/mql/graph_pattern/op_property.h"
+#include "query/parser/op/mql/graph_pattern/disjoint_term.h"
+#include "query/parser/op/mql/graph_pattern/disjoint_var.h"
+#include "query/parser/op/mql/graph_pattern/edge.h"
+#include "query/parser/op/mql/graph_pattern/label.h"
+#include "query/parser/op/mql/graph_pattern/path.h"
+#include "query/parser/op/mql/graph_pattern/property.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -44,20 +44,20 @@ public:
     { }
 };
 
-class PropertyOperatorConstraint {
-public:
-    VarId var;
-    ObjectId key;
-};
+// class PropertyOperatorConstraint {
+// public:
+//     VarId var;
+//     ObjectId key;
+// };
 
 class OpBasicGraphPattern : public Op {
 public:
-    std::set<OpLabel> labels;
-    std::set<OpProperty> properties;
-    std::set<OpEdge> edges;
-    std::set<OpPath> paths;
-    std::set<OpDisjointVar> disjoint_vars;
-    std::set<OpDisjointTerm> disjoint_terms;
+    std::set<Label> labels;
+    std::set<Property> properties;
+    std::set<Edge> edges;
+    std::set<Path> paths;
+    std::set<DisjointVar> disjoint_vars;
+    std::set<DisjointTerm> disjoint_terms;
 
     std::set<VarId> vars; // contains declared variables and anonymous (auto-generated in the constructor)
 
@@ -66,54 +66,76 @@ public:
         return std::make_unique<OpBasicGraphPattern>(*this);
     }
 
-    void add_label(OpLabel&& op_label)
+    void add_label(Id node, ObjectId label)
     {
-        for (auto& var : op_label.get_all_vars()) {
-            vars.insert(var);
+        if (node.is_var()) {
+            vars.insert(node.get_var());
         }
-        labels.insert(std::move(op_label));
+        labels.emplace(node, label);
     }
 
-    void add_property(OpProperty op_property)
+    void add_property(Id obj, ObjectId key, ObjectId value)
     {
-        for (auto& var : op_property.get_all_vars()) {
-            vars.insert(var);
+        if (obj.is_var()) {
+            vars.insert(obj.get_var());
         }
-        properties.insert(std::move(op_property));
+        properties.emplace(obj, key, value);
     }
 
-    void add_edge(OpEdge&& op_edge)
+    void add_edge(Id from, Id to, Id type, Id edge)
     {
-        for (auto& var : op_edge.get_all_vars()) {
-            vars.insert(var);
+        if (from.is_var()) {
+            vars.insert(from.get_var());
         }
-        edges.insert(std::move(op_edge));
+        if (to.is_var()) {
+            vars.insert(to.get_var());
+        }
+        if (type.is_var()) {
+            vars.insert(type.get_var());
+        }
+        if (edge.is_var()) {
+            vars.insert(edge.get_var());
+        }
+
+        edges.emplace(from, to, type, edge);
     }
 
-    void add_path(OpPath&& op_path)
+    void add_path(
+        VarId var,
+        Id from,
+        Id to,
+        PathSemantic semantic,
+        Path::Direction direction,
+        uint64_t K,
+        std::unique_ptr<RegularPathExpr> path
+    )
     {
-        for (auto& var : op_path.get_all_vars()) {
-            vars.insert(var);
+        vars.insert(var);
+        if (from.is_var()) {
+            vars.insert(from.get_var());
         }
-        paths.insert(std::move(op_path));
+        if (to.is_var()) {
+            vars.insert(to.get_var());
+        }
+        paths.emplace(var, from, to, semantic, direction, K, std::move(path));
     }
 
-    void add_disjoint_var(OpDisjointVar&& op_disjoint_var)
+    void add_disjoint_var(VarId var)
     {
-        vars.insert(op_disjoint_var.var);
-        disjoint_vars.insert(std::move(op_disjoint_var));
+        vars.insert(var);
+        disjoint_vars.emplace(var);
     }
 
     void try_add_possible_disjoint_var(VarId var)
     {
         if (vars.insert(var).second) {
-            disjoint_vars.insert(OpDisjointVar(var));
+            disjoint_vars.emplace(var);
         }
     }
 
     void add_disjoint_term(ObjectId term)
     {
-        disjoint_terms.insert(OpDisjointTerm(term));
+        disjoint_terms.emplace(term);
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -132,22 +154,22 @@ public:
         os << "OpBasicGraphPattern()\n";
 
         for (auto& label : labels) {
-            label.print_to_ostream(os, indent + 2);
+            label.print(os, indent + 2);
         }
         for (auto& property : properties) {
-            property.print_to_ostream(os, indent + 2);
+            property.print(os, indent + 2);
         }
         for (auto& edge : edges) {
-            edge.print_to_ostream(os, indent + 2);
+            edge.print(os, indent + 2);
         }
         for (auto& path : paths) {
-            path.print_to_ostream(os, indent + 2);
+            path.print(os, indent + 2);
         }
         for (auto& disjoint_var : disjoint_vars) {
-            disjoint_var.print_to_ostream(os, indent + 2);
+            disjoint_var.print(os, indent + 2);
         }
         for (auto& disjoint_term : disjoint_terms) {
-            disjoint_term.print_to_ostream(os, indent + 2);
+            disjoint_term.print(os, indent + 2);
         }
 
         return os;

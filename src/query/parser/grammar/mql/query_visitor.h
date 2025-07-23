@@ -147,9 +147,6 @@ private:
 
     OrderByInfo order_by_info;
 
-    // Properties used declared inside MATCH
-    std::set<OpProperty> match_var_properties;
-
     std::vector<std::unique_ptr<Expr>> group_by_exprs;
 
     std::unique_ptr<Expr> current_expr;
@@ -164,19 +161,13 @@ private:
     // Properties info in queries with operators (==, !=, >, <, >=, <=)
     // (?x {value == 4})
     // var_without_propertyId, keyId
-    std::vector<PropertyOperatorConstraint> properties_operators;
+    // std::vector<PropertyOperatorConstraint> properties_operators; // TODO: delete?
 
     std::unique_ptr<OpBasicGraphPattern> current_basic_graph_pattern;
 
     std::set<VarId> possible_disjoint_vars;
 
     std::unique_ptr<RegularPathExpr> current_path;
-
-    std::vector<OpLabel> insert_labels;
-
-    std::vector<OpProperty> insert_properties;
-
-    std::vector<OpEdge> insert_edges;
 
     // to detect possible disjoint vars / terms
     // initialized false to avoid calling

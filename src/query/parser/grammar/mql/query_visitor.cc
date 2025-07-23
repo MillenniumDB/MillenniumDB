@@ -247,7 +247,7 @@ Any QueryVisitor::visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx)
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
-        current_basic_graph_pattern->add_label(OpLabel(last_node, label_id));
+        current_basic_graph_pattern->add_label(last_node, label_id);
     }
 
     auto properties = ctx->properties();
@@ -282,10 +282,10 @@ Any QueryVisitor::visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx)
 
     if (ctx->GT() != nullptr) {
         // right direction
-        current_basic_graph_pattern->add_edge(OpEdge(saved_node, last_node, type_id, edge));
+        current_basic_graph_pattern->add_edge(saved_node, last_node, type_id, edge);
     } else {
         // left direction
-        current_basic_graph_pattern->add_edge(OpEdge(last_node, saved_node, type_id, edge));
+        current_basic_graph_pattern->add_edge(last_node, saved_node, type_id, edge);
     }
     return 0;
 }
@@ -934,9 +934,7 @@ Any QueryVisitor::visitProperty1(MQL_Parser::Property1Context* property)
         }
     }
 
-    OpProperty op_property(saved_property_obj, key_id, value_id);
-    match_var_properties.insert(op_property);
-    current_basic_graph_pattern->add_property(std::move(op_property));
+    current_basic_graph_pattern->add_property(saved_property_obj, key_id, value_id);
     return 0;
 }
 
@@ -955,9 +953,7 @@ Any QueryVisitor::visitProperty2(MQL_Parser::Property2Context* property)
 
     parse_datatype_value(datatype, str); // will set current_value_oid
 
-    OpProperty op_property(saved_property_obj, key_id, current_value_oid);
-    match_var_properties.insert(op_property);
-    current_basic_graph_pattern->add_property(op_property);
+    current_basic_graph_pattern->add_property(saved_property_obj, key_id, current_value_oid);
     return 0;
 }
 
@@ -1094,7 +1090,7 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
-        current_basic_graph_pattern->add_label(OpLabel(var, label_id));
+        current_basic_graph_pattern->add_label(var, label_id);
     }
 
     // Process Properties
@@ -1107,7 +1103,7 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
     }
 
     if (first_element_disjoint && ctx->TYPE().empty() && current_basic_graph_pattern->properties.empty()) {
-        current_basic_graph_pattern->add_disjoint_var(OpDisjointVar(var));
+        current_basic_graph_pattern->add_disjoint_var(var);
     }
 
     last_node = var;
@@ -1123,10 +1119,10 @@ Any QueryVisitor::visitEdge(MQL_Parser::EdgeContext* ctx)
     visitChildren(ctx);
     if (ctx->GT() != nullptr) {
         // right direction
-        current_basic_graph_pattern->add_edge(OpEdge(saved_node, last_node, saved_type, saved_edge));
+        current_basic_graph_pattern->add_edge(saved_node, last_node, saved_type, saved_edge);
     } else {
         // left direction
-        current_basic_graph_pattern->add_edge(OpEdge(last_node, saved_node, saved_type, saved_edge));
+        current_basic_graph_pattern->add_edge(last_node, saved_node, saved_type, saved_edge);
     }
     return 0;
 }
@@ -1255,26 +1251,26 @@ Any QueryVisitor::visitPath(MQL_Parser::PathContext* ctx)
     ctx->pathAlternatives()->accept(this);
     if (ctx->GT() != nullptr) {
         // right direction
-        current_basic_graph_pattern->add_path(OpPath(
+        current_basic_graph_pattern->add_path(
             path_var,
             saved_node,
             last_node,
             semantic,
-            OpPath::Direction::LEFT_TO_RIGHT,
+            Path::Direction::LEFT_TO_RIGHT,
             K,
             std::move(current_path)
-        ));
+        );
     } else {
         // left direction
-        current_basic_graph_pattern->add_path(OpPath(
+        current_basic_graph_pattern->add_path(
             path_var,
             last_node,
             saved_node,
             semantic,
-            OpPath::Direction::RIGHT_TO_LEFT,
+            Path::Direction::RIGHT_TO_LEFT,
             K,
             std::move(current_path)
-        ));
+        );
     }
     return 0;
 }
