@@ -1,6 +1,7 @@
 #include "check_var_existence.h"
 
 #include "query/parser/op/gql/ops.h"
+#include "query/rewriter/gql/expr/check_group_vars.h"
 
 namespace GQL {
 
@@ -77,6 +78,15 @@ void CheckVarExistence::visit(GQL::OpReturn& op_return)
     }
     check_expr_variables(expr_variables);
 
+    if (!group_vars.empty()) {
+        CheckGroupVars check_group_vars(group_vars);
+        for (auto& item : op_return.return_items) {
+            if (!item.alias.has_value() || (item.alias.has_value() && !group_vars.count(*item.alias))) {
+                item.expr->accept_visitor(check_group_vars);
+            }
+        }
+    }
+
     // we add the op return vars, because the OpOrderBy that goes after the OpReturn might reference them
     variables.merge(op_return_vars);
 
@@ -89,16 +99,15 @@ void CheckVarExistence::visit(OpGroupBy& op_group_by)
 {
     op_group_by.op->accept_visitor(*this);
 
-    std::set<VarId> expr_variables;
     for (auto& expr : op_group_by.exprs) {
-        expr_variables.merge(expr->get_all_vars());
+        group_vars.merge(expr->get_all_vars());
     }
 
     std::set<VarId> previous_vars = variables;
 
     variables.insert(op_return_vars.begin(), op_return_vars.end());
 
-    check_expr_variables(expr_variables);
+    check_expr_variables(group_vars);
     variables = previous_vars;
 }
 

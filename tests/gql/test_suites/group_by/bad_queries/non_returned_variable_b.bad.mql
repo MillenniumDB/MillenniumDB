@@ -1,0 +1,2 @@
+MATCH (a: Person)
+RETURN COUNT(a) + a.age, a.location as l GROUP BY l

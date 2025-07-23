@@ -12,6 +12,7 @@ public:
     std::set<VarId> variables;
     std::set<VarId> let_variables;
     std::set<VarId> op_return_vars;
+    std::set<VarId> group_vars;
 
     void check_expr_variables(const std::set<VarId>& expr_variables);
 
