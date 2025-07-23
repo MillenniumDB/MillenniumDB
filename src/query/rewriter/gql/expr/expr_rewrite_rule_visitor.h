@@ -354,6 +354,17 @@ public:
 
     void visit(GQL::ExprSubStr& expr) override
     {
+        for (auto& rule : rules) {
+            if (rule->is_possible_to_regroup(expr.expr)) {
+                expr.expr = rule->regroup(std::move(expr.expr));
+                has_rewritten = true;
+            }
+            if (rule->is_possible_to_regroup(expr.str_len)) {
+                expr.str_len = rule->regroup(std::move(expr.str_len));
+                has_rewritten = true;
+            }
+        }
+
         expr.expr->accept_visitor(*this);
         expr.str_len->accept_visitor(*this);
     }
