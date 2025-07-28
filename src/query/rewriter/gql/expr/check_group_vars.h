@@ -34,7 +34,7 @@ public:
 
     void visit(ExprProperty& expr) override
     {
-        check_group_var(expr.value);
+        check_group_var(expr.object);
     }
 
     void visit(ExprHasNodeLabel& expr) override

@@ -1,2 +1,10 @@
 MATCH (a:Person)
 RETURN a.location AS location, AVG(a.age) AS age_avg GROUP BY location
+
+// RETURN a.location AS location GROUP BY location
+// RETURN a.location AS location, AVG(a.age) AS age_avg GROUP BY location
+// RETURN a.location AS location, sum(a.age) / count(a) AS age_avg GROUP BY location // *
+// RETURN a.name GROUP BY a
+// RETURN a.name AS name GROUP BY a
+// RETURN "Hello " || a.name GROUP BY a
+// RETURN "Hello " || a.name AS name GROUP BY a

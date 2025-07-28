@@ -3,6 +3,7 @@
 #include "query/executor/binding_iter/aggregation/gql/aggs.h"
 #include "query/executor/binding_iter/binding_expr/gql_binding_exprs.h"
 #include "query/optimizer/property_graph_model/binding_list_iter_constructor.h"
+#include "query/parser/expr/gql/expr_printer.h"
 #include "query/parser/expr/gql/exprs.h"
 
 using namespace GQL;
@@ -633,7 +634,12 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
         var = as_var.value();
     } else {
         // Otherwise we have to create an internal variable to associated with the aggregation.
-        var = get_query_ctx().get_internal_var();
+        // var = get_query_ctx().get_internal_var();
+        // TODO: is there a better way?
+        std::stringstream ss;
+        ExprPrinter printer(ss);
+        expr->accept_visitor(printer);
+        var = get_query_ctx().get_or_create_var("." + ss.str());
     }
 
     at_root = false;

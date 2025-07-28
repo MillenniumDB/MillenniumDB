@@ -72,18 +72,20 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
     }
     op_return.op->accept_visitor(*this);
 
-    std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> exprs_with_agg;
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> exprs_without_agg;
+    std::set<VarId> aliases_not_in_group_by;
 
     for (auto& item : op_return.return_items) {
         if (item.alias.has_value()) {
             ExprToBindingExpr expr_to_binding_expr(this, *item.alias, true);
             item.expr->accept_visitor(expr_to_binding_expr);
 
-            if (item.expr->has_aggregation()) {
-                exprs_with_agg.emplace_back(*item.alias, std::move(expr_to_binding_expr.tmp));
-            } else {
+            if (!item.expr->has_aggregation()) {
                 exprs_without_agg.emplace_back(*item.alias, std::move(expr_to_binding_expr.tmp));
+            }
+
+            if (!group_vars.count(*item.alias)) {
+                aliases_not_in_group_by.insert(*item.alias); //
             }
         }
     }
@@ -114,11 +116,27 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
             std::move(aggregations),
             std::move(group_vars)
         );
-    }
 
-    non_redundant_exprs = get_non_redundant_exprs(exprs_with_agg);
-    if (non_redundant_exprs.size() > 0) {
-        tmp_iter = std::make_unique<ExprEvaluator>(std::move(tmp_iter), std::move(non_redundant_exprs));
+        // we need to evaluate properties again if there are any in the return statement
+        used_properties.clear();
+
+        std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> return_exprs;
+        for (auto& item : op_return.return_items) {
+            if (item.alias.has_value()) {
+                ExprToBindingExpr expr_to_binding_expr(this, *item.alias, false);
+                item.expr->accept_visitor(expr_to_binding_expr);
+
+                if (aliases_not_in_group_by.count(*item.alias)) {
+                    return_exprs.emplace_back(*item.alias, std::move(expr_to_binding_expr.tmp));
+                }
+            }
+        }
+        tmp_iter = get_pending_properties(std::move(tmp_iter));
+
+        non_redundant_exprs = get_non_redundant_exprs(return_exprs);
+        if (non_redundant_exprs.size() > 0) {
+            tmp_iter = std::make_unique<ExprEvaluator>(std::move(tmp_iter), std::move(non_redundant_exprs));
+        }
     }
 
     if (op_return.distinct) {

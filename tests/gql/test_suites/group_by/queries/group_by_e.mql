@@ -1,0 +1,2 @@
+MATCH -[e]->
+RETURN e.year AS y GROUP BY y
