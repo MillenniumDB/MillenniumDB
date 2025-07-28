@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "query/parser/expr/sparql/expr.h"
+#include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
 
 namespace SPARQL {
@@ -59,9 +60,7 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        os << std::string(indent, ' ') << "OpFilter(";
-
-        os << "\n";
+        os << std::string(indent, ' ') << "OpFilter(\n";
         ExprPrinter printer(os);
         for (auto& filter : filters) {
             os << std::string(indent + 2, ' ');

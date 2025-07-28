@@ -53,21 +53,21 @@ public:
     std::unique_ptr<BindingExpr> lhs;
     std::unique_ptr<BindingExpr> rhs;
 
-    BindingExprEquals(
-        std::unique_ptr<BindingExpr> lhs,
-        std::unique_ptr<BindingExpr> rhs
-    ) :
+    BindingExprEquals(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
         lhs(std::move(lhs)),
-        rhs(std::move(rhs)) { }
+        rhs(std::move(rhs))
+    { }
 
-    bool datatype_has_special_representation(const std::string& datatype) {
+    bool datatype_has_special_representation(const std::string& datatype)
+    {
         if (known_datatypes.find(datatype) != known_datatypes.end()) {
             return true;
         }
         return false;
     }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
@@ -90,8 +90,7 @@ public:
                 if (std::isnan(f)) {
                     return SPARQL::Conversions::pack_bool(false);
                 }
-            }
-            else if (lhs_subtype == RDF_OID::GenericSubType::DOUBLE) {
+            } else if (lhs_subtype == RDF_OID::GenericSubType::DOUBLE) {
                 auto d = Conversions::unpack_double(lhs_oid);
                 if (std::isnan(d)) {
                     return SPARQL::Conversions::pack_bool(false);
@@ -101,8 +100,8 @@ public:
         }
 
         // If both types are numeric we need to do a numeric comparison
-        if (lhs_generic_type == RDF_OID::GenericType::NUMERIC &&
-            rhs_generic_type == RDF_OID::GenericType::NUMERIC)
+        if (lhs_generic_type == RDF_OID::GenericType::NUMERIC
+            && rhs_generic_type == RDF_OID::GenericType::NUMERIC)
         {
             auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
@@ -135,11 +134,12 @@ public:
         }
 
         // Handle date, time, dateTime and dateTimeStamp
-        if (lhs_generic_type == RDF_OID::GenericType::DATE &&
-            rhs_generic_type == RDF_OID::GenericType::DATE)
+        if (lhs_generic_type == RDF_OID::GenericType::DATE && rhs_generic_type == RDF_OID::GenericType::DATE)
         {
             bool error;
-            auto res = DateTime(lhs_oid.id).compare<DateTimeComparisonMode::StrictEquality>(DateTime(rhs_oid.id), &error) == 0;
+            auto res = DateTime(lhs_oid.id)
+                           .compare<DateTimeComparisonMode::StrictEquality>(DateTime(rhs_oid.id), &error)
+                    == 0;
             if (error) {
                 return ObjectId::get_null();
             }
@@ -148,7 +148,8 @@ public:
 
         // Handle tensors
         if (lhs_generic_type == RDF_OID::GenericType::TENSOR
-            && rhs_generic_type == RDF_OID::GenericType::TENSOR) {
+            && rhs_generic_type == RDF_OID::GenericType::TENSOR)
+        {
             const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
             case Conversions::OpType::TENSOR_FLOAT: {
@@ -177,8 +178,8 @@ public:
                 auto&& [lhs_datatype, lhs_str] = Conversions::unpack_string_datatype(lhs_oid);
                 auto&& [rhs_datatype, rhs_str] = Conversions::unpack_string_datatype(rhs_oid);
                 // Check for ill-typed literals
-                if (datatype_has_special_representation(lhs_datatype) ||
-                    datatype_has_special_representation(rhs_datatype))
+                if (datatype_has_special_representation(lhs_datatype)
+                    || datatype_has_special_representation(rhs_datatype))
                 {
                     return ObjectId::get_null();
                 }
@@ -200,36 +201,32 @@ public:
                 std::transform(rhs_lang.begin(), rhs_lang.end(), rhs_lang.begin(), ::tolower);
 
                 bool lang_equal = lhs_lang == rhs_lang;
-                bool str_equal  = lhs_str  == rhs_str;
+                bool str_equal = lhs_str == rhs_str;
                 return SPARQL::Conversions::pack_bool(lang_equal && str_equal);
             }
 
             // We handled all special cases for objects of the same type,
             // we can conclude that the two objects are different.
             return SPARQL::Conversions::pack_bool(false);
-
         }
 
         // We have to handle simple literals and xsd:string specially
-        if ((lhs_subtype == RDF_OID::GenericSubType::STRING_XSD ||
-             lhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE)
-            &&
-            (rhs_subtype == RDF_OID::GenericSubType::STRING_XSD ||
-             rhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE))
+        if ((lhs_subtype == RDF_OID::GenericSubType::STRING_XSD
+             || lhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE)
+            && (rhs_subtype == RDF_OID::GenericSubType::STRING_XSD
+                || rhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE))
         {
             auto equals = Conversions::to_lexical_str(lhs_oid) == Conversions::to_lexical_str(rhs_oid);
             return SPARQL::Conversions::pack_bool(equals);
         }
 
-        if (lhs_subtype == RDF_OID::GenericSubType::BLANK ||
-            lhs_subtype == RDF_OID::GenericSubType::IRI ||
-            lhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_subtype == RDF_OID::GenericSubType::BLANK || lhs_subtype == RDF_OID::GenericSubType::IRI
+            || lhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
         {
             return SPARQL::Conversions::pack_bool(false);
         }
-        if (rhs_subtype == RDF_OID::GenericSubType::BLANK ||
-            rhs_subtype == RDF_OID::GenericSubType::IRI ||
-            rhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
+        if (rhs_subtype == RDF_OID::GenericSubType::BLANK || rhs_subtype == RDF_OID::GenericSubType::IRI
+            || rhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
         {
             return SPARQL::Conversions::pack_bool(false);
         }
@@ -238,8 +235,18 @@ public:
         return ObjectId::get_null();
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << '(';
+        lhs->print(os, ops);
+        os << " = ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

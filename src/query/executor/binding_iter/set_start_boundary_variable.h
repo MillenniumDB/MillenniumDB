@@ -2,8 +2,6 @@
 
 #include "query/executor/binding_iter.h"
 
-using namespace GQL;
-
 class SetStartBoundaryVariable : public BindingIter {
 public:
     SetStartBoundaryVariable(std::unique_ptr<BindingIter>&& iter, VarId start_var) :

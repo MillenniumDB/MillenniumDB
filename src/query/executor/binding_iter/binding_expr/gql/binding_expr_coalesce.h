@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/gql/conversions.h"
@@ -25,20 +25,16 @@ public:
 
                 switch (generic_type) {
                 case GQL_OID::GenericType::STRING: {
-                    return GQL::Conversions::pack_string_simple(
-                        GQL::Conversions::unpack_string(value));
+                    return GQL::Conversions::pack_string_simple(GQL::Conversions::unpack_string(value));
                 }
                 case GQL_OID::GenericType::NUMERIC: {
                     auto numeric_type = GQL_OID::get_generic_sub_type(value);
                     if (numeric_type == GQL_OID::GenericSubType::INTEGER) {
-                        return GQL::Conversions::pack_int(
-                            GQL::Conversions::to_integer(value));
+                        return GQL::Conversions::pack_int(GQL::Conversions::to_integer(value));
                     } else if (numeric_type == GQL_OID::GenericSubType::FLOAT) {
-                        return GQL::Conversions::pack_float(
-                            GQL::Conversions::to_float(value));
+                        return GQL::Conversions::pack_float(GQL::Conversions::to_float(value));
                     } else if (numeric_type == GQL_OID::GenericSubType::DOUBLE) {
-                        return GQL::Conversions::pack_double(
-                            GQL::Conversions::to_double(value));
+                        return GQL::Conversions::pack_double(GQL::Conversions::to_double(value));
                     }
                     break;
                 }
@@ -65,6 +61,16 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "COALESCE(";
+        for (const auto& expr : expressions) {
+            expr->print(os, ops);
+            os << ", ";
+        }
+        os << ')';
     }
 };
 } // namespace GQL

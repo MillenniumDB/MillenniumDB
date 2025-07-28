@@ -1,5 +1,7 @@
 #include "filter.h"
 
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
+
 void Filter::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
@@ -41,18 +43,16 @@ void Filter::print(std::ostream& os, int indent, bool stats) const
     }
     os << std::string(indent, ' ') << "Filter(\n";
 
-    auto printer = get_query_ctx().create_binding_expr_printer(os);
+    { // scope to control printer destruction (before child_iter->print)
+        BindingExprPrinter printer(os, indent, stats);
 
-    for (auto& filter : filters) {
-        os << std::string(indent + 2, ' ');
-        filter->accept_visitor(*printer);
-        os << "\n";
+        for (auto& filter : filters) {
+            os << std::string(indent + 2, ' ');
+            printer.print(*filter);
+            os << "\n";
+        }
     }
 
-    for (size_t i = 0; i < printer->ops.size(); i++) {
-        os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
-        printer->ops[i]->print(os, indent + 4, stats);
-    }
     os << std::string(indent, ' ') << ")\n";
     child_iter->print(os, indent + 2, stats);
 }

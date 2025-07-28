@@ -1,6 +1,7 @@
 #pragma once
 
 #include "query/executor/binding_iter.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/var_id.h"
 #include "storage/index/hnsw/hnsw_index.h"
 #include "storage/index/hnsw/hnsw_index_manager.h"

@@ -117,11 +117,11 @@ public:
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override
+    std::ostream& print(std::ostream& os) const override
     {
         os << "AVG(DISTINCT ";
         BindingExprPrinter printer(os);
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

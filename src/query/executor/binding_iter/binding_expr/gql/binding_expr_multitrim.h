@@ -13,7 +13,11 @@ public:
     std::unique_ptr<BindingExpr> delim_str;
     std::string specification;
 
-    BindingExprMultiTrim(std::unique_ptr<BindingExpr> trim_src, std::unique_ptr<BindingExpr> delim_str, std::string specification) :
+    BindingExprMultiTrim(
+        std::unique_ptr<BindingExpr> trim_src,
+        std::unique_ptr<BindingExpr> delim_str,
+        std::string specification
+    ) :
         trim_src(std::move(trim_src)),
         delim_str(std::move(delim_str)),
         specification(std::move(specification))
@@ -33,15 +37,21 @@ public:
                     auto delim = GQL::Conversions::unpack_string(delim_oid);
                     if (specification == "LTRIM") {
                         size_t start = str.find_first_not_of(delim);
-                        return GQL::Conversions::pack_string_simple((start == std::string::npos) ? "" : str.substr(start));
+                        return GQL::Conversions::pack_string_simple(
+                            (start == std::string::npos) ? "" : str.substr(start)
+                        );
                     } else if (specification == "RTRIM") {
                         size_t end = str.find_last_not_of(delim);
-                        return GQL::Conversions::pack_string_simple((end == std::string::npos) ? "" : str.substr(0, end + 1));
+                        return GQL::Conversions::pack_string_simple(
+                            (end == std::string::npos) ? "" : str.substr(0, end + 1)
+                        );
                     } else {
                         size_t start = str.find_first_not_of(delim);
                         auto tmp = (start == std::string::npos) ? "" : str.substr(start);
                         size_t end = tmp.find_last_not_of(delim);
-                        return GQL::Conversions::pack_string_simple((end == std::string::npos) ? "" : tmp.substr(0, end + 1));
+                        return GQL::Conversions::pack_string_simple(
+                            (end == std::string::npos) ? "" : tmp.substr(0, end + 1)
+                        );
                     }
                 }
                 return ObjectId::get_null();
@@ -49,15 +59,21 @@ public:
                 auto delim = " ";
                 if (specification == "LTRIM") {
                     size_t start = str.find_first_not_of(delim);
-                    return GQL::Conversions::pack_string_simple((start == std::string::npos) ? "" : str.substr(start));
+                    return GQL::Conversions::pack_string_simple(
+                        (start == std::string::npos) ? "" : str.substr(start)
+                    );
                 } else if (specification == "RTRIM") {
                     size_t end = str.find_last_not_of(delim);
-                    return GQL::Conversions::pack_string_simple((end == std::string::npos) ? "" : str.substr(0, end + 1));
+                    return GQL::Conversions::pack_string_simple(
+                        (end == std::string::npos) ? "" : str.substr(0, end + 1)
+                    );
                 } else {
                     size_t start = str.find_first_not_of(delim);
                     auto tmp = (start == std::string::npos) ? "" : str.substr(start);
                     size_t end = tmp.find_last_not_of(delim);
-                    return GQL::Conversions::pack_string_simple((end == std::string::npos) ? "" : tmp.substr(0, end + 1));
+                    return GQL::Conversions::pack_string_simple(
+                        (end == std::string::npos) ? "" : tmp.substr(0, end + 1)
+                    );
                 }
             }
             return ObjectId::get_null();
@@ -69,6 +85,20 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << specification;
+        os << "(";
+        trim_src->print(os, ops);
+        os << ",";
+        if (delim_str == nullptr) {
+            os << " ";
+        } else {
+            delim_str->print(os, ops);
+        }
+        os << ")";
     }
 };
 } // namespace GQL

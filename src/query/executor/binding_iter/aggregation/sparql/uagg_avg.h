@@ -2,7 +2,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/aggregation/unordered_agg.h"
-#include "query/executor/binding_iter/binding_expr/sparql_binding_expr_printer.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 namespace SPARQL {
 class UAggAvg: public UAgg {
@@ -121,11 +121,11 @@ public:
         }
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override
+    std::ostream& print(std::ostream& os) const override
     {
         os << "AVG(";
         BindingExprPrinter printer(os);
-        expr->accept_visitor(printer);
+        printer.print(*expr);
         os << ")";
         return os;
     }

@@ -7,6 +7,8 @@
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
 #include "misc/set_operations.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iter/mql/assign_properties.h"
 #include "query/executor/binding_iters.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
@@ -19,7 +21,6 @@
 #include "query/optimizer/quad_model/plan/label_plan.h"
 #include "query/optimizer/quad_model/plan/path_plan.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
-#include "query/optimizer/quad_model/plan/property_type_plan.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/op/mql/op_visitor.h"
 #include "query/parser/op/mql/op_where.h"
@@ -94,42 +95,37 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
     // Process Labels
     for (auto& op_label : op_basic_graph_pattern.labels) {
-        base_plans.push_back(
-            std::make_unique<LabelPlan>(op_label.node, op_label.label)
-        );
+        base_plans.push_back(std::make_unique<LabelPlan>(op_label.node, op_label.label));
     }
 
     // Process properties (value is fixed)
     for (auto& op_property : op_basic_graph_pattern.properties) {
-        base_plans.push_back(std::make_unique<PropertyPlan>(
-            op_property.node,
-            op_property.key,
-            op_property.value
-        ));
+        base_plans.push_back(
+            std::make_unique<PropertyPlan>(op_property.node, op_property.key, op_property.value)
+        );
     }
 
     // Process connections
     for (auto& op_edge : op_basic_graph_pattern.edges) {
-        base_plans.push_back(std::make_unique<EdgePlan>(
-            op_edge.from,
-            op_edge.to,
-            op_edge.type,
-            op_edge.edge
-        ));
+        base_plans.push_back(
+            std::make_unique<EdgePlan>(op_edge.from, op_edge.to, op_edge.type, op_edge.edge)
+        );
     }
 
     // Process property paths
     for (auto& path : op_basic_graph_pattern.paths) {
-        base_plans.push_back(std::make_unique<PathPlan>(
-            begin_at_left,
-            path.direction,
-            path.var,
-            path.from,
-            path.to,
-            *path.path,
-            path.semantic,
-            path.K
-        ));
+        base_plans.push_back(
+            std::make_unique<PathPlan>(
+                begin_at_left,
+                path.direction,
+                path.var,
+                path.from,
+                path.to,
+                *path.path,
+                path.semantic,
+                path.K
+            )
+        );
     }
 
     std::set<VarId> join_vars;
@@ -242,30 +238,30 @@ void BindingIterConstructor::visit(OpCall& op_call)
     }
 
     switch (op_call.procedure_type) {
-    case MQL::OpCall::ProcedureType::HNSW_TOP_K:
+    case OpCall::ProcedureType::HNSW_TOP_K:
         tmp = std::make_unique<Procedure::HNSWTopK>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.hnsw_index_manager,
-            &MQL::Conversions::unpack_string,
-            &MQL::Conversions::unpack_int
+            &Conversions::unpack_string,
+            &Conversions::unpack_int
         );
         break;
-    case MQL::OpCall::ProcedureType::HNSW_SCAN:
+    case OpCall::ProcedureType::HNSW_SCAN:
         tmp = std::make_unique<Procedure::HNSWScan>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.hnsw_index_manager,
-            &MQL::Conversions::unpack_string,
-            &MQL::Conversions::unpack_int
+            &Conversions::unpack_string,
+            &Conversions::unpack_int
         );
         break;
-    case MQL::OpCall::ProcedureType::TEXT_SEARCH:
+    case OpCall::ProcedureType::TEXT_SEARCH:
         tmp = std::make_unique<Procedure::TextSearchMultiScan>(
             std::move(argument_binding_exprs),
             std::move(op_call.yield_vars),
             quad_model.catalog.text_index_manager,
-            &MQL::Conversions::unpack_string
+            &Conversions::unpack_string
         );
         break;
     default:
@@ -280,14 +276,15 @@ void BindingIterConstructor::visit(OpCall& op_call)
     }
 }
 
-void BindingIterConstructor::visit(OpLet& op_let) {
+void BindingIterConstructor::visit(OpLet& op_let)
+{
     Let::VarBindingExprType var_binding_expr;
 
     for (auto& [var, expr] : op_let.var_expr) {
         ExprToBindingExpr expr_to_binding_expr(this, {}, false);
         expr->accept_visitor(expr_to_binding_expr);
         var_binding_expr.emplace_back(var, std::move(expr_to_binding_expr.tmp)),
-        safe_assigned_vars.emplace(var);
+            safe_assigned_vars.emplace(var);
     }
 
     tmp = std::make_unique<Let>(std::move(var_binding_expr));
@@ -327,7 +324,7 @@ void BindingIterConstructor::visit(OpWhere& op_where)
 
         std::vector<std::unique_ptr<BindingExpr>> exprs;
         exprs.push_back(std::move(binding_expr));
-        tmp = std::make_unique<Filter>(&MQL::Conversions::to_boolean, std::move(tmp), std::move(exprs));
+        tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
 }
 
@@ -509,7 +506,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
             std::move(order_by_saved_vars),
             std::move(order_by_vars),
             std::move(op_order_by->ascending_order),
-            &MQL::Comparisons::compare
+            &Comparisons::compare
         );
     }
 
@@ -529,7 +526,7 @@ void BindingIterConstructor::visit(OpReturn& op_return)
     }
 }
 
-void BindingIterConstructor::visit(MQL::OpSequence& op_sequence)
+void BindingIterConstructor::visit(OpSequence& op_sequence)
 {
     assert(!op_sequence.sequence.empty());
 

@@ -39,17 +39,20 @@ public:
     void visit(OpSequence&) override;
     void visit(OpWhere&) override;
 
-    void visit(OpCreateHNSWIndex&) override { }
-    void visit(OpCreateTextIndex&) override { }
     void visit(OpDescribe&) override { }
     void visit(OpDisjointTerm&) override { }
     void visit(OpDisjointVar&) override { }
     void visit(OpEdge&) override { }
-    void visit(OpInsert&) override { }
     void visit(OpLabel&) override { }
     void visit(OpPath&) override { }
     void visit(OpProperty&) override { }
     void visit(OpShow&) override { }
+
+    /* There are impossible to have in a read only query*/
+    void visit(OpInsert&) override { }
+    void visit(OpUpdate&) override { }
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
 };
 
 class CheckVarNamesExpr : public ExprVisitor {

@@ -6,6 +6,7 @@
 #include "query/executor/binding_iter/scan_ranges/range_type.h"
 #include "query/executor/binding_iter/scan_ranges/term.h"
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
+#include "query/query_context.h"
 
 using namespace std;
 
@@ -77,7 +78,6 @@ double PropertyTypePlan::estimate_cost() const
     return /*100.0 +*/ estimate_output_size();
 }
 
-
 double PropertyTypePlan::estimate_output_size() const
 {
     const auto total_objects = static_cast<double>(
@@ -96,12 +96,10 @@ double PropertyTypePlan::estimate_output_size() const
     }
 }
 
-
 void PropertyTypePlan::set_input_vars(const std::set<VarId>& input_vars)
 {
     set_input_var(input_vars, object, &object_assigned);
 }
-
 
 std::set<VarId> PropertyTypePlan::get_vars() const
 {
@@ -112,7 +110,6 @@ std::set<VarId> PropertyTypePlan::get_vars() const
 
     return result;
 }
-
 
 /**
  * ╔═╦══════════════╦═══════════════╦══════════════════╦═════════╗
@@ -145,7 +142,6 @@ unique_ptr<BindingIter> PropertyTypePlan::get_binding_iter() const
         return make_unique<IndexScan<3>>(*quad_model.key_value_object, std::move(ranges));
     }
 }
-
 
 bool PropertyTypePlan::get_leapfrog_iter(
     std::vector<std::unique_ptr<LeapfrogIter>>& /*leapfrog_iters*/,

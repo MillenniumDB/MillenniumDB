@@ -5,8 +5,7 @@
 #include "query/executor/binding_iter.h"
 #include "query/parser/op/gql/graph_pattern/op_opt_labels.h"
 
-using namespace GQL;
-
+namespace GQL {
 class SetLabels : public BindingIter {
 public:
     SetLabels(std::unique_ptr<BindingIter>&& iter, std::set<OptLabel> opt_labels) :
@@ -27,3 +26,4 @@ public:
 private:
     Binding* parent_binding;
 };
+} // namespace GQL

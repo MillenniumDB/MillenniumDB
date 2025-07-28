@@ -3,8 +3,8 @@
 #include <cassert>
 #include <memory>
 
-#include "misc/transliterator.h"
 #include "graph_models/gql/conversions.h"
+#include "misc/transliterator.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
@@ -38,6 +38,18 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        if (upper) {
+            os << "UPPER";
+        } else {
+            os << "LOWER";
+        }
+        os << "(";
+        expr->print(os, ops);
+        os << ")";
     }
 };
 } // namespace GQL

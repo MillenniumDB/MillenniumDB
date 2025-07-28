@@ -43,5 +43,12 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "COSH(";
+        expr->print(os, ops);
+        os << ")";
+    }
 };
 } // namespace GQL

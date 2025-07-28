@@ -120,5 +120,5 @@ void ShowStreamingExecutor<type>::analyze(std::ostream& os, bool /*print_stats*/
     os << ")\n";
 }
 
-template class SPARQL::ShowStreamingExecutor<SPARQL::OpShow::Type::TEXT_INDEX>;
-template class SPARQL::ShowStreamingExecutor<SPARQL::OpShow::Type::HNSW_INDEX>;
+template class SPARQL::ShowStreamingExecutor<OpShow::Type::TEXT_INDEX>;
+template class SPARQL::ShowStreamingExecutor<OpShow::Type::HNSW_INDEX>;

@@ -17,11 +17,13 @@ public:
     ExprIs::TypeName type;
 
     BindingExprIs(std::unique_ptr<BindingExpr> expr, bool negation, ExprIs::TypeName type) :
-        expr     (std::move(expr)),
-        negation (negation),
-        type     (type) { }
+        expr(std::move(expr)),
+        negation(negation),
+        type(type)
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto oid = expr->eval(binding);
         bool res = false;
         switch (type) {
@@ -47,24 +49,34 @@ public:
         return Conversions::pack_bool(res ^= negation);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    std::string get_type_name(ExprIs::TypeName type) const {
+    std::string get_type_name(ExprIs::TypeName type) const
+    {
         switch (type) {
-            case ExprIs::TypeName::NULL_:
-                return "NULL";
-            case ExprIs::TypeName::INTEGER:
-                return "INTEGER";
-            case ExprIs::TypeName::FLOAT:
-                return "FLOAT";
-            case ExprIs::TypeName::BOOL:
-                return "BOOL";
-            case ExprIs::TypeName::STRING:
-                return "STRING";
+        case ExprIs::TypeName::NULL_:
+            return "NULL";
+        case ExprIs::TypeName::INTEGER:
+            return "INTEGER";
+        case ExprIs::TypeName::FLOAT:
+            return "FLOAT";
+        case ExprIs::TypeName::BOOL:
+            return "BOOL";
+        case ExprIs::TypeName::STRING:
+            return "STRING";
         }
         return "";
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << '(';
+        expr->print(os, ops);
+        os << (negation ? " IS NOT " : " IS ");
+        os << get_type_name(type) << ')';
     }
 };
 } //namespace MQL

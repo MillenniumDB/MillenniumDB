@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "misc/transliterator.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "misc/transliterator.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
@@ -14,20 +14,24 @@ public:
     // may be nullptr
     std::unique_ptr<BindingExpr> expr_length;
 
-    BindingExprSubStr(std::unique_ptr<BindingExpr> expr_str,
-                        std::unique_ptr<BindingExpr> expr_start) :
-        expr_str   (std::move(expr_str)),
-        expr_start (std::move(expr_start)) { }
+    BindingExprSubStr(std::unique_ptr<BindingExpr> expr_str, std::unique_ptr<BindingExpr> expr_start) :
+        expr_str(std::move(expr_str)),
+        expr_start(std::move(expr_start))
+    { }
 
-    BindingExprSubStr(std::unique_ptr<BindingExpr> expr_str,
-                        std::unique_ptr<BindingExpr> expr_start,
-                        std::unique_ptr<BindingExpr> expr_length) :
-        expr_str    (std::move(expr_str)),
-        expr_start  (std::move(expr_start)),
-        expr_length (std::move(expr_length)) { }
+    BindingExprSubStr(
+        std::unique_ptr<BindingExpr> expr_str,
+        std::unique_ptr<BindingExpr> expr_start,
+        std::unique_ptr<BindingExpr> expr_length
+    ) :
+        expr_str(std::move(expr_str)),
+        expr_start(std::move(expr_start)),
+        expr_length(std::move(expr_length))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
-        int start  = 0;
+    ObjectId eval(const Binding& binding) override
+    {
+        int start = 0;
         auto length = std::string::npos;
 
         // This function could support any numeric type for start and length
@@ -90,8 +94,22 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "SUBSTR(";
+        expr_str->print(os, ops);
+        os << ", ";
+        expr_start->print(os, ops);
+        if (expr_length != nullptr) {
+            os << ", ";
+            expr_length->print(os, ops);
+        }
+        os << ')';
     }
 };
 } // namespace SPARQL

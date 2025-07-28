@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "graph_models/quad_model/quad_model.h"
+#include "query/exceptions.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/record.h"
 #include "system/path_manager.h"

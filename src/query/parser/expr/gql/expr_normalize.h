@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "query/parser/expr/gql/expr.h"
 
 namespace GQL {

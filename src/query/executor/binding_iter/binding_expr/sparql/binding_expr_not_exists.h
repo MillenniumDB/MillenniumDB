@@ -17,12 +17,13 @@ private:
     bool previous_had_a_match;
 
 public:
-    BindingExprNotExists(std::unique_ptr<BindingIter> op_iter,
-                         std::set<VarId>&& op_vars) :
-        op_iter (std::move(op_iter)),
-        op_vars (std::move(op_vars)) { }
+    BindingExprNotExists(std::unique_ptr<BindingIter> op_iter, std::set<VarId>&& op_vars) :
+        op_iter(std::move(op_iter)),
+        op_vars(std::move(op_vars))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto subset_binding = std::make_unique<Binding>(binding.size);
         for (auto& var : op_vars) {
             subset_binding->add(var, binding[var]);
@@ -36,7 +37,8 @@ public:
     }
 
 private:
-    bool has_a_match(const Binding& lhs_binding) {
+    bool has_a_match(const Binding& lhs_binding)
+    {
         if (previous_lhs == nullptr) {
             previous_lhs = std::make_unique<Binding>(lhs_binding.size);
         } else if (*previous_lhs == lhs_binding) {
@@ -50,7 +52,7 @@ private:
 
         while (op_iter->next()) {
             auto match = true;
-            for (auto& var: op_vars) {
+            for (auto& var : op_vars) {
                 auto lhs_id = lhs_binding[var];
                 auto rhs_id = (*rhs_binding)[var];
                 if (!rhs_id.is_null() && !lhs_id.is_null() && lhs_id != rhs_id) {
@@ -67,8 +69,15 @@ private:
         return false;
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "NOT EXISTS(_Op_" << ops.size() << "_)";
+        ops.push_back(op_iter.get());
     }
 };
 } // namespace SPARQL

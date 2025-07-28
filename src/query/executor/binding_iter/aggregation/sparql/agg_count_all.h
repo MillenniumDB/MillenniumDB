@@ -21,7 +21,7 @@ public:
         return Conversions::pack_int(count);
     }
 
-    std::ostream& print_to_ostream(std::ostream& os) const override {
+    std::ostream& print(std::ostream& os) const override {
         os << "COUNT(*)";
         return os;
     }

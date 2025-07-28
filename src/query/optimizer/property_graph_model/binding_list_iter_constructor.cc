@@ -4,6 +4,7 @@
 #include "graph_models/gql/conversions.h"
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/aggregation/aggregation.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iter/distinct_hash.h"
 #include "query/executor/binding_iter/expr_evaluator.h"
 #include "query/executor/binding_iter/filter.h"

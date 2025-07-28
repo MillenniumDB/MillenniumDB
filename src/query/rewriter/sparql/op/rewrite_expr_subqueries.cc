@@ -5,52 +5,53 @@
 
 using namespace SPARQL;
 
-void RewriteExprSubqueries::visit(OpSelect& op_select) {
+void RewriteExprSubqueries::visit(OpSelect& op_select)
+{
     op_select.op->accept_visitor(*this);
 }
 
-
-void RewriteExprSubqueries::visit(OpDescribe& op_describe) {
+void RewriteExprSubqueries::visit(OpDescribe& op_describe)
+{
     if (op_describe.op) {
         op_describe.op->accept_visitor(*this);
     }
 }
 
-
-void RewriteExprSubqueries::visit(OpConstruct& op_construct) {
+void RewriteExprSubqueries::visit(OpConstruct& op_construct)
+{
     op_construct.op->accept_visitor(*this);
 }
 
-
-void RewriteExprSubqueries::visit(OpAsk& op_ask) {
+void RewriteExprSubqueries::visit(OpAsk& op_ask)
+{
     op_ask.op->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpEmpty& op_empty) {
+void RewriteExprSubqueries::visit(OpEmpty& op_empty)
+{
     if (op_empty.deleted_op.has_value()) {
         op_empty.deleted_op.value()->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueries::visit(OpBasicGraphPattern&) { }
-
-void RewriteExprSubqueries::visit(OpFilter& op_filter) {
+void RewriteExprSubqueries::visit(OpFilter& op_filter)
+{
     op_filter.op->accept_visitor(*this);
 
     RewriteExprSubqueriesExpr rewriter;
-    for (auto& filter: op_filter.filters) {
+    for (auto& filter : op_filter.filters) {
         filter->accept_visitor(rewriter);
     }
 }
 
-
-void RewriteExprSubqueries::visit(OpOptional& op_optional) {
+void RewriteExprSubqueries::visit(OpOptional& op_optional)
+{
     op_optional.lhs->accept_visitor(*this);
     op_optional.rhs->accept_visitor(*this);
 }
 
-
-void RewriteExprSubqueries::visit(OpOrderBy& op_order_by) {
+void RewriteExprSubqueries::visit(OpOrderBy& op_order_by)
+{
     op_order_by.op->accept_visitor(*this);
 }
 
@@ -64,15 +65,18 @@ void RewriteExprSubqueries::visit(OpGraph& op_graph)
     op_graph.op->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpGroupBy& op_group_by) {
+void RewriteExprSubqueries::visit(OpGroupBy& op_group_by)
+{
     op_group_by.op->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpHaving& op_having) {
+void RewriteExprSubqueries::visit(OpHaving& op_having)
+{
     op_having.op->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpProcedure& op_procedure) {
+void RewriteExprSubqueries::visit(OpProcedure& op_procedure)
+{
     RewriteExprSubqueriesExpr rewriter;
     for (auto& expr : op_procedure.argument_exprs) {
         expr->accept_visitor(rewriter);
@@ -81,293 +85,345 @@ void RewriteExprSubqueries::visit(OpProcedure& op_procedure) {
 
 void RewriteExprSubqueries::visit(OpService&) { }
 
-void RewriteExprSubqueries::visit(OpJoin& op_join) {
+void RewriteExprSubqueries::visit(OpJoin& op_join)
+{
     op_join.lhs->accept_visitor(*this);
     op_join.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpSemiJoin& op_semi_join) {
+void RewriteExprSubqueries::visit(OpSemiJoin& op_semi_join)
+{
     op_semi_join.lhs->accept_visitor(*this);
     op_semi_join.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpMinus& op_minus) {
+void RewriteExprSubqueries::visit(OpMinus& op_minus)
+{
     op_minus.lhs->accept_visitor(*this);
     op_minus.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpNotExists& op_not_exists) {
+void RewriteExprSubqueries::visit(OpNotExists& op_not_exists)
+{
     op_not_exists.lhs->accept_visitor(*this);
     op_not_exists.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueries::visit(OpUnion& op_union) {
+void RewriteExprSubqueries::visit(OpUnion& op_union)
+{
     for (auto& child : op_union.unions) {
         child->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueries::visit(OpSequence& op_sequence) {
+void RewriteExprSubqueries::visit(OpSequence& op_sequence)
+{
     for (auto& op : op_sequence.ops) {
         op->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueries::visit(OpBind& op_bind) {
+void RewriteExprSubqueries::visit(OpBind& op_bind)
+{
     op_bind.op->accept_visitor(*this);
 }
-
-void RewriteExprSubqueries::visit(OpUnitTable&) { }
-
-void RewriteExprSubqueries::visit(OpValues&) { }
-
-void RewriteExprSubqueries::visit(OpShow&) { }
 
 // +---------------------------------------------------------------------------+
 // |                            ExprVisitor                                    |
 // +---------------------------------------------------------------------------+
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprVar&) { }
+void RewriteExprSubqueriesExpr::visit(ExprVar&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprTerm&) { }
+void RewriteExprSubqueriesExpr::visit(ExprTerm&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprEqual& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprEqual& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprNotEqual& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprNotEqual& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprNot& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprNot& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprUnaryMinus& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprUnaryMinus& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprUnaryPlus& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprUnaryPlus& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprMultiplication& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprMultiplication& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprDivision& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprDivision& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAddition& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAddition& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSubtraction& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSubtraction& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAnd& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAnd& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprOr& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprOr& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprLess& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprLess& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprGreater& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprGreater& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprLessOrEqual& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprLessOrEqual& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprGreaterOrEqual& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprGreaterOrEqual& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIn& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIn& expr)
+{
     expr.lhs_expr->accept_visitor(*this);
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprNotIn& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprNotIn& expr)
+{
     expr.lhs_expr->accept_visitor(*this);
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprExists& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprExists& expr)
+{
     expr.op = QueryParser::rewrite(std::move(expr.op));
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprNotExists& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprNotExists& expr)
+{
     expr.op = QueryParser::rewrite(std::move(expr.op));
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggAvg& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggAvg& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggCount& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggCount& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggCountAll&) { }
+void RewriteExprSubqueriesExpr::visit(ExprAggCountAll&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggGroupConcat& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggGroupConcat& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggMax& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggMax& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggMin& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggMin& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggSample& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggSample& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAggSum& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAggSum& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprAbs& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprAbs& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprBNode& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprBNode& expr)
+{
     if (expr.expr) {
         expr.expr->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprBound&) { }
+void RewriteExprSubqueriesExpr::visit(ExprBound&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprCeil& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprCeil& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprCoalesce& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprCoalesce& expr)
+{
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprConcat& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprConcat& expr)
+{
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprContains& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprContains& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprDatatype& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprDatatype& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprDay& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprDay& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprEncodeForUri& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprEncodeForUri& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprFloor& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprFloor& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprHours& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprHours& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIf& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIf& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
     expr.expr3->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIRI& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIRI& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIsBlank& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIsBlank& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIsIRI& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIsIRI& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIsLiteral& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIsLiteral& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIsNumeric& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIsNumeric& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprIsURI& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprIsURI& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprLang& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprLang& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprLangMatches& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprLangMatches& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprLCase& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprLCase& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprMD5& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprMD5& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprMinutes& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprMinutes& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprMonth& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprMonth& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprNow&) { }
+void RewriteExprSubqueriesExpr::visit(ExprNow&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprRand&) { }
+void RewriteExprSubqueriesExpr::visit(ExprRand&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprRegex& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprRegex& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
     if (expr.expr3) {
@@ -375,7 +431,8 @@ void RewriteExprSubqueriesExpr::visit(SPARQL::ExprRegex& expr) {
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprReplace& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprReplace& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
     expr.expr3->accept_visitor(*this);
@@ -384,148 +441,170 @@ void RewriteExprSubqueriesExpr::visit(SPARQL::ExprReplace& expr) {
     }
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprRound& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprRound& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSameTerm& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSameTerm& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSeconds& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSeconds& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSHA1& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSHA1& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSHA256& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSHA256& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSHA384& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSHA384& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSHA512& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSHA512& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrAfter& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrAfter& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrBefore& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrBefore& expr)
+{
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrDT& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrDT& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrEnds& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrEnds& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrLang& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrLang& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrLen& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrLen& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrStarts& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStrStarts& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStrUUID&) { }
+void RewriteExprSubqueriesExpr::visit(ExprStrUUID&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprStr& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprStr& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSubStr& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprSubStr& expr)
+{
     expr.expr1->accept_visitor(*this);
     expr.expr2->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprTimezone& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprTimezone& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprTZ& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprTZ& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprUCase& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprUCase& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprURI& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprURI& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprUUID&) { }
+void RewriteExprSubqueriesExpr::visit(ExprUUID&) { }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprYear& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprYear& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprCast& expr) {
+void RewriteExprSubqueriesExpr::visit(ExprCast& expr)
+{
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprCosineDistance& expr)
+void RewriteExprSubqueriesExpr::visit(ExprCosineDistance& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprCosineSimilarity& expr)
+void RewriteExprSubqueriesExpr::visit(ExprCosineSimilarity& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprDot& expr)
+void RewriteExprSubqueriesExpr::visit(ExprDot& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprEuclideanDistance& expr)
+void RewriteExprSubqueriesExpr::visit(ExprEuclideanDistance& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprManhattanDistance& expr)
+void RewriteExprSubqueriesExpr::visit(ExprManhattanDistance& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprPow& expr)
+void RewriteExprSubqueriesExpr::visit(ExprPow& expr)
 {
     expr.lhs->accept_visitor(*this);
     expr.rhs->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSqrt& expr)
+void RewriteExprSubqueriesExpr::visit(ExprSqrt& expr)
 {
     expr.expr->accept_visitor(*this);
 }
 
-void RewriteExprSubqueriesExpr::visit(SPARQL::ExprSum& expr)
+void RewriteExprSubqueriesExpr::visit(ExprSum& expr)
 {
     expr.expr->accept_visitor(*this);
 }

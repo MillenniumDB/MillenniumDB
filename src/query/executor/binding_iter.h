@@ -1,7 +1,9 @@
 #pragma once
 
+#include <ostream>
+
+#include "query/query_context.h" // IWYU pragma: export
 #include "query/executor/binding.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 
 // Abstract class
 class BindingIter {

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstddef>
-#include <vector>
 #include <variant>
+#include <vector>
 
-#include "query/parser/expr/sparql/expr.h"
 #include "query/parser/expr/sparql/atom/expr_var.h"
+#include "query/parser/expr/sparql/expr.h"
+#include "query/parser/expr/sparql/expr_printer.h"
 #include "query/parser/op/sparql/op.h"
-
 
 namespace SPARQL {
 
@@ -20,12 +20,12 @@ public:
     std::vector<bool> ascending_order;
 
     OpOrderBy(
-        std::unique_ptr<Op>                                       op,
+        std::unique_ptr<Op> op,
         std::vector<std::variant<VarId, std::unique_ptr<Expr>>>&& _items,
-        std::vector<bool>&&                                       ascending_order
+        std::vector<bool>&& ascending_order
     ) :
-        op              (std::move(op)),
-        ascending_order (std::move(ascending_order))
+        op(std::move(op)),
+        ascending_order(std::move(ascending_order))
     {
         for (auto& item : _items) {
             if (std::holds_alternative<std::unique_ptr<Expr>>(item)) {
@@ -39,7 +39,8 @@ public:
         }
     }
 
-    std::unique_ptr<Op> clone() const  override {
+    std::unique_ptr<Op> clone() const override
+    {
         std::vector<std::variant<VarId, std::unique_ptr<Expr>>> new_items;
 
         new_items.reserve(items.size());
@@ -57,18 +58,16 @@ public:
             new_ascending_order.push_back(asc);
         }
 
-        return std::make_unique<OpOrderBy>(
-            op->clone(),
-            std::move(new_items),
-            std::move(new_ascending_order)
-        );
+        return std::make_unique<OpOrderBy>(op->clone(), std::move(new_items), std::move(new_ascending_order));
     }
 
-    void accept_visitor(OpVisitor& visitor) override {
+    void accept_visitor(OpVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res = op->get_all_vars();
         for (auto& item : items) {
             if (std::holds_alternative<VarId>(item)) {
@@ -82,15 +81,18 @@ public:
         return res;
     }
 
-    std::set<VarId> get_scope_vars() const override {
+    std::set<VarId> get_scope_vars() const override
+    {
         return op->get_scope_vars();
     }
 
-    std::set<VarId> get_safe_vars() const override {
+    std::set<VarId> get_safe_vars() const override
+    {
         return op->get_safe_vars();
     }
 
-    std::set<VarId> get_fixable_vars() const override {
+    std::set<VarId> get_fixable_vars() const override
+    {
         for (auto& item : items) {
             if (std::holds_alternative<std::unique_ptr<Expr>>(item)) {
                 auto expr = std::get<std::unique_ptr<Expr>>(item).get();
@@ -102,13 +104,15 @@ public:
         return op->get_fixable_vars();
     }
 
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override {
+    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    {
         os << std::string(indent, ' ') << "OpOrderBy(";
 
         ExprPrinter printer(os);
 
         for (unsigned i = 0; i < items.size(); i++) {
-            if (i != 0) os << ", ";
+            if (i != 0)
+                os << ", ";
 
             os << (ascending_order[i] ? "ASC " : "DESC ");
 

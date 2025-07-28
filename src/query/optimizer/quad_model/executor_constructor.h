@@ -1,17 +1,10 @@
 #pragma once
 
-#include <map>
 #include <memory>
-#include <set>
-#include <string>
-#include <vector>
 
-#include "graph_models/object_id.h"
-#include "query/executor/query_executor/mql/return_executor.h"
+#include "query/executor/query_executor/mql/return_type.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/mql/ops.h"
-#include "query/query_context.h"
-#include "query/var_id.h"
 
 namespace MQL {
 class ExecutorConstructor : public OpVisitor {
@@ -19,38 +12,35 @@ private:
     ReturnType ret;
 
 public:
-    ExecutorConstructor(ReturnType ret): ret(ret) {}
+    ExecutorConstructor(ReturnType ret) :
+        ret(ret)
+    { }
 
     std::unique_ptr<QueryExecutor> executor;
 
-    // // properties used in RETURN and ORDER BY. We need to remember them to add optional children in the OpMatch
-    // std::set<std::pair<Var, std::string>> var_properties;
-
-    // std::vector<VarId> projection_vars;
-
-    // std::vector<VarId> group_vars;
-
-    // std::set<VarId> group_saved_vars;
-
-    // // Aggregates from RETURN and ORDER BY
-    // std::map<VarId, std::unique_ptr<Agg>> aggs;
-
-    // // Contains mandatory equalities of properties with constants (to push them from WHERE into the Binding phase).
-    // std::vector<std::tuple<Var, std::string, QueryElement>> where_properties;
-
-    // // When true, DistinctHash will be applied in visit(OpMatch&) to remove duplicates
-    // bool distinct_into_id = false;
-
-    // bool need_materialize_paths = false;
-
-    // bool distinct_ordered_possible = false;
-
-    // // True if query contains a group by
-    // bool group = false;
-
     // possible Logical Plan roots
     void visit(OpDescribe&) override;
-    void visit(OpReturn&)   override;
-    void visit(OpShow&)     override;
+    void visit(OpReturn&) override;
+    void visit(OpShow&) override;
+
+    // Impossible Logical Plan roots
+    void visit(OpUpdate&) override { }
+    void visit(OpBasicGraphPattern&) override { }
+    void visit(OpCall&) override { }
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
+    void visit(OpEdge&) override { }
+    void visit(OpGroupBy&) override { }
+    void visit(OpInsert&) override { }
+    void visit(OpDisjointTerm&) override { }
+    void visit(OpDisjointVar&) override { }
+    void visit(OpLabel&) override { }
+    void visit(OpLet&) override { }
+    void visit(OpOptional&) override { }
+    void visit(OpOrderBy&) override { }
+    void visit(OpPath&) override { }
+    void visit(OpProperty&) override { }
+    void visit(OpSequence&) override { }
+    void visit(OpWhere&) override { }
 };
 } // namespace MQL

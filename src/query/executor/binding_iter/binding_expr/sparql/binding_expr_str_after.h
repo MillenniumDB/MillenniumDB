@@ -11,34 +11,35 @@ public:
     std::unique_ptr<BindingExpr> lhs;
     std::unique_ptr<BindingExpr> rhs;
 
-    BindingExprStrAfter(std::unique_ptr<BindingExpr> lhs,
-                        std::unique_ptr<BindingExpr> rhs) :
+    BindingExprStrAfter(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
         lhs(std::move(lhs)),
-        rhs(std::move(rhs)) { }
+        rhs(std::move(rhs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
         auto lhs_sub = RDF_OID::get_generic_sub_type(lhs_oid);
         auto rhs_sub = RDF_OID::get_generic_sub_type(rhs_oid);
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE &&
-            lhs_sub != RDF_OID::GenericSubType::STRING_XSD &&
-            lhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
+            && lhs_sub != RDF_OID::GenericSubType::STRING_XSD
+            && lhs_sub != RDF_OID::GenericSubType::STRING_LANG)
         {
             return ObjectId::get_null();
         }
 
-        if (rhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE &&
-            rhs_sub != RDF_OID::GenericSubType::STRING_XSD &&
-            rhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (rhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
+            && rhs_sub != RDF_OID::GenericSubType::STRING_XSD
+            && rhs_sub != RDF_OID::GenericSubType::STRING_LANG)
         {
             return ObjectId::get_null();
         }
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_LANG &&
-            rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_sub != RDF_OID::GenericSubType::STRING_LANG
+            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
         {
             return ObjectId::get_null();
         }
@@ -49,8 +50,8 @@ public:
         bool return_lang = false;
         std::string lhs_lang;
 
-        if (lhs_sub == RDF_OID::GenericSubType::STRING_LANG &&
-            rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_sub == RDF_OID::GenericSubType::STRING_LANG
+            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
         {
             auto [lhs_l, lhs_s] = Conversions::unpack_string_lang(lhs_oid);
             auto [rhs_l, rhs_s] = Conversions::unpack_string_lang(rhs_oid);
@@ -61,14 +62,12 @@ public:
             return_lang = true;
             lhs_str = std::move(lhs_s);
             rhs_str = std::move(rhs_s);
-        }
-        else if (lhs_sub == RDF_OID::GenericSubType::STRING_SIMPLE ||
-                 lhs_sub == RDF_OID::GenericSubType::STRING_XSD)
+        } else if (lhs_sub == RDF_OID::GenericSubType::STRING_SIMPLE
+                   || lhs_sub == RDF_OID::GenericSubType::STRING_XSD)
         {
             lhs_str = Conversions::to_lexical_str(lhs_oid);
             rhs_str = Conversions::to_lexical_str(rhs_oid);
-        }
-        else {
+        } else {
             auto [lhs_l, lhs_s] = Conversions::unpack_string_lang(lhs_oid);
             lhs_str = lhs_s;
             lhs_lang = lhs_l;
@@ -85,7 +84,7 @@ public:
 
         auto it = lhs_str.find(rhs_str);
         if (it != std::string::npos) {
-            auto substr = lhs_str.substr(it+rhs_str.size());
+            auto substr = lhs_str.substr(it + rhs_str.size());
             if (return_lang) {
                 return Conversions::pack_string_lang(lhs_lang, substr);
             } else if (lhs_sub == RDF_OID::GenericSubType::STRING_XSD) {
@@ -97,8 +96,18 @@ public:
         return Conversions::pack_string_simple("");
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "STRAFTER(";
+        lhs->print(os, ops);
+        os << ", ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

@@ -24,28 +24,28 @@ public:
         auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
 
         if (expr_generic_type == GQL_OID::GenericType::NUMERIC) {
-        switch (expr_subtype) {
-        case GQL_OID::GenericSubType::INTEGER: {
-            auto expr = GQL::Conversions::to_integer(expr_oid);
-            return GQL::Conversions::pack_int(floor(expr));
-        }
-        case GQL_OID::GenericSubType::DECIMAL: {
-            auto expr = GQL::Conversions::to_decimal(expr_oid);
-            return GQL::Conversions::pack_decimal(expr.floor());
-        }
-        case GQL_OID::GenericSubType::FLOAT: {
-            auto expr = GQL::Conversions::to_float(expr_oid);
-            return GQL::Conversions::pack_int(floor(expr));
-        }
-        case GQL_OID::GenericSubType::DOUBLE: {
-            auto expr = GQL::Conversions::to_double(expr_oid);
-            return GQL::Conversions::pack_int(floor(expr));
-        }
-        default: {
-            assert(false);
-            return ObjectId::get_null();
-        }
-        }
+            switch (expr_subtype) {
+            case GQL_OID::GenericSubType::INTEGER: {
+                auto expr = GQL::Conversions::to_integer(expr_oid);
+                return GQL::Conversions::pack_int(floor(expr));
+            }
+            case GQL_OID::GenericSubType::DECIMAL: {
+                auto expr = GQL::Conversions::to_decimal(expr_oid);
+                return GQL::Conversions::pack_decimal(expr.floor());
+            }
+            case GQL_OID::GenericSubType::FLOAT: {
+                auto expr = GQL::Conversions::to_float(expr_oid);
+                return GQL::Conversions::pack_int(floor(expr));
+            }
+            case GQL_OID::GenericSubType::DOUBLE: {
+                auto expr = GQL::Conversions::to_double(expr_oid);
+                return GQL::Conversions::pack_int(floor(expr));
+            }
+            default: {
+                assert(false);
+                return ObjectId::get_null();
+            }
+            }
         } else {
             return ObjectId::get_null();
         }
@@ -54,6 +54,13 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "FLOOR(";
+        expr->print(os, ops);
+        os << ")";
     }
 };
 } // namespace GQL

@@ -3,8 +3,7 @@
 #include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/graph_pattern/op_property.h"
 
-using namespace GQL;
-
+namespace GQL {
 class ExtractPropertiesFromExpr : public ExprVisitor {
 public:
     std::vector<PropertyValue> properties;
@@ -398,3 +397,4 @@ public:
         tmp = expr.clone();
     }
 };
+} // namespace GQL

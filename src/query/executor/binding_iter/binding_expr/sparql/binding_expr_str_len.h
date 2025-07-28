@@ -13,9 +13,11 @@ public:
     std::unique_ptr<BindingExpr> expr;
 
     BindingExprStrLen(std::unique_ptr<BindingExpr> expr) :
-        expr(std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto oid = expr->eval(binding);
         size_t len;
 
@@ -38,12 +40,21 @@ public:
         return Conversions::pack_int(len);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "STRLEN(";
+        expr->print(os, ops);
+        os << ')';
+    }
+
 private:
-    int get_string_length(const std::string& str) {
+    int get_string_length(const std::string& str)
+    {
         const icu::UnicodeString icu_str(str.c_str(), "UTF-8");
         return icu_str.countChar32();
     }

@@ -50,5 +50,14 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << '(';
+        lhs->print(os, ops);
+        os << " POWER ";
+        rhs->print(os, ops);
+        os << ')';
+    }
 };
 } // namespace GQL

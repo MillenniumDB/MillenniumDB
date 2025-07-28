@@ -39,10 +39,6 @@ public:
     // second component is a state to tell if it is assigned
     std::map<ExprVarProperty, bool> used_properties;
 
-    // Properties from a where clause that are mandatory (so they are pushed into the basic graph pattern)
-    // var, key, value, value_var
-    //std::vector<std::tuple<VarId, ObjectId, ObjectId, VarId>> fixed_properties;
-
     // properties in query with one type fixed (not null).
     // example: (?x {value IS INTEGER}). value only has one type in query fixed, and is not null.
     // var, key, bitmap_final_types
@@ -79,33 +75,39 @@ public:
     // True when a group is needed (Aggregation or Group By are present)
     bool grouping = false;
 
-    void visit(MQL::OpBasicGraphPattern&) override;
-    void visit(MQL::OpCall&) override;
-    void visit(MQL::OpLet&) override;
-    void visit(MQL::OpOptional&) override;
-    void visit(MQL::OpWhere&) override;
-    void visit(MQL::OpGroupBy&) override;
-    void visit(MQL::OpOrderBy&) override;
-    void visit(MQL::OpReturn&) override;
-    void visit(MQL::OpSequence&) override;
+    void visit(OpBasicGraphPattern&) override;
+    void visit(OpCall&) override;
+    void visit(OpLet&) override;
+    void visit(OpOptional&) override;
+    void visit(OpWhere&) override;
+    void visit(OpGroupBy&) override;
+    void visit(OpOrderBy&) override;
+    void visit(OpReturn&) override;
+    void visit(OpSequence&) override;
 
-    void visit(MQL::OpDescribe&) override
+    void visit(OpDescribe&) override
     {
         throw LogicException("OpDescribe must be processed outside");
     }
 
-    void visit(MQL::OpShow&) override
+    void visit(OpShow&) override
     {
         throw LogicException("OpShow must be processed outside");
     }
 
     /* These are processed inside OpBasicGraphPattern */
-    void visit(MQL::OpEdge&) override { }
-    void visit(MQL::OpDisjointTerm&) override { }
-    void visit(MQL::OpDisjointVar&) override { }
-    void visit(MQL::OpLabel&) override { }
-    void visit(MQL::OpPath&) override { }
-    void visit(MQL::OpProperty&) override { }
+    void visit(OpEdge&) override { }
+    void visit(OpDisjointTerm&) override { }
+    void visit(OpDisjointVar&) override { }
+    void visit(OpLabel&) override { }
+    void visit(OpPath&) override { }
+    void visit(OpProperty&) override { }
+
+    /* There are impossible to have in a read only query*/
+    void visit(OpInsert&) override { }
+    void visit(OpUpdate&) override { }
+    void visit(OpCreateHNSWIndex&) override { }
+    void visit(OpCreateTextIndex&) override { }
 
 private:
     bool term_exists(ObjectId) const;

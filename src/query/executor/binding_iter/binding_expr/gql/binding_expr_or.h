@@ -35,5 +35,20 @@ public:
     {
         visitor.visit(*this);
     }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << '(';
+        auto first = true;
+        for (auto& e : or_list) {
+            if (first) {
+                first = false;
+            } else {
+                os << " OR ";
+            }
+            e->print(os, ops);
+        }
+        os << ")";
+    }
 };
 } // namespace GQL

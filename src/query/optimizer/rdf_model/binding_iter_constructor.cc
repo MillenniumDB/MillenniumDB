@@ -9,6 +9,7 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "misc/set_operations.h"
 #include "query/exceptions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
 #include "query/executor/binding_iters.h"
 #include "query/optimizer/plan/join_order/greedy_optimizer.h"
 #include "query/optimizer/plan/join_order/leapfrog_optimizer.h"
@@ -27,7 +28,8 @@ BindingIterConstructor::BindingIterConstructor()
 }
 
 std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
-get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>&& exprs) {
+    get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>&& exprs)
+{
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> res;
 
     for (auto&& [var, e] : exprs) {
@@ -39,7 +41,7 @@ get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr
             }
         }
 
-        res.push_back({var, std::move(e)});
+        res.push_back({ var, std::move(e) });
     }
     exprs.clear(); // vectors are not guaranteed to be empty after the move, so we make sure of that
     return res;
@@ -64,7 +66,13 @@ bool BindingIterConstructor::is_aggregation_or_group_var(VarId var) const
     return false;
 }
 
-void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query, bool distinct, uint64_t offset, uint64_t limit) {
+void BindingIterConstructor::make_solution_modifier_operators(
+    bool is_root_query,
+    bool distinct,
+    uint64_t offset,
+    uint64_t limit
+)
+{
     // process order expressions if we have them
     // ORDER BY expressions must come after SELECT expressions.
     std::vector<VarId> order_vars;
@@ -86,10 +94,7 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
 
                 expr->accept_visitor(expr_to_binding_expr);
 
-                projection_order_exprs.emplace_back(
-                    var,
-                    std::move(expr_to_binding_expr.tmp)
-                );
+                projection_order_exprs.emplace_back(var, std::move(expr_to_binding_expr.tmp));
             }
         }
     }
@@ -101,7 +106,7 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
         // need to do this for EXIST/NOT EXISTS expressions inside HAVING
         safe_assigned_vars.clear();
 
-        for (auto& expr: op_having->exprs) {
+        for (auto& expr : op_having->exprs) {
             ExprToBindingExpr expr_to_binding_expr(this, {});
             expr->accept_visitor(expr_to_binding_expr);
             having_exprs.push_back(std::move(expr_to_binding_expr.tmp));
@@ -119,10 +124,7 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
 
         auto non_redundant_expr_eval = get_non_redundant_exprs(std::move(group_exprs));
         if (non_redundant_expr_eval.size() > 0) {
-            tmp = std::make_unique<ExprEvaluator>(
-                std::move(tmp),
-                std::move(non_redundant_expr_eval)
-            );
+            tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(non_redundant_expr_eval));
         }
 
         std::vector<VarId> group_vars_vector;
@@ -173,10 +175,7 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
     assert(tmp != nullptr);
     auto non_redundant_expr_eval = get_non_redundant_exprs(std::move(projection_order_exprs));
     if (non_redundant_expr_eval.size() > 0) {
-        tmp = std::make_unique<ExprEvaluator>(
-            std::move(tmp),
-            std::move(non_redundant_expr_eval)
-        );
+        tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(non_redundant_expr_eval));
     }
 
     const bool has_limit = limit != Op::DEFAULT_LIMIT || rdf_model.MAX_LIMIT != Op::DEFAULT_LIMIT;
@@ -257,12 +256,13 @@ void BindingIterConstructor::make_solution_modifier_operators(bool is_root_query
     }
 }
 
-
-void BindingIterConstructor::visit(OpDescribe& op_describe) {
+void BindingIterConstructor::visit(OpDescribe& op_describe)
+{
     op_describe.op->accept_visitor(*this);
 
-     if (group_vars.size() > 0 || aggregations.size() > 0) {
-        for (auto& var : op_describe.vars) {;
+    if (group_vars.size() > 0 || aggregations.size() > 0) {
+        for (auto& var : op_describe.vars) {
+            ;
             if (!is_aggregation_or_group_var(var)) {
                 throw QuerySemanticException("Mixing aggregations and non-aggregations is not allowed");
             }
@@ -283,14 +283,16 @@ void BindingIterConstructor::visit(OpDescribe& op_describe) {
         group_saved_vars.insert(var);
     }
 
-    make_solution_modifier_operators(true, // is_root_query
-                                     false, // distinct
-                                     op_describe.offset,
-                                     op_describe.limit);
+    make_solution_modifier_operators(
+        true, // is_root_query
+        false, // distinct
+        op_describe.offset,
+        op_describe.limit
+    );
 }
 
-
-void BindingIterConstructor::visit(OpConstruct& op_construct) {
+void BindingIterConstructor::visit(OpConstruct& op_construct)
+{
     op_construct.op->accept_visitor(*this);
 
     for (auto triple : op_construct.triples) {
@@ -306,14 +308,16 @@ void BindingIterConstructor::visit(OpConstruct& op_construct) {
         }
     }
 
-    make_solution_modifier_operators(true,  // is_root_query
-                                     false, // distinct
-                                     op_construct.offset,
-                                     op_construct.limit);
+    make_solution_modifier_operators(
+        true, // is_root_query
+        false, // distinct
+        op_construct.offset,
+        op_construct.limit
+    );
 }
 
-
-void BindingIterConstructor::handle_select(OpSelect& op_select) {
+void BindingIterConstructor::handle_select(OpSelect& op_select)
+{
     for (auto& expr : op_select.vars_exprs) {
         if (expr != nullptr && expr->has_aggregation()) {
             grouping = true;
@@ -324,35 +328,34 @@ void BindingIterConstructor::handle_select(OpSelect& op_select) {
     op_select.op->accept_visitor(*this);
 
     for (size_t i = 0; i < op_select.vars.size(); i++) {
-        auto var   = op_select.vars[i];
+        auto var = op_select.vars[i];
         auto& expr = op_select.vars_exprs[i];
         projection_vars.push_back(var);
 
         if (expr) {
-            ExprToBindingExpr expr_to_binding_expr(this, {var});
+            ExprToBindingExpr expr_to_binding_expr(this, { var });
             expr->accept_visitor(expr_to_binding_expr);
 
-            projection_order_exprs.emplace_back(
-                var,
-                std::move(expr_to_binding_expr.tmp)
-            );
+            projection_order_exprs.emplace_back(var, std::move(expr_to_binding_expr.tmp));
         } else {
             if (grouping) {
                 if (!is_aggregation_or_group_var(var)) {
                     throw QuerySemanticException(
-                        "Invalid use of var \""
-                        + get_query_ctx().get_var_name(var)
-                        + "\" in SELECT, cannot mix agg expressions with non-agg expressions");
+                        "Invalid use of var \"" + get_query_ctx().get_var_name(var)
+                        + "\" in SELECT, cannot mix agg expressions with non-agg expressions"
+                    );
                 }
             }
             group_saved_vars.insert(var);
         }
     }
 
-    make_solution_modifier_operators(!op_select.is_sub_select, // is_root_query
-                                     op_select.distinct,
-                                     op_select.offset,
-                                     op_select.limit);
+    make_solution_modifier_operators(
+        !op_select.is_sub_select, // is_root_query
+        op_select.distinct,
+        op_select.offset,
+        op_select.limit
+    );
 }
 
 void BindingIterConstructor::visit(OpSelect& op_select)
@@ -437,22 +440,22 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     std::vector<std::unique_ptr<Plan>> base_plans;
 
     for (auto& op_triple : op_basic_graph_pattern.triples) {
-        base_plans.push_back(std::make_unique<TriplePlan>(
-            op_triple.subject,
-            op_triple.predicate,
-            op_triple.object
-        ));
+        base_plans.push_back(
+            std::make_unique<TriplePlan>(op_triple.subject, op_triple.predicate, op_triple.object)
+        );
     }
     for (auto& op_path : op_basic_graph_pattern.paths) {
         auto path = op_path.path.get();
-        base_plans.push_back(std::make_unique<PathPlan>(
-            begin_at_left,
-            op_path.var,
-            op_path.subject,
-            *path,
-            op_path.object,
-            op_path.semantic
-        ));
+        base_plans.push_back(
+            std::make_unique<PathPlan>(
+                begin_at_left,
+                op_path.var,
+                op_path.subject,
+                *path,
+                op_path.object,
+                op_path.semantic
+            )
+        );
     }
 
     assert(tmp == nullptr);
@@ -620,7 +623,8 @@ void BindingIterConstructor::visit(OpSequence& op_sequence)
                 set_to_vector(unsafe_join_vars),
                 set_to_vector(original_safe_assigned_vars),
                 set_to_vector(lhs_only_vars),
-                set_to_vector(rhs_only_vars));
+                set_to_vector(rhs_only_vars)
+            );
         }
 
         acc_safe_assigned_vars = set_union(acc_safe_assigned_vars, safe_assigned_vars);
@@ -834,9 +838,11 @@ void BindingIterConstructor::visit(OpValues& op_values)
     for (size_t idx = 0; idx < op_values.vars.size(); idx++) {
         auto& var = op_values.vars[idx];
 
-        vars.push_back({ var,
-                         safe_assigned_vars.find(var) != safe_assigned_vars.end()
-                             && fixable_values.find(var) != fixable_values.end() });
+        vars.push_back(
+            { var,
+              safe_assigned_vars.find(var) != safe_assigned_vars.end()
+                  && fixable_values.find(var) != fixable_values.end() }
+        );
 
         if (!op_values.has_undef[idx]) {
             safe_assigned_vars.insert(var);

@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 
-#include "graph_models/common/conversions.h"
+#include "graph_models/common/conversions.h" // IWYU pragma: export
 #include "query/executor/query_executor/mql/return_executor.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"

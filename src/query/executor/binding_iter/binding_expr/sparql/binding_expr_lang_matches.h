@@ -12,12 +12,13 @@ public:
     std::unique_ptr<BindingExpr> lhs;
     std::unique_ptr<BindingExpr> rhs;
 
-    BindingExprLangMatches(std::unique_ptr<BindingExpr> lhs,
-                           std::unique_ptr<BindingExpr> rhs) :
-        lhs (std::move(lhs)),
-        rhs (std::move(rhs)) { }
+    BindingExprLangMatches(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
+    { }
 
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         // SPEC: https://www.ietf.org/rfc/rfc4647.txt
         // basic filtering with basic language range
 
@@ -59,8 +60,18 @@ public:
         }
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "LANGMATCHES(";
+        lhs->print(os, ops);
+        os << ", ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace SPARQL

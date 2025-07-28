@@ -2,8 +2,8 @@
 
 #include <cassert>
 #include <memory>
-#include <unicode/unistr.h>
 #include <unicode/normalizer2.h>
+#include <unicode/unistr.h>
 #include <unicode/utypes.h>
 
 #include "graph_models/gql/conversions.h"
@@ -52,6 +52,15 @@ public:
     void accept_visitor(BindingExprVisitor& visitor) override
     {
         visitor.visit(*this);
+    }
+
+    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    {
+        os << "NORMALIZE(";
+        expr->print(os, ops);
+        os << ",";
+        os << form;
+        os << ")";
     }
 };
 } // namespace GQL

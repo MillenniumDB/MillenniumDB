@@ -1,6 +1,7 @@
 #include "hnsw_scan.h"
 
 #include "graph_models/common/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 #include "storage/index/hnsw/hnsw_entry.h"
 
 using namespace Procedure;
@@ -52,21 +53,23 @@ void HNSWScan::print(std::ostream& os, int indent, bool stats) const
         print_generic_stats(os, indent);
     }
     os << std::string(indent, ' ') << "HNSWScan(";
-    auto binding_expr_printer = get_query_ctx().create_binding_expr_printer(os);
-    if (!argument_binding_exprs.empty()) {
-        argument_binding_exprs[0]->accept_visitor(*binding_expr_printer);
-    }
-    for (std::size_t i = 1; i < argument_binding_exprs.size(); ++i) {
-        os << ", ";
-        argument_binding_exprs[i]->accept_visitor(*binding_expr_printer);
-    }
+    {
+        BindingExprPrinter printer(os, indent, stats);
+        if (!argument_binding_exprs.empty()) {
+            printer.print(*argument_binding_exprs[0]);
+        }
+        for (std::size_t i = 1; i < argument_binding_exprs.size(); ++i) {
+            os << ", ";
+            printer.print(*argument_binding_exprs[i]);
+        }
 
-    os << ") -> (";
+        os << ") -> (";
 
-    os << yield_vars[0];
-    for (std::size_t i = 1; i < yield_vars.size(); ++i) {
-        os << ", ";
-        os << yield_vars[i];
+        os << yield_vars[0];
+        for (std::size_t i = 1; i < yield_vars.size(); ++i) {
+            os << ", ";
+            os << yield_vars[i];
+        }
     }
     os << ")\n";
 }

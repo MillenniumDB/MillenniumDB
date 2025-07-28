@@ -3,8 +3,7 @@
 #include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/graph_pattern/op_optional_properties.h"
 
-using namespace GQL;
-
+namespace GQL {
 class ExtractOptionalPropertiesFromExpr : public ExprVisitor {
 public:
     std::vector<OptPropertyValue> properties;
@@ -360,3 +359,4 @@ public:
     void visit(ExprVar&) { }
     void visit(ExprIs&) { }
 };
+} // namespace GQL

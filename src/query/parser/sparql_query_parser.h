@@ -87,7 +87,7 @@ public:
 
         ChangeJoinToSequence join_to_sequence_visitor;
         op->accept_visitor(join_to_sequence_visitor);
-        logger(Category::LogicalPlan) << "Changing join to sequence:\n" << *op;
+        // logger(Category::LogicalPlan) << "Changing join to sequence:\n" << *op;
 
         ReplaceSingleValues replace_single_values;
         op->accept_visitor(replace_single_values);

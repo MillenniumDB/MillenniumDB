@@ -19,8 +19,6 @@
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 
-class BindingExprPrinter;
-
 struct ThreadInfo {
     bool interruption_requested = false;
 
@@ -54,9 +52,6 @@ public:
 
     // Debug prints ObjectIds
     static inline std::ostream& (*_debug_print)(std::ostream&, ObjectId);
-
-    // Creates a BindingExprPrinter used to debug print BindingExprs of the physical plan
-    static inline std::unique_ptr<BindingExprPrinter> (*create_binding_expr_printer)(std::ostream&);
 
     static constexpr uint64_t buffer_size = 64 * 1024;
 
