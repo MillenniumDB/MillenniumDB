@@ -1,0 +1,2 @@
+MATCH (a)
+RETURN "Hello " || a.name AS name_concat GROUP BY a

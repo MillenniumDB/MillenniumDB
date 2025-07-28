@@ -133,6 +133,9 @@ public:
         return distribution(rand_generator);
     }
 
+    void define_alias(VarId var_id, const std::string& alias) {
+        var_ctx.var_map.insert({ alias, var_id.id });
+    }
 
     VarId get_or_create_var(const std::string& var_name) {
         auto found = var_ctx.var_map.find(var_name);

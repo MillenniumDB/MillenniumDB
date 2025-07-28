@@ -24,6 +24,7 @@ void ExprToBindingExpr::visit(ExprTerm& expr_term)
 
 void ExprToBindingExpr::visit(ExprOr& expr)
 {
+    at_root = false;
     std::vector<std::unique_ptr<BindingExpr>> or_list;
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
@@ -40,6 +41,7 @@ void ExprToBindingExpr::visit(ExprOr& expr)
 
 void ExprToBindingExpr::visit(ExprAnd& expr)
 {
+    at_root = false;
     std::vector<std::unique_ptr<BindingExpr>> and_list;
     for (auto& e : expr.exprs) {
         e->accept_visitor(*this);
@@ -57,6 +59,7 @@ void ExprToBindingExpr::visit(ExprAnd& expr)
 
 void ExprToBindingExpr::visit(ExprNot& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprNot>(std::move(tmp));
 }
@@ -78,6 +81,7 @@ void ExprToBindingExpr::visit(ExprWildcardLabel& expr)
 
 void ExprToBindingExpr::visit(ExprEquals& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -101,6 +105,7 @@ void ExprToBindingExpr::visit(ExprProperty& expr)
 
 void ExprToBindingExpr::visit(ExprConcat& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -111,6 +116,7 @@ void ExprToBindingExpr::visit(ExprConcat& expr)
 
 void ExprToBindingExpr::visit(ExprGreaterOrEquals& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -124,6 +130,7 @@ void ExprToBindingExpr::visit(ExprGreaterOrEquals& expr)
 
 void ExprToBindingExpr::visit(ExprGreater& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -134,6 +141,7 @@ void ExprToBindingExpr::visit(ExprGreater& expr)
 
 void ExprToBindingExpr::visit(ExprIs& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -144,6 +152,7 @@ void ExprToBindingExpr::visit(ExprIs& expr)
 
 void ExprToBindingExpr::visit(ExprLessOrEquals& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -154,6 +163,7 @@ void ExprToBindingExpr::visit(ExprLessOrEquals& expr)
 
 void ExprToBindingExpr::visit(ExprLess& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -164,6 +174,7 @@ void ExprToBindingExpr::visit(ExprLess& expr)
 
 void ExprToBindingExpr::visit(ExprNotEquals& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -174,6 +185,7 @@ void ExprToBindingExpr::visit(ExprNotEquals& expr)
 
 void ExprToBindingExpr::visit(ExprXor& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -184,6 +196,7 @@ void ExprToBindingExpr::visit(ExprXor& expr)
 
 void ExprToBindingExpr::visit(ExprAddition& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -194,6 +207,7 @@ void ExprToBindingExpr::visit(ExprAddition& expr)
 
 void ExprToBindingExpr::visit(ExprSubtraction& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -204,6 +218,7 @@ void ExprToBindingExpr::visit(ExprSubtraction& expr)
 
 void ExprToBindingExpr::visit(ExprMultiplication& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -217,6 +232,7 @@ void ExprToBindingExpr::visit(ExprMultiplication& expr)
 
 void ExprToBindingExpr::visit(ExprDivision& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -227,12 +243,14 @@ void ExprToBindingExpr::visit(ExprDivision& expr)
 
 void ExprToBindingExpr::visit(ExprAbs& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprAbs>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprModulo& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -243,78 +261,91 @@ void ExprToBindingExpr::visit(ExprModulo& expr)
 
 void ExprToBindingExpr::visit(ExprSin& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprSin>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprCos& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCos>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprTan& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprTan>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprCot& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCot>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprSinh& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprSinh>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprCosh& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCosh>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprTanh& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprTanh>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprAsin& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprAsin>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprAcos& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprAcos>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprAtan& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprAtan>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprDegrees& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprDegrees>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprRadians& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprRadians>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprLog& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -325,24 +356,28 @@ void ExprToBindingExpr::visit(ExprLog& expr)
 
 void ExprToBindingExpr::visit(ExprLog10& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprLog10>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprLn& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprLn>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprExp& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprExp>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprPower& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -353,30 +388,35 @@ void ExprToBindingExpr::visit(ExprPower& expr)
 
 void ExprToBindingExpr::visit(ExprSqrt& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprSqrt>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprFloor& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprFloor>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprCeil& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCeil>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprLength& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprLength>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprSubStr& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     auto str_binding_expr = std::move(tmp);
     expr.str_len->accept_visitor(*this);
@@ -391,12 +431,14 @@ void ExprToBindingExpr::visit(ExprSubStr& expr)
 
 void ExprToBindingExpr::visit(ExprFold& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprFold>(std::move(tmp), std::move(expr.upper));
 }
 
 void ExprToBindingExpr::visit(ExprSingleTrim& expr)
 {
+    at_root = false;
     expr.str->accept_visitor(*this);
     auto str_binding_expr = std::move(tmp);
     std::unique_ptr<BindingExpr> char_binding_expr;
@@ -416,6 +458,7 @@ void ExprToBindingExpr::visit(ExprSingleTrim& expr)
 
 void ExprToBindingExpr::visit(ExprMultiTrim& expr)
 {
+    at_root = false;
     expr.trim_src->accept_visitor(*this);
     auto str_binding_expr = std::move(tmp);
     std::unique_ptr<BindingExpr> delim_binding_expr;
@@ -435,12 +478,14 @@ void ExprToBindingExpr::visit(ExprMultiTrim& expr)
 
 void ExprToBindingExpr::visit(ExprNormalize& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprNormalize>(std::move(tmp), std::move(expr.form));
 }
 
 void ExprToBindingExpr::visit(ExprNullIf& expr)
 {
+    at_root = false;
     expr.lhs->accept_visitor(*this);
     auto lhs_binding_expr = std::move(tmp);
     expr.rhs->accept_visitor(*this);
@@ -451,6 +496,7 @@ void ExprToBindingExpr::visit(ExprNullIf& expr)
 
 void ExprToBindingExpr::visit(ExprCoalesce& expr)
 {
+    at_root = false;
     std::vector<std::unique_ptr<BindingExpr>> expressions;
     for (const auto& expression : expr.exprs) {
         if (expression != nullptr) {
@@ -464,6 +510,7 @@ void ExprToBindingExpr::visit(ExprCoalesce& expr)
 
 void ExprToBindingExpr::visit(ExprSimpleCase& expr)
 {
+    at_root = false;
     expr.case_operand->accept_visitor(*this);
     auto case_operand_binding_expr = std::move(tmp);
     std::vector<std::pair<
@@ -498,6 +545,7 @@ void ExprToBindingExpr::visit(ExprSimpleCase& expr)
 
 void ExprToBindingExpr::visit(ExprSearchedCase& expr)
 {
+    at_root = false;
     std::vector<std::pair<std::unique_ptr<BindingExpr>, std::unique_ptr<BindingExpr>>> when_clauses;
     for (auto& clause : expr.when_clauses) {
         clause.first->accept_visitor(*this);
@@ -519,76 +567,77 @@ void ExprToBindingExpr::visit(ExprSearchedCase& expr)
 
 void ExprToBindingExpr::visit(ExprCast& expr)
 {
+    at_root = false;
     expr.expr->accept_visitor(*this);
     tmp = std::make_unique<BindingExprCast>(std::move(tmp), std::move(expr.targetType));
 }
 
-void ExprToBindingExpr::visit(ExprAggCountAll&)
+void ExprToBindingExpr::visit(ExprAggCountAll& expr)
 {
-    check_and_make_aggregate<AggCountAll>(nullptr);
+    check_and_make_aggregate<AggCountAll>(&expr, nullptr);
 }
 
 void ExprToBindingExpr::visit(ExprAggCount& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggCountDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggCountDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggCount>(expr.expr.get());
+        check_and_make_aggregate<AggCount>(&expr, expr.expr.get());
     }
 }
 
 void ExprToBindingExpr::visit(ExprAggAvg& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggAvgDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggAvgDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggAvg>(expr.expr.get());
+        check_and_make_aggregate<AggAvg>(&expr, expr.expr.get());
     }
 }
 
 void ExprToBindingExpr::visit(ExprAggMin& expr)
 {
-    check_and_make_aggregate<AggMin>(expr.expr.get());
+    check_and_make_aggregate<AggMin>(&expr, expr.expr.get());
 }
 
 void ExprToBindingExpr::visit(ExprAggMax& expr)
 {
-    check_and_make_aggregate<AggMax>(expr.expr.get());
+    check_and_make_aggregate<AggMax>(&expr, expr.expr.get());
 }
 
 void ExprToBindingExpr::visit(ExprAggSum& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggSumDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggSumDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggSum>(expr.expr.get());
+        check_and_make_aggregate<AggSum>(&expr, expr.expr.get());
     }
 }
 
 void ExprToBindingExpr::visit(ExprAggStddevPop& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggStddevPopDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggStddevPopDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggStddevPop>(expr.expr.get());
+        check_and_make_aggregate<AggStddevPop>(&expr, expr.expr.get());
     }
 }
 
 void ExprToBindingExpr::visit(ExprAggStddevSamp& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggStddevSampDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggStddevSampDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggStddevSamp>(expr.expr.get());
+        check_and_make_aggregate<AggStddevSamp>(&expr, expr.expr.get());
     }
 }
 
 void ExprToBindingExpr::visit(ExprAggCollect& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggCollectDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggCollectDistinct>(&expr, expr.expr.get());
     } else {
-        check_and_make_aggregate<AggCollect>(expr.expr.get());
+        check_and_make_aggregate<AggCollect>(&expr, expr.expr.get());
     }
 }
 
@@ -597,9 +646,9 @@ void ExprToBindingExpr::visit(ExprAggPercentileCont& expr)
     expr.percentile->accept_visitor(*this);
     auto percentile_expr = std::move(tmp);
     if (expr.distinct) {
-        check_and_make_aggregate<AggPercentileContDistinct>(expr.expr.get(), std::move(percentile_expr));
+        check_and_make_aggregate<AggPercentileContDistinct>(&expr, expr.expr.get(), std::move(percentile_expr));
     } else {
-        check_and_make_aggregate<AggPercentileCont>(expr.expr.get(), std::move(percentile_expr));
+        check_and_make_aggregate<AggPercentileCont>(&expr, expr.expr.get(), std::move(percentile_expr));
     }
 }
 
@@ -608,14 +657,14 @@ void ExprToBindingExpr::visit(ExprAggPercentileDisc& expr)
     expr.percentile->accept_visitor(*this);
     auto percentile_expr = std::move(tmp);
     if (expr.distinct) {
-        check_and_make_aggregate<AggPercentileDiscDistinct>(expr.expr.get(), std::move(percentile_expr));
+        check_and_make_aggregate<AggPercentileDiscDistinct>(&expr, expr.expr.get(), std::move(percentile_expr));
     } else {
-        check_and_make_aggregate<AggPercentileDisc>(expr.expr.get(), std::move(percentile_expr));
+        check_and_make_aggregate<AggPercentileDisc>(&expr, expr.expr.get(), std::move(percentile_expr));
     }
 }
 
 template<typename AggType, class... Args>
-void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
+void ExprToBindingExpr::check_and_make_aggregate(Expr* parent_expr, Expr* expr, Args&&... args)
 {
     if (bic == nullptr) {
         throw QuerySemanticException("Aggregation where it is not allowed");
@@ -634,11 +683,9 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
         var = as_var.value();
     } else {
         // Otherwise we have to create an internal variable to associated with the aggregation.
-        // var = get_query_ctx().get_internal_var();
-        // TODO: is there a better way?
         std::stringstream ss;
         ExprPrinter printer(ss);
-        expr->accept_visitor(printer);
+        parent_expr->accept_visitor(printer);
         var = get_query_ctx().get_or_create_var("." + ss.str());
     }
 

@@ -43,7 +43,7 @@ public:
     { }
 
     template<typename AggType, class... Args>
-    void check_and_make_aggregate(Expr*, Args&&... args);
+    void check_and_make_aggregate(Expr* parent_expr, Expr* expr, Args&&... args);
 
     void visit(ExprOr&) override;
     void visit(ExprAnd&) override;

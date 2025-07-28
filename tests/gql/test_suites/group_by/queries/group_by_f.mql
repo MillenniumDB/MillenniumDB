@@ -1,0 +1,2 @@
+MATCH (a)
+RETURN "Hello " || a.name GROUP BY a
