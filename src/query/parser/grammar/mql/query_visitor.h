@@ -25,6 +25,10 @@ private:
         uint64_t offset = Op::DEFAULT_OFFSET;
     };
 
+    struct UpdateInfo {
+
+    };
+
     struct OrderByInfo {
         std::vector<std::unique_ptr<Expr>> items;
 
@@ -211,18 +215,14 @@ public:
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;
     virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx) override;
-    // virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext* ctx) override;
     virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext* ctx) override;
 
-    // virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext* ctx) override;
-    // virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx) override;
-    // virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx) override;
-    // virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx) override;
-    // virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx) override;
-    // virtual std::any visitInsertStatement(MQL_Parser::InsertStatementContext* ctx) override;
-    // virtual std::any visitInsertLabelElement(MQL_Parser::InsertLabelElementContext* ctx) override;
-    // virtual std::any visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext* ctx) override;
-    // virtual std::any visitInsertEdgeElement(MQL_Parser::InsertEdgeElementContext* ctx) override;
+    virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx) override;
+    virtual std::any visitInsertNode(MQL_Parser::InsertNodeContext* ctx) override;
+    virtual std::any visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx) override;
+    virtual std::any visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx) override;
+    virtual std::any visitInsertProperty2(MQL_Parser::InsertProperty2Context* ctx) override;
+    virtual std::any visitInsertProperty3(MQL_Parser::InsertProperty3Context* ctx) override;
 
     virtual std::any visitCallStatement(MQL_Parser::CallStatementContext* ctx) override;
     virtual std::any visitCallArguments(MQL_Parser::CallArgumentsContext* ctx) override;

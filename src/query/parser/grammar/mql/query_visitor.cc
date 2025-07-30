@@ -97,16 +97,6 @@ Any QueryVisitor::visitDescribeQuery(MQL_Parser::DescribeQueryContext* ctx)
     return 0;
 }
 
-// Any QueryVisitor::visitInsertQuery(MQL_Parser::InsertQueryContext* ctx) {
-//     visitChildren(ctx);
-//     current_op = std::make_unique<OpInsert>(
-//         std::move(insert_labels),
-//         std::move(insert_properties),
-//         std::move(insert_edges)
-//     );
-//     return 0;
-// }
-
 Any QueryVisitor::visitShowQuery(MQL_Parser::ShowQueryContext* ctx)
 {
     const auto index_type = ctx->identifier()->getText();
@@ -190,127 +180,130 @@ Any QueryVisitor::visitWhereStatement(MQL_Parser::WhereStatementContext* ctx)
     return 0;
 }
 
-// Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
-// {
-//     visitChildren(ctx);
-//     return 0;
-// }
+Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx)
+{
+    // first_element_disjoint = ctx->children.size() == 1;
+    ctx->children[0]->accept(this);
+    saved_node = last_node;
+    for (size_t i = 2; i < ctx->children.size(); i += 2) {
+        ctx->children[i]->accept(this);     // accept node
+        ctx->children[i - 1]->accept(this); // accept edge
+        saved_node = last_node;
+    }
 
-// Any QueryVisitor::visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx)
-// {
-//     current_bgp = std::make_unique<OpBasicGraphPattern>();
-//     visitChildren(ctx);
-//     // TODO:
-//     // current_op = std::make_unique<OpInsert>(std::move(current_bgp));
-//     return 0;
-// }
+    return 0;
+}
 
-// Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx)
-// {
-//     first_element_disjoint = ctx->children.size() == 1;
-//     ctx->children[0]->accept(this);
-//     saved_node = last_node;
-//     for (size_t i = 2; i < ctx->children.size(); i += 2) {
-//         ctx->children[i]->accept(this);     // accept node
-//         ctx->children[i - 1]->accept(this); // accept edge
-//         saved_node = last_node;
-//     }
-//     return 0;
-// }
+Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
+{
+    // TODO: may be a variable
+    if (ctx->VARIABLE()) {
+        auto var_name = ctx->VARIABLE()->getText();
+        var_name.erase(0, 1); // remove leading '?'
+        last_node = get_query_ctx().get_or_create_var(var_name);
+    } else {
+        last_node = QuadObjectId::get_fixed_node_inside(ctx->identifier()->getText());
+    }
 
-// Any QueryVisitor::visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx)
-// {
-//     last_node = QuadObjectId::get_fixed_node_inside(ctx->insertPlainNodeInside()->getText());
+    // Process Labels
+    for (auto& label : ctx->TYPE()) {
+        auto label_str = label->getText();
+        label_str.erase(0, 1); // remove leading ':'
+        auto label_id = QuadObjectId::get_string(label_str);
+        current_bgp->add_label(last_node, label_id);  // TODO: dont use current_bgp?
+    }
 
-//     // Process Labels
-//     for (auto& label : ctx->TYPE()) {
-//         auto label_str = label->getText();
-//         label_str.erase(0, 1); // remove leading ':'
-//         auto label_id = QuadObjectId::get_string(label_str);
-//         current_bgp->add_label(last_node, label_id);
-//     }
+    auto properties = ctx->insertProperties();
+    if (properties != nullptr) {
+        saved_property_obj = last_node;
+        for (auto property : properties->insertProperty()) {
+            property->accept(this);
+        }
+    }
 
-//     auto properties = ctx->properties();
-//     if (properties != nullptr) {
-//         saved_property_obj = last_node;
-//         for (auto property : properties->property()) {
-//             property->accept(this);
-//         }
-//     }
+    // necessary to insert even if not disjoint
+    current_bgp->add_disjoint_term(last_node.get_OID()); // TODO: dont use current_bgp?
 
-//     // necessary to insert even if not disjoint
-//     current_bgp->add_disjoint_term(last_node.get_OID());
+    return 0;
+}
 
-//     return 0;
-// }
+Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
+{
+    auto edge = get_query_ctx().get_internal_var();
 
-// Any QueryVisitor::visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx)
-// {
-//     auto edge = get_query_ctx().get_internal_var();
+    auto type_str = ctx->TYPE()->getText();
+    type_str.erase(0, 1); // remove leading ':'
+    auto type_id = QuadObjectId::get_named_node(type_str);
 
-//     auto type_str = ctx->TYPE()->getText();
-//     type_str.erase(0, 1); // remove leading ':'
-//     auto type_id = QuadObjectId::get_named_node(type_str);
+    auto properties = ctx->insertProperties();
+    if (properties != nullptr) {
+        saved_property_obj = last_node;
+        for (auto property : properties->insertProperty()) {
+            property->accept(this);
+        }
+    }
 
-//     auto properties = ctx->properties();
-//     if (properties != nullptr) {
-//         saved_property_obj = edge;
-//         for (auto property : properties->property()) {
-//             property->accept(this);
-//         }
-//     }
+    if (ctx->GT() != nullptr) {
+        // right direction
+        current_bgp->add_edge(saved_node, last_node, type_id, edge);  // TODO: dont use current_bgp?
+    } else {
+        // left direction
+        current_bgp->add_edge(last_node, saved_node, type_id, edge);  // TODO: dont use current_bgp?
+    }
+    return 0;
+}
 
-//     if (ctx->GT() != nullptr) {
-//         // right direction
-//         current_bgp->add_edge(saved_node, last_node, type_id, edge);
-//     } else {
-//         // left direction
-//         current_bgp->add_edge(last_node, saved_node, type_id, edge);
-//     }
-//     return 0;
-// }
+Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* property)
+{
+    auto key_str = property->identifier()->getText();
+    auto key_id = QuadObjectId::get_string(key_str);
 
-// Any QueryVisitor::visitInsertLabelElement(MQL_Parser::InsertLabelElementContext* ctx) {
-//     auto label_str = ctx->STRING()->getText();
-//     // remove surrounding double quotes
-//     label_str = label_str.substr(1, label_str.size() - 2);
+    ObjectId value_id;
 
-//     ObjectId label_id = QuadObjectId::get_string(label_str);
+    if (property->value() != nullptr) {
+        visitValue(property->value());
+        value_id = current_value_oid;
+    } else {
+        if (property->FALSE_PROP() != nullptr) {
+            value_id = ObjectId(ObjectId::BOOL_FALSE);
+        } else {
+            assert(property->TRUE_PROP() != nullptr);
+            value_id = ObjectId(ObjectId::BOOL_TRUE);
+        }
+    }
 
-//     ObjectId node_id = (ctx->identifier() == nullptr)
-//         ? QuadObjectId::get_fixed_node_inside(ctx->ANON_ID()->getText())
-//         : QuadObjectId::get_fixed_node_inside(ctx->identifier()->getText());
+    current_bgp->add_property(saved_property_obj, key_id, value_id);// TODO: dont use current_bgp?
+    return 0;
+}
 
-//     insert_labels.emplace_back(node_id, label_id);
-//     return 0;
-// }
+Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* property)
+{
+    auto key_str = property->identifier()->getText();
+    auto key_id = QuadObjectId::get_string(key_str);
 
-// Any QueryVisitor::visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext* ctx) {
-//     auto obj = ctx->fixedNodeInside()->getText();
+    std::string datatype = property->TYPE()->getText();
+    // remove leading ':'
+    datatype.erase(0, 1);
 
-//     auto key = ctx->STRING()->getText();
-//     key = key.substr(1, key.size() - 2); // remove surrounding double quotes
+    std::string str = property->STRING()->getText();
+    // remove surrounding double quotes
+    str = str.substr(1, str.size() - 2);
 
-//     insert_properties.emplace_back(
-//         QuadObjectId::get_fixed_node_inside(obj),
-//         QuadObjectId::get_string(key),
-//         QuadObjectId::get_value(ctx->value()->getText())
-//     );
-//     return 0;
-// }
+    parse_datatype_value(datatype, str); // will set current_value_oid
 
-// Any QueryVisitor::visitInsertEdgeElement(MQL_Parser::InsertEdgeElementContext* ctx) {
-//     auto from = QuadObjectId::get_fixed_node_inside(ctx->fixedNodeInside()[0]->getText());
-//     auto to   = QuadObjectId::get_fixed_node_inside(ctx->fixedNodeInside()[1]->getText());
-//     auto type = QuadObjectId::get_fixed_node_inside(ctx->identifier()->getText());
-//     insert_edges.emplace_back(
-//         from,
-//         to,
-//         type,
-//         ObjectId::get_null() // edge won't be used on inserts, pass anything
-//     );
-//     return 0;
-// }
+    current_bgp->add_property(saved_property_obj, key_id, current_value_oid);// TODO: dont use current_bgp?
+    return 0;
+}
+
+Any QueryVisitor::visitInsertProperty3(MQL_Parser::InsertProperty3Context* property)
+{
+    auto key_str = property->identifier()->getText();
+    auto key_id = QuadObjectId::get_string(key_str);
+
+    // TODO: use conditionalOrExpr to set current_value_oid?
+    current_bgp->add_property(saved_property_obj, key_id, current_value_oid);// TODO: dont use current_bgp?
+    return 0;
+}
 
 Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
 {

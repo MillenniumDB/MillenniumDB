@@ -91,7 +91,7 @@ void mql_parserParserInitialize() {
       "K_INTO", "K_IS", "K_FALSE", "K_FLOAT", "K_GROUP", "K_GROUPS", "K_LABELS", 
       "K_LABEL", "K_LET", "K_LIMIT", "K_MANHATTAN_DISTANCE", "K_MATCH", 
       "K_MAX", "K_MIN", "K_NORMALIZE", "K_OBJECTS", "K_OFFSET", "K_OPTIONAL", 
-      "K_ORDER", "K_OR", "K_OUTGOING", "K_PREFIX", "K_PROPERTIES", "K_PROPERTY", 
+      "K_ORDER", "K_OR", "K_OUTGOING", "K_PREFIX", "K_PROPERTY", "K_PROPERTIES", 
       "K_NOT", "K_NULL", "K_SHORTEST", "K_SHOW", "K_SIMPLE", "K_STRING", 
       "K_STR", "K_TEXT_SEARCH", "K_TYPE", "K_REGEX", "K_REMOVE", "K_RETURN", 
       "K_SET", "K_SUM", "K_TRUE", "K_TRAILS", "K_VALUES", "K_WALKS", "K_WITH", 
@@ -191,7 +191,7 @@ void mql_parserParserInitialize() {
   	70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,
   	112,114,116,118,120,122,124,126,128,130,132,134,136,138,140,142,144,146,
   	148,150,152,154,156,158,160,162,164,166,168,0,15,4,0,26,26,36,36,50,50,
-  	52,52,3,0,5,5,42,43,67,67,2,0,7,7,17,17,2,0,3,3,6,6,4,0,1,1,58,58,69,
+  	53,53,3,0,5,5,42,43,67,67,2,0,7,7,17,17,2,0,3,3,6,6,4,0,1,1,58,58,69,
   	69,71,71,2,0,78,78,82,82,1,0,80,81,1,0,88,93,2,0,32,32,68,68,1,0,101,
   	102,1,0,84,86,2,0,95,95,98,99,2,0,41,41,51,51,5,0,9,9,29,29,33,33,55,
   	55,59,59,6,0,1,17,19,31,33,63,65,65,67,67,69,74,1087,0,175,1,0,0,0,2,
@@ -448,7 +448,7 @@ void mql_parserParserInitialize() {
   	977,5,44,0,0,977,978,5,103,0,0,978,979,3,126,63,0,979,980,5,104,0,0,980,
   	155,1,0,0,0,981,982,5,60,0,0,982,983,5,103,0,0,983,984,3,126,63,0,984,
   	985,5,104,0,0,985,157,1,0,0,0,986,987,5,36,0,0,987,988,5,103,0,0,988,
-  	989,5,82,0,0,989,990,5,104,0,0,990,159,1,0,0,0,991,992,5,52,0,0,992,993,
+  	989,5,82,0,0,989,990,5,104,0,0,990,159,1,0,0,0,991,992,5,53,0,0,992,993,
   	5,103,0,0,993,994,5,82,0,0,994,995,5,104,0,0,995,161,1,0,0,0,996,997,
   	5,62,0,0,997,998,5,103,0,0,998,999,5,82,0,0,999,1000,5,104,0,0,1000,163,
   	1,0,0,0,1001,1002,7,12,0,0,1002,165,1,0,0,0,1003,1004,7,13,0,0,1004,167,
@@ -983,8 +983,8 @@ MQL_Parser::InsertNodeContext* MQL_Parser::insertNode() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
@@ -1590,8 +1590,8 @@ MQL_Parser::DeleteStatementContext* MQL_Parser::deleteStatement() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
@@ -1685,8 +1685,8 @@ MQL_Parser::DeleteStatementContext* MQL_Parser::deleteStatement() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -1938,8 +1938,8 @@ MQL_Parser::SetAtomContext* MQL_Parser::setAtom() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -2038,8 +2038,8 @@ MQL_Parser::SetAtomContext* MQL_Parser::setAtom() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -2134,8 +2134,8 @@ MQL_Parser::SetAtomContext* MQL_Parser::setAtom() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -2387,8 +2387,8 @@ MQL_Parser::RemoveAtomContext* MQL_Parser::removeAtom() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -2483,8 +2483,8 @@ MQL_Parser::RemoveAtomContext* MQL_Parser::removeAtom() {
         case MQL_Parser::K_OR:
         case MQL_Parser::K_OUTGOING:
         case MQL_Parser::K_PREFIX:
-        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_PROPERTY:
+        case MQL_Parser::K_PROPERTIES:
         case MQL_Parser::K_NOT:
         case MQL_Parser::K_NULL:
         case MQL_Parser::K_SHORTEST:
@@ -3231,7 +3231,7 @@ MQL_Parser::DescribeFlagContext* MQL_Parser::describeFlag() {
     setState(412);
     _la = _input->LA(1);
     if (!((((_la & ~ 0x3fULL) == 0) &&
-      ((1ULL << _la) & 5629568320798720) != 0))) {
+      ((1ULL << _la) & 10133167948169216) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -6338,8 +6338,8 @@ MQL_Parser::NodeContext* MQL_Parser::node() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
@@ -6486,8 +6486,8 @@ MQL_Parser::FixedObjContext* MQL_Parser::fixedObj() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
@@ -7387,8 +7387,8 @@ MQL_Parser::IdentifierContext* MQL_Parser::identifier() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
@@ -7775,8 +7775,8 @@ MQL_Parser::ValueContext* MQL_Parser::value() {
       case MQL_Parser::K_OR:
       case MQL_Parser::K_OUTGOING:
       case MQL_Parser::K_PREFIX:
-      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_PROPERTY:
+      case MQL_Parser::K_PROPERTIES:
       case MQL_Parser::K_NOT:
       case MQL_Parser::K_NULL:
       case MQL_Parser::K_SHORTEST:
