@@ -25,8 +25,6 @@ public:
     // and be false otherwise
     bool inside_aggregation = false;
 
-    bool at_root = true; // The visitor is currently at the root node
-
     // true if expression is from order by or return
     bool after_group = false;
 
@@ -43,7 +41,7 @@ public:
     { }
 
     template<typename AggType, class... Args>
-    void check_and_make_aggregate(Expr* parent_expr, Expr* expr, Args&&... args);
+    void check_and_make_aggregate(Expr* expr, VarId var, Args&&... args);
 
     void visit(ExprOr&) override;
     void visit(ExprAnd&) override;

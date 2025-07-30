@@ -5,11 +5,15 @@
 namespace GQL {
 class ExprAggCountAll : public Expr {
 public:
-    ExprAggCountAll() { }
+    VarId var;
+
+    ExprAggCountAll(VarId var) :
+        var(var)
+    { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprAggCountAll>();
+        return std::make_unique<ExprAggCountAll>(var);
     }
 
     void accept_visitor(ExprVisitor& visitor) override

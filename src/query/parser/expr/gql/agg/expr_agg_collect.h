@@ -7,15 +7,17 @@ class ExprAggCollect : public Expr {
 public:
     std::unique_ptr<Expr> expr;
     bool distinct;
+    VarId var;
 
-    ExprAggCollect(std::unique_ptr<Expr> expr, bool distinct) :
+    ExprAggCollect(std::unique_ptr<Expr> expr, bool distinct, VarId var) :
         expr(std::move(expr)),
-        distinct(distinct)
+        distinct(distinct),
+        var(var)
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprAggCollect>(expr->clone(), distinct);
+        return std::make_unique<ExprAggCollect>(expr->clone(), distinct, var);
     }
 
     void accept_visitor(ExprVisitor& visitor) override

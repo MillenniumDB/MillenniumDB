@@ -7,15 +7,17 @@ class ExprAggCount : public Expr {
 public:
     std::unique_ptr<Expr> expr;
     bool distinct;
+    VarId var;
 
-    ExprAggCount(std::unique_ptr<Expr> expr, bool distinct) :
+    ExprAggCount(std::unique_ptr<Expr> expr, bool distinct, VarId var) :
         expr(std::move(expr)),
-        distinct(distinct)
+        distinct(distinct),
+        var(var)
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprAggCount>(expr->clone(), distinct);
+        return std::make_unique<ExprAggCount>(expr->clone(), distinct, var);
     }
 
     void accept_visitor(ExprVisitor& visitor) override

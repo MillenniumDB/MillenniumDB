@@ -86,7 +86,7 @@ void PathBindingIterConstructor::visit(OpReturn& op_return)
             }
 
             if (!group_vars.count(*item.alias)) {
-                aliases_not_in_group_by.insert(*item.alias); //
+                aliases_not_in_group_by.insert(*item.alias);
             }
         }
     }

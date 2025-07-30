@@ -8,16 +8,23 @@ public:
     std::unique_ptr<Expr> expr;
     std::unique_ptr<Expr> percentile;
     bool distinct;
+    VarId var;
 
-    ExprAggPercentileCont(std::unique_ptr<Expr> expr, std::unique_ptr<Expr> percentile, bool distinct) :
+    ExprAggPercentileCont(
+        std::unique_ptr<Expr> expr,
+        std::unique_ptr<Expr> percentile,
+        bool distinct,
+        VarId var
+    ) :
         expr(std::move(expr)),
         percentile(std::move(percentile)),
-        distinct(distinct)
+        distinct(distinct),
+        var(var)
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprAggPercentileCont>(expr->clone(), percentile->clone(), distinct);
+        return std::make_unique<ExprAggPercentileCont>(expr->clone(), percentile->clone(), distinct, var);
     }
 
     void accept_visitor(ExprVisitor& visitor) override

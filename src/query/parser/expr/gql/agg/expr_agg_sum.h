@@ -7,15 +7,17 @@ class ExprAggSum : public Expr {
 public:
     std::unique_ptr<Expr> expr;
     bool distinct;
+    VarId var;
 
-    ExprAggSum(std::unique_ptr<Expr> expr, bool distinct) :
+    ExprAggSum(std::unique_ptr<Expr> expr, bool distinct, VarId var) :
         expr(std::move(expr)),
-        distinct(distinct)
+        distinct(distinct),
+        var(var)
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprAggSum>(expr->clone(), distinct);
+        return std::make_unique<ExprAggSum>(expr->clone(), distinct, var);
     }
 
     void accept_visitor(ExprVisitor& visitor) override
