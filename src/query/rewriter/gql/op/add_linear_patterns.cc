@@ -182,12 +182,6 @@ void AddLinearPatterns::visit(OpRepetition& op_repetition)
     linear_pattern = None;
 }
 
-void AddLinearPatterns::visit(OpOptProperties& op_opt_properties)
-{
-    op_opt_properties.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOptProperties>(std::move(tmp), op_opt_properties.properties);
-}
-
 void AddLinearPatterns::visit(OpLet& op_let)
 {
     tmp = std::make_unique<OpLet>(std::move(op_let.items));
@@ -212,3 +206,5 @@ void AddLinearPatterns::visit(OpFilterStatement& op)
 {
     tmp = std::make_unique<OpFilterStatement>(std::move(op.exprs));
 }
+
+void AddLinearPatterns::visit(OpLinearPattern& op) { }

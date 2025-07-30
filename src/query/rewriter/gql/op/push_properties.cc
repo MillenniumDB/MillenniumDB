@@ -110,12 +110,6 @@ void PushProperties::visit(OpFilter& op_filter)
     }
 }
 
-void PushProperties::visit(OpOptProperties& op_property)
-{
-    op_property.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOptProperties>(std::move(tmp), op_property.properties);
-}
-
 void PushProperties::visit(OpPathUnion& op_path_union)
 {
     std::vector<std::unique_ptr<Op>> patterns;
@@ -191,6 +185,11 @@ void PushProperties::visit(OpEdgeLabel& op)
 }
 
 void PushProperties::visit(OpFilterStatement& op)
+{
+    tmp = op.clone();
+}
+
+void PushProperties::visit(OpProperty& op)
 {
     tmp = op.clone();
 }

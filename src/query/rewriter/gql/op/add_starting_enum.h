@@ -23,7 +23,6 @@ public:
     void visit(OpBasicGraphPattern& op) override;
     void visit(OpLinearPattern& op) override;
     void visit(OpRepetition& op) override;
-    void visit(OpOptProperties&) override;
     void visit(OpPathUnion& op) override;
     void visit(OpOrderBy& op) override;
     void visit(OpLet& op) override;

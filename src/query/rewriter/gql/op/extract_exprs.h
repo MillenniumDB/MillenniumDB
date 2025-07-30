@@ -22,7 +22,6 @@ private:
 
     void visit(OpOrderBy& op) override;
     void visit(OpFilter& op) override;
-    void visit(OpOptProperties& op) override;
     void visit(OpProperty& op) override;
     void visit(OpPathUnion& op) override;
     void visit(OpLinearPattern& op) override;

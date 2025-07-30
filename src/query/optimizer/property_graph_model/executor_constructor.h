@@ -16,11 +16,26 @@ public:
         return_type(return_type)
     { }
 
-    void visit(GQL::OpReturn&) override;
-    void visit(GQL::OpGraphPattern&) override;
-    void visit(GQL::OpBasicGraphPattern&) override;
-    void visit(GQL::OpGraphPatternList&) override;
-    void visit(GQL::OpFilter&) override;
+    void visit(OpReturn&) override;
+    void visit(OpGraphPattern&) override;
+    void visit(OpBasicGraphPattern&) override;
+    void visit(OpGraphPatternList&) override;
+    void visit(OpFilter&) override;
+
+    void visit(OpNode&) override;
+    void visit(OpEdge&) override;
+    void visit(OpPathUnion&) override;
+    void visit(OpRepetition&) override;
+    void visit(OpNodeLabel&) override;
+    void visit(OpEdgeLabel&) override;
+    void visit(OpProperty&) override;
+    void visit(OpOrderBy&) override;
+    void visit(OpLinearPattern&) override;
+    void visit(OpFilterStatement&) override;
+    void visit(OpLet&) override;
+    void visit(OpOrderByStatement&) override;
+    void visit(OpQueryStatements&) override;
+    void visit(OpGroupBy&) override;
 
 private:
     ReturnType return_type;

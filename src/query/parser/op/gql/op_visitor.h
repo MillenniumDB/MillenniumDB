@@ -14,9 +14,7 @@ class OpPathUnion;
 class OpRepetition;
 class OpNodeLabel;
 class OpEdgeLabel;
-class OpOptProperties;
 class OpProperty;
-class OpOptLabels;
 class OpOrderBy;
 class OpLinearPattern;
 class OpFilterStatement;
@@ -29,89 +27,24 @@ class OpVisitor {
 public:
     virtual ~OpVisitor() = default;
 
-    virtual void visit(OpGraphPattern&)
-    {
-        throw LogicException("visit GQL::OpGraphPattern not implemented");
-    }
-    virtual void visit(OpBasicGraphPattern&)
-    {
-        throw LogicException("visit GQL::OpBasicGraphPattern not implemented");
-    }
-    virtual void visit(OpGraphPatternList&)
-    {
-        throw LogicException("visit GQL::OpGraphPatternList not implemented");
-    }
-    virtual void visit(OpNode&)
-    {
-        throw LogicException("visit GQL::OpNode not implemented");
-    }
-    virtual void visit(OpEdge&)
-    {
-        throw LogicException("visit GQL::OpEdge not implemented");
-    }
-    virtual void visit(OpFilter&)
-    {
-        throw LogicException("visit GQL::OpFilter not implemented");
-    }
-    virtual void visit(OpReturn&)
-    {
-        throw LogicException("visit GQL::OpReturn not implemented");
-    }
-    virtual void visit(OpPathUnion&)
-    {
-        throw LogicException("visit GQL::OpPathUnion not implemented");
-    }
-    virtual void visit(OpRepetition&)
-    {
-        throw LogicException("visit GQL::OpRepetition not implemented");
-    }
-    virtual void visit(OpNodeLabel&)
-    {
-        throw LogicException("visit GQL::OpNodeLabel not implemented");
-    }
-    virtual void visit(OpEdgeLabel&)
-    {
-        throw LogicException("visit GQL::OpEdgeLabel not implemented");
-    }
-    virtual void visit(OpOptProperties&)
-    {
-        throw LogicException("visit GQL::OpOptionalProperties not implemented");
-    }
-    virtual void visit(OpOptLabels&)
-    {
-        throw LogicException("visit GQL::OpOptLabels not implemented");
-    }
-    virtual void visit(OpProperty&)
-    {
-        throw LogicException("visit GQL::OpProperty not implemented");
-    }
-    virtual void visit(OpOrderBy&)
-    {
-        throw LogicException("visit GQL::OpOrderBy not implemented");
-    }
-    virtual void visit(OpLinearPattern&)
-    {
-        throw LogicException("visit GQL::OpLinearPattern not implemented");
-    }
-    virtual void visit(OpFilterStatement&)
-    {
-        throw LogicException("visit GQL::OpFilterStatement not implemented");
-    }
-    virtual void visit(OpLet&)
-    {
-        throw LogicException("visit GQL::OpLet not implemented");
-    }
-    virtual void visit(OpOrderByStatement&)
-    {
-        throw LogicException("visit GQL::OpOrderByStatement not implemented");
-    }
-    virtual void visit(OpQueryStatements&)
-    {
-        throw LogicException("visit GQL::OpQueryStatements not implemented");
-    }
-    virtual void visit(OpGroupBy&)
-    {
-        throw LogicException("visit GQL::OpGroupBy not implemented");
-    }
+    virtual void visit(OpGraphPattern&) = 0;
+    virtual void visit(OpBasicGraphPattern&) = 0;
+    virtual void visit(OpGraphPatternList&) = 0;
+    virtual void visit(OpNode&) = 0;
+    virtual void visit(OpEdge&) = 0;
+    virtual void visit(OpFilter&) = 0;
+    virtual void visit(OpReturn&) = 0;
+    virtual void visit(OpPathUnion&) = 0;
+    virtual void visit(OpRepetition&) = 0;
+    virtual void visit(OpNodeLabel&) = 0;
+    virtual void visit(OpEdgeLabel&) = 0;
+    virtual void visit(OpProperty&) = 0;
+    virtual void visit(OpOrderBy&) = 0;
+    virtual void visit(OpLinearPattern&) = 0;
+    virtual void visit(OpFilterStatement&) = 0;
+    virtual void visit(OpLet&) = 0;
+    virtual void visit(OpOrderByStatement&) = 0;
+    virtual void visit(OpQueryStatements&) = 0;
+    virtual void visit(OpGroupBy&) = 0;
 };
 } // namespace GQL

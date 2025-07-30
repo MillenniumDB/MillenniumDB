@@ -151,12 +151,6 @@ void PushLabels::visit(OpFilter& op_filter)
     }
 }
 
-void PushLabels::visit(OpOptProperties& op_property)
-{
-    op_property.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOptProperties>(std::move(tmp), op_property.properties);
-}
-
 void PushLabels::visit(OpPathUnion& op)
 {
     std::vector<std::unique_ptr<Op>> patterns;

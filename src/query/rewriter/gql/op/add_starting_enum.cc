@@ -71,11 +71,6 @@ void AddStartingEnum::visit(OpLinearPattern& op)
     op.patterns[0]->accept_visitor(*this);
 }
 
-void AddStartingEnum::visit(OpOptProperties& op)
-{
-    op.op->accept_visitor(*this);
-}
-
 void AddStartingEnum::visit(OpPathUnion& op)
 {
     for (auto& pattern : op.op_list) {

@@ -18,5 +18,16 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpOrderByStatement&) override;
     void visit(OpGroupBy&) override;
+
+    void visit(OpGraphPattern&) override;
+    void visit(OpBasicGraphPattern&) override;
+    void visit(OpNode&) override;
+    void visit(OpEdge&) override;
+    void visit(OpPathUnion&) override;
+    void visit(OpRepetition&) override;
+    void visit(OpNodeLabel&) override;
+    void visit(OpEdgeLabel&) override;
+    void visit(OpProperty&) override;
+    void visit(OpLinearPattern&) override;
 };
 } // namespace GQL

@@ -58,7 +58,6 @@ public:
     void visit(OpFilterStatement&) override { }
     void visit(OpOrderByStatement&) override { }
     void visit(OpFilter&) override;
-    void visit(OpOptProperties&) override;
     void visit(OpPathUnion&) override;
     void visit(OpNode&) override { }
     void visit(OpEdge&) override { }

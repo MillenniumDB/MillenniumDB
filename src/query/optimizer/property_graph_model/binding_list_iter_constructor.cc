@@ -300,11 +300,6 @@ void PathBindingIterConstructor::visit(OpGroupBy& op_group_by)
     }
 }
 
-void PathBindingIterConstructor::visit(OpOptProperties& op_opt_properties)
-{
-    op_opt_properties.op->accept_visitor(*this);
-}
-
 void PathBindingIterConstructor::visit(OpLet& op_let)
 {
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> binding_exprs;
@@ -410,8 +405,6 @@ void PathBindingIterConstructor::visit(OpFilter& op_filter)
         std::move(binding_exprs)
     );
 }
-
-void PathBindingIterConstructor::visit(OpOptLabels&) { }
 
 void PathBindingIterConstructor::visit(OpRepetition& op_repetition)
 {

@@ -127,12 +127,6 @@ void ExtractExprs::visit(OpRepetition& op_repetition)
     tmp = std::make_unique<OpRepetition>(std::move(tmp), op_repetition.lower, op_repetition.upper);
 }
 
-void ExtractExprs::visit(OpOptProperties& op_opt_properties)
-{
-    op_opt_properties.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOptProperties>(std::move(tmp), op_opt_properties.properties);
-}
-
 void ExtractExprs::visit(OpLinearPattern& op)
 {
     tmp = std::make_unique<OpLinearPattern>(std::move(op.patterns), std::move(op.start), std::move(op.end));

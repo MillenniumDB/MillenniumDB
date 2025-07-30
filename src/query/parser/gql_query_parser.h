@@ -12,8 +12,6 @@
 #include "query/rewriter/gql/op/check_unbounded_repetition.h"
 #include "query/rewriter/gql/op/check_var_existence.h"
 #include "query/rewriter/gql/op/extract_exprs.h"
-#include "query/rewriter/gql/op/extract_optional_labels.h"
-#include "query/rewriter/gql/op/extract_optional_properties.h"
 #include "query/rewriter/gql/op/push_labels.h"
 #include "query/rewriter/gql/op/push_properties.h"
 #include "query/rewriter/gql/op/rewrite_rule_visitor.h"
@@ -71,6 +69,7 @@ public:
         CheckUnboundedRepetition repetition_visitor;
         op->accept_visitor(repetition_visitor);
 
+        // TODO: consider removing this
         CheckStatements statements_visitor;
         op->accept_visitor(statements_visitor);
 

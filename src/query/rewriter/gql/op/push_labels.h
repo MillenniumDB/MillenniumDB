@@ -32,7 +32,6 @@ public:
     void visit(OpOrderBy& op) override;
     void visit(OpOrderByStatement& op) override;
     void visit(OpFilter& op_filter) override;
-    void visit(OpOptProperties&) override;
     void visit(OpPathUnion& op) override;
     void visit(OpLinearPattern& op) override;
     void visit(OpLet& op) override;

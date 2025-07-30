@@ -44,3 +44,13 @@ void CheckStatements::visit(OpLet&)
 
 void CheckStatements::visit(OpFilterStatement&) { }
 void CheckStatements::visit(OpOrderByStatement&) { }
+void CheckStatements::visit(OpGraphPattern&) { }
+void CheckStatements::visit(OpBasicGraphPattern&) { }
+void CheckStatements::visit(OpNode&) { }
+void CheckStatements::visit(OpEdge&) { }
+void CheckStatements::visit(OpPathUnion&) { }
+void CheckStatements::visit(OpRepetition&) { }
+void CheckStatements::visit(OpNodeLabel&) { }
+void CheckStatements::visit(OpEdgeLabel&) { }
+void CheckStatements::visit(OpProperty&) { }
+void CheckStatements::visit(OpLinearPattern&) { }

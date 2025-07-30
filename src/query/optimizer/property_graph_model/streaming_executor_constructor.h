@@ -13,5 +13,24 @@ public:
     std::unique_ptr<StreamingQueryExecutor> executor;
 
     void visit(OpReturn&) override;
+
+    void visit(OpGraphPattern&) override;
+    void visit(OpBasicGraphPattern&) override;
+    void visit(OpGraphPatternList&) override;
+    void visit(OpNode&) override;
+    void visit(OpEdge&) override;
+    void visit(OpFilter&) override;
+    void visit(OpPathUnion&) override;
+    void visit(OpRepetition&) override;
+    void visit(OpNodeLabel&) override;
+    void visit(OpEdgeLabel&) override;
+    void visit(OpProperty&) override;
+    void visit(OpOrderBy&) override;
+    void visit(OpLinearPattern&) override;
+    void visit(OpFilterStatement&) override;
+    void visit(OpLet&) override;
+    void visit(OpOrderByStatement&) override;
+    void visit(OpQueryStatements&) override;
+    void visit(OpGroupBy&) override;
 };
 } // namespace GQL

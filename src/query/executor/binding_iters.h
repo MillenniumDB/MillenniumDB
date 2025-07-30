@@ -73,7 +73,6 @@
 #include "query/executor/binding_iter/sequence.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/set_constants.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/set_end_boundary_variable.h" // IWYU pragma: keep
-#include "query/executor/binding_iter/set_labels.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/set_repeated_variable.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/set_start_boundary_variable.h" // IWYU pragma: keep
 #include "query/executor/binding_iter/set_variable_value.h" // IWYU pragma: keep

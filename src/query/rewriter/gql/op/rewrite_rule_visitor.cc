@@ -135,17 +135,6 @@ void RewriteRuleVisitor::visit(OpFilter& op_filter)
     op_filter.op->accept_visitor(*this);
 }
 
-void RewriteRuleVisitor::visit(OpOptProperties& op_property)
-{
-    for (auto& rule : rules) {
-        if (rule->is_possible_to_regroup(op_property.op)) {
-            op_property.op = rule->regroup(std::move(op_property.op));
-            has_rewritten = true;
-        }
-    }
-    op_property.op->accept_visitor(*this);
-}
-
 void RewriteRuleVisitor::visit(OpPathUnion& op)
 {
     for (auto& rule : rules) {

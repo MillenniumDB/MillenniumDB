@@ -16,26 +16,25 @@ public:
 
     void check_expr_variables(const std::set<VarId>& expr_variables);
 
-    void visit(GQL::OpQueryStatements&) override;
-    void visit(GQL::OpFilterStatement&) override;
-    void visit(GQL::OpGraphPattern&) override;
-    void visit(GQL::OpBasicGraphPattern&) override;
-    void visit(GQL::OpGraphPatternList&) override;
-    void visit(GQL::OpFilter&) override;
-    void visit(GQL::OpOptProperties&) override;
-    void visit(GQL::OpProperty&) override;
-    void visit(GQL::OpReturn&) override;
-    void visit(GQL::OpOrderBy&) override;
-    void visit(GQL::OpOrderByStatement&) override;
-    void visit(GQL::OpPathUnion&) override;
-    void visit(GQL::OpRepetition&) override;
-    void visit(GQL::OpNode&) override;
-    void visit(GQL::OpEdge&) override;
-    void visit(GQL::OpLet&) override;
-    void visit(GQL::OpGroupBy&) override;
-
-    void visit(GQL::OpEdgeLabel&) override { }
-    void visit(GQL::OpNodeLabel&) override { }
+    virtual void visit(OpGraphPattern& op);
+    virtual void visit(OpBasicGraphPattern& op);
+    virtual void visit(OpGraphPatternList& op);
+    virtual void visit(OpNode& op);
+    virtual void visit(OpEdge& op);
+    virtual void visit(OpFilter& op);
+    virtual void visit(OpReturn& op);
+    virtual void visit(OpPathUnion& op);
+    virtual void visit(OpRepetition& op);
+    virtual void visit(OpNodeLabel& op);
+    virtual void visit(OpEdgeLabel& op);
+    virtual void visit(OpProperty& op);
+    virtual void visit(OpOrderBy& op);
+    virtual void visit(OpLinearPattern& op);
+    virtual void visit(OpFilterStatement& op);
+    virtual void visit(OpLet& op);
+    virtual void visit(OpOrderByStatement& op);
+    virtual void visit(OpQueryStatements& op);
+    virtual void visit(OpGroupBy& op);
 };
 
 } // namespace GQL

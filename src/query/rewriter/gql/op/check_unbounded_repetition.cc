@@ -70,17 +70,14 @@ void CheckUnboundedRepetition::visit(OpFilter& op)
     op.op->accept_visitor(*this);
 }
 
-void CheckUnboundedRepetition::visit(OpOptProperties& op)
-{
-    op.op->accept_visitor(*this);
-}
-
 void CheckUnboundedRepetition::visit(OpPathUnion& op)
 {
     for (auto& pattern : op.op_list) {
         pattern->accept_visitor(*this);
     }
 }
+
+void CheckUnboundedRepetition::visit(OpLinearPattern&) { }
 
 void CheckUnboundedRepetition::visit(OpOrderByStatement&) { }
 
