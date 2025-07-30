@@ -1,7 +1,6 @@
 #pragma once
 
 #include "graph_models/object_id.h"
-#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
@@ -20,11 +19,7 @@ public:
 
     std::ostream& print(std::ostream& os, int indent = 0) const
     {
-        os << std::string(indent, ' ');
-        os << "DisjointTerm(";
-        os << term;
-        os << ")\n";
-        return os;
+        return os << std::string(indent, ' ') << "DisjointTerm(" << term << ")\n";
     }
 };
 } // namespace MQL

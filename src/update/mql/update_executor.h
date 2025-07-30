@@ -40,9 +40,9 @@ public:
     ~UpdateExecutor();
 
     // TODO: OpDelete?
-    void visit(OpInsert&) override;
-    void visit(OpCreateHNSWIndex&) override;
-    void visit(OpCreateTextIndex&) override;
+    // void visit(OpInsert&) override;
+    // void visit(OpCreateHNSWIndex&) override;
+    // void visit(OpCreateTextIndex&) override;
 
     void visit(OpUpdate&) override { }
 

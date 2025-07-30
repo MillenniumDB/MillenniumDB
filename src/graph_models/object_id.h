@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <type_traits>
 
 class ObjectId {
@@ -236,5 +237,8 @@ public:
         return id >= rhs.id;
     }
 };
+
+std::ostream& operator<<(std::ostream& os, ObjectId oid);
+
 
 static_assert(std::is_trivially_copyable<ObjectId>::value);

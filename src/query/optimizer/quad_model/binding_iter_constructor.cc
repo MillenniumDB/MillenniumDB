@@ -101,7 +101,7 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     // Process properties (value is fixed)
     for (auto& op_property : op_basic_graph_pattern.properties) {
         base_plans.push_back(
-            std::make_unique<PropertyPlan>(op_property.node, op_property.key, op_property.value)
+            std::make_unique<PropertyPlan>(op_property.obj, op_property.key, op_property.value)
         );
     }
 

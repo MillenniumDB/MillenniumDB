@@ -4,7 +4,6 @@
 #include <string>
 
 #include "query/id.h"
-#include "query/parser/op/mql/op.h"
 #include "query/parser/paths/regular_path_expr.h"
 
 namespace MQL {
@@ -89,7 +88,7 @@ public:
     std::ostream& print(std::ostream& os, int indent = 0) const
     {
         return os << std::string(indent, ' ') << "Path(" << Paths::get_semantic_str(semantic) << ", "
-                  << get_query_ctx().get_var_name(var) << ", " << from << ", " << to << ", "
+                  << var << ", " << from << ", " << to << ", "
                   << path->to_string() << ")\n";
     }
 };

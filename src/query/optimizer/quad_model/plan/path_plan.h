@@ -2,16 +2,15 @@
 
 #include "query/executor/binding_iter/paths/index_provider/path_index.h"
 #include "query/optimizer/plan/plan.h"
-#include "query/parser/op/mql/graph_pattern/op_path.h"
+#include "query/parser/op/mql/graph_pattern/path.h"
 #include "query/parser/paths/regular_path_expr.h"
-#include "query/query_context.h"
 
 namespace MQL {
 class PathPlan : public Plan {
 public:
     PathPlan(
         std::vector<bool>& begin_at_left,
-        OpPath::Direction direction,
+        Path::Direction direction,
         VarId path_var,
         Id from,
         Id to,
@@ -63,7 +62,7 @@ public:
 
 private:
     std::vector<bool>& begin_at_left;
-    OpPath::Direction direction;
+    Path::Direction direction;
     const VarId path_var;
     const Id from;
     const Id to;

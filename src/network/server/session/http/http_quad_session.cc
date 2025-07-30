@@ -136,10 +136,11 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
     try {
         auto logical_plan = create_logical_plan(query);
 
-        if (!logical_plan->read_only()) {
-            execute_update(*logical_plan, *read_only_version_scope, os);
-            return;
-        }
+        // TODO:
+        // if (!logical_plan->read_only()) {
+        //     execute_update(*logical_plan, *read_only_version_scope, os);
+        //     return;
+        // }
         physical_plan = create_readonly_physical_plan(*logical_plan, response_type);
     } catch (const QueryParsingException& e) {
         logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "

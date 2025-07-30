@@ -3,28 +3,27 @@
 #include <string>
 
 #include "query/id.h"
-#include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
 class Property {
 public:
-    Id node; // TODO: rename to obj?
+    Id obj;
     ObjectId key;
     ObjectId value;
 
     Property(Id obj, ObjectId key, ObjectId value) :
-        node(obj),
+        obj(obj),
         key(key),
         value(value)
     { }
 
-    // Only comparing node and key, not checking value
+    // Only comparing obj and key, not checking value
     bool operator<(const Property& other) const
     {
-        if (node < other.node) {
+        if (obj < other.obj) {
             return true;
-        } else if (other.node < node) {
+        } else if (other.obj < obj) {
             return false;
         } else if (key < other.key) {
             return true;
@@ -38,7 +37,7 @@ public:
     std::ostream& print(std::ostream& os, int indent = 0) const
     {
         os << std::string(indent, ' ');
-        os << "Property(" << node << ", " << key << ", " << value << ")\n";
+        os << "Property(" << obj << ", " << key << ", " << value << ")\n";
         return os;
     }
 };

@@ -8,7 +8,7 @@
 
 namespace MQL {
 
-class OpCreateTextIndex : public Op {
+class OpCreateTextIndex {
 public:
     const std::string index_name;
     const std::string property;
@@ -27,34 +27,34 @@ public:
         tokenize_type { tokenize_type }
     { }
 
-    std::unique_ptr<Op> clone() const override
-    {
-        auto text_search_index_name_clone = index_name;
-        auto property_clone = property;
-        return std::make_unique<OpCreateTextIndex>(
-            std::move(text_search_index_name_clone),
-            std::move(property_clone),
-            normalize_type,
-            tokenize_type
-        );
-    }
+    // std::unique_ptr<Op> clone() const override
+    // {
+    //     auto text_search_index_name_clone = index_name;
+    //     auto property_clone = property;
+    //     return std::make_unique<OpCreateTextIndex>(
+    //         std::move(text_search_index_name_clone),
+    //         std::move(property_clone),
+    //         normalize_type,
+    //         tokenize_type
+    //     );
+    // }
 
-    bool read_only() const override
-    {
-        return false;
-    }
+    // bool read_only() const override
+    // {
+    //     return false;
+    // }
 
-    void accept_visitor(OpVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
+    // void accept_visitor(OpVisitor& visitor) override
+    // {
+    //     visitor.visit(*this);
+    // }
 
-    std::set<VarId> get_all_vars() const override
-    {
-        return {};
-    }
+    // std::set<VarId> get_all_vars() const override
+    // {
+    //     return {};
+    // }
 
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
+    std::ostream& print(std::ostream& os, int indent = 0) const
     {
         os << std::string(indent, ' ');
         os << "OpCreateTextIndex(index_name: " << index_name

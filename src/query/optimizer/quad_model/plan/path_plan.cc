@@ -43,6 +43,7 @@
 #include "query/executor/binding_iter/paths/shortest_k_groups/walks/bfs_check.h"
 #include "query/executor/binding_iter/paths/shortest_k_groups/walks/bfs_enum.h"
 #include "query/executor/binding_iter/paths/unfixed_composite.h"
+#include "query/query_context.h"
 // #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_check.h"
 // #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_enum.h"
 
@@ -52,7 +53,7 @@ using namespace Paths;
 
 PathPlan::PathPlan(
     std::vector<bool>& begin_at_left,
-    OpPath::Direction direction,
+    Path::Direction direction,
     VarId path_var,
     Id from,
     Id to,
@@ -476,7 +477,7 @@ bool PathPlan::from_is_better_start_direction() const {
 }
 
 unique_ptr<BindingIter> PathPlan::get_binding_iter() const {
-    bool right_to_left = direction == OpPath::Direction::RIGHT_TO_LEFT;
+    bool right_to_left = direction == Path::Direction::RIGHT_TO_LEFT;
     if (from_assigned) {
         if (to_assigned) {
             auto star_at_from = from_is_better_start_direction();

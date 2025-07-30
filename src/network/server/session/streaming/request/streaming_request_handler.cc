@@ -158,7 +158,9 @@ bool StreamingRequestHandler::is_update(const OpUptr& uptr) {
     if (std::holds_alternative<std::unique_ptr<GQL::Op>>(uptr)) {
         return false;
     } else if (std::holds_alternative<std::unique_ptr<MQL::Op>>(uptr)) {
-        return !std::get<std::unique_ptr<MQL::Op>>(uptr)->read_only();
+        // TODO:
+        return false;
+        // return !std::get<std::unique_ptr<MQL::Op>>(uptr)->read_only();
     } else if (std::holds_alternative<std::unique_ptr<SPARQL::Op>>(uptr)) {
         return false;
     }

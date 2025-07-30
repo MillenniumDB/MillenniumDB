@@ -122,12 +122,11 @@ Any QueryVisitor::visitShowQuery(MQL_Parser::ShowQueryContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitMatchQuery(MQL_Parser::MatchQueryContext* ctx)
+Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
 {
-    const auto primitiveStatements = ctx->primitiveStatementList()->primitiveStatement();
+    const auto primitiveStatements = ctx->primitiveStatement();
     if (primitiveStatements.size() > 1) {
         std::vector<std::unique_ptr<Op>> sequence;
-        sequence.reserve(primitiveStatements.size());
 
         for (auto& primitiveStatement : primitiveStatements) {
             visit(primitiveStatement);
@@ -140,21 +139,22 @@ Any QueryVisitor::visitMatchQuery(MQL_Parser::MatchQueryContext* ctx)
 
     assert(current_op != nullptr);
 
-    if (ctx->whereStatement()) {
-        auto current_old_expr = std::move(current_expr);
-        auto where_context = ctx->whereStatement();
-        where_context->conditionalOrExpr()->accept(this);
-        if (current_old_expr != nullptr) {
-            std::vector<std::unique_ptr<Expr>> and_list;
-            and_list.push_back(std::move(current_expr));
-            and_list.push_back(std::move(current_old_expr));
-            current_expr = std::make_unique<ExprAnd>(std::move(and_list));
-        }
-        current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
+    // TODO: implement visit where
+    // if (ctx->whereStatement()) {
+    //     auto current_old_expr = std::move(current_expr);
+    //     auto where_context = ctx->whereStatement();
+    //     where_context->conditionalOrExpr()->accept(this);
+    //     if (current_old_expr != nullptr) {
+    //         std::vector<std::unique_ptr<Expr>> and_list;
+    //         and_list.push_back(std::move(current_expr));
+    //         and_list.push_back(std::move(current_old_expr));
+    //         current_expr = std::make_unique<ExprAnd>(std::move(and_list));
+    //     }
+    //     current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
 
-    } else if (current_expr) {
-        current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
-    }
+    // } else if (current_expr) {
+    //     current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
+    // }
 
     if (ctx->groupByStatement()) {
         ctx->groupByStatement()->accept(this);
@@ -217,78 +217,79 @@ Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx)
-{
-    current_basic_graph_pattern = std::make_unique<OpBasicGraphPattern>();
-    visitChildren(ctx);
-    current_op = std::make_unique<OpInsert>(std::move(current_basic_graph_pattern));
-    return 0;
-}
+// Any QueryVisitor::visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx)
+// {
+//     current_basic_graph_pattern = std::make_unique<OpBasicGraphPattern>();
+//     visitChildren(ctx);
+//     // TODO:
+//     // current_op = std::make_unique<OpInsert>(std::move(current_basic_graph_pattern));
+//     return 0;
+// }
 
-Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx)
-{
-    first_element_disjoint = ctx->children.size() == 1;
-    ctx->children[0]->accept(this);
-    saved_node = last_node;
-    for (size_t i = 2; i < ctx->children.size(); i += 2) {
-        ctx->children[i]->accept(this); // accept node
-        ctx->children[i - 1]->accept(this); // accept edge
-        saved_node = last_node;
-    }
-    return 0;
-}
+// Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx)
+// {
+//     first_element_disjoint = ctx->children.size() == 1;
+//     ctx->children[0]->accept(this);
+//     saved_node = last_node;
+//     for (size_t i = 2; i < ctx->children.size(); i += 2) {
+//         ctx->children[i]->accept(this);     // accept node
+//         ctx->children[i - 1]->accept(this); // accept edge
+//         saved_node = last_node;
+//     }
+//     return 0;
+// }
 
-Any QueryVisitor::visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx)
-{
-    last_node = QuadObjectId::get_fixed_node_inside(ctx->insertPlainNodeInside()->getText());
+// Any QueryVisitor::visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx)
+// {
+//     last_node = QuadObjectId::get_fixed_node_inside(ctx->insertPlainNodeInside()->getText());
 
-    // Process Labels
-    for (auto& label : ctx->TYPE()) {
-        auto label_str = label->getText();
-        label_str.erase(0, 1); // remove leading ':'
-        auto label_id = QuadObjectId::get_string(label_str);
-        current_basic_graph_pattern->add_label(last_node, label_id);
-    }
+//     // Process Labels
+//     for (auto& label : ctx->TYPE()) {
+//         auto label_str = label->getText();
+//         label_str.erase(0, 1); // remove leading ':'
+//         auto label_id = QuadObjectId::get_string(label_str);
+//         current_basic_graph_pattern->add_label(last_node, label_id);
+//     }
 
-    auto properties = ctx->properties();
-    if (properties != nullptr) {
-        saved_property_obj = last_node;
-        for (auto property : properties->property()) {
-            property->accept(this);
-        }
-    }
+//     auto properties = ctx->properties();
+//     if (properties != nullptr) {
+//         saved_property_obj = last_node;
+//         for (auto property : properties->property()) {
+//             property->accept(this);
+//         }
+//     }
 
-    // necessary to insert even if not disjoint
-    current_basic_graph_pattern->add_disjoint_term(last_node.get_OID());
+//     // necessary to insert even if not disjoint
+//     current_basic_graph_pattern->add_disjoint_term(last_node.get_OID());
 
-    return 0;
-}
+//     return 0;
+// }
 
-Any QueryVisitor::visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx)
-{
-    auto edge = get_query_ctx().get_internal_var();
+// Any QueryVisitor::visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx)
+// {
+//     auto edge = get_query_ctx().get_internal_var();
 
-    auto type_str = ctx->TYPE()->getText();
-    type_str.erase(0, 1); // remove leading ':'
-    auto type_id = QuadObjectId::get_named_node(type_str);
+//     auto type_str = ctx->TYPE()->getText();
+//     type_str.erase(0, 1); // remove leading ':'
+//     auto type_id = QuadObjectId::get_named_node(type_str);
 
-    auto properties = ctx->properties();
-    if (properties != nullptr) {
-        saved_property_obj = edge;
-        for (auto property : properties->property()) {
-            property->accept(this);
-        }
-    }
+//     auto properties = ctx->properties();
+//     if (properties != nullptr) {
+//         saved_property_obj = edge;
+//         for (auto property : properties->property()) {
+//             property->accept(this);
+//         }
+//     }
 
-    if (ctx->GT() != nullptr) {
-        // right direction
-        current_basic_graph_pattern->add_edge(saved_node, last_node, type_id, edge);
-    } else {
-        // left direction
-        current_basic_graph_pattern->add_edge(last_node, saved_node, type_id, edge);
-    }
-    return 0;
-}
+//     if (ctx->GT() != nullptr) {
+//         // right direction
+//         current_basic_graph_pattern->add_edge(saved_node, last_node, type_id, edge);
+//     } else {
+//         // left direction
+//         current_basic_graph_pattern->add_edge(last_node, saved_node, type_id, edge);
+//     }
+//     return 0;
+// }
 
 // Any QueryVisitor::visitInsertLabelElement(MQL_Parser::InsertLabelElementContext* ctx) {
 //     auto label_str = ctx->STRING()->getText();
@@ -488,8 +489,8 @@ Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx)
 {
     OpLet::VarExprType var_expr;
 
-    const auto letDefinitionList = ctx->letDefinitionList();
-    for (auto& definition : letDefinitionList->letDefinition()) {
+    const auto letDefinitionList = ctx->letDefinition();
+    for (auto& definition : letDefinitionList) {
         auto var_name = definition->VARIABLE()->getText();
         var_name.erase(0, 1); // remove leading '?'
 
@@ -906,7 +907,7 @@ Any QueryVisitor::visitLinearPattern(MQL_Parser::LinearPatternContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext* ctx)
+Any QueryVisitor::visitFixedObj(MQL_Parser::FixedObjContext* ctx)
 {
     last_node = QuadObjectId::get_fixed_node_inside(ctx->getText());
     if (first_element_disjoint) {
@@ -1409,7 +1410,7 @@ Any QueryVisitor::visitExprVar(MQL_Parser::ExprVarContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext* ctx)
+Any QueryVisitor::visitExprFixedObj(MQL_Parser::ExprFixedObjContext* ctx)
 {
     auto oid = QuadObjectId::get_fixed_node_inside(ctx->getText());
     current_expr = std::make_unique<ExprConstant>(oid);
@@ -1850,12 +1851,13 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
 
-        current_op = std::make_unique<OpCreateTextIndex>(
-            std::move(index_name),
-            std::move(text_index_opts.property),
-            normalize_type,
-            tokenize_type
-        );
+        // TODO:
+        // current_op = std::make_unique<OpCreateTextIndex>(
+        //     std::move(index_name),
+        //     std::move(text_index_opts.property),
+        //     normalize_type,
+        //     tokenize_type
+        // );
     } else if (index_type_lowercased == "hnsw") {
         // Check if hnsw index existed before
         if (quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name) != nullptr) {
@@ -1894,14 +1896,15 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
         }
 
-        current_op = std::make_unique<OpCreateHNSWIndex>(
-            std::move(index_name),
-            std::move(hnsw_index_opts.property),
-            hnsw_index_opts.dimension,
-            hnsw_index_opts.max_edges,
-            hnsw_index_opts.max_candidates,
-            metric_type
-        );
+        // TODO:
+        // current_op = std::make_unique<OpCreateHNSWIndex>(
+        //     std::move(index_name),
+        //     std::move(hnsw_index_opts.property),
+        //     hnsw_index_opts.dimension,
+        //     hnsw_index_opts.max_edges,
+        //     hnsw_index_opts.max_candidates,
+        //     metric_type
+        // );
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }

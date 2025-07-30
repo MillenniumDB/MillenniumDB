@@ -4,22 +4,27 @@ options {
 	tokenVocab = MQL_Lexer;
 }
 
-root: (matchQuery | describeQuery | createIndexQuery | showQuery) EOF;
+root: (
+		simpleQuery
+		| describeQuery
+		| createIndexQuery
+		| showQuery
+		| updateStatement
+	) EOF;
 
-matchQuery:
-	primitiveStatement+ whereStatement? groupByStatement? orderByStatement? returnStatement;
+updateStatement:
+	insertStatement
+	| deleteStatement
+	| setStatement
+	| removeStatement;
 
-primitiveStatement:
-	matchStatement
-	| callStatement
-	| letStatement;
-
-insertPatterns:
+insertStatement:
 	K_INSERT insertLinearPattern (',' insertLinearPattern)*;
 
 insertLinearPattern: insertNode (insertEdge insertNode)*;
 
-insertNode: '(' identifier? TYPE* insert_properties? ')';
+insertNode:
+	'(' (identifier | VARIABLE)? TYPE* insert_properties? ')';
 
 insertEdge:
 	'<' '-' '[' TYPE insert_properties? ']' '-'
@@ -35,6 +40,34 @@ insert_property:
 	| identifier TYPE '(' STRING ')'				# insert_property2
 	| identifier ':' conditionalOrExpr				# insert_property3;
 
+deleteStatement:
+	K_DETACH? K_DELETE (fixedObj | VARIABLE) (
+		',' (fixedObj | VARIABLE)
+	)*;
+
+setStatement: K_SET setAtom (',' setAtom)*;
+
+setAtom: (fixedObj | VARIABLE) KEY '=' value
+	| (fixedObj | VARIABLE) insert_properties
+	| (fixedObj | VARIABLE) (TYPE)+;
+
+removeStatement: K_REMOVE removeAtom (',' removeAtom)*;
+
+removeAtom: (fixedObj | VARIABLE) KEY
+	| (fixedObj | VARIABLE) (TYPE)+;
+
+// TODO: introduce having?
+simpleQuery:
+	primitiveStatement+ groupByStatement? orderByStatement? (
+		returnStatement
+		| updateStatement+
+	);
+
+primitiveStatement: (
+		(matchStatement | callStatement) whereStatement?
+	)
+	| letStatement;
+
 createIndexQuery:
 	K_CREATE identifier K_INDEX STRING K_WITH createIndexOptions;
 
@@ -45,7 +78,7 @@ createIndexOption: STRING ('=' value | boolValue);
 
 showQuery: K_SHOW identifier K_INDEX;
 
-describeQuery: K_DESCRIBE describeFlag* fixedNode;
+describeQuery: K_DESCRIBE describeFlag* fixedObj;
 
 describeFlag: (K_LABELS | K_PROPERTIES | K_OUTGOING | K_INCOMING) (
 		K_LIMIT UNSIGNED_INTEGER
@@ -53,9 +86,7 @@ describeFlag: (K_LABELS | K_PROPERTIES | K_OUTGOING | K_INCOMING) (
 
 matchStatement: K_MATCH graphPattern;
 
-letStatement: K_LET letDefinitionList;
-
-letDefinitionList: letDefinition (',' letDefinition)*;
+letStatement: K_LET letDefinition (',' letDefinition)*;
 
 letDefinition: VARIABLE '=' conditionalOrExpr;
 
@@ -143,9 +174,9 @@ pathType: (K_ANY | K_ALL) (K_SHORTEST)? (
 		| K_TRAILS
 	)?;
 
-node: '(' (fixedNode | varNode) ')';
+node: '(' (fixedObj | varNode) ')';
 
-fixedNode: identifier | ANON_ID | EDGE_ID;
+fixedObj: identifier | ANON_ID | EDGE_ID;
 
 varNode: VARIABLE? TYPE* properties?;
 
@@ -209,7 +240,7 @@ atomicExpr:
 	VARIABLE KEY?				# exprVar
 	| function					# exprFunction
 	| value						# exprValue
-	| fixedNode					# exprFixedNode
+	| fixedObj					# exprFixedObj
 	| '(' conditionalOrExpr ')'	# exprParenthesis;
 
 function:

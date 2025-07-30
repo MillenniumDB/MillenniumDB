@@ -232,20 +232,3 @@ public:
 inline QueryContext& get_query_ctx() {
     return *QueryContext::_query_ctx;
 }
-
-inline std::ostream& operator<<(std::ostream& os, ObjectId oid) {
-    return get_query_ctx()._debug_print(os, oid);
-}
-
-inline std::ostream& operator<<(std::ostream& os, VarId var) {
-    return os << '?' << get_query_ctx().get_var_name(var);
-}
-
-inline std::ostream& operator<<(std::ostream& os, Id id) {
-    if (id.is_OID()) {
-        get_query_ctx()._debug_print(os, id.get_OID());
-    } else {
-        os << '?' << get_query_ctx().get_var_name(id.get_var());
-    }
-    return os;
-}

@@ -30,12 +30,6 @@ public:
     virtual void visit(OpReturn&) = 0;
     virtual void visit(OpShow&) = 0;
 
-    // virtual void visit(OpEdge&) = 0;
-    // virtual void visit(OpDisjointTerm&) = 0;
-    // virtual void visit(OpDisjointVar&) = 0;
-    // virtual void visit(OpLabel&) = 0;
-    // virtual void visit(OpPath&) = 0;
-    // virtual void visit(OpProperty&) = 0;
     virtual void visit(OpBasicGraphPattern&) = 0;
     virtual void visit(OpCall&) = 0;
     virtual void visit(OpGroupBy&) = 0;

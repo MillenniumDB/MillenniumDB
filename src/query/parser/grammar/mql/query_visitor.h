@@ -213,14 +213,14 @@ public:
 
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;
-    // virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext* ctx) override;
-    virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext* ctx) override;
+    virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx) override;
     virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext* ctx) override;
 
-    virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx) override;
-    virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx) override;
-    virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx) override;
-    virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx) override;
+    // virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext* ctx) override;
+    // virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx) override;
+    // virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx) override;
+    // virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext* ctx) override;
+    // virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext* ctx) override;
     // virtual std::any visitInsertStatement(MQL_Parser::InsertStatementContext* ctx) override;
     // virtual std::any visitInsertLabelElement(MQL_Parser::InsertLabelElementContext* ctx) override;
     // virtual std::any visitInsertPropertyElement(MQL_Parser::InsertPropertyElementContext* ctx) override;
@@ -251,7 +251,7 @@ public:
     virtual std::any visitGraphPattern(MQL_Parser::GraphPatternContext* ctx) override;
     virtual std::any visitBasicPattern(MQL_Parser::BasicPatternContext* ctx) override;
     virtual std::any visitLinearPattern(MQL_Parser::LinearPatternContext* ctx) override;
-    virtual std::any visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext* ctx) override;
+    virtual std::any visitFixedObj(MQL_Parser::FixedObjContext* ctx) override;
     virtual std::any visitVarNode(MQL_Parser::VarNodeContext* ctx) override;
     virtual std::any visitEdge(MQL_Parser::EdgeContext* ctx) override;
     virtual std::any visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx) override;
@@ -267,7 +267,7 @@ public:
     virtual std::any visitPathAtomAlternatives(MQL_Parser::PathAtomAlternativesContext* ctx) override;
 
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext* ctx) override;
-    virtual std::any visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext* ctx) override;
+    virtual std::any visitExprFixedObj(MQL_Parser::ExprFixedObjContext* ctx) override;
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext* ctx) override;
 
     virtual std::any visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext* ctx) override;
