@@ -125,50 +125,33 @@ Any QueryVisitor::visitShowQuery(MQL_Parser::ShowQueryContext* ctx)
 Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
 {
     const auto primitiveStatements = ctx->primitiveStatement();
-    if (primitiveStatements.size() > 1) {
-        std::vector<std::unique_ptr<Op>> sequence;
 
-        for (auto& primitiveStatement : primitiveStatements) {
-            visit(primitiveStatement);
-            sequence.emplace_back(std::move(current_op));
+    std::vector<std::unique_ptr<Op>> sequence;
+
+    for (auto& primitiveStatement : primitiveStatements) {
+        visit(primitiveStatement);
+        assert(current_op != nullptr);
+        if (current_expr) {
+            current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
         }
+        sequence.emplace_back(std::move(current_op));
+    }
+    if (sequence.size() > 1) {
         current_op = std::make_unique<OpSequence>(std::move(sequence));
     } else {
-        visit(primitiveStatements[0]);
+        assert(sequence.size() > 0);
+        current_op = std::move(sequence[0]);
     }
-
-    assert(current_op != nullptr);
-
-    // TODO: implement visit where
-    // if (ctx->whereStatement()) {
-    //     auto current_old_expr = std::move(current_expr);
-    //     auto where_context = ctx->whereStatement();
-    //     where_context->conditionalOrExpr()->accept(this);
-    //     if (current_old_expr != nullptr) {
-    //         std::vector<std::unique_ptr<Expr>> and_list;
-    //         and_list.push_back(std::move(current_expr));
-    //         and_list.push_back(std::move(current_old_expr));
-    //         current_expr = std::make_unique<ExprAnd>(std::move(and_list));
-    //     }
-    //     current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
-
-    // } else if (current_expr) {
-    //     current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(current_expr));
-    // }
 
     if (ctx->groupByStatement()) {
         ctx->groupByStatement()->accept(this);
+        assert(group_by_exprs.size() > 0);
+        current_op = std::make_unique<OpGroupBy>(std::move(current_op), std::move(group_by_exprs));
     }
     if (ctx->orderByStatement()) {
         ctx->orderByStatement()->accept(this);
-    }
-    ctx->returnStatement()->accept(this);
 
-    if (group_by_exprs.size() > 0) {
-        current_op = std::make_unique<OpGroupBy>(std::move(current_op), std::move(group_by_exprs));
-    }
-
-    if (order_by_info.items.size() > 0) {
+        assert(order_by_info.items.size() > 0);
         current_op = std::make_unique<OpOrderBy>(
             std::move(current_op),
             std::move(order_by_info.items),
@@ -176,53 +159,49 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
         );
     }
 
-    // RETURN *
-    if (return_info.items.size() == 0) {
-        auto vars = current_op->get_all_vars();
-        for (auto& var : vars) {
-            // filter anonymous vars
-            if (!get_query_ctx().is_internal(var)) {
-                auto& var_name = get_query_ctx().get_var_name(var);
-                if (auto pos = var_name.find('.'); pos != std::string::npos) {
-                    auto var_without_property = var_name.substr(0, pos);
-                    auto key_name = var_name.substr(pos + 1);
-                    auto var_without_property_id = get_query_ctx().get_or_create_var(var_without_property);
-                    auto key_id = QuadObjectId::get_string(key_name);
-
-                    return_info.items.emplace_back(
-                        std::make_unique<ExprVarProperty>(var_without_property_id, key_id, var),
-                        var
-                    );
-                } else {
-                    return_info.items.emplace_back(std::make_unique<ExprVar>(var), var);
-                }
-            }
+    if (ctx->returnStatement()) {
+        ctx->returnStatement()->accept(this);
+        current_op = std::make_unique<OpReturn>(
+            std::move(current_op),
+            std::move(return_info.items),
+            return_info.distinct,
+            return_info.limit,
+            return_info.offset
+        );
+    } else {
+        for (auto& update : ctx->updateStatement()) {
+            update->accept(this);
         }
     }
 
-    current_op = std::make_unique<OpReturn>(
-        std::move(current_op),
-        std::move(return_info.items),
-        return_info.distinct,
-        return_info.limit,
-        return_info.offset
-    );
-
     return 0;
 }
 
-Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
+Any QueryVisitor::visitWhereStatement(MQL_Parser::WhereStatementContext* ctx)
 {
-    visitChildren(ctx);
+    auto current_old_expr = std::move(current_expr);
+    ctx->conditionalOrExpr()->accept(this);
+    if (current_old_expr != nullptr) {
+        std::vector<std::unique_ptr<Expr>> and_list;
+        and_list.push_back(std::move(current_expr));
+        and_list.push_back(std::move(current_old_expr));
+        current_expr = std::make_unique<ExprAnd>(std::move(and_list));
+    }
     return 0;
 }
+
+// Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
+// {
+//     visitChildren(ctx);
+//     return 0;
+// }
 
 // Any QueryVisitor::visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx)
 // {
-//     current_basic_graph_pattern = std::make_unique<OpBasicGraphPattern>();
+//     current_bgp = std::make_unique<OpBasicGraphPattern>();
 //     visitChildren(ctx);
 //     // TODO:
-//     // current_op = std::make_unique<OpInsert>(std::move(current_basic_graph_pattern));
+//     // current_op = std::make_unique<OpInsert>(std::move(current_bgp));
 //     return 0;
 // }
 
@@ -248,7 +227,7 @@ Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
 //         auto label_str = label->getText();
 //         label_str.erase(0, 1); // remove leading ':'
 //         auto label_id = QuadObjectId::get_string(label_str);
-//         current_basic_graph_pattern->add_label(last_node, label_id);
+//         current_bgp->add_label(last_node, label_id);
 //     }
 
 //     auto properties = ctx->properties();
@@ -260,7 +239,7 @@ Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
 //     }
 
 //     // necessary to insert even if not disjoint
-//     current_basic_graph_pattern->add_disjoint_term(last_node.get_OID());
+//     current_bgp->add_disjoint_term(last_node.get_OID());
 
 //     return 0;
 // }
@@ -283,10 +262,10 @@ Any QueryVisitor::visitMatchStatement(MQL_Parser::MatchStatementContext* ctx)
 
 //     if (ctx->GT() != nullptr) {
 //         // right direction
-//         current_basic_graph_pattern->add_edge(saved_node, last_node, type_id, edge);
+//         current_bgp->add_edge(saved_node, last_node, type_id, edge);
 //     } else {
 //         // left direction
-//         current_basic_graph_pattern->add_edge(last_node, saved_node, type_id, edge);
+//         current_bgp->add_edge(last_node, saved_node, type_id, edge);
 //     }
 //     return 0;
 // }
@@ -519,6 +498,26 @@ Any QueryVisitor::visitReturnAll(MQL_Parser::ReturnAllContext* ctx)
     }
     return_info.distinct = ctx->K_DISTINCT() != nullptr;
 
+    auto vars = current_op->get_all_vars();
+    for (auto& var : vars) {
+        // filter anonymous vars
+        if (!get_query_ctx().is_internal(var)) {
+            auto& var_name = get_query_ctx().get_var_name(var);
+            if (auto pos = var_name.find('.'); pos != std::string::npos) {
+                auto var_without_property = var_name.substr(0, pos);
+                auto key_name = var_name.substr(pos + 1);
+                auto var_without_property_id = get_query_ctx().get_or_create_var(var_without_property);
+                auto key_id = QuadObjectId::get_string(key_name);
+
+                return_info.items.emplace_back(
+                    std::make_unique<ExprVarProperty>(var_without_property_id, key_id, var),
+                    var
+                );
+            } else {
+                return_info.items.emplace_back(std::make_unique<ExprVar>(var), var);
+            }
+        }
+    }
     return 0;
 }
 
@@ -851,7 +850,7 @@ Any QueryVisitor::visitGraphPattern(MQL_Parser::GraphPatternContext* ctx)
 {
     assert(ctx->basicPattern() != nullptr);
     ctx->basicPattern()->accept(this);
-    auto parent = std::move(current_basic_graph_pattern);
+    auto parent = std::move(current_bgp);
     if (ctx->optionalPattern().size() > 0) {
         std::vector<std::unique_ptr<Op>> optional_children;
         for (auto& opt : ctx->optionalPattern()) {
@@ -874,10 +873,10 @@ Any QueryVisitor::visitGraphPattern(MQL_Parser::GraphPatternContext* ctx)
 
 Any QueryVisitor::visitBasicPattern(MQL_Parser::BasicPatternContext* ctx)
 {
-    current_basic_graph_pattern = std::make_unique<OpBasicGraphPattern>();
+    current_bgp = std::make_unique<OpBasicGraphPattern>();
     visitChildren(ctx);
     for (auto& pending_disjoint_var : possible_disjoint_vars) {
-        current_basic_graph_pattern->try_add_possible_disjoint_var(pending_disjoint_var);
+        current_bgp->try_add_possible_disjoint_var(pending_disjoint_var);
     }
 
     // Properties ANDs queries (property3 and property4)
@@ -911,7 +910,7 @@ Any QueryVisitor::visitFixedObj(MQL_Parser::FixedObjContext* ctx)
 {
     last_node = QuadObjectId::get_fixed_node_inside(ctx->getText());
     if (first_element_disjoint) {
-        current_basic_graph_pattern->add_disjoint_term(last_node.get_OID());
+        current_bgp->add_disjoint_term(last_node.get_OID());
     }
     return 0;
 }
@@ -935,7 +934,7 @@ Any QueryVisitor::visitProperty1(MQL_Parser::Property1Context* property)
         }
     }
 
-    current_basic_graph_pattern->add_property(saved_property_obj, key_id, value_id);
+    current_bgp->add_property(saved_property_obj, key_id, value_id);
     return 0;
 }
 
@@ -954,7 +953,7 @@ Any QueryVisitor::visitProperty2(MQL_Parser::Property2Context* property)
 
     parse_datatype_value(datatype, str); // will set current_value_oid
 
-    current_basic_graph_pattern->add_property(saved_property_obj, key_id, current_value_oid);
+    current_bgp->add_property(saved_property_obj, key_id, current_value_oid);
     return 0;
 }
 
@@ -1091,7 +1090,7 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
-        current_basic_graph_pattern->add_label(var, label_id);
+        current_bgp->add_label(var, label_id);
     }
 
     // Process Properties
@@ -1103,8 +1102,8 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
         }
     }
 
-    if (first_element_disjoint && ctx->TYPE().empty() && current_basic_graph_pattern->properties.empty()) {
-        current_basic_graph_pattern->add_disjoint_var(var);
+    if (first_element_disjoint && ctx->TYPE().empty() && current_bgp->properties.empty()) {
+        current_bgp->add_disjoint_var(var);
     }
 
     last_node = var;
@@ -1120,10 +1119,10 @@ Any QueryVisitor::visitEdge(MQL_Parser::EdgeContext* ctx)
     visitChildren(ctx);
     if (ctx->GT() != nullptr) {
         // right direction
-        current_basic_graph_pattern->add_edge(saved_node, last_node, saved_type, saved_edge);
+        current_bgp->add_edge(saved_node, last_node, saved_type, saved_edge);
     } else {
         // left direction
-        current_basic_graph_pattern->add_edge(last_node, saved_node, saved_type, saved_edge);
+        current_bgp->add_edge(last_node, saved_node, saved_type, saved_edge);
     }
     return 0;
 }
@@ -1252,7 +1251,7 @@ Any QueryVisitor::visitPath(MQL_Parser::PathContext* ctx)
     ctx->pathAlternatives()->accept(this);
     if (ctx->GT() != nullptr) {
         // right direction
-        current_basic_graph_pattern->add_path(
+        current_bgp->add_path(
             path_var,
             saved_node,
             last_node,
@@ -1263,7 +1262,7 @@ Any QueryVisitor::visitPath(MQL_Parser::PathContext* ctx)
         );
     } else {
         // left direction
-        current_basic_graph_pattern->add_path(
+        current_bgp->add_path(
             path_var,
             last_node,
             saved_node,

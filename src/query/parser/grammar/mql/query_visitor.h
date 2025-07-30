@@ -32,6 +32,7 @@ private:
         std::vector<bool> ascending_order;
     };
 
+    // TODO: move
     struct HNSWIndexOptions {
         std::string property;
         std::string metric;
@@ -92,6 +93,7 @@ private:
         }
     };
 
+    // TODO: move
     struct TextIndexOptions {
         std::string property;
         std::string normalization { "nfkdCasefold" }; // optional
@@ -158,12 +160,7 @@ private:
     std::vector<std::unique_ptr<Expr>> current_call_argument_exprs;
     std::map<std::string, VarId> current_call_yield_var2alias;
 
-    // Properties info in queries with operators (==, !=, >, <, >=, <=)
-    // (?x {value == 4})
-    // var_without_propertyId, keyId
-    // std::vector<PropertyOperatorConstraint> properties_operators; // TODO: delete?
-
-    std::unique_ptr<OpBasicGraphPattern> current_basic_graph_pattern;
+    std::unique_ptr<OpBasicGraphPattern> current_bgp;
 
     std::set<VarId> possible_disjoint_vars;
 
@@ -171,7 +168,7 @@ private:
 
     // to detect possible disjoint vars / terms
     // initialized false to avoid calling
-    // current_basic_graph_pattern->add_disjoint_term (segfault)
+    // current_bgp->add_disjoint_term (segfault)
     // when seeing a DESCRIBE query
     bool first_element_disjoint = false;
 
@@ -214,7 +211,8 @@ public:
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;
     virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx) override;
-    virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext* ctx) override;
+    // virtual std::any visitMatchStatement(MQL_Parser::MatchStatementContext* ctx) override;
+    virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext* ctx) override;
 
     // virtual std::any visitInsertQuery(MQL_Parser::InsertQueryContext* ctx) override;
     // virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext* ctx) override;
