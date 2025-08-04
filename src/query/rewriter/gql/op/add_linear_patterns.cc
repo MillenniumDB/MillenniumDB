@@ -84,9 +84,6 @@ void AddLinearPatterns::visit(OpFilter& op_filter)
 
 void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
-    auto parent_start = std::move(start);
-    auto parent_end = std::move(end);
-
     std::vector<std::unique_ptr<Op>> linear_patterns;
     std::vector<std::unique_ptr<Op>> new_patterns;
 
@@ -101,12 +98,7 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
         switch (linear_pattern) {
         case Node:
             if (consecutive_nodes_found) {
-                start = std::make_unique<VarId>(end->id);
-                new_patterns.push_back(std::make_unique<OpLinearPattern>(
-                    std::move(linear_patterns),
-                    std::move(previous_start),
-                    std::move(previous_end)
-                ));
+                new_patterns.push_back(std::make_unique<OpLinearPattern>(std::move(linear_patterns)));
             }
             linear_patterns.push_back(std::move(tmp));
             break;
@@ -116,30 +108,17 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
             break;
         case None:
             if (!linear_patterns.empty()) {
-                new_patterns.push_back(std::make_unique<OpLinearPattern>(
-                    std::move(linear_patterns),
-                    std::move(start),
-                    std::move(end)
-                ));
+                new_patterns.push_back(std::make_unique<OpLinearPattern>(std::move(linear_patterns)));
             }
             new_patterns.push_back(std::move(tmp));
             consecutive_nodes_found = false;
         }
-
-        if (linear_pattern == Node) {
-            previous_start = std::make_unique<VarId>(*start);
-            previous_end = std::make_unique<VarId>(*end);
-        }
     }
     if (!linear_patterns.empty()) {
-        new_patterns.push_back(
-            std::make_unique<OpLinearPattern>(std::move(linear_patterns), std::move(start), std::move(end))
-        );
+        new_patterns.push_back(std::make_unique<OpLinearPattern>(std::move(linear_patterns)));
     }
 
     tmp = std::make_unique<OpBasicGraphPattern>(std::move(new_patterns));
-    start = std::move(parent_start);
-    end = std::move(parent_end);
 }
 
 void AddLinearPatterns::visit(OpNode& op)
@@ -150,11 +129,6 @@ void AddLinearPatterns::visit(OpNode& op)
         consecutive_nodes_found = true;
     }
     linear_pattern = Node;
-
-    if (start == nullptr) {
-        start = std::make_unique<VarId>(op.id);
-    }
-    end = std::make_unique<VarId>(op.id);
 }
 
 void AddLinearPatterns::visit(OpEdge& op)
@@ -187,24 +161,9 @@ void AddLinearPatterns::visit(OpLet& op_let)
     tmp = std::make_unique<OpLet>(std::move(op_let.items));
 }
 
-void AddLinearPatterns::visit(OpProperty& op)
-{
-    tmp = std::make_unique<OpProperty>(op);
-}
-
-void AddLinearPatterns::visit(OpNodeLabel& op)
-{
-    tmp = std::make_unique<OpNodeLabel>(op);
-}
-
-void AddLinearPatterns::visit(OpEdgeLabel& op)
-{
-    tmp = std::make_unique<OpEdgeLabel>(op);
-}
-
 void AddLinearPatterns::visit(OpFilterStatement& op)
 {
     tmp = std::make_unique<OpFilterStatement>(std::move(op.exprs));
 }
 
-void AddLinearPatterns::visit(OpLinearPattern& op) { }
+void AddLinearPatterns::visit(OpLinearPattern&) { }

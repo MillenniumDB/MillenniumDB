@@ -1,14 +1,13 @@
 #pragma once
 
 #include "query/parser/expr/gql/exprs.h"
-#include "query/parser/op/gql/graph_pattern/op_edge_label.h"
-#include "query/parser/op/gql/graph_pattern/op_node_label.h"
+#include "query/parser/op/gql/graph_pattern/op_linear_pattern.h"
 
 namespace GQL {
 
 class ExtractLabelsFromExpr : public ExprVisitor {
 public:
-    std::set<LabelOpId> labels;
+    std::set<Label> labels;
     std::unique_ptr<Expr> tmp;
 
     void clear_labels()
@@ -36,12 +35,12 @@ public:
 
     void visit(ExprHasNodeLabel& expr)
     {
-        labels.emplace(std::make_unique<OpNodeLabel>(expr.node_id, expr.label_id), expr.node_id, expr.label_id);
+        labels.emplace(expr.node_id, expr.label_id, VarType::Type::Node);
     }
 
     void visit(ExprHasEdgeLabel& expr)
     {
-        labels.emplace(std::make_unique<OpEdgeLabel>(expr.edge_id, expr.label_id), expr.edge_id, expr.label_id);
+        labels.emplace(expr.edge_id, expr.label_id, VarType::Type::Edge);
     }
 
     void visit(ExprWildcardLabel& expr)

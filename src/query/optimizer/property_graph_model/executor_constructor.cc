@@ -44,12 +44,6 @@ void ExecutorConstructor::visit(OpPathUnion&) { }
 
 void ExecutorConstructor::visit(OpRepetition&) { }
 
-void ExecutorConstructor::visit(OpNodeLabel&) { }
-
-void ExecutorConstructor::visit(OpEdgeLabel&) { }
-
-void ExecutorConstructor::visit(OpProperty&) { }
-
 void ExecutorConstructor::visit(OpOrderBy&) { }
 
 void ExecutorConstructor::visit(OpLinearPattern&) { }

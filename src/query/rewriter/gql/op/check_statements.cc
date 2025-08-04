@@ -50,7 +50,4 @@ void CheckStatements::visit(OpNode&) { }
 void CheckStatements::visit(OpEdge&) { }
 void CheckStatements::visit(OpPathUnion&) { }
 void CheckStatements::visit(OpRepetition&) { }
-void CheckStatements::visit(OpNodeLabel&) { }
-void CheckStatements::visit(OpEdgeLabel&) { }
-void CheckStatements::visit(OpProperty&) { }
 void CheckStatements::visit(OpLinearPattern&) { }

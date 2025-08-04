@@ -1,12 +1,12 @@
 #pragma once
 
 #include "query/parser/expr/gql/exprs.h"
-#include "query/parser/op/gql/graph_pattern/op_property.h"
+#include "query/parser/op/gql/graph_pattern/op_linear_pattern.h"
 
 namespace GQL {
 class ExtractPropertiesFromExpr : public ExprVisitor {
 public:
-    std::vector<PropertyValue> properties;
+    std::vector<Property> properties;
 
     std::unique_ptr<Expr> tmp;
     bool key_setted = false;
@@ -61,8 +61,12 @@ public:
         auto rhs = std::move(tmp);
 
         if (key_setted && value_setted) {
-            properties.push_back(
-                { current_object, current_key, current_var_with_property, current_value, current_type }
+            properties.emplace_back(
+                current_object,
+                current_key,
+                current_var_with_property,
+                current_value,
+                current_type
             );
             tmp = nullptr;
         } else {

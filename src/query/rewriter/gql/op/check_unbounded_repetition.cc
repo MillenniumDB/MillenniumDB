@@ -85,12 +85,6 @@ void CheckUnboundedRepetition::visit(OpFilterStatement&) { }
 
 void CheckUnboundedRepetition::visit(OpLet&) { }
 
-void CheckUnboundedRepetition::visit(OpProperty&) { }
-
 void CheckUnboundedRepetition::visit(OpNode&) { }
 
 void CheckUnboundedRepetition::visit(OpEdge&) { }
-
-void CheckUnboundedRepetition::visit(OpNodeLabel&) { }
-
-void CheckUnboundedRepetition::visit(OpEdgeLabel&) { }

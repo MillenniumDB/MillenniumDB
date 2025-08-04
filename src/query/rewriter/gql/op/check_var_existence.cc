@@ -214,11 +214,6 @@ void CheckVarExistence::visit(GQL::OpBasicGraphPattern& op_basic_graph_pattern)
     variables = std::move(subvariables);
 }
 
-void CheckVarExistence::visit(GQL::OpProperty& op_property)
-{
-    variables.insert(op_property.property.object);
-}
-
 void CheckVarExistence::visit(OpNode& op_node)
 {
     if (let_variables.count(op_node.id)) {
@@ -247,9 +242,5 @@ void CheckVarExistence::visit(OpLinearPattern& op_linear_pattern)
         op->accept_visitor(*this);
     }
 }
-
-void CheckVarExistence::visit(OpEdgeLabel&) { }
-
-void CheckVarExistence::visit(OpNodeLabel&) { }
 
 } // namespace GQL

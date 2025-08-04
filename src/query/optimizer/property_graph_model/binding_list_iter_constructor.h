@@ -39,10 +39,7 @@ public:
     void visit(OpLinearPattern& op) override;
 
     void visit(OpNode&) override;
-    void visit(OpNodeLabel&) override;
-    void visit(OpEdgeLabel&) override;
     void visit(OpEdge&) override;
-    void visit(OpProperty&) override;
 
     std::unique_ptr<BindingIter> tmp_iter;
 

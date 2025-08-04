@@ -41,12 +41,6 @@ void StreamingExecutorConstructor::visit(OpPathUnion&) { }
 
 void StreamingExecutorConstructor::visit(OpRepetition&) { }
 
-void StreamingExecutorConstructor::visit(OpNodeLabel&) { }
-
-void StreamingExecutorConstructor::visit(OpEdgeLabel&) { }
-
-void StreamingExecutorConstructor::visit(OpProperty&) { }
-
 void StreamingExecutorConstructor::visit(OpOrderBy&) { }
 
 void StreamingExecutorConstructor::visit(OpLinearPattern&) { }

@@ -25,9 +25,6 @@ public:
     virtual void visit(OpReturn& op);
     virtual void visit(OpPathUnion& op);
     virtual void visit(OpRepetition& op);
-    virtual void visit(OpNodeLabel& op);
-    virtual void visit(OpEdgeLabel& op);
-    virtual void visit(OpProperty& op);
     virtual void visit(OpOrderBy& op);
     virtual void visit(OpLinearPattern& op);
     virtual void visit(OpFilterStatement& op);

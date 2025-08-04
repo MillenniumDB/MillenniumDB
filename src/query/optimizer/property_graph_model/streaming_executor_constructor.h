@@ -22,9 +22,6 @@ public:
     void visit(OpFilter&) override;
     void visit(OpPathUnion&) override;
     void visit(OpRepetition&) override;
-    void visit(OpNodeLabel&) override;
-    void visit(OpEdgeLabel&) override;
-    void visit(OpProperty&) override;
     void visit(OpOrderBy&) override;
     void visit(OpLinearPattern&) override;
     void visit(OpFilterStatement&) override;

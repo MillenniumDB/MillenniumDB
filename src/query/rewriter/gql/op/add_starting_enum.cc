@@ -51,11 +51,7 @@ void AddStartingEnum::visit(OpBasicGraphPattern& op)
     auto node = std::make_unique<OpNode>(node_id);
     std::vector<std::unique_ptr<Op>> vec;
     vec.push_back(std::move(node));
-    auto linear_pattern = std::make_unique<OpLinearPattern>(
-        std::move(vec),
-        std::make_unique<VarId>(node_id),
-        std::make_unique<VarId>(node_id)
-    );
+    auto linear_pattern = std::make_unique<OpLinearPattern>(std::move(vec));
 
     op.patterns.insert(op.patterns.begin(), std::move(linear_pattern));
 }
@@ -92,9 +88,3 @@ void AddStartingEnum::visit(OpLet&) { }
 void AddStartingEnum::visit(OpNode&) { }
 
 void AddStartingEnum::visit(OpEdge&) { }
-
-void AddStartingEnum::visit(OpNodeLabel&) { }
-
-void AddStartingEnum::visit(OpEdgeLabel&) { }
-
-void AddStartingEnum::visit(OpProperty&) { }

@@ -4,22 +4,69 @@
 
 namespace GQL {
 
+struct Label {
+    VarId object;
+    ObjectId label_id;
+    VarType::Type type;
+
+    Label(VarId id, ObjectId label_id, VarType::Type type) :
+        object(id),
+        label_id(label_id),
+        type(type)
+    { }
+
+    bool operator<(const Label& other) const
+    {
+        if (object != other.object) {
+            return object < other.object;
+        } else if (label_id != other.label_id) {
+            return label_id < other.label_id;
+        }
+        return type < other.type;
+    }
+};
+
+struct Property {
+    VarId object;
+    ObjectId key;
+    VarId var_with_property;
+    ObjectId value;
+    VarType::Type type;
+
+    Property(VarId object, ObjectId key, VarId var_with_property, ObjectId value, VarType::Type type) :
+        object(object),
+        key(key),
+        var_with_property(var_with_property),
+        value(value),
+        type(type)
+    { }
+
+    bool operator<(const Property& other) const
+    {
+        if (object != other.object) {
+            return object < other.object;
+        } else if (key != other.key) {
+            return key < other.key;
+        } else if (var_with_property != other.var_with_property) {
+            return var_with_property < other.var_with_property;
+        } else if (value != other.value) {
+            return value < other.value;
+        }
+        return type < other.type;
+    }
+};
+
 class OpLinearPattern : public Op {
 public:
     std::vector<std::unique_ptr<Op>> patterns;
-    std::unique_ptr<VarId> start;
-    std::unique_ptr<VarId> end;
+
+    std::set<Label> labels;
+    std::set<Property> properties;
 
     OpLinearPattern() { }
 
-    OpLinearPattern(
-        std::vector<std::unique_ptr<Op>>&& patterns,
-        std::unique_ptr<VarId> start,
-        std::unique_ptr<VarId> end
-    ) :
-        patterns(std::move(patterns)),
-        start(std::move(start)),
-        end(std::move(end))
+    OpLinearPattern(std::vector<std::unique_ptr<Op>>&& patterns) :
+        patterns(std::move(patterns))
     { }
 
     std::unique_ptr<Op> clone() const override
@@ -27,6 +74,12 @@ public:
         auto linear_pattern = std::make_unique<OpLinearPattern>();
         for (auto& pattern : patterns) {
             linear_pattern->add_pattern(pattern->clone());
+        }
+        for (auto& label : labels) {
+            linear_pattern->add_label(label);
+        }
+        for (auto& property : properties) {
+            linear_pattern->add_property(property);
         }
         return linear_pattern;
     }
@@ -39,6 +92,16 @@ public:
     void add_pattern(std::unique_ptr<Op>&& pattern)
     {
         patterns.push_back(std::move(pattern));
+    }
+
+    void add_label(Label label)
+    {
+        labels.insert(label);
+    }
+
+    void add_property(Property property)
+    {
+        properties.insert(property);
     }
 
     std::set<VarId> get_all_vars() const override
@@ -73,15 +136,13 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        os << "OpLinearPattern(";
-        if (start != nullptr && end != nullptr) {
-            os << "start:" << *start << ", end:" << *end;
-        } else if (start != nullptr) {
-            os << "start:" << *start;
-        } else if (end != nullptr) {
-            os << "end:" << *end;
+        os << "OpLinearPattern(" << ")\n";
+        for (auto& label : labels) {
+            os << label.object << " " << label.label_id << ", ";
         }
-        os << ")\n";
+        for (auto& property : properties) {
+            os << property.object << " " << property.key << ", ";
+        }
 
         for (auto& pattern : patterns) {
             pattern->print_to_ostream(os, indent + 2);

@@ -18,7 +18,6 @@ class CheckUnboundedRepetition : public OpVisitor {
 
     void visit(OpOrderBy& op) override;
     void visit(OpFilter& op) override;
-    void visit(OpProperty& op) override;
     void visit(OpPathUnion& op) override;
     void visit(OpGroupBy& op) override;
 
@@ -28,8 +27,6 @@ class CheckUnboundedRepetition : public OpVisitor {
     void visit(OpQueryStatements& op) override;
     void visit(OpNode& op) override;
     void visit(OpEdge& op) override;
-    void visit(OpNodeLabel& op) override;
-    void visit(OpEdgeLabel& op) override;
 };
 
 } // namespace GQL
