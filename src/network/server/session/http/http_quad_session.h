@@ -52,6 +52,6 @@ private:
 
     void execute_readonly_query_plan(QueryExecutor& physical_plan, std::ostream& os, MQL::ReturnType response_type);
 
-    void execute_update(MQL::Op& logical_plan, BufferManager::VersionScope& version_scope, std::ostream& os);
+    void execute_update(MQL::OpUpdate& op_update, BufferManager::VersionScope& version_scope, std::ostream& os);
 };
 } // namespace MDBServer

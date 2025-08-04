@@ -145,6 +145,7 @@ public:
 
     void insert_node(ObjectId node)
     {
+        // TODO: throw exception if node is in deleted, or maybe validate at the end
         new_nodes.insert(node);
     }
 
@@ -178,8 +179,7 @@ public:
 
     void delete_node(ObjectId node, bool detach)
     {
-        new_nodes.erase(node);
-        // TODO: ignore tmps?
+        // TODO: throw exception if node is in insert, or maybe validate at the end
         deleted_nodes.emplace(node, detach);
     }
 

@@ -45,7 +45,10 @@ public:
 
         const auto execution_start = std::chrono::system_clock::now();
         MQL::UpdateExecutor update_executor;
-        update_executor.execute(*std::get<std::unique_ptr<MQL::Op>>(logical_plan));
+        update_executor.execute(
+            *dynamic_cast<const MQL::OpUpdate*>(std::get<std::unique_ptr<MQL::Op>>(logical_plan).get())
+                 ->update_ctx
+        );
         execution_duration_ms = get_duration(execution_start);
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {

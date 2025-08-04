@@ -136,11 +136,10 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
     try {
         auto logical_plan = create_logical_plan(query);
 
-        // TODO:
-        // if (!logical_plan->read_only()) {
-        //     execute_update(*logical_plan, *read_only_version_scope, os);
-        //     return;
-        // }
+        if (OpUpdate* op_update = dynamic_cast<OpUpdate*>(logical_plan.get())) {
+            execute_update(*op_update, *read_only_version_scope, os);
+            return;
+        }
         physical_plan = create_readonly_physical_plan(*logical_plan, response_type);
     } catch (const QueryParsingException& e) {
         logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
@@ -240,7 +239,7 @@ void HttpQuadSession::execute_readonly_query_plan(
 }
 
 void HttpQuadSession::execute_update(
-    Op& logical_plan,
+    OpUpdate& op_update,
     BufferManager::VersionScope& version_scope,
     std::ostream& os
 )
@@ -254,7 +253,7 @@ void HttpQuadSession::execute_update(
 
     try {
         UpdateExecutor update_executor;
-        update_executor.execute(logical_plan);
+        update_executor.execute(*op_update.update_ctx);
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
