@@ -159,7 +159,7 @@ void PathBindingIterConstructor::visit(OpQueryStatements& op_statements)
     }
 }
 
-void PathBindingIterConstructor::visit(OpFilterStatement& op_filter)
+void PathBindingIterConstructor::visit(OpFilter& op_filter)
 {
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 
@@ -178,25 +178,6 @@ void PathBindingIterConstructor::visit(OpFilterStatement& op_filter)
     );
 }
 
-void PathBindingIterConstructor::visit(OpOrderByStatement& op_order_by)
-{
-    for (const auto& item : op_order_by.items) {
-        if (item->has_aggregation()) {
-            grouping = true;
-            break;
-        }
-    }
-
-    if (!op_order_by.items.empty()) {
-        handle_order_by(op_order_by.items, op_order_by.ascending_order, op_order_by.null_order);
-        if (op_order_by.offset != Op::DEFAULT_OFFSET || op_order_by.limit != Op::DEFAULT_LIMIT) {
-            tmp_iter = std::make_unique<Slice>(std::move(tmp_iter), op_order_by.offset, op_order_by.limit);
-        }
-    } else {
-        tmp_iter = std::make_unique<Slice>(std::move(tmp_iter), op_order_by.offset, op_order_by.limit);
-    }
-}
-
 void PathBindingIterConstructor::visit(OpOrderBy& op_order_by)
 {
     for (const auto& item : op_order_by.items) {
@@ -205,7 +186,6 @@ void PathBindingIterConstructor::visit(OpOrderBy& op_order_by)
             break;
         }
     }
-    op_order_by.op->accept_visitor(*this);
 
     if (!op_order_by.items.empty()) {
         handle_order_by(op_order_by.items, op_order_by.ascending_order, op_order_by.null_order);
@@ -385,7 +365,7 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
     tmp_path = std::make_unique<UnionPath>(std::move(iters));
 }
 
-void PathBindingIterConstructor::visit(OpFilter& op_filter)
+void PathBindingIterConstructor::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
 

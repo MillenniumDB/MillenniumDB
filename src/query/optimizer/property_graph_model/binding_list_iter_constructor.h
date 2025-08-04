@@ -23,17 +23,16 @@ public:
     );
 
     void visit(OpQueryStatements& op) override;
-    void visit(OpFilterStatement& op) override;
+    void visit(OpFilter& op) override;
     void visit(OpLet& op) override;
     void visit(OpOrderBy&) override;
-    void visit(OpOrderByStatement&) override;
     void visit(OpGroupBy&) override;
 
     void visit(OpReturn&) override;
     void visit(OpGraphPattern&) override;
     void visit(OpBasicGraphPattern&) override;
     void visit(OpGraphPatternList&) override;
-    void visit(OpFilter&) override;
+    void visit(OpWhere&) override;
     void visit(OpPathUnion&) override;
     void visit(OpRepetition&) override;
     void visit(OpLinearPattern& op) override;

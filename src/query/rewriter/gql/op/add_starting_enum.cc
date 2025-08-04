@@ -21,7 +21,7 @@ void AddStartingEnum::visit(OpQueryStatements& op)
     }
 }
 
-void AddStartingEnum::visit(OpFilter& op)
+void AddStartingEnum::visit(OpWhere& op)
 {
     op.op->accept_visitor(*this);
 }
@@ -74,14 +74,9 @@ void AddStartingEnum::visit(OpPathUnion& op)
     }
 }
 
-void AddStartingEnum::visit(OpOrderBy& op)
-{
-    op.op->accept_visitor(*this);
-}
+void AddStartingEnum::visit(OpFilter&) { }
 
-void AddStartingEnum::visit(OpFilterStatement&) { }
-
-void AddStartingEnum::visit(OpOrderByStatement&) { }
+void AddStartingEnum::visit(OpOrderBy&) { }
 
 void AddStartingEnum::visit(OpLet&) { }
 

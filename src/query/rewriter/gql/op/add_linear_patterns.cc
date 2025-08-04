@@ -31,22 +31,9 @@ void AddLinearPatterns::visit(OpGroupBy& op_group_by)
     tmp = std::make_unique<OpGroupBy>(std::move(tmp), std::move(op_group_by.exprs));
 }
 
-void AddLinearPatterns::visit(OpOrderByStatement& op_order_by)
-{
-    tmp = std::make_unique<OpOrderByStatement>(
-        std::move(op_order_by.items),
-        std::move(op_order_by.ascending_order),
-        std::move(op_order_by.null_order),
-        op_order_by.offset,
-        op_order_by.limit
-    );
-}
-
 void AddLinearPatterns::visit(OpOrderBy& op_order_by)
 {
-    op_order_by.op->accept_visitor(*this);
     tmp = std::make_unique<OpOrderBy>(
-        std::move(tmp),
         std::move(op_order_by.items),
         std::move(op_order_by.ascending_order),
         std::move(op_order_by.null_order),
@@ -76,10 +63,10 @@ void AddLinearPatterns::visit(OpGraphPattern& op_graph_pattern)
     linear_pattern = None;
 }
 
-void AddLinearPatterns::visit(OpFilter& op_filter)
+void AddLinearPatterns::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
-    tmp = std::make_unique<OpFilter>(std::move(tmp), std::move(op_filter.exprs));
+    tmp = std::make_unique<OpWhere>(std::move(tmp), std::move(op_filter.exprs));
 }
 
 void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
@@ -161,9 +148,9 @@ void AddLinearPatterns::visit(OpLet& op_let)
     tmp = std::make_unique<OpLet>(std::move(op_let.items));
 }
 
-void AddLinearPatterns::visit(OpFilterStatement& op)
+void AddLinearPatterns::visit(OpFilter& op)
 {
-    tmp = std::make_unique<OpFilterStatement>(std::move(op.exprs));
+    tmp = std::make_unique<OpFilter>(std::move(op.exprs));
 }
 
 void AddLinearPatterns::visit(OpLinearPattern&) { }

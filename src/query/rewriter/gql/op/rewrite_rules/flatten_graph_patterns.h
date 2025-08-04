@@ -1,7 +1,7 @@
 #pragma once
 
 #include "query/parser/op/gql/graph_pattern/op_basic_graph_pattern.h"
-#include "query/parser/op/gql/graph_pattern/op_filter.h"
+#include "query/parser/op/gql/graph_pattern/op_where.h"
 #include "query/parser/op/gql/graph_pattern/op_graph_pattern.h"
 #include "query/parser/op/gql/graph_pattern/op_graph_pattern_list.h"
 #include "query/parser/op/gql/graph_pattern/op_path_union.h"

@@ -69,7 +69,7 @@ std::any QueryVisitor::visitPrimitiveQueryStatement(GQLParser::PrimitiveQuerySta
         ctx->orderByAndPageStatement()->accept(this);
     } else if (ctx->filterStatement()) {
         ctx->filterStatement()->accept(this);
-        current_op = std::make_unique<OpFilterStatement>(std::move(filter_items));
+        current_op = std::make_unique<OpFilter>(std::move(filter_items));
     }
     return 0;
 }
@@ -363,7 +363,7 @@ std::any QueryVisitor::visitParenthesizedPathPatternExpression(
         visit(ctx->parenthesizedPathPatternWhereClause());
         std::vector<std::unique_ptr<Expr>> expr_list;
         expr_list.push_back(std::move(current_expr));
-        current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(expr_list));
+        current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(expr_list));
     }
 
     current_pattern = Subpath;
@@ -610,7 +610,7 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
     if (current_expr_list.empty()) {
         current_op = std::move(current_basic_graph_pattern);
     } else {
-        current_op = std::make_unique<OpFilter>(
+        current_op = std::make_unique<OpWhere>(
             std::move(current_basic_graph_pattern),
             std::move(current_expr_list)
         );
@@ -772,7 +772,7 @@ std::any QueryVisitor::visitGraphPatternWhereClause(GQLParser::GraphPatternWhere
     visitChildren(ctx);
     std::vector<std::unique_ptr<Expr>> expr_list;
     expr_list.push_back(std::move(current_expr));
-    current_op = std::make_unique<OpFilter>(std::move(current_op), std::move(expr_list));
+    current_op = std::make_unique<OpWhere>(std::move(current_op), std::move(expr_list));
     return 0;
 }
 
@@ -1920,7 +1920,7 @@ std::any QueryVisitor::visitOrderByAndPageStatement(GQLParser::OrderByAndPageSta
         limit = get_unsigned_integer(limit_str);
     }
 
-    current_op = std::make_unique<OpOrderByStatement>(
+    current_op = std::make_unique<OpOrderBy>(
         std::move(order_by_items),
         std::move(order_by_ascending),
         std::move(order_nulls),

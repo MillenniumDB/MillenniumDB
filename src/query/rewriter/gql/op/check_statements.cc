@@ -22,12 +22,7 @@ void CheckStatements::visit(OpGroupBy& op_group_by)
     op_group_by.op->accept_visitor(*this);
 }
 
-void CheckStatements::visit(OpOrderBy& op_order_by)
-{
-    op_order_by.op->accept_visitor(*this);
-}
-
-void CheckStatements::visit(OpFilter& op)
+void CheckStatements::visit(OpWhere& op)
 {
     op.op->accept_visitor(*this);
 }
@@ -42,8 +37,8 @@ void CheckStatements::visit(OpLet&)
     has_match_or_let = true;
 }
 
-void CheckStatements::visit(OpFilterStatement&) { }
-void CheckStatements::visit(OpOrderByStatement&) { }
+void CheckStatements::visit(OpFilter&) { }
+void CheckStatements::visit(OpOrderBy&) { }
 void CheckStatements::visit(OpGraphPattern&) { }
 void CheckStatements::visit(OpBasicGraphPattern&) { }
 void CheckStatements::visit(OpNode&) { }

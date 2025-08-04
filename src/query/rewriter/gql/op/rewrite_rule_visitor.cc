@@ -42,17 +42,6 @@ void RewriteRuleVisitor::visit(OpGroupBy& op_group_by)
     op_group_by.op->accept_visitor(*this);
 }
 
-void RewriteRuleVisitor::visit(OpOrderBy& op_order_by)
-{
-    for (auto& rule : rules) {
-        if (rule->is_possible_to_regroup(op_order_by.op)) {
-            op_order_by.op = rule->regroup(std::move(op_order_by.op));
-            has_rewritten = true;
-        }
-    }
-    op_order_by.op->accept_visitor(*this);
-}
-
 void RewriteRuleVisitor::visit(OpGraphPatternList& op_graph_pattern)
 {
     for (auto& rule : rules) {
@@ -124,7 +113,7 @@ void RewriteRuleVisitor::visit(OpRepetition& op_repetition)
     op_repetition.op->accept_visitor(*this);
 }
 
-void RewriteRuleVisitor::visit(OpFilter& op_filter)
+void RewriteRuleVisitor::visit(OpWhere& op_filter)
 {
     for (auto& rule : rules) {
         if (rule->is_possible_to_regroup(op_filter.op)) {

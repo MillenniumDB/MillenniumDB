@@ -98,22 +98,9 @@ void PushLabels::visit(OpLet& op)
     tmp = std::make_unique<OpLet>(std::move(op.items));
 }
 
-void PushLabels::visit(OpOrderByStatement& op)
-{
-    tmp = std::make_unique<OpOrderByStatement>(
-        std::move(op.items),
-        std::move(op.ascending_order),
-        std::move(op.null_order),
-        op.offset,
-        op.limit
-    );
-}
-
 void PushLabels::visit(OpOrderBy& op)
 {
-    op.op->accept_visitor(*this);
     tmp = std::make_unique<OpOrderBy>(
-        std::move(tmp),
         std::move(op.items),
         std::move(op.ascending_order),
         std::move(op.null_order),
@@ -122,7 +109,7 @@ void PushLabels::visit(OpOrderBy& op)
     );
 }
 
-void PushLabels::visit(OpFilter& op_filter)
+void PushLabels::visit(OpWhere& op_filter)
 {
     std::vector<std::unique_ptr<Expr>> exprs;
 
@@ -146,7 +133,7 @@ void PushLabels::visit(OpFilter& op_filter)
     labels_to_push.erase(labels_to_push.end() - num_of_new_labels, labels_to_push.end());
 
     if (exprs.size() > 0) {
-        tmp = std::make_unique<OpFilter>(std::move(tmp), std::move(exprs));
+        tmp = std::make_unique<OpWhere>(std::move(tmp), std::move(exprs));
     }
 }
 
@@ -173,7 +160,7 @@ void PushLabels::visit(OpEdge& op)
     tmp = op.clone();
 }
 
-void PushLabels::visit(OpFilterStatement& op_filter)
+void PushLabels::visit(OpFilter& op_filter)
 {
     tmp = op_filter.clone();
 }

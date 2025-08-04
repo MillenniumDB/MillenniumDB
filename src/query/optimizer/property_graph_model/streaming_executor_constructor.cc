@@ -35,21 +35,19 @@ void StreamingExecutorConstructor::visit(OpNode&) { }
 
 void StreamingExecutorConstructor::visit(OpEdge&) { }
 
-void StreamingExecutorConstructor::visit(OpFilter&) { }
+void StreamingExecutorConstructor::visit(OpWhere&) { }
 
 void StreamingExecutorConstructor::visit(OpPathUnion&) { }
 
 void StreamingExecutorConstructor::visit(OpRepetition&) { }
 
-void StreamingExecutorConstructor::visit(OpOrderBy&) { }
-
 void StreamingExecutorConstructor::visit(OpLinearPattern&) { }
 
-void StreamingExecutorConstructor::visit(OpFilterStatement&) { }
+void StreamingExecutorConstructor::visit(OpFilter&) { }
 
 void StreamingExecutorConstructor::visit(OpLet&) { }
 
-void StreamingExecutorConstructor::visit(OpOrderByStatement&) { }
+void StreamingExecutorConstructor::visit(OpOrderBy&) { }
 
 void StreamingExecutorConstructor::visit(OpQueryStatements&) { }
 

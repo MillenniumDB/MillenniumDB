@@ -8,11 +8,11 @@
 #include "query/parser/op/gql/op.h"
 
 namespace GQL {
-class OpFilterStatement : public Op {
+class OpFilter : public Op {
 public:
     std::vector<std::unique_ptr<Expr>> exprs;
 
-    OpFilterStatement(std::vector<std::unique_ptr<Expr>>&& expr_list) :
+    OpFilter(std::vector<std::unique_ptr<Expr>>&& expr_list) :
         exprs(std::move(expr_list))
     { }
 
@@ -23,7 +23,7 @@ public:
         for (auto& child_expr : exprs) {
             and_list_clone.push_back(child_expr->clone());
         }
-        return std::make_unique<OpFilterStatement>(std::move(and_list_clone));
+        return std::make_unique<OpFilter>(std::move(and_list_clone));
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -39,7 +39,7 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        os << "OpFilterStatement(\n";
+        os << "OpFilter(\n";
 
         ExprPrinter printer(os);
 

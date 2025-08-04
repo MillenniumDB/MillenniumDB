@@ -29,9 +29,9 @@ void ExtractExprs::visit(OpGroupBy& op_group_by)
     tmp = std::make_unique<OpGroupBy>(std::move(tmp), std::move(op_group_by.exprs));
 }
 
-void ExtractExprs::visit(OpOrderByStatement& op_order_by)
+void ExtractExprs::visit(OpOrderBy& op_order_by)
 {
-    tmp = std::make_unique<OpOrderByStatement>(
+    tmp = std::make_unique<OpOrderBy>(
         std::move(op_order_by.items),
         std::move(op_order_by.ascending_order),
         std::move(op_order_by.null_order),
@@ -65,24 +65,11 @@ void ExtractExprs::visit(OpGraphPattern& op_graph_pattern)
     );
 
     if (this_is_first_gp && !tmp_exprs.empty()) {
-        tmp = std::make_unique<OpFilter>(std::move(tmp), std::move(tmp_exprs));
+        tmp = std::make_unique<OpWhere>(std::move(tmp), std::move(tmp_exprs));
     }
 }
 
-void ExtractExprs::visit(OpOrderBy& op_order_by)
-{
-    op_order_by.op->accept_visitor(*this);
-    tmp = std::make_unique<OpOrderBy>(
-        std::move(tmp),
-        std::move(op_order_by.items),
-        std::move(op_order_by.ascending_order),
-        std::move(op_order_by.null_order),
-        op_order_by.offset,
-        op_order_by.limit
-    );
-}
-
-void ExtractExprs::visit(OpFilter& op_filter)
+void ExtractExprs::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
 
@@ -94,7 +81,7 @@ void ExtractExprs::visit(OpFilter& op_filter)
             std::make_move_iterator(op_filter.exprs.end())
         );
     } else {
-        tmp = std::make_unique<OpFilter>(std::move(tmp), std::move(op_filter.exprs));
+        tmp = std::make_unique<OpWhere>(std::move(tmp), std::move(op_filter.exprs));
     }
 }
 
@@ -150,9 +137,9 @@ void ExtractExprs::visit(OpLet& op_let)
     tmp = std::make_unique<OpLet>(std::move(op_let.items));
 }
 
-void ExtractExprs::visit(OpFilterStatement& op)
+void ExtractExprs::visit(OpFilter& op)
 {
-    tmp = std::make_unique<OpFilterStatement>(std::move(op.exprs));
+    tmp = std::make_unique<OpFilter>(std::move(op.exprs));
 }
 
 } // namespace GQL

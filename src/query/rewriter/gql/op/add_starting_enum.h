@@ -15,16 +15,15 @@ public:
     void visit(OpReturn&) override;
 
     void visit(OpQueryStatements& op) override;
-    void visit(OpFilterStatement& op) override;
-    void visit(OpOrderByStatement& op) override;
     void visit(OpFilter& op) override;
+    void visit(OpOrderBy& op) override;
+    void visit(OpWhere& op) override;
     void visit(OpGraphPattern& op) override;
     void visit(OpGraphPatternList& op) override;
     void visit(OpBasicGraphPattern& op) override;
     void visit(OpLinearPattern& op) override;
     void visit(OpRepetition& op) override;
     void visit(OpPathUnion& op) override;
-    void visit(OpOrderBy& op) override;
     void visit(OpLet& op) override;
     void visit(OpGroupBy& op) override;
 

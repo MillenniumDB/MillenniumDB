@@ -51,13 +51,12 @@ public:
     void visit(OpLinearPattern&) override;
     void visit(OpRepetition&) override;
     void visit(OpReturn&) override;
-    void visit(OpOrderBy&) override;
     void visit(OpGroupBy&) override;
 
     void visit(OpLet&) override { }
-    void visit(OpFilterStatement&) override { }
-    void visit(OpOrderByStatement&) override { }
-    void visit(OpFilter&) override;
+    void visit(OpFilter&) override { }
+    void visit(OpOrderBy&) override { }
+    void visit(OpWhere&) override;
     void visit(OpPathUnion&) override;
     void visit(OpNode&) override { }
     void visit(OpEdge&) override { }

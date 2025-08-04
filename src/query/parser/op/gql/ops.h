@@ -2,7 +2,7 @@
 
 #include "query/parser/op/gql/graph_pattern/op_basic_graph_pattern.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/op_edge.h" // IWYU pragma: export
-#include "query/parser/op/gql/graph_pattern/op_filter.h" // IWYU pragma: export
+#include "query/parser/op/gql/graph_pattern/op_where.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/op_graph_pattern.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/op_graph_pattern_list.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/op_linear_pattern.h" // IWYU pragma: export
@@ -10,10 +10,9 @@
 #include "query/parser/op/gql/graph_pattern/op_path_union.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/op_repetition.h" // IWYU pragma: export
 #include "query/parser/op/gql/graph_pattern/path_mode.h" // IWYU pragma: export
-#include "query/parser/op/gql/op_filter_statement.h" // IWYU pragma: export
+#include "query/parser/op/gql/op_filter.h" // IWYU pragma: export
 #include "query/parser/op/gql/op_group_by.h" // IWYU pragma: export
 #include "query/parser/op/gql/op_let.h" // IWYU pragma: export
 #include "query/parser/op/gql/op_order_by.h" // IWYU pragma: export
-#include "query/parser/op/gql/op_order_by_statement.h" // IWYU pragma: export
 #include "query/parser/op/gql/op_query_statements.h" // IWYU pragma: export
 #include "query/parser/op/gql/op_return.h" // IWYU pragma: export

@@ -21,15 +21,14 @@ public:
     virtual void visit(OpGraphPatternList& op);
     virtual void visit(OpNode& op);
     virtual void visit(OpEdge& op);
-    virtual void visit(OpFilter& op);
+    virtual void visit(OpWhere& op);
     virtual void visit(OpReturn& op);
     virtual void visit(OpPathUnion& op);
     virtual void visit(OpRepetition& op);
-    virtual void visit(OpOrderBy& op);
     virtual void visit(OpLinearPattern& op);
-    virtual void visit(OpFilterStatement& op);
+    virtual void visit(OpFilter& op);
     virtual void visit(OpLet& op);
-    virtual void visit(OpOrderByStatement& op);
+    virtual void visit(OpOrderBy& op);
     virtual void visit(OpQueryStatements& op);
     virtual void visit(OpGroupBy& op);
 };

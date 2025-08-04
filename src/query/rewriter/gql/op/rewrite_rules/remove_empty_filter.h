@@ -1,6 +1,6 @@
 #pragma once
 
-#include "query/parser/op/gql/graph_pattern/op_filter.h"
+#include "query/parser/op/gql/graph_pattern/op_where.h"
 #include "rewrite_rule.h"
 
 namespace GQL {
@@ -10,7 +10,7 @@ public:
 
     bool is_possible_to_regroup(std::unique_ptr<Op>& unknown_op) override
     {
-        auto op_filter = dynamic_cast<OpFilter*>(unknown_op.get());
+        auto op_filter = dynamic_cast<OpWhere*>(unknown_op.get());
 
         if (op_filter == nullptr) {
             return false;
@@ -23,7 +23,7 @@ public:
 
     std::unique_ptr<Op> regroup(std::unique_ptr<Op> unknown_op) override
     {
-        auto op_filter = dynamic_cast<OpFilter*>(unknown_op.get());
+        auto op_filter = dynamic_cast<OpWhere*>(unknown_op.get());
         return std::move(op_filter->op);
     }
 };

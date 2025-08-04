@@ -12,7 +12,6 @@ namespace GQL {
 
 class OpOrderBy : public Op {
 public:
-    std::unique_ptr<Op> op;
     std::vector<std::unique_ptr<Expr>> items;
 
     std::vector<bool> ascending_order;
@@ -22,14 +21,12 @@ public:
     uint64_t limit;
 
     OpOrderBy(
-        std::unique_ptr<Op> op,
         std::vector<std::unique_ptr<Expr>>&& _items,
         std::vector<bool>&& ascending_order,
         std::vector<bool>&& null_order,
         uint64_t offset,
         uint64_t limit
     ) :
-        op(std::move(op)),
         ascending_order(std::move(ascending_order)),
         null_order(std::move(null_order)),
         offset(offset),
@@ -58,7 +55,6 @@ public:
         std::vector<bool> new_null_order = null_order;
 
         return std::make_unique<OpOrderBy>(
-            op->clone(),
             std::move(new_items),
             std::move(new_ascending_order),
             std::move(new_null_order),
@@ -74,7 +70,7 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        std::set<VarId> res = op->get_all_vars();
+        std::set<VarId> res;
         for (auto& item : items) {
             for (auto& v : item->get_all_vars()) {
                 res.insert(v);
@@ -83,14 +79,9 @@ public:
         return res;
     }
 
-    std::map<VarId, GQL::VarType> get_var_types() const override
-    {
-        return op->get_var_types();
-    }
-
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        os << std::string(indent, ' ') << "OpOrderBy(";
+        os << std::string(indent, ' ') << "OpOrderByStatement(";
 
         ExprPrinter printer(os);
 
@@ -113,7 +104,6 @@ public:
             printer.ops[i]->print_to_ostream(os, indent + 4);
         }
 
-        op->print_to_ostream(os, indent + 2);
         return os;
     }
 };

@@ -11,12 +11,11 @@ private:
 public:
     void visit(OpQueryStatements&) override;
     void visit(OpReturn&) override;
+    void visit(OpWhere&) override;
     void visit(OpFilter&) override;
-    void visit(OpFilterStatement&) override;
     void visit(OpGraphPatternList&) override;
     void visit(OpLet&) override;
     void visit(OpOrderBy&) override;
-    void visit(OpOrderByStatement&) override;
     void visit(OpGroupBy&) override;
 
     void visit(OpGraphPattern&) override;

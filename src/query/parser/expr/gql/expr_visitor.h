@@ -1,7 +1,6 @@
 #pragma once
 
 namespace GQL {
-class OpFilter;
 class ExprAnd;
 class ExprOr;
 class ExprNot;
