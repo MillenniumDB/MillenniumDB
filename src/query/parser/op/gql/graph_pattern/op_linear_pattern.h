@@ -136,12 +136,35 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        os << "OpLinearPattern(" << ")\n";
-        for (auto& label : labels) {
-            os << label.object << " " << label.label_id << ", ";
-        }
-        for (auto& property : properties) {
-            os << property.object << " " << property.key << ", ";
+
+        if (labels.empty() && properties.empty()) {
+            os << "OpLinearPattern()\n";
+        } else {
+            os << "OpLinearPattern(";
+
+            bool first = true;
+            for (auto& label : labels) {
+                if (first) {
+                    first = false;
+                    os << "\n"
+                       << std::string(indent + 2, ' ') << "labels: " << label.object << " " << label.label_id;
+                } else {
+                    os << ", " << label.object << " " << label.label_id;
+                }
+            }
+
+            first = true;
+            for (auto& property : properties) {
+                if (first) {
+                    first = false;
+                    os << "\n"
+                       << std::string(indent + 2, ' ') << "properties: " << property.var_with_property << "="
+                       << property.value;
+                } else {
+                    os << ", " << property.var_with_property << "=" << property.value;
+                }
+            }
+            os << "\n" << std::string(indent, ' ') << ")\n";
         }
 
         for (auto& pattern : patterns) {
