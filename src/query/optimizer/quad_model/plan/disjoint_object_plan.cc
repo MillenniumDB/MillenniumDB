@@ -28,7 +28,7 @@ void DisjointObjectPlan::print(std::ostream& os, int indent) const
 
 double DisjointObjectPlan::estimate_output_size() const
 {
-    return quad_model.catalog.edge_count + quad_model.catalog.nodes_count;
+    return quad_model.catalog.edge_count() + quad_model.catalog.nodes_count;
 }
 
 std::set<VarId> DisjointObjectPlan::get_vars() const

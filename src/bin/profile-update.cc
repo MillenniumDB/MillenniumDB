@@ -11,9 +11,9 @@
 #include "misc/logger.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_update_parser.h"
+#include "query/update/mql/update_executor.h"
+#include "query/update/sparql/update_executor.h"
 #include "system/system.h"
-#include "update/mql/update_executor.h"
-#include "update/sparql/update_executor.h"
 
 using namespace MdbBin;
 using DurationMS = std::chrono::duration<float, std::milli>;

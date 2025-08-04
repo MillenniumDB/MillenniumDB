@@ -6,12 +6,6 @@ class OpDescribe;
 class OpReturn;
 class OpShow;
 
-// class OpEdge;
-// class OpDisjointTerm;
-// class OpDisjointVar;
-// class OpLabel;
-// class OpPath;
-// class OpProperty;
 class OpBasicGraphPattern;
 class OpCall;
 class OpGroupBy;
@@ -19,6 +13,7 @@ class OpLet;
 class OpOptional;
 class OpOrderBy;
 class OpSequence;
+class OpUnitTable;
 class OpWhere;
 
 class OpVisitor {
@@ -37,6 +32,7 @@ public:
     virtual void visit(OpOptional&) = 0;
     virtual void visit(OpOrderBy&) = 0;
     virtual void visit(OpSequence&) = 0;
+    virtual void visit(OpUnitTable&) = 0;
     virtual void visit(OpWhere&) = 0;
 };
 

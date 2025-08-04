@@ -5,7 +5,7 @@
 #include "network/server/session/streaming/response/streaming_quad_response_writer.h"
 #include "query/optimizer/quad_model/streaming_executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
-#include "update/mql/update_executor.h"
+#include "query/update/mql/update_executor.h"
 
 namespace MDBServer {
 

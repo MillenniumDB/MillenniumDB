@@ -13,7 +13,7 @@
 #include "query/optimizer/quad_model/executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/query_context.h"
-#include "update/mql/update_executor.h"
+#include "query/update/mql/update_executor.h"
 
 using namespace boost;
 using namespace MDBServer;

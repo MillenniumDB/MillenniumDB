@@ -50,7 +50,7 @@ double EdgePlan::estimate_cost() const
 
 double EdgePlan::estimate_output_size() const
 {
-    const auto total_connections = static_cast<double>(quad_model.catalog.edge_count);
+    const double total_connections = quad_model.catalog.edge_count();
 
     double heuristic_divisor = 1.0;
 

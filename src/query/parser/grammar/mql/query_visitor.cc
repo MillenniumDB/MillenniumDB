@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cstdlib>
 
-#include "graph_models/common/conversions.h"
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/quad_model/conversions.h"
@@ -11,6 +10,7 @@
 #include "graph_models/quad_model/quad_object_id.h"
 #include "misc/is_name_valid_for_path.h"
 #include "misc/transliterator.h"
+#include "query/parser/op/mql/ops.h"
 #include "query/parser/expr/mql/exprs.h"
 #include "query/parser/paths/path_alternatives.h"
 #include "query/parser/paths/path_atom.h"
@@ -159,10 +159,34 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
             return_info.offset
         );
     } else {
+        update_info.update_ctx = std::make_unique<UpdateContext>();
         for (auto& update : ctx->updateStatement()) {
             update->accept(this);
         }
+        current_op = std::make_unique<OpUpdate>(
+            std::move(current_op),
+            std::move(update_info.update_ctx),
+            std::move(update_info.update_actions)
+        );
     }
+
+    return 0;
+}
+
+Any QueryVisitor::visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx)
+{
+    // TODO: diferenciar root de simpleQuery
+    if (current_op != nullptr) {
+        return 0;
+    }
+
+    update_info.update_ctx = std::make_unique<UpdateContext>();
+    visitChildren(ctx);
+    current_op = std::make_unique<OpUpdate>(
+        std::make_unique<OpUnitTable>(),
+        std::move(update_info.update_ctx),
+        std::move(update_info.update_actions)
+    );
 
     return 0;
 }
@@ -182,11 +206,10 @@ Any QueryVisitor::visitWhereStatement(MQL_Parser::WhereStatementContext* ctx)
 
 Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx)
 {
-    // first_element_disjoint = ctx->children.size() == 1;
     ctx->children[0]->accept(this);
     saved_node = last_node;
     for (size_t i = 2; i < ctx->children.size(); i += 2) {
-        ctx->children[i]->accept(this);     // accept node
+        ctx->children[i]->accept(this); // accept node
         ctx->children[i - 1]->accept(this); // accept edge
         saved_node = last_node;
     }
@@ -196,13 +219,17 @@ Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContex
 
 Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
 {
-    // TODO: may be a variable
     if (ctx->VARIABLE()) {
         auto var_name = ctx->VARIABLE()->getText();
         var_name.erase(0, 1); // remove leading '?'
         last_node = get_query_ctx().get_or_create_var(var_name);
-    } else {
+        update_info.update_actions.push_back(std::make_unique<InsertNode>(last_node.get_var()));
+    } else if (ctx->identifier()) {
         last_node = QuadObjectId::get_fixed_node_inside(ctx->identifier()->getText());
+        update_info.update_ctx->insert_node(last_node.get_OID());
+    } else {
+        last_node = update_info.update_ctx->get_anon_id();
+        update_info.update_ctx->insert_node(last_node.get_OID());
     }
 
     // Process Labels
@@ -210,7 +237,14 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
-        current_bgp->add_label(last_node, label_id);  // TODO: dont use current_bgp?
+
+        if (last_node.is_var()) {
+            update_info.update_actions.push_back(
+                std::make_unique<InsertLabel>(last_node.get_var(), label_id)
+            );
+        } else {
+            update_info.update_ctx->insert_label(last_node.get_OID(), label_id);
+        }
     }
 
     auto properties = ctx->insertProperties();
@@ -221,15 +255,12 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         }
     }
 
-    // necessary to insert even if not disjoint
-    current_bgp->add_disjoint_term(last_node.get_OID()); // TODO: dont use current_bgp?
-
     return 0;
 }
 
 Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 {
-    auto edge = get_query_ctx().get_internal_var();
+    auto edge = update_info.update_ctx->get_new_edge_id();
 
     auto type_str = ctx->TYPE()->getText();
     type_str.erase(0, 1); // remove leading ':'
@@ -237,7 +268,7 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 
     auto properties = ctx->insertProperties();
     if (properties != nullptr) {
-        saved_property_obj = last_node;
+        saved_property_obj = edge;
         for (auto property : properties->insertProperty()) {
             property->accept(this);
         }
@@ -245,63 +276,77 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 
     if (ctx->GT() != nullptr) {
         // right direction
-        current_bgp->add_edge(saved_node, last_node, type_id, edge);  // TODO: dont use current_bgp?
+        update_info.update_actions.push_back(
+            std::make_unique<InsertEdge>(saved_node, last_node, type_id, edge)
+        );
     } else {
         // left direction
-        current_bgp->add_edge(last_node, saved_node, type_id, edge);  // TODO: dont use current_bgp?
+        update_info.update_actions.push_back(
+            std::make_unique<InsertEdge>(last_node, saved_node, type_id, edge)
+        );
     }
     return 0;
 }
 
-Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* property)
+Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
 {
-    auto key_str = property->identifier()->getText();
+    auto key_str = ctx->identifier()->getText();
     auto key_id = QuadObjectId::get_string(key_str);
 
     ObjectId value_id;
 
-    if (property->value() != nullptr) {
-        visitValue(property->value());
+    if (ctx->value() != nullptr) {
+        visitValue(ctx->value());
         value_id = current_value_oid;
     } else {
-        if (property->FALSE_PROP() != nullptr) {
+        if (ctx->FALSE_PROP() != nullptr) {
             value_id = ObjectId(ObjectId::BOOL_FALSE);
         } else {
-            assert(property->TRUE_PROP() != nullptr);
+            assert(ctx->TRUE_PROP() != nullptr);
             value_id = ObjectId(ObjectId::BOOL_TRUE);
         }
     }
 
-    current_bgp->add_property(saved_property_obj, key_id, value_id);// TODO: dont use current_bgp?
+    // TODO: if saved_property_obj is a term we can add directly to the update context
+    update_info.update_actions.push_back(
+        std::make_unique<InsertProperty>(saved_property_obj, key_id, value_id)
+    );
     return 0;
 }
 
-Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* property)
+Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* ctx)
 {
-    auto key_str = property->identifier()->getText();
+    auto key_str = ctx->identifier()->getText();
     auto key_id = QuadObjectId::get_string(key_str);
 
-    std::string datatype = property->TYPE()->getText();
+    std::string datatype = ctx->TYPE()->getText();
     // remove leading ':'
     datatype.erase(0, 1);
 
-    std::string str = property->STRING()->getText();
+    std::string str = ctx->STRING()->getText();
     // remove surrounding double quotes
     str = str.substr(1, str.size() - 2);
 
     parse_datatype_value(datatype, str); // will set current_value_oid
 
-    current_bgp->add_property(saved_property_obj, key_id, current_value_oid);// TODO: dont use current_bgp?
+    // TODO: if saved_property_obj is a term we can add directly to the update context
+    update_info.update_actions.push_back(
+        std::make_unique<InsertProperty>(saved_property_obj, key_id, current_value_oid)
+    );
     return 0;
 }
 
-Any QueryVisitor::visitInsertProperty3(MQL_Parser::InsertProperty3Context* property)
+Any QueryVisitor::visitInsertProperty3(MQL_Parser::InsertProperty3Context* ctx)
 {
-    auto key_str = property->identifier()->getText();
+    auto key_str = ctx->identifier()->getText();
     auto key_id = QuadObjectId::get_string(key_str);
 
-    // TODO: use conditionalOrExpr to set current_value_oid?
-    current_bgp->add_property(saved_property_obj, key_id, current_value_oid);// TODO: dont use current_bgp?
+    ctx->conditionalOrExpr()->accept(this);
+    assert(current_expr != nullptr);
+
+    update_info.update_actions.push_back(
+        std::make_unique<InsertPropertyExpr>(saved_property_obj, key_id, std::move(current_expr))
+    );
     return 0;
 }
 
@@ -352,7 +397,8 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
     }
 
     // validate yield statement
-    const auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(procedure_type
+    const auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(
+        procedure_type
     );
 
     auto check_yield_var = [&](const std::string& var_name) -> void {
@@ -792,10 +838,12 @@ Any QueryVisitor::visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* ctx
             auto property_var = get_query_ctx().get_or_create_var(property_var_name);
             auto key_id = QuadObjectId::get_string(key_name);
 
-            order_by_info.items.push_back(std::make_unique<ExprAggCount>(
-                std::make_unique<ExprVarProperty>(var, key_id, property_var),
-                distinct
-            ));
+            order_by_info.items.push_back(
+                std::make_unique<ExprAggCount>(
+                    std::make_unique<ExprVarProperty>(var, key_id, property_var),
+                    distinct
+                )
+            );
         } else {
             order_by_info.items.push_back(
                 std::make_unique<ExprAggCount>(std::make_unique<ExprVar>(var), distinct)
@@ -1000,12 +1048,14 @@ Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
         datatypes_is_exprs.push_back(
             std::make_unique<MQL::ExprIs>(negation, std::move(expr_var_property), type, propertyTypeBitmap)
         );
-        datatypes_is_exprs_where.push_back(std::make_unique<MQL::ExprIs>(
-            negation,
-            std::move(expr_var_property_where),
-            type,
-            propertyTypeBitmap
-        ));
+        datatypes_is_exprs_where.push_back(
+            std::make_unique<MQL::ExprIs>(
+                negation,
+                std::move(expr_var_property_where),
+                type,
+                propertyTypeBitmap
+            )
+        );
     }
     property_expr.push_back(std::make_unique<MQL::ExprOr>(std::move(datatypes_is_exprs)));
     return 0;

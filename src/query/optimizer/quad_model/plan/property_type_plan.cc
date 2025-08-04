@@ -81,7 +81,7 @@ double PropertyTypePlan::estimate_cost() const
 double PropertyTypePlan::estimate_output_size() const
 {
     const auto total_objects = static_cast<double>(
-        quad_model.catalog.nodes_count + quad_model.catalog.edge_count
+        quad_model.catalog.nodes_count + quad_model.catalog.edge_count()
     );
 
     const auto total_properties = static_cast<double>(quad_model.catalog.properties_count);

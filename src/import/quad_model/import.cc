@@ -204,6 +204,7 @@ void OnDiskImport::start_import(MDBIstream& in)
         // declared_nodes.finish_appends() its called twice, no problem with that
         declared_nodes.finish_appends();
         catalog.nodes_count = nodes_set.size();
+        catalog.max_anon = max_anon_seen;
     }
     print_duration("Write table", start);
 
@@ -270,7 +271,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         edges.create_bpt(db_folder + "/edge_from_to_type", { C_EDGE, C_FROM, C_TO, C_TYPE }, no_stat);
 
-        catalog.edge_count = all_stat.all;
+        catalog.max_edge = all_stat.all;
         catalog.type2total_count = std::move(dict_count_stat.dict);
     }
 

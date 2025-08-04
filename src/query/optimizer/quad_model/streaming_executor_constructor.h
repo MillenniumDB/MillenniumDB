@@ -26,6 +26,7 @@ public:
     void visit(OpOptional&) override { }
     void visit(OpOrderBy&) override { }
     void visit(OpSequence&) override { }
+    void visit(OpUnitTable&) override { }
     void visit(OpWhere&) override { }
 };
 } // namespace MQL

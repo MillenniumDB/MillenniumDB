@@ -52,6 +52,7 @@ public:
         MetricType metric_type
     );
 
+    // TODO: why return copy?
     boost::unordered_flat_map<std::string, HNSWIndexMetadata> get_name2metadata() const
     {
         return name2metadata;
@@ -62,6 +63,7 @@ public:
         return has_changes_;
     }
 
+    // TODO: why return copy?
     boost::unordered_flat_map<std::string, std::vector<std::string>> get_predicate2names() const
     {
         return predicate2names;

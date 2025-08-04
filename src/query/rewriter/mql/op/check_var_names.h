@@ -36,13 +36,12 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSequence&) override;
+    void visit(OpUpdate&) override;
     void visit(OpWhere&) override;
 
+    void visit(OpUnitTable&) override { }
     void visit(OpDescribe&) override { }
     void visit(OpShow&) override { }
-
-    /* There are impossible to have in a read only query*/
-    void visit(OpUpdate&) override { }
 };
 
 class CheckVarNamesExpr : public ExprVisitor {

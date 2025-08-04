@@ -14,8 +14,8 @@
 #include "query/parser/sparql_query_parser.h"
 #include "query/parser/sparql_update_parser.h"
 #include "query/query_context.h"
+#include "query/update/sparql/update_executor.h"
 #include "system/buffer_manager.h"
-#include "update/sparql/update_executor.h"
 
 using namespace SPARQL;
 using namespace boost;

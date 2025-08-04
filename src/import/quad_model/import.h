@@ -71,6 +71,7 @@ private:
     uint64_t value_id;
     uint64_t label_id;
     uint64_t edge_count = 0;
+    uint64_t max_anon_seen = 0;
     std::vector<uint64_t> ids_stack;
 
     // true: right, false: left
@@ -122,8 +123,12 @@ private:
     void save_first_id_anon()
     {
         ids_stack.clear();
-        const uint64_t unmasked_id = std::stoull(lexer.str + 2);
+        // ignore first 2 characters: '_a'
+        uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id1 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        if (unmasked_id > max_anon_seen) {
+            max_anon_seen = unmasked_id;
+        }
     }
 
     void save_first_id_string()
@@ -312,9 +317,12 @@ private:
 
     void save_second_id_anon()
     {
-        // delete first 2 characters: '_a'
-        const uint64_t unmasked_id = std::stoull(lexer.str + 2);
+        // ignore first 2 characters: '_a'
+        uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id2 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        if (unmasked_id > max_anon_seen) {
+            max_anon_seen = unmasked_id;
+        }
     }
 
     void save_second_id_string()

@@ -84,6 +84,7 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSequence&) override;
+    void visit(OpUnitTable&) override;
 
     void visit(OpDescribe&) override
     {

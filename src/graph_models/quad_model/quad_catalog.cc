@@ -9,9 +9,11 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
     Catalog(filename)
 {
     if (is_empty()) {
-        nodes_count = 0;
+        max_anon = 0;
+        max_edge = 0;
+        deleted_edges = 0;
 
-        edge_count = 0;
+        nodes_count = 0;
         label_count = 0;
         properties_count = 0;
 
@@ -28,12 +30,11 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             throw LogicException("Undefined catalog recovery");
         }
 
+        max_anon = read_uint64();
+        max_edge = read_uint64();
+        deleted_edges = read_uint64();
+
         nodes_count = read_uint64();
-
-        [[maybe_unused]]
-        auto unused = read_uint64(); // because old layout
-
-        edge_count = read_uint64();
         label_count = read_uint64();
         properties_count = read_uint64();
 
@@ -131,10 +132,11 @@ void QuadCatalog::save()
 {
     start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
-    write_uint64(nodes_count);
-    write_uint64(0); // because old
+    write_uint64(max_anon);
+    write_uint64(max_edge);
+    write_uint64(deleted_edges);
 
-    write_uint64(edge_count);
+    write_uint64(nodes_count);
     write_uint64(label_count);
     write_uint64(properties_count);
 
@@ -209,7 +211,7 @@ void QuadCatalog::print(std::ostream& os)
     os << "-------------------------------------\n";
     os << "Catalog:\n";
     os << "  nodes count:              " << nodes_count << "\n";
-    os << "  edges count:              " << edge_count << "\n";
+    os << "  edges count:              " << edge_count() << "\n";
 
     os << "  label count:              " << label_count << "\n";
     os << "  properties count:         " << properties_count << "\n";
@@ -294,7 +296,7 @@ uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const
 
 uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type)
 {
-    auto new_edge_id = ++edge_count;
+    auto new_edge_id = ++max_edge;
 
     type2total_count[type]++;
     if (from == to) {

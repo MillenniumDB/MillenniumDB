@@ -10,4 +10,6 @@
 #include "query/parser/op/mql/op_return.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_sequence.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_show.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_update.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_unit_table.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_where.h" // IWYU pragma: export

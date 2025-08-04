@@ -107,7 +107,7 @@ void PathPlan::print(std::ostream& os, int indent) const {
 
 double PathPlan::estimate_output_size() const {
     // TODO: find a better estimation
-    const auto total_connections = static_cast<double>(quad_model.catalog.edge_count);
+    const double total_connections = quad_model.catalog.edge_count();
     return total_connections * total_connections;
 }
 

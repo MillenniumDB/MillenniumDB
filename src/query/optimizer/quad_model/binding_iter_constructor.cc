@@ -543,17 +543,17 @@ void BindingIterConstructor::visit(OpSequence& op_sequence)
 
 bool BindingIterConstructor::term_exists(ObjectId term) const
 {
+    bool interruption_requested = false;
     if (term.is_not_found()) {
         return false;
     } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::MASK_EDGE) {
-        auto conn_id = term.id & ObjectId::VALUE_MASK;
-
-        // TODO: will be wrong after implementing deletes
-        return conn_id <= quad_model.catalog.edge_count;
+        Record<4> max = { term.id, 0, 0, 0 };
+        Record<4> min = { term.id, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+        auto it = quad_model.edge_from_to_type->get_range(&interruption_requested, min, max);
+        return it.next() != nullptr;
     } else {
         // search in nodes
         Record<1> r = { term.id };
-        bool interruption_requested = false;
         auto it = quad_model.nodes->get_range(&interruption_requested, r, r);
         return it.next() != nullptr;
     }
