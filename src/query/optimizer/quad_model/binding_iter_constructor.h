@@ -85,6 +85,7 @@ public:
     void visit(OpReturn&) override;
     void visit(OpSequence&) override;
     void visit(OpUnitTable&) override;
+    void visit(OpUpdate&) override;
 
     void visit(OpDescribe&) override
     {
@@ -96,11 +97,10 @@ public:
         throw LogicException("OpShow must be processed outside");
     }
 
-    /* There are impossible to have in a read only query*/
-    void visit(OpUpdate&) override { }
-
 private:
     bool term_exists(ObjectId) const;
+
+    void make_solution_modifiers();
 
     std::unique_ptr<BindingIter> get_pending_properties(std::unique_ptr<BindingIter> binding_iter);
 };

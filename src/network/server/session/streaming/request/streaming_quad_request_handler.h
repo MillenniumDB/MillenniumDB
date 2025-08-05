@@ -44,16 +44,17 @@ public:
         buffer_manager.upgrade_to_editable(version_scope);
 
         const auto execution_start = std::chrono::system_clock::now();
-        MQL::UpdateExecutor update_executor;
-        update_executor.execute(
-            *dynamic_cast<const MQL::OpUpdate*>(std::get<std::unique_ptr<MQL::Op>>(logical_plan).get())
-                 ->update_ctx
-        );
+        // TODO:
+        // MQL::UpdateExecutor update_executor;
+        // update_executor.execute(
+        //     *dynamic_cast<const MQL::OpUpdate*>(std::get<std::unique_ptr<MQL::Op>>(logical_plan).get())
+        //          ->update_ctx
+        // );
         execution_duration_ms = get_duration(execution_start);
 
-        logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
-            update_executor.print_stats(os);
-        });
+        // logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
+        //     update_executor.print_stats(os);
+        // });
 
         response_writer->write_update_success(
             parser_duration_ms.count(),

@@ -37,8 +37,6 @@ public:
 
     void handle(const uint8_t* request_bytes, std::size_t request_size);
 
-    bool is_update(const OpUptr&);
-
 protected:
     DurationMS parser_duration_ms;
     DurationMS optimizer_duration_ms;

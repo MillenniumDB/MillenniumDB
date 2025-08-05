@@ -1,14 +1,12 @@
 #pragma once
 
-#include <mutex>
-
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include "network/server/protocol.h"
-#include "query/executor/query_executor/mql/return_executor.h"
+#include "query/executor/query_executor/mql/return_type.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/mql/op.h"
+#include "query/update/mql/update_executor.h"
 
 namespace MDBServer {
 
@@ -48,10 +46,10 @@ private:
 
     std::unique_ptr<MQL::Op> create_logical_plan(const std::string& query);
 
-    std::unique_ptr<QueryExecutor> create_readonly_physical_plan(MQL::Op& logical_plan, MQL::ReturnType response_type);
+    std::unique_ptr<QueryExecutor> create_query_executor(MQL::Op& logical_plan, MQL::ReturnType response_type);
 
-    void execute_readonly_query_plan(QueryExecutor& physical_plan, std::ostream& os, MQL::ReturnType response_type);
+    void run_read_query(QueryExecutor& executor, std::ostream& os, MQL::ReturnType response_type);
 
-    void execute_update(MQL::OpUpdate& op_update, BufferManager::VersionScope& version_scope, std::ostream& os);
+    void run_write_query(MQL::UpdateExecutor& executor, BufferManager::VersionScope& version_scope, std::ostream& os);
 };
 } // namespace MDBServer

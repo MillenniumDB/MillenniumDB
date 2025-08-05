@@ -54,12 +54,9 @@ void StreamingRequestHandler::handle_run(const std::string& query)
         auto current_logical_plan = create_logical_plan(query);
         parser_duration_ms = get_duration(parser_start);
 
-        if (is_update(current_logical_plan)) {
-            execute_update(current_logical_plan, *readonly_version_scope);
-            return;
-        }
-
         auto optimizer_start = std::chrono::system_clock::now();
+
+        // TODO: include updates
         auto current_physical_plan = create_readonly_physical_plan(current_logical_plan);
         optimizer_duration_ms = get_duration(optimizer_start);
 
@@ -152,17 +149,4 @@ void StreamingRequestHandler::handle_cancel()
     }
 
     response_writer->flush();
-}
-
-bool StreamingRequestHandler::is_update(const OpUptr& uptr) {
-    if (std::holds_alternative<std::unique_ptr<GQL::Op>>(uptr)) {
-        return false;
-    } else if (std::holds_alternative<std::unique_ptr<MQL::Op>>(uptr)) {
-        // TODO:
-        return false;
-        // return !std::get<std::unique_ptr<MQL::Op>>(uptr)->read_only();
-    } else if (std::holds_alternative<std::unique_ptr<SPARQL::Op>>(uptr)) {
-        return false;
-    }
-    return false;
 }
