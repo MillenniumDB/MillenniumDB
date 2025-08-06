@@ -21,13 +21,8 @@ root
    ;
 
 gqlProgram
-   : programActivity sessionCloseCommand?
+   : (sessionActivity | transactionActivity) sessionCloseCommand?
    | sessionCloseCommand
-   ;
-
-programActivity
-   : sessionActivity
-   | transactionActivity
    ;
 
 sessionActivity
@@ -40,8 +35,8 @@ sessionActivityCommand
    ;
 
 transactionActivity
-   : startTransactionCommand (procedureSpecification endTransactionCommand?)?
-   | procedureSpecification endTransactionCommand?
+   : startTransactionCommand (procedureBody endTransactionCommand?)?
+   | procedureBody endTransactionCommand?
    | endTransactionCommand
    ;
 
@@ -109,21 +104,13 @@ sessionCloseCommand
    ;
 
 startTransactionCommand
-   : START TRANSACTION transactionCharacteristics?
-   ;
-
-transactionCharacteristics
-   : transactionMode (COMMA transactionMode)*
+   : START TRANSACTION transactionMode?
    ;
 
 transactionMode
-   : transactionAccessMode
-   | implementationDefinedAccessMode
-   ;
-
-transactionAccessMode
    : READ ONLY
    | READ WRITE
+   | implementationDefinedAccessMode
    ;
 
 implementationDefinedAccessMode
@@ -139,31 +126,7 @@ commitCommand
    ;
 
 nestedProcedureSpecification
-   : LEFT_BRACE procedureSpecification RIGHT_BRACE
-   ;
-
-procedureSpecification
-   : procedureBody
-   ;
-
-catalogModifyingProcedureSpecification
-   : procedureBody
-   ;
-
-nestedDataModifyingProcedureSpecification
-   : LEFT_BRACE dataModifyingProcedureSpecification RIGHT_BRACE
-   ;
-
-dataModifyingProcedureSpecification
-   : procedureBody
-   ;
-
-nestedQuerySpecification
-   : LEFT_BRACE procedureSpecification RIGHT_BRACE
-   ;
-
-querySpecification
-   : procedureBody
+   : LEFT_BRACE procedureBody RIGHT_BRACE
    ;
 
 unsignedNumericLiteral
@@ -424,7 +387,7 @@ statementBlock
 statement
    : linearCatalogModifyingStatement
    | linearDataModifyingStatement
-   | compositeQueryStatement
+   | compositeQueryExpression
    ;
 
 nextStatement
@@ -464,7 +427,7 @@ optTypedValueInitializer
    ;
 
 graphExpression
-   : nestedGraphQuerySpecification
+   : nestedProcedureSpecification
    | objectExpressionPrimary
    | graphReference
    | objectNameOrBindingVariable
@@ -476,19 +439,11 @@ currentGraph
    | CURRENT_GRAPH
    ;
 
-nestedGraphQuerySpecification
-   : nestedQuerySpecification
-   ;
-
 bindingTableExpression
-   : nestedBindingTableQuerySpecification
+   : nestedProcedureSpecification
    | objectExpressionPrimary
    | bindingTableReference
    | objectNameOrBindingVariable
-   ;
-
-nestedBindingTableQuerySpecification
-   : nestedQuerySpecification
    ;
 
 objectExpressionPrimary
@@ -503,7 +458,7 @@ linearCatalogModifyingStatement
 
 simpleCatalogModifyingStatement
    : primitiveCatalogModifyingStatement
-   | callCatalogModifyingProcedureStatement
+   | callProcedureStatement
    ;
 
 primitiveCatalogModifyingStatement
@@ -567,49 +522,22 @@ dropGraphTypeStatement
    : DROP PROPERTY? GRAPH TYPE (IF EXISTS)? catalogGraphTypeParentAndName
    ;
 
-callCatalogModifyingProcedureStatement
-   : callProcedureStatement
-   ;
-
 linearDataModifyingStatement
-   : focusedLinearDataModifyingStatement
-   | ambientLinearDataModifyingStatement
+   : linearDataModifyingStatementBody
+   | nestedDataModifyingProcedure
    ;
 
-focusedLinearDataModifyingStatement
-   : focusedLinearDataModifyingStatementBody
-   | focusedNestedDataModifyingProcedureSpecification
+linearDataModifyingStatementBody
+   : useGraphClause? simpleDataAccessingStatement+ primitiveResultStatement?
    ;
 
-focusedLinearDataModifyingStatementBody
-   : useGraphClause simpleLinearDataAccessingStatement primitiveResultStatement?
-   ;
-
-focusedNestedDataModifyingProcedureSpecification
-   : useGraphClause nestedDataModifyingProcedureSpecification
-   ;
-
-ambientLinearDataModifyingStatement
-   : ambientLinearDataModifyingStatementBody
-   | nestedDataModifyingProcedureSpecification
-   ;
-
-ambientLinearDataModifyingStatementBody
-   : simpleLinearDataAccessingStatement primitiveResultStatement?
-   ;
-
-simpleLinearDataAccessingStatement
-   : simpleDataAccessingStatement+
+nestedDataModifyingProcedure
+   : useGraphClause? nestedProcedureSpecification
    ;
 
 simpleDataAccessingStatement
-   : simpleQueryStatement
-   | simpleDataModifyingStatement
-   ;
-
-simpleDataModifyingStatement
-   : primitiveDataModifyingStatement
-   | callDataModifyingProcedureStatement
+   : primitiveQueryStatement
+   | primitiveDataModifyingStatement
    ;
 
 primitiveDataModifyingStatement
@@ -690,10 +618,6 @@ callDataModifyingProcedureStatement
    : callProcedureStatement
    ;
 
-compositeQueryStatement
-   : compositeQueryExpression
-   ;
-
 compositeQueryExpression
    : compositeQueryExpression queryConjunction compositeQueryPrimary
    | compositeQueryPrimary
@@ -739,21 +663,16 @@ focusedPrimitiveResultStatement
    ;
 
 focusedNestedQuerySpecification
-   : useGraphClause nestedQuerySpecification
+   : useGraphClause nestedProcedureSpecification
    ;
 
 ambientLinearQueryStatement
    : simpleLinearQueryStatement? primitiveResultStatement
-   | nestedQuerySpecification
+   | nestedProcedureSpecification
    ;
 
 simpleLinearQueryStatement
-   : simpleQueryStatement+
-   ;
-
-simpleQueryStatement
-   : primitiveQueryStatement
-   | callQueryStatement
+   : primitiveQueryStatement+
    ;
 
 primitiveQueryStatement
@@ -762,6 +681,7 @@ primitiveQueryStatement
    | forStatement
    | filterStatement
    | orderByAndPageStatement
+   | callQueryStatement
    ;
 
 matchStatement
@@ -770,7 +690,7 @@ matchStatement
    ;
 
 simpleMatchStatement
-   : MATCH graphPatternBindingTable
+   : MATCH graphPattern graphPatternYieldClause?
    ;
 
 optionalMatchStatement
@@ -841,7 +761,6 @@ returnStatement
 
 returnStatementBody
    : setQuantifier? (ASTERISK | returnItemList) groupByClause?
-   | NO BINDINGS
    ;
 
 returnItemList
@@ -890,8 +809,8 @@ selectGraphMatch
    ;
 
 selectQuerySpecification
-   : nestedQuerySpecification
-   | graphExpression nestedQuerySpecification
+   : nestedProcedureSpecification
+   | graphExpression nestedProcedureSpecification
    ;
 
 callProcedureStatement
@@ -949,10 +868,6 @@ pathVariableReference
 
 parameter
    : parameterName
-   ;
-
-graphPatternBindingTable
-   : graphPattern graphPatternYieldClause?
    ;
 
 graphPatternYieldClause
@@ -1089,11 +1004,11 @@ pathPatternExpression
    ;
 
 pathMultisetAlternation
-   : pathTerm MULTISET_ALTERNATION_OPERATOR pathTerm (MULTISET_ALTERNATION_OPERATOR pathTerm)*
+   : pathTerm (MULTISET_ALTERNATION_OPERATOR pathTerm)+
    ;
 
 pathPatternUnion
-   : pathTerm VERTICAL_BAR pathTerm (VERTICAL_BAR pathTerm)*
+   : pathTerm (VERTICAL_BAR pathTerm)+
    ;
 
 pathTerm
@@ -1372,11 +1287,11 @@ simplifiedContents
    ;
 
 simplifiedPathUnion
-   : simplifiedTerm VERTICAL_BAR simplifiedTerm (VERTICAL_BAR simplifiedTerm)*
+   : simplifiedTerm (VERTICAL_BAR simplifiedTerm)+
    ;
 
 simplifiedMultisetAlternation
-   : simplifiedTerm MULTISET_ALTERNATION_OPERATOR simplifiedTerm (MULTISET_ALTERNATION_OPERATOR simplifiedTerm)*
+   : simplifiedTerm (MULTISET_ALTERNATION_OPERATOR simplifiedTerm)*
    ;
 
 simplifiedTerm
@@ -2206,7 +2121,7 @@ expressionPredicate
             | LEFT_PAREN graphPattern RIGHT_PAREN
             | LEFT_BRACE matchStatementBlock RIGHT_BRACE
             | LEFT_PAREN matchStatementBlock RIGHT_PAREN
-            | nestedQuerySpecification)                                                                 #gqlExistsExpression
+            | nestedProcedureSpecification)                                                                 #gqlExistsExpression
    | expressionPredicate nullPredicateCond                                                              #gqlNullExpression
    | expressionPredicate normalizedPredicateCond                                                        #gqlNormalizedExpression
    | elementVariableReference directedPredicateCond                                                     #gqlDirectedExpression
@@ -2229,7 +2144,7 @@ expressionAtom
    | unaryOperator expressionAtom                                                                       #gqlUnaryExpression
    | functionCall                                                                                       #gqlFunctionExpression
    | collectionValueConstructor                                                                         #gqlCollectionExpression
-   | VALUE nestedQuerySpecification                                                                     #gqlValueQueryExpression
+   | VALUE nestedProcedureSpecification                                                                     #gqlValueQueryExpression
    | lhs = expressionAtom op = (ASTERISK | SOLIDUS) rhs = expressionAtom                                #gqlHighArithmeticExpression
    | lhs = expressionAtom op = (PLUS_SIGN | MINUS_SIGN) rhs = expressionAtom                            #gqlLowArithmeticExpression
    | parameterValueSpecification                                                                        #gqlParameterExpression

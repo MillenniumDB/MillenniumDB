@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "query/parser/op/gql/ops.h"
 #include "query/parser/op/gql/op_visitor.h"
+#include "query/parser/op/gql/ops.h"
 #include "query/rewriter/gql/expr/extract_labels_from_expr.h"
 
 namespace GQL {
@@ -35,6 +35,8 @@ public:
     void visit(OpLinearPattern& op) override;
     void visit(OpLet& op) override;
     void visit(OpGroupBy& op) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpEmpty&) override;
 
     void visit(OpNode&) override;
     void visit(OpEdge&) override;

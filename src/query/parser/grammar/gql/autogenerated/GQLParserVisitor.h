@@ -23,8 +23,6 @@ public:
 
     virtual std::any visitGqlProgram(GQLParser::GqlProgramContext *context) = 0;
 
-    virtual std::any visitProgramActivity(GQLParser::ProgramActivityContext *context) = 0;
-
     virtual std::any visitSessionActivity(GQLParser::SessionActivityContext *context) = 0;
 
     virtual std::any visitSessionActivityCommand(GQLParser::SessionActivityCommandContext *context) = 0;
@@ -61,11 +59,7 @@ public:
 
     virtual std::any visitStartTransactionCommand(GQLParser::StartTransactionCommandContext *context) = 0;
 
-    virtual std::any visitTransactionCharacteristics(GQLParser::TransactionCharacteristicsContext *context) = 0;
-
     virtual std::any visitTransactionMode(GQLParser::TransactionModeContext *context) = 0;
-
-    virtual std::any visitTransactionAccessMode(GQLParser::TransactionAccessModeContext *context) = 0;
 
     virtual std::any visitImplementationDefinedAccessMode(GQLParser::ImplementationDefinedAccessModeContext *context) = 0;
 
@@ -75,17 +69,9 @@ public:
 
     virtual std::any visitNestedProcedureSpecification(GQLParser::NestedProcedureSpecificationContext *context) = 0;
 
-    virtual std::any visitProcedureSpecification(GQLParser::ProcedureSpecificationContext *context) = 0;
-
-    virtual std::any visitCatalogModifyingProcedureSpecification(GQLParser::CatalogModifyingProcedureSpecificationContext *context) = 0;
-
     virtual std::any visitNestedDataModifyingProcedureSpecification(GQLParser::NestedDataModifyingProcedureSpecificationContext *context) = 0;
 
-    virtual std::any visitDataModifyingProcedureSpecification(GQLParser::DataModifyingProcedureSpecificationContext *context) = 0;
-
     virtual std::any visitNestedQuerySpecification(GQLParser::NestedQuerySpecificationContext *context) = 0;
-
-    virtual std::any visitQuerySpecification(GQLParser::QuerySpecificationContext *context) = 0;
 
     virtual std::any visitUnsignedNumericLiteral(GQLParser::UnsignedNumericLiteralContext *context) = 0;
 
@@ -221,11 +207,7 @@ public:
 
     virtual std::any visitCurrentGraph(GQLParser::CurrentGraphContext *context) = 0;
 
-    virtual std::any visitNestedGraphQuerySpecification(GQLParser::NestedGraphQuerySpecificationContext *context) = 0;
-
     virtual std::any visitBindingTableExpression(GQLParser::BindingTableExpressionContext *context) = 0;
-
-    virtual std::any visitNestedBindingTableQuerySpecification(GQLParser::NestedBindingTableQuerySpecificationContext *context) = 0;
 
     virtual std::any visitObjectExpressionPrimary(GQLParser::ObjectExpressionPrimaryContext *context) = 0;
 
@@ -263,21 +245,11 @@ public:
 
     virtual std::any visitLinearDataModifyingStatement(GQLParser::LinearDataModifyingStatementContext *context) = 0;
 
-    virtual std::any visitFocusedLinearDataModifyingStatement(GQLParser::FocusedLinearDataModifyingStatementContext *context) = 0;
+    virtual std::any visitLinearDataModifyingStatementBody(GQLParser::LinearDataModifyingStatementBodyContext *context) = 0;
 
-    virtual std::any visitFocusedLinearDataModifyingStatementBody(GQLParser::FocusedLinearDataModifyingStatementBodyContext *context) = 0;
-
-    virtual std::any visitFocusedNestedDataModifyingProcedureSpecification(GQLParser::FocusedNestedDataModifyingProcedureSpecificationContext *context) = 0;
-
-    virtual std::any visitAmbientLinearDataModifyingStatement(GQLParser::AmbientLinearDataModifyingStatementContext *context) = 0;
-
-    virtual std::any visitAmbientLinearDataModifyingStatementBody(GQLParser::AmbientLinearDataModifyingStatementBodyContext *context) = 0;
-
-    virtual std::any visitSimpleLinearDataAccessingStatement(GQLParser::SimpleLinearDataAccessingStatementContext *context) = 0;
+    virtual std::any visitNestedDataModifyingProcedure(GQLParser::NestedDataModifyingProcedureContext *context) = 0;
 
     virtual std::any visitSimpleDataAccessingStatement(GQLParser::SimpleDataAccessingStatementContext *context) = 0;
-
-    virtual std::any visitSimpleDataModifyingStatement(GQLParser::SimpleDataModifyingStatementContext *context) = 0;
 
     virtual std::any visitPrimitiveDataModifyingStatement(GQLParser::PrimitiveDataModifyingStatementContext *context) = 0;
 
@@ -315,8 +287,6 @@ public:
 
     virtual std::any visitCallDataModifyingProcedureStatement(GQLParser::CallDataModifyingProcedureStatementContext *context) = 0;
 
-    virtual std::any visitCompositeQueryStatement(GQLParser::CompositeQueryStatementContext *context) = 0;
-
     virtual std::any visitCompositeQueryExpression(GQLParser::CompositeQueryExpressionContext *context) = 0;
 
     virtual std::any visitQueryConjunction(GQLParser::QueryConjunctionContext *context) = 0;
@@ -340,8 +310,6 @@ public:
     virtual std::any visitAmbientLinearQueryStatement(GQLParser::AmbientLinearQueryStatementContext *context) = 0;
 
     virtual std::any visitSimpleLinearQueryStatement(GQLParser::SimpleLinearQueryStatementContext *context) = 0;
-
-    virtual std::any visitSimpleQueryStatement(GQLParser::SimpleQueryStatementContext *context) = 0;
 
     virtual std::any visitPrimitiveQueryStatement(GQLParser::PrimitiveQueryStatementContext *context) = 0;
 
@@ -432,8 +400,6 @@ public:
     virtual std::any visitPathVariableReference(GQLParser::PathVariableReferenceContext *context) = 0;
 
     virtual std::any visitParameter(GQLParser::ParameterContext *context) = 0;
-
-    virtual std::any visitGraphPatternBindingTable(GQLParser::GraphPatternBindingTableContext *context) = 0;
 
     virtual std::any visitGraphPatternYieldClause(GQLParser::GraphPatternYieldClauseContext *context) = 0;
 

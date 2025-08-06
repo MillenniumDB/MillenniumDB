@@ -56,3 +56,6 @@ void ExecutorConstructor::visit(OpQueryStatements&) { }
 
 void ExecutorConstructor::visit(OpGroupBy&) { }
 
+void ExecutorConstructor::visit(OpUnitTable&) { }
+
+void ExecutorConstructor::visit(OpEmpty&) { }

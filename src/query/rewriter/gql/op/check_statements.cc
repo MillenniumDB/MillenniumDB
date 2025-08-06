@@ -46,3 +46,5 @@ void CheckStatements::visit(OpEdge&) { }
 void CheckStatements::visit(OpPathUnion&) { }
 void CheckStatements::visit(OpRepetition&) { }
 void CheckStatements::visit(OpLinearPattern&) { }
+void CheckStatements::visit(OpUnitTable&) { }
+void CheckStatements::visit(OpEmpty&) { }

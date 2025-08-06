@@ -230,4 +230,8 @@ void CheckVarExistence::visit(OpLinearPattern& op_linear_pattern)
     }
 }
 
+void CheckVarExistence::visit(OpUnitTable&) { }
+
+void CheckVarExistence::visit(OpEmpty&) { }
+
 } // namespace GQL

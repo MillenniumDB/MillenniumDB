@@ -83,3 +83,7 @@ void AddStartingEnum::visit(OpLet&) { }
 void AddStartingEnum::visit(OpNode&) { }
 
 void AddStartingEnum::visit(OpEdge&) { }
+
+void AddStartingEnum::visit(OpUnitTable&) { }
+
+void AddStartingEnum::visit(OpEmpty&) { }

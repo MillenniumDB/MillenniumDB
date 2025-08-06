@@ -153,4 +153,14 @@ void AddLinearPatterns::visit(OpFilter& op)
     tmp = std::make_unique<OpFilter>(std::move(op.exprs));
 }
 
+void AddLinearPatterns::visit(OpUnitTable& op)
+{
+    tmp = std::make_unique<OpUnitTable>(op);
+}
+
+void AddLinearPatterns::visit(OpEmpty& op)
+{
+    tmp = std::make_unique<OpEmpty>(op);
+}
+
 void AddLinearPatterns::visit(OpLinearPattern&) { }

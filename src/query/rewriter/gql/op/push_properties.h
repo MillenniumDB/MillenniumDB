@@ -31,5 +31,7 @@ public:
     void visit(OpPathUnion&) override;
     void visit(OpNode&) override;
     void visit(OpEdge&) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpEmpty&) override;
 };
 } // namespace GQL

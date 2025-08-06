@@ -142,4 +142,14 @@ void ExtractExprs::visit(OpFilter& op)
     tmp = std::make_unique<OpFilter>(std::move(op.exprs));
 }
 
+void ExtractExprs::visit(OpUnitTable& op)
+{
+    tmp = std::make_unique<OpUnitTable>(op);
+}
+
+void ExtractExprs::visit(OpEmpty& op)
+{
+    tmp = std::make_unique<OpEmpty>(op);
+}
+
 } // namespace GQL

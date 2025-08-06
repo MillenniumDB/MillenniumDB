@@ -565,6 +565,16 @@ void PathBindingIterConstructor::visit(OpEdge& op_edge)
     }
 }
 
+void PathBindingIterConstructor::visit(OpUnitTable&)
+{
+    tmp_iter = std::make_unique<SingleResultBindingIter>();
+}
+
+void PathBindingIterConstructor::visit(OpEmpty&)
+{
+    tmp_iter = std::make_unique<EmptyBindingIter>();
+}
+
 std::unique_ptr<BindingIter>
     PathBindingIterConstructor::get_pending_properties(std::unique_ptr<BindingIter> binding_iter)
 {

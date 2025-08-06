@@ -164,3 +164,13 @@ void PushProperties::visit(OpFilter& op)
 {
     tmp = op.clone();
 }
+
+void PushProperties::visit(OpUnitTable& op)
+{
+    tmp = std::make_unique<OpUnitTable>(op);
+}
+
+void PushProperties::visit(OpEmpty& op)
+{
+    tmp = std::make_unique<OpEmpty>(op);
+}

@@ -164,3 +164,13 @@ void PushLabels::visit(OpFilter& op_filter)
 {
     tmp = op_filter.clone();
 }
+
+void PushLabels::visit(OpUnitTable& op)
+{
+    tmp = std::make_unique<OpUnitTable>(op);
+}
+
+void PushLabels::visit(OpEmpty& op)
+{
+    tmp = std::make_unique<OpEmpty>(op);
+}

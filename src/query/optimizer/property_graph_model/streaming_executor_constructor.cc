@@ -52,3 +52,7 @@ void StreamingExecutorConstructor::visit(OpOrderBy&) { }
 void StreamingExecutorConstructor::visit(OpQueryStatements&) { }
 
 void StreamingExecutorConstructor::visit(OpGroupBy&) { }
+
+void StreamingExecutorConstructor::visit(OpUnitTable&) { }
+
+void StreamingExecutorConstructor::visit(OpEmpty&) { }

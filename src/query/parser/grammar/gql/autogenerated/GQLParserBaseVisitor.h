@@ -23,10 +23,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitProgramActivity(GQLParser::ProgramActivityContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitSessionActivity(GQLParser::SessionActivityContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -99,15 +95,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitTransactionCharacteristics(GQLParser::TransactionCharacteristicsContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitTransactionMode(GQLParser::TransactionModeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTransactionAccessMode(GQLParser::TransactionAccessModeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -127,27 +115,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitProcedureSpecification(GQLParser::ProcedureSpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitCatalogModifyingProcedureSpecification(GQLParser::CatalogModifyingProcedureSpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitNestedDataModifyingProcedureSpecification(GQLParser::NestedDataModifyingProcedureSpecificationContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitDataModifyingProcedureSpecification(GQLParser::DataModifyingProcedureSpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitNestedQuerySpecification(GQLParser::NestedQuerySpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitQuerySpecification(GQLParser::QuerySpecificationContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -419,15 +391,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitNestedGraphQuerySpecification(GQLParser::NestedGraphQuerySpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitBindingTableExpression(GQLParser::BindingTableExpressionContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNestedBindingTableQuerySpecification(GQLParser::NestedBindingTableQuerySpecificationContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -503,35 +467,15 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFocusedLinearDataModifyingStatement(GQLParser::FocusedLinearDataModifyingStatementContext *ctx) override {
+  virtual std::any visitLinearDataModifyingStatementBody(GQLParser::LinearDataModifyingStatementBodyContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFocusedLinearDataModifyingStatementBody(GQLParser::FocusedLinearDataModifyingStatementBodyContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitFocusedNestedDataModifyingProcedureSpecification(GQLParser::FocusedNestedDataModifyingProcedureSpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitAmbientLinearDataModifyingStatement(GQLParser::AmbientLinearDataModifyingStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitAmbientLinearDataModifyingStatementBody(GQLParser::AmbientLinearDataModifyingStatementBodyContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitSimpleLinearDataAccessingStatement(GQLParser::SimpleLinearDataAccessingStatementContext *ctx) override {
+  virtual std::any visitNestedDataModifyingProcedure(GQLParser::NestedDataModifyingProcedureContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitSimpleDataAccessingStatement(GQLParser::SimpleDataAccessingStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitSimpleDataModifyingStatement(GQLParser::SimpleDataModifyingStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -607,10 +551,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitCompositeQueryStatement(GQLParser::CompositeQueryStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitCompositeQueryExpression(GQLParser::CompositeQueryExpressionContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -656,10 +596,6 @@ public:
   }
 
   virtual std::any visitSimpleLinearQueryStatement(GQLParser::SimpleLinearQueryStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitSimpleQueryStatement(GQLParser::SimpleQueryStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -840,10 +776,6 @@ public:
   }
 
   virtual std::any visitParameter(GQLParser::ParameterContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitGraphPatternBindingTable(GQLParser::GraphPatternBindingTableContext *ctx) override {
     return visitChildren(ctx);
   }
 

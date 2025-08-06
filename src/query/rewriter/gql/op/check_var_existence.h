@@ -16,21 +16,23 @@ public:
 
     void check_expr_variables(const std::set<VarId>& expr_variables);
 
-    virtual void visit(OpGraphPattern& op);
-    virtual void visit(OpBasicGraphPattern& op);
-    virtual void visit(OpGraphPatternList& op);
-    virtual void visit(OpNode& op);
-    virtual void visit(OpEdge& op);
-    virtual void visit(OpWhere& op);
-    virtual void visit(OpReturn& op);
-    virtual void visit(OpPathUnion& op);
-    virtual void visit(OpRepetition& op);
-    virtual void visit(OpLinearPattern& op);
-    virtual void visit(OpFilter& op);
-    virtual void visit(OpLet& op);
-    virtual void visit(OpOrderBy& op);
-    virtual void visit(OpQueryStatements& op);
-    virtual void visit(OpGroupBy& op);
+    void visit(OpGraphPattern& op) override;
+    void visit(OpBasicGraphPattern& op) override;
+    void visit(OpGraphPatternList& op) override;
+    void visit(OpNode& op) override;
+    void visit(OpEdge& op) override;
+    void visit(OpWhere& op) override;
+    void visit(OpReturn& op) override;
+    void visit(OpPathUnion& op) override;
+    void visit(OpRepetition& op) override;
+    void visit(OpLinearPattern& op) override;
+    void visit(OpFilter& op) override;
+    void visit(OpLet& op) override;
+    void visit(OpOrderBy& op) override;
+    void visit(OpQueryStatements& op) override;
+    void visit(OpGroupBy& op) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpEmpty&) override;
 };
 
 } // namespace GQL

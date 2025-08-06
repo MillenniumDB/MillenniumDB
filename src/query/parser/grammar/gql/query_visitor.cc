@@ -44,17 +44,30 @@ uint64_t VisitorLogger::indentation_level = 0;
 using namespace GQL;
 using antlrcpp::Any;
 
-std::any QueryVisitor::visitSimpleLinearDataAccessingStatement(
-    GQLParser::SimpleLinearDataAccessingStatementContext* ctx
+std::any QueryVisitor::visitLinearDataModifyingStatementBody(
+    GQLParser::LinearDataModifyingStatementBodyContext* ctx
 )
 {
     LOG_VISITOR
+    std::vector<std::unique_ptr<Op>> query_statements;
 
-    for (auto& child : ctx->children) {
+    // for now we visit only if there is a return statement
+    if (!ctx->primitiveResultStatement()) {
+        current_op = std::make_unique<OpReturn>(
+            std::make_unique<OpEmpty>(),
+            std::vector<OpReturn::Item> {},
+            false
+        );
+        return 0;
+    }
+
+    for (auto& child : ctx->simpleDataAccessingStatement()) {
         visit(child);
         query_statements.push_back(std::move(current_op));
     }
     current_op = std::make_unique<OpQueryStatements>(std::move(query_statements));
+
+    visit(ctx->primitiveResultStatement());
     return 0;
 }
 
@@ -173,21 +186,15 @@ std::any QueryVisitor::visitPrimitiveResultStatement(GQLParser::PrimitiveResultS
 std::any QueryVisitor::visitReturnStatementBody(GQLParser::ReturnStatementBodyContext* ctx)
 {
     LOG_VISITOR
+    if (current_op == nullptr) {
+        current_op = std::make_unique<OpUnitTable>();
+    }
+
     distinct = false;
     if (ctx->setQuantifier()) {
         if (ctx->setQuantifier()->DISTINCT()) {
             distinct = true;
         }
-    }
-
-    // No bindings
-    if (ctx->NO()) {
-        current_op = std::make_unique<OpReturn>(
-            std::move(current_op),
-            std::vector<OpReturn::Item> {},
-            distinct
-        );
-        return 0;
     }
 
     if (ctx->ASTERISK()) {
@@ -2031,4 +2038,97 @@ uint64_t QueryVisitor::get_unsigned_integer(std::string& integer_str)
         }
     }
     return std::stoull(integer_str);
+}
+
+std::any QueryVisitor::visitSessionCloseCommand(GQLParser::SessionCloseCommandContext*)
+{
+    throw NotSupportedException("Session");
+}
+
+std::any QueryVisitor::visitSessionActivityCommand(GQLParser::SessionActivityCommandContext*)
+{
+    throw NotSupportedException("Session");
+}
+
+std::any QueryVisitor::visitStartTransactionCommand(GQLParser::StartTransactionCommandContext*)
+{
+    throw NotSupportedException("Transaction");
+}
+
+std::any QueryVisitor::visitEndTransactionCommand(GQLParser::EndTransactionCommandContext*)
+{
+    throw NotSupportedException("Transaction");
+}
+
+std::any
+    QueryVisitor::visitLinearCatalogModifyingStatement(GQLParser::LinearCatalogModifyingStatementContext*)
+{
+    throw NotSupportedException("Create/Drop");
+}
+
+std::any
+    QueryVisitor::visitPrimitiveDataModifyingStatement(GQLParser::PrimitiveDataModifyingStatementContext*)
+{
+    throw NotSupportedException("Update");
+}
+
+std::any QueryVisitor::visitBindingVariableDefinitionBlock(GQLParser::BindingVariableDefinitionBlockContext*)
+{
+    throw NotSupportedException("Variable definition block");
+}
+
+std::any QueryVisitor::visitCallQueryStatement(GQLParser::CallQueryStatementContext*)
+{
+    throw NotSupportedException("Call");
+}
+
+std::any QueryVisitor::
+    visitCallCatalogModifyingProcedureStatement(GQLParser::CallCatalogModifyingProcedureStatementContext*)
+{
+    throw NotSupportedException("Call");
+}
+
+std::any QueryVisitor::visitForStatement(GQLParser::ForStatementContext*)
+{
+    throw NotSupportedException("For");
+}
+
+std::any QueryVisitor::visitQueryConjunction(GQLParser::QueryConjunctionContext*)
+{
+    throw NotSupportedException("Composite query");
+}
+
+std::any QueryVisitor::visitNestedDataModifyingProcedure(GQLParser::NestedDataModifyingProcedureContext*)
+{
+    throw NotSupportedException("Nested procedure");
+}
+
+std::any QueryVisitor::visitNextStatement(GQLParser::NextStatementContext*)
+{
+    throw NotSupportedException("Composite query");
+}
+
+std::any QueryVisitor::visitOptionalOperand(GQLParser::OptionalOperandContext*)
+{
+    throw NotSupportedException("Optional match");
+}
+
+std::any QueryVisitor::visitGraphPatternYieldClause(GQLParser::GraphPatternYieldClauseContext*)
+{
+    throw NotSupportedException("Yield");
+}
+
+std::any QueryVisitor::visitNestedProcedureSpecification(GQLParser::NestedProcedureSpecificationContext*)
+{
+    throw NotSupportedException("Nested procedure");
+}
+
+std::any QueryVisitor::visitGraphExpression(GQLParser::GraphExpressionContext*)
+{
+    throw NotSupportedException("Graph expression");
+}
+
+std::any QueryVisitor::visitBindingTableExpression(GQLParser::BindingTableExpressionContext*)
+{
+    throw NotSupportedException("Binding table expression");
 }

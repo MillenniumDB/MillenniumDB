@@ -28,5 +28,7 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpQueryStatements&) override;
     void visit(OpGroupBy&) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpEmpty&) override;
 };
 } // namespace GQL

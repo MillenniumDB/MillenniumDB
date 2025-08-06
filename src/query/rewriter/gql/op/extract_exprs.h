@@ -31,6 +31,8 @@ private:
     void visit(OpQueryStatements& op) override;
     void visit(OpNode& op) override;
     void visit(OpEdge& op) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpEmpty&) override;
 };
 
 } // namespace GQL

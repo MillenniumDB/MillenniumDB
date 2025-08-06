@@ -67,9 +67,6 @@ private:
     std::optional<LetItem> let_item;
     std::vector<LetItem> let_items;
 
-    std::vector<std::unique_ptr<Op>> statements;
-    std::vector<std::unique_ptr<Op>> query_statements;
-
     std::unique_ptr<OpRepetition::Repetition> current_repetition = nullptr;
     PatternType current_pattern;
 
@@ -94,9 +91,33 @@ public:
 
     std::vector<std::unique_ptr<Expr>> current_expr_list;
 
-    std::any visitPrimitiveQueryStatement(GQLParser::PrimitiveQueryStatementContext* ctx) override;
-    std::any visitSimpleLinearDataAccessingStatement(GQLParser::SimpleLinearDataAccessingStatementContext* ctx
+    std::any visitSessionCloseCommand(GQLParser::SessionCloseCommandContext* ctx) override;
+    std::any visitSessionActivityCommand(GQLParser::SessionActivityCommandContext* ctx) override;
+    std::any visitNextStatement(GQLParser::NextStatementContext* ctx) override;
+    std::any visitCallCatalogModifyingProcedureStatement(
+        GQLParser::CallCatalogModifyingProcedureStatementContext* ctx
     ) override;
+    std::any visitQueryConjunction(GQLParser::QueryConjunctionContext* ctx) override;
+    std::any visitNestedDataModifyingProcedure(GQLParser::NestedDataModifyingProcedureContext* ctx) override;
+    std::any visitCallQueryStatement(GQLParser::CallQueryStatementContext* ctx) override;
+    std::any visitForStatement(GQLParser::ForStatementContext* ctx) override;
+
+    std::any visitPrimitiveQueryStatement(GQLParser::PrimitiveQueryStatementContext* ctx) override;
+    std::any visitLinearDataModifyingStatementBody(GQLParser::LinearDataModifyingStatementBodyContext* ctx
+    ) override;
+    std::any visitLinearCatalogModifyingStatement(GQLParser::LinearCatalogModifyingStatementContext* ctx
+    ) override;
+    std::any visitPrimitiveDataModifyingStatement(GQLParser::PrimitiveDataModifyingStatementContext* ctx
+    ) override;
+    std::any visitBindingVariableDefinitionBlock(GQLParser::BindingVariableDefinitionBlockContext* ctx
+    ) override;
+    std::any visitOptionalOperand(GQLParser::OptionalOperandContext* ctx) override;
+    std::any visitGraphPatternYieldClause(GQLParser::GraphPatternYieldClauseContext* ctx) override;
+    std::any visitNestedProcedureSpecification(GQLParser::NestedProcedureSpecificationContext* ctx) override;
+    std::any visitGraphExpression(GQLParser::GraphExpressionContext* ctx) override;
+    std::any visitBindingTableExpression(GQLParser::BindingTableExpressionContext* ctx) override;
+    std::any visitStartTransactionCommand(GQLParser::StartTransactionCommandContext* ctx) override;
+    std::any visitEndTransactionCommand(GQLParser::EndTransactionCommandContext* ctx) override;
 
     std::any visitPrimitiveResultStatement(GQLParser::PrimitiveResultStatementContext* ctx) override;
     std::any visitReturnStatementBody(GQLParser::ReturnStatementBodyContext* ctx) override;
