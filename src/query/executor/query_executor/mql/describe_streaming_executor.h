@@ -10,20 +10,26 @@ namespace MQL {
  */
 class DescribeStreamingExecutor : public StreamingQueryExecutor {
 public:
-    DescribeStreamingExecutor(std::unique_ptr<BindingIter> node_label_iter,
-                              std::unique_ptr<BindingIter> key_value_iter,
-                              std::unique_ptr<BindingIter> from_to_type_edge_iter,
-                              std::unique_ptr<BindingIter> to_type_from_edge_iter,
-                              uint64_t                     labels_limit,
-                              uint64_t                     properties_limit,
-                              uint64_t                     outgoing_limit,
-                              uint64_t                     incoming_limit,
-                              std::vector<VarId>&&         virtual_vars,
-                              ObjectId                     object_id);
+    DescribeStreamingExecutor(
+        std::unique_ptr<BindingIter> node_label_iter,
+        std::unique_ptr<BindingIter> key_value_iter,
+        std::unique_ptr<BindingIter> from_to_type_edge_iter,
+        std::unique_ptr<BindingIter> to_type_from_edge_iter,
+        uint64_t labels_limit,
+        uint64_t properties_limit,
+        uint64_t outgoing_limit,
+        uint64_t incoming_limit,
+        std::vector<VarId>&& virtual_vars,
+        ObjectId object_id
+    );
 
-    const std::vector<VarId>& get_projection_vars() const override;
+    void execute(MDBServer::StreamingResponseWriter& response_writer) override;
 
-    uint64_t execute(MDBServer::StreamingResponseWriter& response_writer) override;
+    void finish_success(
+        MDBServer::StreamingResponseWriter& response_writer,
+        DurationMS parser_duration_ms,
+        DurationMS optimizer_duration_ms
+    ) override;
 
     void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 

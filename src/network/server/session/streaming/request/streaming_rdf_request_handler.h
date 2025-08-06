@@ -18,22 +18,14 @@ public:
 
     OpUptr create_logical_plan(const std::string& query) override
     {
-        // TODO: Support updates
-        auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
-        return logical_plan;
+        return SPARQL::QueryParser::get_query_plan(query);
     }
 
-    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) override
+    std::unique_ptr<StreamingQueryExecutor> create_streaming_executor(OpUptr& logical_plan) override
     {
         SPARQL::StreamingExecutorConstructor query_optimizer;
         std::get<std::unique_ptr<SPARQL::Op>>(logical_plan)->accept_visitor(query_optimizer);
         return std::move(query_optimizer.executor);
-    }
-
-    void execute_update(OpUptr& /*logical_plan*/, BufferManager::VersionScope& /*version_scope*/) override
-    {
-        response_writer->write_error("Updates not supported in RDF streaming mode yet");
-        response_writer->flush();
     }
 };
 } // namespace MDBServer

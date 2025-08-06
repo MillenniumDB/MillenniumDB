@@ -9,7 +9,6 @@
 #include "query/parser/op/gql/op.h"
 #include "query/parser/op/mql/op.h"
 #include "query/parser/op/sparql/op.h"
-#include "system/buffer_manager.h"
 
 namespace MDBServer {
 
@@ -38,17 +37,11 @@ public:
     void handle(const uint8_t* request_bytes, std::size_t request_size);
 
 protected:
-    DurationMS parser_duration_ms;
-    DurationMS optimizer_duration_ms;
-    DurationMS execution_duration_ms;
-
     StreamingRequestReader request_reader;
 
     virtual OpUptr create_logical_plan(const std::string& query) = 0;
 
-    virtual std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) = 0;
-
-    virtual void execute_update(OpUptr& logical_plan, BufferManager::VersionScope& version_scope) = 0;
+    virtual std::unique_ptr<StreamingQueryExecutor> create_streaming_executor(OpUptr& logical_plan) = 0;
 
     // Build the logical and physical plan. On success store the result in current_physical_plan and transition to
     // STREAMING state.

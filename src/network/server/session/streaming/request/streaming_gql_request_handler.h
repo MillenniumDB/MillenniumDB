@@ -19,20 +19,14 @@ public:
 
     OpUptr create_logical_plan(const std::string& query) override
     {
-        auto logical_plan = GQL::QueryParser::get_query_plan(query);
-        return logical_plan;
+        return GQL::QueryParser::get_query_plan(query);
     }
 
-    std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) override
+    std::unique_ptr<StreamingQueryExecutor> create_streaming_executor(OpUptr& logical_plan) override
     {
         GQL::StreamingExecutorConstructor query_optimizer;
         std::get<std::unique_ptr<GQL::Op>>(logical_plan)->accept_visitor(query_optimizer);
         return std::move(query_optimizer.executor);
-    }
-
-    void execute_update(OpUptr& logical_plan, BufferManager::VersionScope& version_scope) override
-    {
-        // TODO: GQL
     }
 };
 } // namespace MDBServer

@@ -39,11 +39,11 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
 
 void StreamingRequestHandler::handle_run(const std::string& query)
 {
-    auto readonly_version_scope = buffer_manager.init_version_readonly();
+    auto version_scope = buffer_manager.init_version_readonly();
 
     {
         std::lock_guard<std::mutex> lock(session.get_thread_info_vec_mutex());
-        get_query_ctx().prepare(*readonly_version_scope, session.get_timeout());
+        get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
@@ -52,81 +52,99 @@ void StreamingRequestHandler::handle_run(const std::string& query)
     try {
         auto parser_start = std::chrono::system_clock::now();
         auto current_logical_plan = create_logical_plan(query);
-        parser_duration_ms = get_duration(parser_start);
+        auto parser_duration_ms = get_duration(parser_start);
 
         auto optimizer_start = std::chrono::system_clock::now();
 
-        // TODO: include updates
-        auto current_physical_plan = create_readonly_physical_plan(current_logical_plan);
-        optimizer_duration_ms = get_duration(optimizer_start);
+        auto executor = create_streaming_executor(current_logical_plan);
+        auto optimizer_duration_ms = get_duration(optimizer_start);
 
-        logger.log(Category::PhysicalPlan, [&](std::ostream& os) {
-            current_physical_plan->analyze(os, false);
-            os << '\n';
-        });
+        // // TODO: mutex update + upgrade to editable
+        // executor->prepare(*response_writer);
+
+        if (executor->is_update()) {
+            // Mutex to allow only one write query at a time
+            // TODO: bad lock scope
+            std::lock_guard<std::mutex> lock(session.server.update_execution_mutex);
+            
+            buffer_manager.upgrade_to_editable(*version_scope);
+            executor->execute(*response_writer);
+        } 
+        else {
+
+        }
+
+        // TODO: measure time?
+
+        // logger.log(Category::PhysicalPlan, [&](std::ostream& os) {
+        //     executor->analyze(os, false);
+        //     os << '\n';
+        // });
 
         // Send the variables
-        const auto projection_vars = current_physical_plan->get_projection_vars();
+        // TODO: updates are fine returning empty vector
         response_writer->write_variables(
-            projection_vars,
+            executor->projection_vars,
             get_query_ctx().thread_info.worker_index,
             get_query_ctx().cancellation_token
         );
         response_writer->flush();
 
-        // Stream all the records
-        auto execution_start = std::chrono::system_clock::now();
-        const uint64_t result_count = current_physical_plan->execute(*response_writer);
-        execution_duration_ms = get_duration(execution_start);
+        executor->execute(*response_writer);
 
-        logger.log(Category::ExecutionStats, [&](std::ostream& os) {
-            current_physical_plan->analyze(os, true);
-            os << '\n';
-        });
+        // logger.log(Category::ExecutionStats, [&](std::ostream& os) {
+        //     executor->analyze(os, true);
+        //     os << '\n';
+        // });
 
-        logger(Category::Info) << "Results:            " << result_count << "\n"
-                                  "Parser duration:    " << parser_duration_ms.count() << " ms\n"
-                                  "Optimizer duration: " << optimizer_duration_ms.count() << " ms\n"
-                                  "Execution duration: " << execution_duration_ms.count() << " ms";
+        // logger(Category::Info) << "Results:            " << result_count
+        //                        << "\n"
+        //                           "Parser duration:    "
+        //                        << parser_duration_ms.count()
+        //                        << " ms\n"
+        //                           "Optimizer duration: "
+        //                        << optimizer_duration_ms.count()
+        //                        << " ms\n"
+        //                           "Execution duration: "
+        //                        << execution_duration_ms.count() << " ms";
 
-        response_writer->write_records_success(
-            result_count,
-            parser_duration_ms.count(),
-            optimizer_duration_ms.count(),
-            execution_duration_ms.count()
+        executor->finish_success(
+            *response_writer,
+            parser_duration_ms,
+            optimizer_duration_ms
         );
-        response_writer->flush();
+        // response_writer->write_records_success( // TODO: only in reads, use write_update_success for updates?
+        //     result_count,
+        //     parser_duration_ms.count(),
+        //     optimizer_duration_ms.count(),
+        //     execution_duration_ms.count()
+        // );
     } catch (const QueryException& e) {
         const auto msg = std::string("Query Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const LogicException& e) {
         const auto msg = std::string("Logic Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const InterruptedException& e) {
         const auto msg = std::string("Interrupt Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const QueryExecutionException& e) {
         const auto msg = std::string("Query Execution Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const std::exception& e) {
         const auto msg = std::string("Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (...) {
         const auto msg = std::string("Unknown exception");
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     }
+    response_writer->flush();
 }
 
 void StreamingRequestHandler::handle_catalog()
