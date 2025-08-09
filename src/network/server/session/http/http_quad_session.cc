@@ -103,7 +103,8 @@ std::unique_ptr<Op> HttpQuadSession::create_logical_plan(const std::string& quer
 {
     const auto start_parser = std::chrono::system_clock::now();
 
-    auto logical_plan = QueryParser::get_query_plan(query);
+    QueryParser parser(query);
+    auto logical_plan = parser.get_query_plan();
     parser_duration = std::chrono::system_clock::now() - start_parser;
     return logical_plan;
 }

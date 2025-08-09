@@ -3,15 +3,14 @@
 using namespace SPARQL;
 
 AskStreamingExecutor::AskStreamingExecutor(std::unique_ptr<BindingIter> iter_) :
-    iter { std::move(iter_) }, projection_vars { { get_query_ctx().get_or_create_var("askResult") } } { }
+    iter { std::move(iter_) }
 
-
-const std::vector<VarId>& AskStreamingExecutor::get_projection_vars() const {
-    return projection_vars;
+{
+    projection_vars = { get_query_ctx().get_or_create_var("askResult") };
 }
 
-
-uint64_t AskStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer) {
+uint64_t AskStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)
+{
     Binding binding { get_query_ctx().get_var_size() };
     iter->begin(binding);
     const bool has_result = iter->next();
@@ -29,8 +28,8 @@ uint64_t AskStreamingExecutor::execute(MDBServer::StreamingResponseWriter& respo
     return has_result ? 1 : 0;
 }
 
-
-void AskStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
+void AskStreamingExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
+{
     os << std::string(indent, ' ') << "AskStreamingExecutor()\n";
     iter->print(os, indent + 2, print_stats);
 }

@@ -12,13 +12,8 @@ class ShowStreamingExecutor : public StreamingQueryExecutor {
 public:
     ShowStreamingExecutor();
 
-    const std::vector<VarId>& get_projection_vars() const override;
-
     uint64_t execute(MDBServer::StreamingResponseWriter& response_writer) override;
 
     void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
-
-private:
-    std::vector<VarId> projection_vars;
 };
 } // namespace SPARQL

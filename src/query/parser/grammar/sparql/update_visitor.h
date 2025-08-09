@@ -120,7 +120,6 @@ private:
         }
     };
 
-    // GlobalInfo& global_info;
     std::string base_iri;
 
     std::unordered_map<std::string, std::string> iri_prefix_map;
@@ -134,8 +133,6 @@ private:
     std::stack<Id> subject_stack;
     std::stack<Id> predicate_stack;
     std::stack<Id> object_stack;
-
-    // uint64_t last_blank;
 
     // Parsing helpers
     std::string iriCtxToString(SparqlUpdateParser::IriContext*);

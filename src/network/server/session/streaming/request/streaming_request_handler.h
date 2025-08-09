@@ -6,13 +6,8 @@
 #include "network/server/session/streaming/request/streaming_request_reader.h"
 #include "network/server/session/streaming/response/streaming_response_writer.h"
 #include "query/executor/query_executor/streaming_query_executor.h"
-#include "query/parser/op/gql/op.h"
-#include "query/parser/op/mql/op.h"
-#include "query/parser/op/sparql/op.h"
 
 namespace MDBServer {
-
-using OpUptr = std::variant<std::unique_ptr<MQL::Op>, std::unique_ptr<GQL::Op>, std::unique_ptr<SPARQL::Op>>;
 
 class StreamingSession;
 
@@ -39,13 +34,20 @@ public:
 protected:
     StreamingRequestReader request_reader;
 
-    virtual OpUptr create_logical_plan(const std::string& query) = 0;
+    virtual void initial_parse(const std::string& query) = 0;
 
-    virtual std::unique_ptr<StreamingQueryExecutor> create_streaming_executor(OpUptr& logical_plan) = 0;
+    // is supposed to be called after initial_parse
+    virtual bool is_update() = 0;
 
-    // Build the logical and physical plan. On success store the result in current_physical_plan and transition to
-    // STREAMING state.
+    virtual void create_logical_plan() = 0;
+
+    virtual std::unique_ptr<StreamingQueryExecutor> create_streaming_executor() = 0;
+
     void handle_run(const std::string& query);
+
+    void handle_readonly_run();
+
+    void handle_update_run();
 
     // Send a catalog response to the client
     void handle_catalog();

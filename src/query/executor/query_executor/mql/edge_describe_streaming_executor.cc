@@ -27,11 +27,6 @@ EdgeDescribeStreamingExecutor::EdgeDescribeStreamingExecutor(
     }
 }
 
-const std::vector<VarId>& EdgeDescribeStreamingExecutor::get_projection_vars() const
-{
-    return projection_vars;
-}
-
 uint64_t EdgeDescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)
 {
     // The binding just needs to be big enough to hold all the internal vars

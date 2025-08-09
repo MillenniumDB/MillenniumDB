@@ -16,16 +16,30 @@ public:
 
     ~StreamingRdfRequestHandler() = default;
 
-    OpUptr create_logical_plan(const std::string& query) override
+    void initial_parse(const std::string& query) override
     {
-        return SPARQL::QueryParser::get_query_plan(query);
+        parser = std::make_unique<SPARQL::QueryParser>(query);
     }
 
-    std::unique_ptr<StreamingQueryExecutor> create_streaming_executor(OpUptr& logical_plan) override
+    bool is_update() override
+    {
+        return false; // TODO: for now streaming does not support updates in SPARQL
+    }
+
+    void create_logical_plan() override
+    {
+        logical_plan = parser->get_query_plan();
+    }
+
+    std::unique_ptr<StreamingQueryExecutor> create_streaming_executor() override
     {
         SPARQL::StreamingExecutorConstructor query_optimizer;
-        std::get<std::unique_ptr<SPARQL::Op>>(logical_plan)->accept_visitor(query_optimizer);
+        logical_plan->accept_visitor(query_optimizer);
         return std::move(query_optimizer.executor);
     }
+
+    std::unique_ptr<SPARQL::QueryParser> parser;
+
+    std::unique_ptr<SPARQL::Op> logical_plan;
 };
 } // namespace MDBServer

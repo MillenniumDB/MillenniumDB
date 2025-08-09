@@ -46,12 +46,7 @@ DescribeStreamingExecutor::DescribeStreamingExecutor(
     }
 }
 
-std::vector<VarId> DescribeStreamingExecutor::get_projection_vars() const
-{
-    return projection_vars;
-}
-
-void DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)
+uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)
 {
     // The binding just needs to be big enough to hold all the internal vars
     Binding binding { get_query_ctx().get_var_size() };
@@ -69,7 +64,7 @@ void DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& resp
 
     const auto node_exists = node_iter.next() != nullptr;
     if (!node_exists) {
-        return;
+        return 0;
     }
 
     response_writer.write_map_header(2UL);
@@ -164,6 +159,7 @@ void DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& resp
     }
 
     response_writer.seal();
+    return 1;
 }
 
 void DescribeStreamingExecutor::analyze(std::ostream& os, bool /*print_stats*/, int indent) const

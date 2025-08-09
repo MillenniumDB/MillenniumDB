@@ -114,7 +114,7 @@ void ExecutorConstructor::visit(OpUpdate& op_update)
     op_update.accept_visitor(visitor);
 
     path_manager.begin(std::move(visitor.begin_at_left));
-    executor = std::make_unique<UpdateExecutor>(std::move(visitor.tmp), std::move(op_update.update_ctx));
+    executor = std::make_unique<UpdateExecutor>(std::move(visitor.tmp), std::move(op_update.update_ctx)); // TODO:
 }
 
 void ExecutorConstructor::visit(OpShow& op_show)
