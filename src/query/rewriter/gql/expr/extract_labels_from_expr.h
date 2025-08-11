@@ -48,6 +48,11 @@ public:
         tmp = expr.clone();
     }
 
+    void visit(ExprLabels& expr)
+    {
+        tmp = std::make_unique<ExprLabels>(expr.var, expr.type);
+    }
+
     void visit(ExprNot& expr)
     {
         tmp = expr.clone();

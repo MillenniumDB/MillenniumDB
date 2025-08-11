@@ -99,6 +99,7 @@ public:
     void visit(ExprSimpleCase&) override;
     void visit(ExprSearchedCase&) override;
     void visit(ExprCast&) override;
+    void visit(ExprLabels&) override;
 
     void visit(ExprAggCountAll&) override;
     void visit(ExprAggCount&) override;

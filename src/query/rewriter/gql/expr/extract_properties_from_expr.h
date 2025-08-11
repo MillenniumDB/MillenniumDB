@@ -91,6 +91,11 @@ public:
         tmp = expr_term.clone();
     }
 
+    void visit(ExprLabels& expr)
+    {
+        tmp = std::make_unique<ExprLabels>(expr.var, expr.type);
+    }
+
     void visit(ExprOr& expr_or)
     {
         tmp = expr_or.clone();

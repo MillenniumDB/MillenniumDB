@@ -74,7 +74,7 @@ private:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "NOT EXISTS(_Op_" << ops.size() << "_)";
         ops.push_back(op_iter.get());

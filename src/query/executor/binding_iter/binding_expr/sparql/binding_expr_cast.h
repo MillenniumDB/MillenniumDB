@@ -365,7 +365,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << cast_type_to_string(cast_type) << '(';
         expr->print(os, ops);

@@ -45,7 +45,7 @@ public:
         return GQL::Conversions::pack_bool(false);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>) const override
+    void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << "HasWildcardLabel(" << var_id << ')';
     }

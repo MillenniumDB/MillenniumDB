@@ -72,6 +72,7 @@ public:
     void visit(GQL::ExprSimpleCase&) override;
     void visit(GQL::ExprSearchedCase&) override;
     void visit(GQL::ExprCast&) override;
+    void visit(GQL::ExprLabels&) override;
 
     void visit(GQL::ExprAggCountAll&) override;
     void visit(GQL::ExprAggCount&) override;

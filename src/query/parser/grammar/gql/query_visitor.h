@@ -94,9 +94,6 @@ public:
     std::any visitSessionCloseCommand(GQLParser::SessionCloseCommandContext* ctx) override;
     std::any visitSessionActivityCommand(GQLParser::SessionActivityCommandContext* ctx) override;
     std::any visitNextStatement(GQLParser::NextStatementContext* ctx) override;
-    std::any visitCallCatalogModifyingProcedureStatement(
-        GQLParser::CallCatalogModifyingProcedureStatementContext* ctx
-    ) override;
     std::any visitQueryConjunction(GQLParser::QueryConjunctionContext* ctx) override;
     std::any visitNestedDataModifyingProcedure(GQLParser::NestedDataModifyingProcedureContext* ctx) override;
     std::any visitCallQueryStatement(GQLParser::CallQueryStatementContext* ctx) override;
@@ -205,18 +202,18 @@ public:
     std::any visitLimitClause(GQLParser::LimitClauseContext* ctx) override;
     std::any visitOffsetClause(GQLParser::OffsetClauseContext* ctx) override;
 
-    //numericFunction
+    // numericFunction
     std::any visitGqlOneArgScalarFunction(GQLParser::GqlOneArgScalarFunctionContext* ctx) override;
     std::any visitGqlTwoArgScalarFunction(GQLParser::GqlTwoArgScalarFunctionContext* ctx) override;
 
-    //stringFunction
+    // stringFunction
     std::any visitGqlSubstringFunction(GQLParser::GqlSubstringFunctionContext* ctx) override;
     std::any visitGqlFoldStringFunction(GQLParser::GqlFoldStringFunctionContext* ctx) override;
     std::any visitGqlSingleTrimStringFunction(GQLParser::GqlSingleTrimStringFunctionContext* ctx) override;
     std::any visitGqlMultiTrimStringFunction(GQLParser::GqlMultiTrimStringFunctionContext* ctx) override;
     std::any visitGqlNormStringFunction(GQLParser::GqlNormStringFunctionContext* ctx) override;
 
-    //caseFunction
+    // caseFunction
     std::any visitGqlNullIfCaseFunction(GQLParser::GqlNullIfCaseFunctionContext* ctx) override;
     std::any visitGqlCoalesceCaseFunction(GQLParser::GqlCoalesceCaseFunctionContext* ctx) override;
     std::any visitGqlSimpleCaseFunction(GQLParser::GqlSimpleCaseFunctionContext* ctx) override;
@@ -231,10 +228,12 @@ public:
     std::any visitDatetimeFunction(GQLParser::DatetimeFunctionContext* ctx) override;
     std::any visitLocalDatetimeFunction(GQLParser::LocalDatetimeFunctionContext* ctx) override;
 
-    //aggregateFunction
+    // aggregateFunction
     std::any visitGqlCountAllFunction(GQLParser::GqlCountAllFunctionContext*) override;
     std::any visitGqlGeneralSetFunction(GQLParser::GqlGeneralSetFunctionContext* ctx) override;
     std::any visitGqlBinarySetFunction(GQLParser::GqlBinarySetFunctionContext* ctx) override;
+
+    std::any visitLabelsFunction(GQLParser::LabelsFunctionContext* ctx) override;
 
     std::any visitFilterStatement(GQLParser::FilterStatementContext* ctx) override;
 };

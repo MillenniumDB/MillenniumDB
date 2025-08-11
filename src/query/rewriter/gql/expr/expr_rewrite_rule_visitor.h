@@ -441,6 +441,7 @@ public:
     void visit(GQL::ExprWildcardLabel&) override { }
     void visit(GQL::ExprVar&) override { }
     void visit(GQL::ExprProperty&) override { }
+    void visit(GQL::ExprLabels&) override { }
 
 private:
     template<typename T>
