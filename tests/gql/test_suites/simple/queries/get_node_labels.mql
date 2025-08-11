@@ -1,0 +1,2 @@
+MATCH (a)
+RETURN a, LABELS(a) AS node_labels
