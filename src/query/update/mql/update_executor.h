@@ -5,13 +5,14 @@
 #include "graph_models/object_id.h"
 #include "query/executor/binding_iter.h"
 #include "query/executor/query_executor/query_executor.h"
+#include "query/executor/query_executor/streaming_query_executor.h"
 #include "query/update/hnsw_index_update_stats.h"
 #include "query/update/mql/update_action.h"
 #include "query/update/text_index_update_stats.h"
 
 namespace MQL {
 
-class UpdateExecutor : public QueryExecutor {
+class UpdateExecutor : public QueryExecutor, public StreamingQueryExecutor {
 public:
     struct Stats {
         uint_fast32_t new_nodes = 0;
@@ -63,7 +64,18 @@ public:
 
     ~UpdateExecutor();
 
-    uint64_t execute(std::ostream& os) override;
+    uint64_t execute();
+
+    uint64_t execute(std::ostream&) override
+    {
+        return execute();
+    }
+
+    uint64_t execute(MDBServer::StreamingResponseWriter&) override
+    {
+        return execute();
+    }
+
     void analyze(std::ostream& os, bool print_stats, int indent = 0) const override;
 
 private:

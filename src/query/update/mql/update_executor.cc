@@ -41,7 +41,7 @@ ObjectId UpdateExecutor::transform_if_tmp(ObjectId oid)
     return oid;
 }
 
-uint64_t UpdateExecutor::execute(std::ostream& os)
+uint64_t UpdateExecutor::execute()
 {
     bool interruption = false;
 

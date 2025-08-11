@@ -33,6 +33,7 @@ public:
     void visit(OpOrderBy&) override { }
     void visit(OpQueryStatements&) override { }
     void visit(OpGroupBy&) override { }
+    void visit(OpUnitTable&) override { }
 
 private:
     ReturnType return_type;

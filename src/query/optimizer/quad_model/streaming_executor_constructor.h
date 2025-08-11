@@ -16,9 +16,9 @@ public:
     void visit(OpDescribe&) override;
     void visit(OpReturn&) override;
     void visit(OpShow&) override;
+    void visit(OpUpdate&) override;
 
     // Impossible Logical Plan roots
-    void visit(OpUpdate&) override { }
     void visit(OpBasicGraphPattern&) override { }
     void visit(OpCall&) override { }
     void visit(OpGroupBy&) override { }
