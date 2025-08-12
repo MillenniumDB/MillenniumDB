@@ -17,18 +17,23 @@ public:
 
     ObjectId eval(const Binding& binding) override
     {
+        /* this assumes the following rules:
+         *     | T | F | ? |
+         * | T | T | T | T |
+         * | F | T | F | ? |
+         * | ? | T | ? | ? |
+         */
+        bool null_seen = false;
         for (auto& expr : or_list) {
-            auto oid = expr->eval(binding);
+            const auto oid = expr->eval(binding);
 
-            if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
-                continue;
-            } else if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
-                return oid;
-            } else {
-                return ObjectId::get_null();
+            if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
+                return ObjectId(ObjectId::BOOL_TRUE);
+            } else if (oid == ObjectId::get_null()) {
+                null_seen = true;
             }
         }
-        return ObjectId(ObjectId::BOOL_FALSE);
+        return null_seen ? ObjectId::get_null() : ObjectId(ObjectId::BOOL_FALSE);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override
