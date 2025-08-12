@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
@@ -23,9 +24,10 @@ public:
          * | F | T | F | ? |
          * | ? | T | ? | ? |
          */
+
         bool null_seen = false;
         for (auto& expr : or_list) {
-            const auto oid = expr->eval(binding);
+            const auto oid = MQL::Conversions::to_boolean(expr->eval(binding));
 
             if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
                 return ObjectId(ObjectId::BOOL_TRUE);

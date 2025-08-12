@@ -17,18 +17,24 @@ public:
 
     ObjectId eval(const Binding& binding) override
     {
-        for (auto& expr : and_list) {
-            auto oid = expr->eval(binding);
+        /* this assumes the following rules:
+         *     | T | F | ? |
+         * | T | T | F | ? |
+         * | F | F | F | F |
+         * | ? | ? | F | ? |
+         */
 
-            if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
-                continue;
-            } else if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
-                return oid;
-            } else {
-                return ObjectId::get_null();
+        bool null_seen = false;
+        for (auto& expr : and_list) {
+            const auto oid = MQL::Conversions::to_boolean(expr->eval(binding));
+
+            if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
+                return ObjectId(ObjectId::BOOL_FALSE);
+            } else if (oid == ObjectId::get_null()) {
+                null_seen = true;
             }
         }
-        return ObjectId(ObjectId::BOOL_TRUE);
+        return null_seen ? ObjectId::get_null() : ObjectId(ObjectId::BOOL_TRUE);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override
