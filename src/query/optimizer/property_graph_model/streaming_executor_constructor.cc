@@ -21,35 +21,3 @@ void StreamingExecutorConstructor::visit(OpReturn& op_return)
 
     executor = std::make_unique<ReturnStreamingExecutor>(std::move(binding_iter), std::move(projection_vars));
 }
-
-void StreamingExecutorConstructor::visit(OpGraphPattern&) { }
-
-void StreamingExecutorConstructor::visit(OpBasicGraphPattern&) { }
-
-void StreamingExecutorConstructor::visit(OpGraphPatternList&) { }
-
-void StreamingExecutorConstructor::visit(OpNode&) { }
-
-void StreamingExecutorConstructor::visit(OpEdge&) { }
-
-void StreamingExecutorConstructor::visit(OpWhere&) { }
-
-void StreamingExecutorConstructor::visit(OpPathUnion&) { }
-
-void StreamingExecutorConstructor::visit(OpRepetition&) { }
-
-void StreamingExecutorConstructor::visit(OpLinearPattern&) { }
-
-void StreamingExecutorConstructor::visit(OpFilter&) { }
-
-void StreamingExecutorConstructor::visit(OpLet&) { }
-
-void StreamingExecutorConstructor::visit(OpOrderBy&) { }
-
-void StreamingExecutorConstructor::visit(OpQueryStatements&) { }
-
-void StreamingExecutorConstructor::visit(OpGroupBy&) { }
-
-void StreamingExecutorConstructor::visit(OpUnitTable&) { }
-
-void StreamingExecutorConstructor::visit(OpEmpty&) { }

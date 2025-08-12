@@ -175,7 +175,8 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
 
 Any QueryVisitor::visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx)
 {
-    // TODO: diferenciar root de simpleQuery
+    // curent_op is not null when root is a simpleQuery
+    // curent_op is null when root is a updateStatement
     if (current_op != nullptr) {
         return 0;
     }
@@ -188,6 +189,41 @@ Any QueryVisitor::visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx)
         std::move(update_info.update_actions)
     );
 
+    return 0;
+}
+
+Any QueryVisitor::visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx)
+{
+    bool detach = ctx->K_DETACH() != nullptr;
+    // TODO:
+    auto obj_list = ctx->fixedObj();
+    auto var_list = ctx->VARIABLE();
+
+    for (auto obj : obj_list) {
+        auto id = QuadObjectId::get_fixed_node_inside(obj->getText());
+        // TODO: maybe divide here between delete node and delete edge
+        update_info.update_actions.push_back(std::make_unique<DeleteObject>(id, detach));
+    }
+
+    for (auto var : var_list) {
+        auto var_name = var->getText();
+        var_name.erase(0, 1); // remove leading '?'
+        auto var_id = get_query_ctx().get_or_create_var(var_name);
+        update_info.update_actions.push_back(std::make_unique<DeleteVar>(var_id, detach));
+    }
+
+    return 0;
+}
+
+Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
+{
+    // TODO:
+    return 0;
+}
+
+Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
+{
+    // TODO:
     return 0;
 }
 

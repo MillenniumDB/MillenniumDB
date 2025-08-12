@@ -284,4 +284,36 @@ public:
     }
 };
 
+class DeleteObject : public UpdateAction {
+public:
+    ObjectId oid;
+    bool detach;
+
+    DeleteObject(ObjectId oid, bool detach) :
+        oid(oid),
+        detach(detach)
+    { }
+
+    void process(Binding& binding, UpdateContext& ctx) override
+    {
+        // TODO:
+    }
+};
+
+class DeleteVar : public UpdateAction {
+public:
+    VarId var;
+    bool detach;
+
+    DeleteVar(VarId var, bool detach) :
+        var(var),
+        detach(detach)
+    { }
+
+    void process(Binding& binding, UpdateContext& ctx) override
+    {
+        ctx.add_deleted(binding[var], detach);
+    }
+};
+
 } // namespace MQL

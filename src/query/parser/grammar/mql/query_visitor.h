@@ -223,6 +223,10 @@ public:
     virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext* ctx) override;
     virtual std::any visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx) override;
 
+    virtual std::any visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx) override;
+    virtual std::any visitSetAtom(MQL_Parser::SetAtomContext* ctx) override;
+    virtual std::any visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx) override;
+
     virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext* ctx) override;
     virtual std::any visitInsertNode(MQL_Parser::InsertNodeContext* ctx) override;
     virtual std::any visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx) override;
