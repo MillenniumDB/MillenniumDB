@@ -10,19 +10,19 @@
 
 namespace MQL {
 
-struct DeleteNodeInfo {
-    ObjectId node;
+struct DeleteObjectInfo {
+    ObjectId obj;
     bool detach;
 
-    DeleteNodeInfo(ObjectId node, bool detach) :
-        node(node),
+    DeleteObjectInfo(ObjectId obj, bool detach) :
+        obj(obj),
         detach(detach)
     { }
 
-    bool operator<(const DeleteNodeInfo& other) const
+    bool operator<(const DeleteObjectInfo& other) const
     {
-        if (node != other.node) {
-            return node < other.node;
+        if (obj != other.obj) {
+            return obj < other.obj;
         }
         return detach < other.detach;
     }
@@ -125,13 +125,11 @@ public:
 
     std::set<NewEdgeInfo> new_edges;
 
-    std::set<DeleteNodeInfo> deleted_nodes;
+    std::set<DeleteObjectInfo> deleted_objects;
 
     std::set<LabelInfo> deleted_labels;
 
     std::set<DeletedPropertyInfo> deleted_properties;
-
-    std::set<ObjectId> deleted_edges;
 
     uint64_t current_anon;
 
@@ -176,14 +174,17 @@ public:
         return ObjectId(ObjectId::MASK_ANON_INLINED | current_edge++);
     }
 
-    void delete_node(ObjectId node, bool detach)
+    void delete_object(ObjectId oid, bool detach)
     {
-        deleted_nodes.emplace(node, detach);
+        if (oid.get_type() == ObjectId::MASK_EDGE) {
+        } else {
+            deleted_objects.emplace(oid, detach);
+        }
     }
 
     void delete_label();
     void delete_property();
-    void delete_edge();
+    // void delete_edge();
 };
 
 class UpdateAction {
@@ -294,9 +295,9 @@ public:
         detach(detach)
     { }
 
-    void process(Binding& binding, UpdateContext& ctx) override
+    void process(Binding&, UpdateContext& ctx) override
     {
-        // TODO:
+        ctx.delete_object(oid, detach);
     }
 };
 
@@ -312,7 +313,7 @@ public:
 
     void process(Binding& binding, UpdateContext& ctx) override
     {
-        ctx.add_deleted(binding[var], detach);
+        ctx.delete_object(binding[var], detach);
     }
 };
 

@@ -195,14 +195,12 @@ Any QueryVisitor::visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx)
 Any QueryVisitor::visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx)
 {
     bool detach = ctx->K_DETACH() != nullptr;
-    // TODO:
     auto obj_list = ctx->fixedObj();
     auto var_list = ctx->VARIABLE();
 
     for (auto obj : obj_list) {
-        auto id = QuadObjectId::get_fixed_node_inside(obj->getText());
-        // TODO: maybe divide here between delete node and delete edge
-        update_info.update_actions.push_back(std::make_unique<DeleteObject>(id, detach));
+        auto oid = QuadObjectId::get_fixed_node_inside(obj->getText());
+        update_info.update_actions.push_back(std::make_unique<DeleteObject>(oid, detach));
     }
 
     for (auto var : var_list) {

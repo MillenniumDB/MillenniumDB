@@ -55,64 +55,79 @@ uint64_t UpdateExecutor::execute()
         }
     }
 
-    // try to throw exceptions before modifying anything
+    // check deleted nodes have detach or don't appear in edges
+    auto to_check = update_context->deleted_objects;
+
+    while (!to_check.empty()) {
+        std::set<DeleteObjectInfo> new_deleted_objects;
+        for (auto& node_info : to_check) {
+            auto node = node_info.obj.id;
+            auto node_iter = quad_model.edge_from_to_type->get_range(&interruption, { node }, { node });
+
+            if (node_iter.next()) {
+                auto it1 = quad_model.from_to_type_edge->get_range(
+                    &interruption,
+                    { node, 0, 0, 0 },
+                    { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
+                );
+                auto it2 = quad_model.to_type_from_edge->get_range(
+                    &interruption,
+                    { node, 0, 0, 0 },
+                    { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
+                );
+                auto it3 = quad_model.type_from_to_edge->get_range(
+                    &interruption,
+                    { node, 0, 0, 0 },
+                    { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
+                );
+
+                if (!node_info.detach) {
+                    if (it1.next() != nullptr || it2.next() != nullptr || it3.next() != nullptr) {
+                        throw QueryException(
+                            "Trying to delete node with existing connections (use DETACH DELETE if intended)"
+                        );
+                    }
+                }
+
+                for (auto record = it1.next(); record != nullptr; record = it1.next()) {
+                    auto edge = (*record)[3];
+                    if (update_context->deleted_objects.emplace(edge).second) {
+                        new_deleted_objects.emplace(edge, true);
+                    }
+                }
+                for (auto record = it2.next(); record != nullptr; record = it2.next()) {
+                    auto edge = (*record)[3];
+                    if (update_context->deleted_objects.emplace(edge).second) {
+                        new_deleted_objects.emplace(edge, true);
+                    }
+                }
+                for (auto record = it3.next(); record != nullptr; record = it3.next()) {
+                    auto edge = (*record)[3];
+                    if (update_context->deleted_objects.emplace(edge).second) {
+                        new_deleted_objects.emplace(edge, true);
+                    }
+                }
+
+                // save all node properties to delete later
+                auto prop_iter = quad_model.object_key_value->get_range(
+                    &interruption,
+                    { node, 0, 0 },
+                    { node, UINT64_MAX, UINT64_MAX }
+                );
+
+                for (auto record = prop_iter.next(); record != nullptr; record = prop_iter.next()) {
+                    auto key = (*record)[1];
+                    update_context->deleted_properties.emplace(ObjectId(node), ObjectId(key));
+                }
+            }
+        }
+        to_check = new_deleted_objects;
+    }
+
+    // throw exceptions before modifying anything
     // TODO: check deleted nodes and new nodes intersection is empty
     // TODO: check deleted labels and new labels intersection is empty
     // TODO: check deleted properties and new properties intersection is empty
-
-    // check deleted nodes have detach or don't appear in edges
-    for (auto& node_info : update_context->deleted_nodes) {
-        auto node = node_info.node.id;
-        auto node_iter = quad_model.edge_from_to_type->get_range(&interruption, { node }, { node });
-
-        if (node_iter.next()) {
-            auto it1 = quad_model.from_to_type_edge->get_range(
-                &interruption,
-                { node, 0, 0, 0 },
-                { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
-            );
-            auto it2 = quad_model.to_type_from_edge->get_range(
-                &interruption,
-                { node, 0, 0, 0 },
-                { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
-            );
-            auto it3 = quad_model.type_from_to_edge->get_range(
-                &interruption,
-                { node, 0, 0, 0 },
-                { node, UINT64_MAX, UINT64_MAX, UINT64_MAX }
-            );
-
-            if (!node_info.detach) {
-                if (it1.next() != nullptr || it2.next() != nullptr || it3.next() != nullptr) {
-                    throw QueryException(
-                        "Trying to delete node with existing connections (use DETACH DELETE if intended)"
-                    );
-                }
-            }
-
-            for (auto record = it1.next(); record != nullptr; record = it1.next()) {
-                auto edge = (*record)[3];
-                update_context->deleted_edges.emplace(edge);
-            }
-            for (auto record = it2.next(); record != nullptr; record = it2.next()) {
-                auto edge = (*record)[3];
-                update_context->deleted_edges.emplace(edge);
-            }
-            for (auto record = it3.next(); record != nullptr; record = it3.next()) {
-                auto edge = (*record)[3];
-                update_context->deleted_edges.emplace(edge);
-            }
-
-            // save all node properties to delete later
-            auto prop_iter = quad_model.object_key_value
-                                 ->get_range(&interruption, { node, 0, 0 }, { node, UINT64_MAX, UINT64_MAX });
-
-            for (auto record = prop_iter.next(); record != nullptr; record = prop_iter.next()) {
-                auto key = (*record)[1];
-                update_context->deleted_properties.emplace(ObjectId(node), ObjectId(key));
-            }
-        }
-    }
 
     for (auto& node_info : update_context->new_nodes) {
         auto node = transform_if_tmp(node_info);
@@ -230,12 +245,19 @@ uint64_t UpdateExecutor::execute()
             quad_model.label_node->delete_record({ label.id, node.id });
 
             stats.label2total_count[label.id]--;
-            stats.deleted_properties++;
+            stats.deleted_labels++;
         }
     }
 
-    for (auto& edge_oid : update_context->deleted_edges) {
-        auto edge = edge_oid.id;
+    for (auto& obj_info : update_context->deleted_objects) {
+        if (obj_info.obj.get_type() != ObjectId::MASK_EDGE) {
+            if (quad_model.nodes->delete_record({ obj_info.obj.id })) {
+                stats.deleted_nodes++;
+            }
+            continue;
+        }
+
+        auto edge = obj_info.obj.id;
         Record<4> min_range = { edge, 0, 0, 0 };
         Record<4> max_range = { edge, UINT64_MAX, UINT64_MAX, UINT64_MAX };
         auto edge_iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
@@ -285,12 +307,6 @@ uint64_t UpdateExecutor::execute()
         }
     }
 
-    for (auto& node_info : update_context->deleted_nodes) {
-        if (quad_model.nodes->delete_record({ node_info.node.id })) {
-            stats.deleted_nodes++;
-        }
-    }
-
     for (auto& property_info : update_context->deleted_properties) {
         auto obj = transform_if_tmp(property_info.obj);
         auto key = transform_if_tmp(property_info.key);
@@ -310,7 +326,7 @@ uint64_t UpdateExecutor::execute()
 
     update_indexes();
 
-    return 0; // TODO: should return stats?
+    return 0;
 }
 
 void UpdateExecutor::update_indexes()
