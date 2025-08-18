@@ -1,151 +1,30 @@
 #pragma once
 
-#include <set>
-
 #include "graph_models/object_id.h"
 #include "graph_models/quad_model/quad_model.h"
 
 namespace MQL {
-struct DeleteObjectInfo {
-    ObjectId obj;
-    bool detach;
-
-    DeleteObjectInfo(ObjectId obj, bool detach) :
-        obj(obj),
-        detach(detach)
-    { }
-
-    bool operator<(const DeleteObjectInfo& other) const
-    {
-        if (obj != other.obj) {
-            return obj < other.obj;
-        }
-        return detach < other.detach;
-    }
-};
-
-struct LabelInfo {
-    ObjectId node;
-    ObjectId label;
-
-    LabelInfo(ObjectId node, ObjectId label) :
-        node(node),
-        label(label)
-    { }
-
-    bool operator<(const LabelInfo& other) const
-    {
-        if (node != other.node) {
-            return node < other.node;
-        }
-        return label < other.label;
-    }
-};
-
-struct NewPropertyInfo {
-    ObjectId obj;
-    ObjectId key;
-    ObjectId val;
-
-    NewPropertyInfo(ObjectId obj, ObjectId key, ObjectId val) :
-        obj(obj),
-        key(key),
-        val(val)
-    { }
-
-    bool operator<(const NewPropertyInfo& other) const
-    {
-        if (obj != other.obj) {
-            return obj < other.obj;
-        }
-        if (key != other.key) {
-            return key < other.key;
-        }
-        return val < other.val;
-    }
-};
-
-struct DeletedPropertyInfo {
-    ObjectId obj;
-    ObjectId key;
-
-    DeletedPropertyInfo(ObjectId obj, ObjectId key) :
-        obj(obj),
-        key(key)
-    { }
-
-    bool operator<(const DeletedPropertyInfo& other) const
-    {
-        if (obj != other.obj) {
-            return obj < other.obj;
-        }
-        return key < other.key;
-    }
-};
-
-struct NewEdgeInfo {
-    ObjectId from;
-    ObjectId to;
-    ObjectId type;
-    ObjectId edge;
-
-    NewEdgeInfo(ObjectId from, ObjectId to, ObjectId type, ObjectId edge) :
-        from(from),
-        to(to),
-        type(type),
-        edge(edge)
-    { }
-
-    bool operator<(const NewEdgeInfo& other) const
-    {
-        if (from != other.from) {
-            return from < other.from;
-        }
-        if (to != other.to) {
-            return to < other.to;
-        }
-        if (type != other.type) {
-            return type < other.type;
-        }
-        return edge < other.edge;
-    }
-};
-
-struct EditEdgeTypeInfo {
-    ObjectId type;
-    ObjectId edge;
-
-    EditEdgeTypeInfo( ObjectId type, ObjectId edge) :
-        type(type),
-        edge(edge)
-    { }
-
-    bool operator<(const NewEdgeInfo& other) const
-    {
-        if (type != other.type) {
-            return type < other.type;
-        }
-        return edge < other.edge;
-    }
-};
 
 class UpdateContext {
 public:
-    std::set<ObjectId> new_nodes;
+    uint_fast32_t new_nodes = 0;
+    uint_fast32_t new_edges = 0;
+    uint_fast32_t new_labels = 0;
+    uint_fast32_t new_properties = 0;
+    uint_fast32_t deleted_nodes = 0;
+    uint_fast32_t deleted_edges = 0;
+    uint_fast32_t deleted_labels = 0;
+    uint_fast32_t deleted_properties = 0;
+    uint_fast32_t overwritten_properties = 0;
 
-    std::set<LabelInfo> new_labels;
+    boost::unordered_flat_map<uint64_t, int64_t> label2total_count;
+    boost::unordered_flat_map<uint64_t, int64_t> key2total_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2total_count;
 
-    std::set<NewPropertyInfo> new_properties;
-
-    std::set<NewEdgeInfo> new_edges;
-
-    std::set<EditEdgeTypeInfo> edit_edge_type;
-
-    std::set<DeleteObjectInfo> deleted_objects;
-
-    std::set<LabelInfo> deleted_labels;
-
-    std::set<DeletedPropertyInfo> deleted_properties;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_type_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_to_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_type_count;
+    boost::unordered_flat_map<uint64_t, int64_t> type2equal_to_type_count;
 
     uint64_t current_anon;
 
@@ -157,27 +36,105 @@ public:
         current_edge = quad_model.catalog.max_edge;
     }
 
-    void insert_node(ObjectId node)
+    void process_new_property(uint64_t obj, uint64_t key, uint64_t val);
+    void process_deleted_property(uint64_t obj, uint64_t key, uint64_t val);
+
+    void insert_node(uint64_t node)
     {
-        new_nodes.insert(node);
+        if (quad_model.nodes->insert({ node })) {
+            new_nodes++;
+        }
     }
 
-    void insert_label(ObjectId node, ObjectId label)
+    void insert_label(uint64_t node, uint64_t label)
     {
-        new_labels.emplace(node, label);
+        if (quad_model.label_node->insert({ label, node })) {
+            quad_model.node_label->insert({ node, label });
+
+            new_labels++;
+            label2total_count[label]++;
+        }
     }
 
-    void insert_property(ObjectId obj, ObjectId key, ObjectId val)
+    void set_edge_type(uint64_t edge, uint64_t type)
     {
-        new_properties.emplace(obj, key, val);
+        // TODO:
     }
 
-    void insert_edge(ObjectId from, ObjectId to, ObjectId type, ObjectId edge)
+    void insert_property(uint64_t obj, uint64_t key, uint64_t val)
     {
-        insert_node(from);
-        insert_node(to);
-        insert_node(type);
-        new_edges.emplace(from, to, type, edge);
+        bool interruption = false;
+
+        // Check if the node has a property with the same key
+        Record<3> min_range = { obj, key, 0 };
+        Record<3> max_range = { obj, key, UINT64_MAX };
+        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
+        const auto existing_record = prop_iter.next();
+
+        if (existing_record != nullptr) {
+            auto old_obj = (*existing_record)[0];
+            auto old_key = (*existing_record)[1];
+            auto old_val = (*existing_record)[2];
+
+            // The node has a property with the same key
+            if (val == old_val) {
+                // The exact same record, nothing to do
+                return;
+            }
+
+            // Overwrite the old value
+            quad_model.object_key_value->delete_record(*existing_record);
+            quad_model.key_value_object->delete_record(*existing_record);
+            quad_model.object_key_value->insert({ obj, key, val });
+            quad_model.key_value_object->insert({ key, val, obj });
+
+            overwritten_properties++;
+
+            process_deleted_property(old_obj, old_key, old_val);
+            process_new_property(obj, key, val);
+        } else {
+            // The node does not have a property with the same key, create a new one
+            quad_model.object_key_value->insert({ obj, key, val });
+            quad_model.key_value_object->insert({ key, val, obj });
+
+            process_new_property(obj, key, val);
+            key2total_count[key]++;
+            new_properties++;
+        }
+    }
+
+    void insert_edge(uint64_t from, uint64_t to, uint64_t type, uint64_t edge)
+    {
+        // edge is always new
+        quad_model.from_to_type_edge->insert({ from, to, type, edge });
+        quad_model.to_type_from_edge->insert({ to, type, from, edge });
+        quad_model.type_from_to_edge->insert({ type, from, to, edge });
+        quad_model.type_to_from_edge->insert({ type, to, from, edge });
+        quad_model.edge_from_to_type->insert({ edge, from, to, type });
+
+        new_edges++;
+        type2total_count[type]++;
+
+        if (from == to) {
+            quad_model.equal_from_to->insert({ from, type, edge });
+            quad_model.equal_from_to_inverted->insert({ type, from, edge });
+            type2equal_from_to_count[type]++;
+
+            if (from == type) {
+                quad_model.equal_from_to_type->insert({ from, edge });
+                type2equal_from_to_type_count[type]++;
+            }
+        }
+        if (from == type) {
+            quad_model.equal_from_type->insert({ from, to, edge });
+            quad_model.equal_from_type_inverted->insert({ to, from, edge });
+            type2equal_from_type_count[type]++;
+        }
+        if (to == type) {
+            quad_model.equal_to_type->insert({ to, from, edge });
+            quad_model.equal_to_type_inverted->insert({ from, to, edge });
+            type2equal_to_type_count[type]++;
+        }
     }
 
     ObjectId get_new_edge_id()
@@ -190,16 +147,33 @@ public:
         return ObjectId(ObjectId::MASK_ANON_INLINED | current_edge++);
     }
 
-    void delete_object(ObjectId oid, bool detach)
+    void delete_label(uint64_t node, uint64_t label)
     {
-        if (oid.get_type() == ObjectId::MASK_EDGE) {
-        } else {
-            deleted_objects.emplace(oid, detach);
+        if (quad_model.node_label->delete_record({ node, label })) {
+            quad_model.label_node->delete_record({ label, node });
+
+            label2total_count[label]--;
+            deleted_labels++;
         }
     }
 
-    void delete_label();
-    void delete_property();
-    // void delete_edge();
+    void delete_property(uint64_t obj, uint64_t key)
+    {
+        bool interruption = false;
+        Record<3> min_range = { obj, key, 0 };
+        Record<3> max_range = { obj, key, UINT64_MAX };
+        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
+
+        if (auto existing_record = prop_iter.next()) {
+            auto value = (*existing_record)[2];
+
+            quad_model.object_key_value->delete_record({ obj, key, value });
+            quad_model.key_value_object->delete_record({ key, value, obj });
+
+            process_deleted_property(obj, key, value);
+            deleted_properties++;
+            key2total_count[key]--;
+        }
+    }
 };
 } // namespace MQL

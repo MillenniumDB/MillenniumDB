@@ -82,7 +82,7 @@ private:
     std::unique_ptr<BindingIter> iter;
     std::unique_ptr<UpdateContext> update_context;
     std::vector<std::unique_ptr<UpdateAction>> update_actions;
-    Stats stats;
+    // Stats stats;
 
     // returns a non-tmp ObjectId
     ObjectId transform_if_tmp(ObjectId oid);

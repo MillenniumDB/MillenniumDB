@@ -10,35 +10,11 @@
 
 using namespace MQL;
 
-constexpr uint64_t CLEAR_TMP_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
 
 UpdateExecutor::~UpdateExecutor()
 {
     // TODO: force string file WAL flush?
     // TODO: rollback if necessary?
-}
-
-ObjectId UpdateExecutor::transform_if_tmp(ObjectId oid)
-{
-    if (oid.is_tmp()) {
-        const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        const auto& tmp_str = tmp_manager.get_str(tmp_id);
-
-        const uint64_t gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
-
-        uint64_t new_external_id;
-        if (gen_t == ObjectId::MASK_TENSOR) {
-            new_external_id = tensor_manager.get_or_create_id(tmp_str.data(), tmp_str.size());
-        } else {
-            new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
-        }
-
-        oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
-    }
-
-    assert(!oid.is_tmp());
-
-    return oid;
 }
 
 uint64_t UpdateExecutor::execute()
@@ -124,131 +100,6 @@ uint64_t UpdateExecutor::execute()
         to_check = new_deleted_objects;
     }
 
-    // throw exceptions before modifying anything
-    // TODO: check deleted nodes and new nodes intersection is empty
-    // TODO: check deleted labels and new labels intersection is empty
-    // TODO: check deleted properties and new properties intersection is empty
-
-    for (auto& node_info : update_context->new_nodes) {
-        auto node = transform_if_tmp(node_info);
-        bool is_new_node = quad_model.nodes->insert({ node.id });
-        if (is_new_node) {
-            stats.new_nodes++;
-        }
-    }
-
-    for (auto& label_info : update_context->new_labels) {
-        auto label = transform_if_tmp(label_info.label);
-        auto node = transform_if_tmp(label_info.node);
-
-        bool is_new_label = quad_model.label_node->insert({ label.id, node.id });
-        if (is_new_label) {
-            quad_model.node_label->insert({ node.id, label.id });
-
-            stats.new_labels++;
-            stats.label2total_count[label.id]++;
-        }
-    }
-
-    for (auto& edge_info : update_context->new_edges) {
-        // assuming op_label.node is NamedNode
-        auto from = transform_if_tmp(edge_info.from);
-        auto to = transform_if_tmp(edge_info.to);
-        auto type = transform_if_tmp(edge_info.type);
-        auto edge = transform_if_tmp(edge_info.edge);
-
-        // edge is always new
-        quad_model.from_to_type_edge->insert({ from.id, to.id, type.id, edge.id });
-        quad_model.to_type_from_edge->insert({ to.id, type.id, from.id, edge.id });
-        quad_model.type_from_to_edge->insert({ type.id, from.id, to.id, edge.id });
-        quad_model.type_to_from_edge->insert({ type.id, to.id, from.id, edge.id });
-        quad_model.edge_from_to_type->insert({ edge.id, from.id, to.id, type.id });
-
-        stats.new_edges++;
-        stats.type2total_count[type.id]++;
-
-        if (from == to) {
-            quad_model.equal_from_to->insert({ from.id, type.id, edge.id });
-            quad_model.equal_from_to_inverted->insert({ type.id, from.id, edge.id });
-            stats.type2equal_from_to_count[type.id]++;
-
-            if (from == type) {
-                quad_model.equal_from_to_type->insert({ from.id, edge.id });
-                stats.type2equal_from_to_type_count[type.id]++;
-            }
-        }
-        if (from == type) {
-            quad_model.equal_from_type->insert({ from.id, to.id, edge.id });
-            quad_model.equal_from_type_inverted->insert({ to.id, from.id, edge.id });
-            stats.type2equal_from_type_count[type.id]++;
-        }
-        if (to == type) {
-            quad_model.equal_to_type->insert({ to.id, from.id, edge.id });
-            quad_model.equal_to_type_inverted->insert({ from.id, to.id, edge.id });
-            stats.type2equal_to_type_count[type.id]++;
-        }
-    }
-
-    for (auto& property_info : update_context->new_properties) {
-        auto obj = transform_if_tmp(property_info.obj);
-        auto key = transform_if_tmp(property_info.key);
-        auto val = transform_if_tmp(property_info.val);
-
-        // Check if the node has a property with the same key
-        Record<3> min_range = { obj.id, key.id, 0 };
-        Record<3> max_range = { obj.id, key.id, UINT64_MAX };
-        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
-        const auto existing_record = prop_iter.next();
-
-        if (existing_record != nullptr) {
-            ObjectId old_obj((*existing_record)[0]);
-            ObjectId old_key((*existing_record)[1]);
-            ObjectId old_val((*existing_record)[2]);
-
-            // The node has a property with the same key
-            if (val == old_val) {
-                // The exact same record, nothing to do
-                continue;
-            }
-
-            // Overwrite the old value
-            quad_model.object_key_value->delete_record(*existing_record);
-            quad_model.key_value_object->delete_record(*existing_record);
-            quad_model.object_key_value->insert({ obj.id, key.id, val.id });
-            quad_model.key_value_object->insert({ key.id, val.id, obj.id });
-
-            stats.overwritten_properties++;
-
-            process_deleted_property(old_obj, old_key, old_val);
-            process_new_property(obj, key, val);
-        } else {
-            // The node does not have a property with the same key, create a new one
-            quad_model.object_key_value->insert({ obj.id, key.id, val.id });
-            quad_model.key_value_object->insert({ key.id, val.id, obj.id });
-
-            process_new_property(obj, key, val);
-            stats.key2total_count[key.id]++;
-            stats.new_properties++;
-        }
-    }
-
-    for (auto& label_info : update_context->deleted_labels) {
-        auto node = label_info.node;
-        auto label = label_info.label;
-
-        Record<2> min_range = { node.id, label.id };
-        Record<2> max_range = { node.id, label.id };
-        auto label_iter = quad_model.node_label->get_range(&interruption, min_range, max_range);
-
-        if (label_iter.next()) {
-            quad_model.node_label->delete_record({ node.id, label.id });
-            quad_model.label_node->delete_record({ label.id, node.id });
-
-            stats.label2total_count[label.id]--;
-            stats.deleted_labels++;
-        }
-    }
-
     for (auto& obj_info : update_context->deleted_objects) {
         if (obj_info.obj.get_type() != ObjectId::MASK_EDGE) {
             if (quad_model.nodes->delete_record({ obj_info.obj.id })) {
@@ -304,23 +155,6 @@ uint64_t UpdateExecutor::execute()
                 auto key = (*record)[1];
                 update_context->deleted_properties.emplace(ObjectId(edge), ObjectId(key));
             }
-        }
-    }
-
-    for (auto& property_info : update_context->deleted_properties) {
-        auto obj = transform_if_tmp(property_info.obj);
-        auto key = transform_if_tmp(property_info.key);
-
-        Record<3> min_range = { obj.id, key.id, 0 };
-        Record<3> max_range = { obj.id, key.id, UINT64_MAX };
-        auto prop_iter = quad_model.object_key_value->get_range(&interruption, min_range, max_range);
-
-        if (auto existing_record = prop_iter.next()) {
-            auto value = (*existing_record)[2];
-            quad_model.object_key_value->delete_record({ obj.id, key.id, value });
-            quad_model.key_value_object->delete_record({ key.id, value, obj.id });
-            stats.deleted_properties++;
-            stats.key2total_count[key.id]--;
         }
     }
 

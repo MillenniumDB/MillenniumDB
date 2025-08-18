@@ -207,7 +207,7 @@ Any QueryVisitor::visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx)
         auto var_name = var->getText();
         var_name.erase(0, 1); // remove leading '?'
         auto var_id = get_query_ctx().get_or_create_var(var_name);
-        update_info.update_actions.push_back(std::make_unique<DeleteVar>(var_id, detach));
+        update_info.update_actions.push_back(std::make_unique<DeleteObject>(var_id, detach));
     }
 
     return 0;
@@ -232,8 +232,7 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
 
         visitValue(ctx->value());
 
-        update_info.update_actions.push_back(
-            std::make_unique<InsertProperty>(obj, key_id, current_value_oid)
+        update_info.update_actions.push_back(std::make_unique<InsertProperty>(obj, key_id, current_value_oid)
         );
     } else if (auto insert_properties = ctx->insertProperties()) {
         saved_property_obj = obj;
@@ -245,27 +244,15 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
             auto label_str = label->getText();
             label_str.erase(0, 1); // remove leading ':'
             auto label_id = QuadObjectId::get_string(label_str);
-            if (obj.is_var()) {
-                update_info.update_actions.push_back(
-                    std::make_unique<SetLabelOrType>(obj.get_var(), label_id)
-                );
-            } else {
-                // TODO: what about editing the edge type?
-                update_info.update_ctx->insert_label(obj.get_OID(), label_id);
-            }
+            update_info.update_actions.push_back(std::make_unique<SetLabelOrType>(obj, label_id));
         }
     }
 
     return 0;
 }
 
-/*
-removeAtom: (fixedObj | VARIABLE) KEY
-|           (fixedObj | VARIABLE) (TYPE)+
-*/
 Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
 {
-    // TODO:
     Id obj = ObjectId();
     if (auto fixed_obj = ctx->fixedObj()) {
         obj = QuadObjectId::get_fixed_node_inside(fixed_obj->getText());
@@ -281,20 +268,13 @@ Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
         key_name.erase(0, 1); // remove leading '.'
         auto key_id = QuadObjectId::get_string(key_name);
 
-        update_info.update_actions.push_back(
-            std::make_unique<DeleteProperty>(obj, key_id) // TODO: divide term and varid
-        );
+        update_info.update_actions.push_back(std::make_unique<DeleteProperty>(obj, key_id));
     } else {
         for (auto& label : ctx->TYPE()) {
             auto label_str = label->getText();
             label_str.erase(0, 1); // remove leading ':'
             auto label_id = QuadObjectId::get_string(label_str);
-            if (obj.is_var()) {
-                update_info.update_actions.push_back(std::make_unique<DeleteLabel>(obj.get_var(), label_id));
-            } else {
-                // TODO: validate obj is not edge?
-                update_info.update_ctx->delete_label(obj.get_OID(), label_id);
-            }
+            update_info.update_actions.push_back(std::make_unique<DeleteLabel>(obj, label_id));
         }
     }
     return 0;
@@ -332,14 +312,13 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
         last_node = get_query_ctx().get_or_create_var(var_name);
-        update_info.update_actions.push_back(std::make_unique<InsertNode>(last_node.get_var()));
     } else if (auto identifier = ctx->identifier()) {
         last_node = QuadObjectId::get_fixed_node_inside(identifier->getText());
-        update_info.update_ctx->insert_node(last_node.get_OID());
     } else {
         last_node = update_info.update_ctx->get_anon_id();
-        update_info.update_ctx->insert_node(last_node.get_OID());
     }
+    update_info.update_actions.push_back(std::make_unique<InsertNode>(last_node));
+
 
     // Process Labels
     for (auto& label : ctx->TYPE()) {
@@ -347,13 +326,9 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
 
-        if (last_node.is_var()) {
-            update_info.update_actions.push_back(
-                std::make_unique<InsertLabel>(last_node.get_var(), label_id)
+
+            update_info.update_actions.push_back(std::make_unique<InsertLabel>(last_node, label_id)
             );
-        } else {
-            update_info.update_ctx->insert_label(last_node.get_OID(), label_id);
-        }
     }
 
     if (auto properties = ctx->insertProperties()) {
@@ -368,19 +343,13 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
 
 Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 {
-    auto edge = update_info.update_ctx->get_new_edge_id();
+    auto edge = get_query_ctx().get_internal_var();
 
     auto type_str = ctx->TYPE()->getText();
     type_str.erase(0, 1); // remove leading ':'
     auto type_id = QuadObjectId::get_named_node(type_str);
 
-    if (auto properties = ctx->insertProperties()) {
-        saved_property_obj = edge;
-        for (auto property : properties->insertProperty()) {
-            property->accept(this);
-        }
-    }
-
+    // InsertEdge must go before because it assigns the var
     if (ctx->GT() != nullptr) {
         // right direction
         update_info.update_actions.push_back(
@@ -392,6 +361,14 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
             std::make_unique<InsertEdge>(last_node, saved_node, type_id, edge)
         );
     }
+
+    if (auto properties = ctx->insertProperties()) {
+        saved_property_obj = edge;
+        for (auto property : properties->insertProperty()) {
+            property->accept(this);
+        }
+    }
+
     return 0;
 }
 
@@ -502,8 +479,7 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
     }
 
     // validate yield statement
-    const auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(
-        procedure_type
+    const auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(procedure_type
     );
 
     auto check_yield_var = [&](const std::string& var_name) -> void {
@@ -945,12 +921,10 @@ Any QueryVisitor::visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* ctx
             auto property_var = get_query_ctx().get_or_create_var(property_var_name);
             auto key_id = QuadObjectId::get_string(key_name);
 
-            order_by_info.items.push_back(
-                std::make_unique<ExprAggCount>(
-                    std::make_unique<ExprVarProperty>(var, key_id, property_var),
-                    distinct
-                )
-            );
+            order_by_info.items.push_back(std::make_unique<ExprAggCount>(
+                std::make_unique<ExprVarProperty>(var, key_id, property_var),
+                distinct
+            ));
         } else {
             order_by_info.items.push_back(
                 std::make_unique<ExprAggCount>(std::make_unique<ExprVar>(var), distinct)
@@ -1155,14 +1129,12 @@ Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
         datatypes_is_exprs.push_back(
             std::make_unique<MQL::ExprIs>(negation, std::move(expr_var_property), type, propertyTypeBitmap)
         );
-        datatypes_is_exprs_where.push_back(
-            std::make_unique<MQL::ExprIs>(
-                negation,
-                std::move(expr_var_property_where),
-                type,
-                propertyTypeBitmap
-            )
-        );
+        datatypes_is_exprs_where.push_back(std::make_unique<MQL::ExprIs>(
+            negation,
+            std::move(expr_var_property_where),
+            type,
+            propertyTypeBitmap
+        ));
     }
     property_expr.push_back(std::make_unique<MQL::ExprOr>(std::move(datatypes_is_exprs)));
     return 0;
@@ -1669,8 +1641,8 @@ Any QueryVisitor::visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext* ctx
         );
     }
 
-    bool not= ctx->K_NOT() != nullptr;
-    if (not) {
+    bool not = ctx->K_NOT() != nullptr;
+    if (not ) {
         propertyTypeBitmap = ~propertyTypeBitmap;
     }
     current_expr = std::make_unique<ExprIs>(not, std::move(current_expr), type, propertyTypeBitmap);
