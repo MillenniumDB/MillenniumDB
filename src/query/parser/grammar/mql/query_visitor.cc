@@ -10,8 +10,8 @@
 #include "graph_models/quad_model/quad_object_id.h"
 #include "misc/is_name_valid_for_path.h"
 #include "misc/transliterator.h"
-#include "query/parser/op/mql/ops.h"
 #include "query/parser/expr/mql/exprs.h"
+#include "query/parser/op/mql/ops.h"
 #include "query/parser/paths/path_alternatives.h"
 #include "query/parser/paths/path_atom.h"
 #include "query/parser/paths/path_kleene_plus.h"
@@ -133,13 +133,13 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
         current_op = std::move(sequence[0]);
     }
 
-    if (ctx->groupByStatement()) {
-        ctx->groupByStatement()->accept(this);
+    if (auto group_stmt = ctx->groupByStatement()) {
+        group_stmt->accept(this);
         assert(group_by_exprs.size() > 0);
         current_op = std::make_unique<OpGroupBy>(std::move(current_op), std::move(group_by_exprs));
     }
-    if (ctx->orderByStatement()) {
-        ctx->orderByStatement()->accept(this);
+    if (auto order_stmt = ctx->orderByStatement()) {
+        order_stmt->accept(this);
 
         assert(order_by_info.items.size() > 0);
         current_op = std::make_unique<OpOrderBy>(
@@ -149,8 +149,8 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
         );
     }
 
-    if (ctx->returnStatement()) {
-        ctx->returnStatement()->accept(this);
+    if (auto return_stmt = ctx->returnStatement()) {
+        return_stmt->accept(this);
         current_op = std::make_unique<OpReturn>(
             std::move(current_op),
             std::move(return_info.items),
@@ -215,13 +215,88 @@ Any QueryVisitor::visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx)
 
 Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
 {
-    // TODO:
+    Id obj = ObjectId();
+    if (auto fixed_obj = ctx->fixedObj()) {
+        obj = QuadObjectId::get_fixed_node_inside(fixed_obj->getText());
+    } else if (auto variable = ctx->VARIABLE()) {
+        auto var_name = variable->getText();
+        var_name.erase(0, 1); // remove leading '?'
+        obj = get_query_ctx().get_or_create_var(var_name);
+    }
+
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
+
+        key_name.erase(0, 1); // remove leading '.'
+        auto key_id = QuadObjectId::get_string(key_name);
+
+        visitValue(ctx->value());
+
+        update_info.update_actions.push_back(
+            std::make_unique<InsertProperty>(obj, key_id, current_value_oid)
+        );
+    } else if (auto insert_properties = ctx->insertProperties()) {
+        saved_property_obj = obj;
+        for (auto property : insert_properties->insertProperty()) {
+            property->accept(this);
+        }
+    } else {
+        for (auto& label : ctx->TYPE()) {
+            auto label_str = label->getText();
+            label_str.erase(0, 1); // remove leading ':'
+            auto label_id = QuadObjectId::get_string(label_str);
+            if (obj.is_var()) {
+                update_info.update_actions.push_back(
+                    std::make_unique<SetLabelOrType>(obj.get_var(), label_id)
+                );
+            } else {
+                // TODO: what about editing the edge type?
+                update_info.update_ctx->insert_label(obj.get_OID(), label_id);
+            }
+        }
+    }
+
     return 0;
 }
 
+/*
+removeAtom: (fixedObj | VARIABLE) KEY
+|           (fixedObj | VARIABLE) (TYPE)+
+*/
 Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
 {
     // TODO:
+    Id obj = ObjectId();
+    if (auto fixed_obj = ctx->fixedObj()) {
+        obj = QuadObjectId::get_fixed_node_inside(fixed_obj->getText());
+    } else if (auto variable = ctx->VARIABLE()) {
+        auto var_name = variable->getText();
+        var_name.erase(0, 1); // remove leading '?'
+        obj = get_query_ctx().get_or_create_var(var_name);
+    }
+
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
+
+        key_name.erase(0, 1); // remove leading '.'
+        auto key_id = QuadObjectId::get_string(key_name);
+
+        update_info.update_actions.push_back(
+            std::make_unique<DeleteProperty>(obj, key_id) // TODO: divide term and varid
+        );
+    } else {
+        for (auto& label : ctx->TYPE()) {
+            auto label_str = label->getText();
+            label_str.erase(0, 1); // remove leading ':'
+            auto label_id = QuadObjectId::get_string(label_str);
+            if (obj.is_var()) {
+                update_info.update_actions.push_back(std::make_unique<DeleteLabel>(obj.get_var(), label_id));
+            } else {
+                // TODO: validate obj is not edge?
+                update_info.update_ctx->delete_label(obj.get_OID(), label_id);
+            }
+        }
+    }
     return 0;
 }
 
@@ -253,13 +328,13 @@ Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContex
 
 Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
 {
-    if (ctx->VARIABLE()) {
-        auto var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
         last_node = get_query_ctx().get_or_create_var(var_name);
         update_info.update_actions.push_back(std::make_unique<InsertNode>(last_node.get_var()));
-    } else if (ctx->identifier()) {
-        last_node = QuadObjectId::get_fixed_node_inside(ctx->identifier()->getText());
+    } else if (auto identifier = ctx->identifier()) {
+        last_node = QuadObjectId::get_fixed_node_inside(identifier->getText());
         update_info.update_ctx->insert_node(last_node.get_OID());
     } else {
         last_node = update_info.update_ctx->get_anon_id();
@@ -281,8 +356,7 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         }
     }
 
-    auto properties = ctx->insertProperties();
-    if (properties != nullptr) {
+    if (auto properties = ctx->insertProperties()) {
         saved_property_obj = last_node;
         for (auto property : properties->insertProperty()) {
             property->accept(this);
@@ -300,8 +374,7 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
     type_str.erase(0, 1); // remove leading ':'
     auto type_id = QuadObjectId::get_named_node(type_str);
 
-    auto properties = ctx->insertProperties();
-    if (properties != nullptr) {
+    if (auto properties = ctx->insertProperties()) {
         saved_property_obj = edge;
         for (auto property : properties->insertProperty()) {
             property->accept(this);
@@ -329,8 +402,8 @@ Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
 
     ObjectId value_id;
 
-    if (ctx->value() != nullptr) {
-        visitValue(ctx->value());
+    if (auto value = ctx->value()) {
+        visitValue(value);
         value_id = current_value_oid;
     } else {
         if (ctx->FALSE_PROP() != nullptr) {
@@ -341,7 +414,6 @@ Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
         }
     }
 
-    // TODO: if saved_property_obj is a term we can add directly to the update context
     update_info.update_actions.push_back(
         std::make_unique<InsertProperty>(saved_property_obj, key_id, value_id)
     );
@@ -363,7 +435,6 @@ Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* ctx)
 
     parse_datatype_value(datatype, str); // will set current_value_oid
 
-    // TODO: if saved_property_obj is a term we can add directly to the update context
     update_info.update_actions.push_back(
         std::make_unique<InsertProperty>(saved_property_obj, key_id, current_value_oid)
     );
@@ -558,9 +629,9 @@ Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx)
 
 Any QueryVisitor::visitReturnAll(MQL_Parser::ReturnAllContext* ctx)
 {
-    if (ctx->limitOffsetClauses() != nullptr) {
-        auto limit_clause = ctx->limitOffsetClauses()->limitClause();
-        auto offset_clause = ctx->limitOffsetClauses()->offsetClause();
+    if (auto limit_offset_clause = ctx->limitOffsetClauses()) {
+        auto limit_clause = limit_offset_clause->limitClause();
+        auto offset_clause = limit_offset_clause->offsetClause();
 
         if (limit_clause) {
             return_info.limit = stoll(limit_clause->UNSIGNED_INTEGER()->getText());
@@ -600,9 +671,9 @@ Any QueryVisitor::visitReturnList(MQL_Parser::ReturnListContext* ctx)
         return_expr->accept(this);
     }
 
-    if (ctx->limitOffsetClauses() != nullptr) {
-        auto limit_clause = ctx->limitOffsetClauses()->limitClause();
-        auto offset_clause = ctx->limitOffsetClauses()->offsetClause();
+    if (auto limit_offset_clause = ctx->limitOffsetClauses()) {
+        auto limit_clause = limit_offset_clause->limitClause();
+        auto offset_clause = limit_offset_clause->offsetClause();
 
         if (limit_clause) {
             return_info.limit = stoll(limit_clause->UNSIGNED_INTEGER()->getText());
@@ -621,8 +692,8 @@ Any QueryVisitor::visitReturnItemVar(MQL_Parser::ReturnItemVarContext* ctx)
     var_name.erase(0, 1); // remove leading '?'
     auto var = get_query_ctx().get_or_create_var(var_name);
 
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         auto property_var_name = var_name + key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -660,8 +731,8 @@ Any QueryVisitor::visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* ctx)
     std::string agg_inside_var_name = var_name;
 
     std::unique_ptr<Expr> inner_expr;
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         agg_inside_var_name += key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -675,28 +746,29 @@ Any QueryVisitor::visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* ctx)
 
     std::string agg_var_name;
 
-    if (ctx->alias() != nullptr) {
-        agg_var_name = ctx->alias()->VARIABLE()->getText();
+    if (auto alias = ctx->alias()) {
+        agg_var_name = alias->VARIABLE()->getText();
         agg_var_name.erase(0, 1); // remove leading '?'
     }
 
     std::unique_ptr<Expr> expr;
-    if (ctx->aggregateFunc()->K_AVG()) {
+    auto agg_func = ctx->aggregateFunc();
+    if (agg_func->K_AVG()) {
         expr = std::make_unique<ExprAggAvg>(std::move(inner_expr));
         if (agg_var_name.empty()) {
             agg_var_name = ".AVG(" + agg_inside_var_name + ")";
         }
-    } else if (ctx->aggregateFunc()->K_MAX()) {
+    } else if (agg_func->K_MAX()) {
         expr = std::make_unique<ExprAggMax>(std::move(inner_expr));
         if (agg_var_name.empty()) {
             agg_var_name = ".MAX(" + agg_inside_var_name + ")";
         }
-    } else if (ctx->aggregateFunc()->K_MIN()) {
+    } else if (agg_func->K_MIN()) {
         expr = std::make_unique<ExprAggMin>(std::move(inner_expr));
         if (agg_var_name.empty()) {
             agg_var_name = ".MIN(" + agg_inside_var_name + ")";
         }
-    } else if (ctx->aggregateFunc()->K_SUM()) {
+    } else if (agg_func->K_SUM()) {
         expr = std::make_unique<ExprAggSum>(std::move(inner_expr));
         if (agg_var_name.empty()) {
             agg_var_name = ".SUM(" + agg_inside_var_name + ")";
@@ -711,13 +783,13 @@ Any QueryVisitor::visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* ctx)
 Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx)
 {
     bool distinct = ctx->K_DISTINCT() != nullptr;
-    if (ctx->VARIABLE() != nullptr) {
-        auto var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
         auto var = get_query_ctx().get_or_create_var(var_name);
 
-        if (ctx->KEY() != nullptr) {
-            auto key_name = ctx->KEY()->getText();
+        if (auto key_terminal = ctx->KEY()) {
+            auto key_name = key_terminal->getText();
             auto property_var_name = var_name + key_name;
             key_name.erase(0, 1); // remove leading '.'
 
@@ -725,8 +797,8 @@ Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx)
             auto key_id = QuadObjectId::get_string(key_name);
 
             std::string expr_var;
-            if (ctx->alias() != nullptr) {
-                expr_var = ctx->alias()->VARIABLE()->getText();
+            if (auto alias = ctx->alias()) {
+                expr_var = alias->VARIABLE()->getText();
                 expr_var.erase(0, 1); // remove leading '?'
             } else {
                 expr_var = ".COUNT(";
@@ -743,8 +815,8 @@ Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx)
             );
         } else {
             std::string expr_var;
-            if (ctx->alias() != nullptr) {
-                expr_var = ctx->alias()->VARIABLE()->getText();
+            if (auto alias = ctx->alias()) {
+                expr_var = alias->VARIABLE()->getText();
                 expr_var.erase(0, 1); // remove leading '?'
             } else {
                 expr_var = ".COUNT(";
@@ -759,8 +831,8 @@ Any QueryVisitor::visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx)
         }
     } else {
         std::string expr_var;
-        if (ctx->alias() != nullptr) {
-            expr_var = ctx->alias()->VARIABLE()->getText();
+        if (auto alias = ctx->alias()) {
+            expr_var = alias->VARIABLE()->getText();
             expr_var.erase(0, 1); // remove leading '?'
         } else {
             expr_var = ".COUNT(";
@@ -792,8 +864,8 @@ Any QueryVisitor::visitOrderByItemVar(MQL_Parser::OrderByItemVarContext* ctx)
     var_name.erase(0, 1); // remove leading '?'
     auto var = get_query_ctx().get_or_create_var(var_name);
 
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         auto property_var_name = var_name + key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -826,8 +898,8 @@ Any QueryVisitor::visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* ctx)
     std::string agg_inside_var_name = var_name;
 
     std::unique_ptr<Expr> expr;
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         agg_inside_var_name += key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -839,13 +911,14 @@ Any QueryVisitor::visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* ctx)
         expr = std::make_unique<ExprVar>(var);
     }
 
-    if (ctx->aggregateFunc()->K_AVG()) {
+    auto agg_func = ctx->aggregateFunc();
+    if (agg_func->K_AVG()) {
         expr = std::make_unique<ExprAggAvg>(std::move(expr));
-    } else if (ctx->aggregateFunc()->K_MAX()) {
+    } else if (agg_func->K_MAX()) {
         expr = std::make_unique<ExprAggMax>(std::move(expr));
-    } else if (ctx->aggregateFunc()->K_MIN()) {
+    } else if (agg_func->K_MIN()) {
         expr = std::make_unique<ExprAggMin>(std::move(expr));
-    } else if (ctx->aggregateFunc()->K_SUM()) {
+    } else if (agg_func->K_SUM()) {
         expr = std::make_unique<ExprAggSum>(std::move(expr));
     } else {
         throw std::runtime_error("Unmanaged aggregateFunc");
@@ -859,13 +932,13 @@ Any QueryVisitor::visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* ctx)
 Any QueryVisitor::visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* ctx)
 {
     bool distinct = ctx->K_DISTINCT() != nullptr;
-    if (ctx->VARIABLE() != nullptr) {
-        auto var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
         auto var = get_query_ctx().get_or_create_var(var_name);
 
-        if (ctx->KEY() != nullptr) {
-            auto key_name = ctx->KEY()->getText();
+        if (auto key_terminal = ctx->KEY()) {
+            auto key_name = key_terminal->getText();
             auto property_var_name = var_name + key_name;
             key_name.erase(0, 1); // remove leading '.'
 
@@ -906,8 +979,8 @@ Any QueryVisitor::visitGroupByItem(MQL_Parser::GroupByItemContext* ctx)
     var_name.erase(0, 1); // remove leading '?'
     auto var = get_query_ctx().get_or_create_var(var_name);
 
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         auto property_var_name = var_name + key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -926,9 +999,9 @@ Any QueryVisitor::visitGraphPattern(MQL_Parser::GraphPatternContext* ctx)
     assert(ctx->basicPattern() != nullptr);
     ctx->basicPattern()->accept(this);
     auto parent = std::move(current_bgp);
-    if (ctx->optionalPattern().size() > 0) {
+    if (auto optional_ctx = ctx->optionalPattern(); optional_ctx.size() > 0) {
         std::vector<std::unique_ptr<Op>> optional_children;
-        for (auto& opt : ctx->optionalPattern()) {
+        for (auto& opt : optional_ctx) {
             auto old_expr = std::move(current_expr);
             opt->accept(this);
             if (current_expr != nullptr) {
@@ -1154,8 +1227,8 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
     VarId var(0); // Will be overwritten
 
     // process var
-    if (ctx->VARIABLE() != nullptr) {
-        var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
         var = get_query_ctx().get_or_create_var(var_name);
     } else {
@@ -1163,7 +1236,8 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
     }
 
     // Process Labels
-    for (auto& label : ctx->TYPE()) {
+    auto labels = ctx->TYPE();
+    for (auto& label : labels) {
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
@@ -1179,7 +1253,7 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
         }
     }
 
-    if (first_element_disjoint && ctx->TYPE().empty() && current_bgp->properties.empty()) {
+    if (first_element_disjoint && labels.empty() && current_bgp->properties.empty()) {
         current_bgp->add_disjoint_var(var);
     }
 
@@ -1206,28 +1280,26 @@ Any QueryVisitor::visitEdge(MQL_Parser::EdgeContext* ctx)
 
 Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
 {
-    if (ctx->VARIABLE() != nullptr) {
-        auto edge_var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        auto edge_var_name = variable->getText();
         edge_var_name.erase(0, 1); // remove leading '?'
         saved_edge = get_query_ctx().get_or_create_var(edge_var_name);
-    } else if (ctx->EDGE_ID()) {
-        saved_edge = QuadObjectId::get_edge(ctx->EDGE_ID()->getText());
+    } else if (auto edge = ctx->EDGE_ID()) {
+        saved_edge = QuadObjectId::get_edge(edge->getText());
     } else {
         saved_edge = get_query_ctx().get_internal_var();
     }
 
-    if (ctx->TYPE_VAR() != nullptr) {
-        auto type_var_name = ctx->TYPE_VAR()->getText();
+    if (auto type_var = ctx->TYPE_VAR()) {
+        auto type_var_name = type_var->getText();
         type_var_name.erase(0, 2); // remove leading ':?'
-        auto type_var = get_query_ctx().get_or_create_var(type_var_name);
-        saved_type = type_var;
-    } else if (ctx->TYPE() != nullptr) {
-        auto type_str = ctx->TYPE()->getText();
+        saved_type = get_query_ctx().get_or_create_var(type_var_name);
+    } else if (auto type = ctx->TYPE()) {
+        auto type_str = type->getText();
         type_str.erase(0, 1); // remove leading ':'
         saved_type = QuadObjectId::get_named_node(type_str);
     } else {
-        auto type_var = get_query_ctx().get_internal_var();
-        saved_type = type_var;
+        saved_type = get_query_ctx().get_internal_var();
     }
 
     auto properties = ctx->properties();
@@ -1243,79 +1315,79 @@ Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
 Any QueryVisitor::visitPath(MQL_Parser::PathContext* ctx)
 {
     VarId path_var(0); // Will be overwritten
-    if (ctx->VARIABLE() == nullptr) {
-        path_var = get_query_ctx().get_internal_var();
-    } else {
-        auto path_var_name = ctx->VARIABLE()->getText();
+    if (auto variable = ctx->VARIABLE()) {
+        auto path_var_name = variable->getText();
         path_var_name.erase(0, 1); // remove leading '?'
         path_var = get_query_ctx().get_or_create_var(path_var_name);
+    } else {
+        path_var = get_query_ctx().get_internal_var();
     }
     uint64_t K = 0;
 
     PathSemantic semantic = PathSemantic::DEFAULT;
-    if (ctx->pathType() != nullptr) {
-        if (ctx->pathType()->UNSIGNED_INTEGER()) {
-            K = std::stoull(ctx->pathType()->UNSIGNED_INTEGER()->getText());
-            if (ctx->pathType()->K_GROUPS()) {
-                if (ctx->pathType()->K_ACYCLIC()) {
+    if (auto path_type_ctx = ctx->pathType()) {
+        if (path_type_ctx->UNSIGNED_INTEGER()) {
+            K = std::stoull(path_type_ctx->UNSIGNED_INTEGER()->getText());
+            if (path_type_ctx->K_GROUPS()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::SHORTEST_K_GROUPS_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::SHORTEST_K_GROUPS_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::SHORTEST_K_GROUPS_TRAILS;
                 } else { // WALKS by default
                     semantic = PathSemantic::SHORTEST_K_GROUPS_WALKS;
                 }
             } else {
-                if (ctx->pathType()->K_ACYCLIC()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::SHORTEST_K_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::SHORTEST_K_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::SHORTEST_K_TRAILS;
                 } else { // WALKS by default
                     semantic = PathSemantic::SHORTEST_K_WALKS;
                 }
             }
-        } else if (ctx->pathType()->K_ALL()) {
-            if (ctx->pathType()->K_SHORTEST()) {
-                if (ctx->pathType()->K_ACYCLIC()) {
+        } else if (path_type_ctx->K_ALL()) {
+            if (path_type_ctx->K_SHORTEST()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::ALL_SHORTEST_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::ALL_SHORTEST_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::ALL_SHORTEST_TRAILS;
                 } else { // WALKS by default
                     semantic = PathSemantic::ALL_SHORTEST_WALKS;
                 }
             } else {
-                if (ctx->pathType()->K_ACYCLIC()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::ALL_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::ALL_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::ALL_TRAILS;
                 } else { // WALKS by default
                     throw QueryException("ALL WALKS path semantic not allowed");
                 }
             }
         } else { // K_ANY
-            if (ctx->pathType()->K_SHORTEST()) {
-                if (ctx->pathType()->K_ACYCLIC()) {
+            if (path_type_ctx->K_SHORTEST()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::ANY_SHORTEST_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::ANY_SHORTEST_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::ANY_SHORTEST_TRAILS;
                 } else { // WALKS by default
                     semantic = PathSemantic::ANY_SHORTEST_WALKS;
                 }
             } else {
-                if (ctx->pathType()->K_ACYCLIC()) {
+                if (path_type_ctx->K_ACYCLIC()) {
                     semantic = PathSemantic::ANY_ACYCLIC;
-                } else if (ctx->pathType()->K_SIMPLE()) {
+                } else if (path_type_ctx->K_SIMPLE()) {
                     semantic = PathSemantic::ANY_SIMPLE;
-                } else if (ctx->pathType()->K_TRAILS()) {
+                } else if (path_type_ctx->K_TRAILS()) {
                     semantic = PathSemantic::ANY_TRAILS;
                 } else { // WALKS by default
                     semantic = PathSemantic::ANY_WALKS;
@@ -1354,37 +1426,39 @@ Any QueryVisitor::visitPath(MQL_Parser::PathContext* ctx)
 
 Any QueryVisitor::visitPathAlternatives(MQL_Parser::PathAlternativesContext* ctx)
 {
-    if (ctx->pathSequence().size() > 1) {
+    auto path_sequence = ctx->pathSequence();
+    if (path_sequence.size() > 1) {
         std::vector<std::unique_ptr<RegularPathExpr>> alternatives;
-        for (auto s : ctx->pathSequence()) {
+        for (auto s : path_sequence) {
             s->accept(this);
             alternatives.push_back(std::move(current_path));
         }
         current_path = std::make_unique<PathAlternatives>(std::move(alternatives));
     } else {
-        ctx->pathSequence()[0]->accept(this);
+        path_sequence[0]->accept(this);
     }
     return 0;
 }
 
 Any QueryVisitor::visitPathSequence(MQL_Parser::PathSequenceContext* ctx)
 {
-    if (ctx->pathAtom().size() > 1) {
+    auto path_atom = ctx->pathAtom();
+    if (path_atom.size() > 1) {
         std::vector<std::unique_ptr<RegularPathExpr>> sequence;
         if (current_path_inverse) {
-            for (int i = ctx->pathAtom().size() - 1; i >= 0; i--) {
-                ctx->pathAtom()[i]->accept(this);
+            for (int i = path_atom.size() - 1; i >= 0; i--) {
+                path_atom[i]->accept(this);
                 sequence.push_back(std::move(current_path));
             }
         } else {
-            for (auto a : ctx->pathAtom()) {
+            for (auto a : path_atom) {
                 a->accept(this);
                 sequence.push_back(std::move(current_path));
             }
         }
         current_path = std::make_unique<PathSequence>(std::move(sequence));
     } else {
-        ctx->pathAtom()[0]->accept(this);
+        path_atom[0]->accept(this);
     }
     return 0;
 }
@@ -1471,8 +1545,8 @@ Any QueryVisitor::visitExprVar(MQL_Parser::ExprVarContext* ctx)
     var_name.erase(0, 1); // remove leading '?'
     auto var = get_query_ctx().get_or_create_var(var_name);
 
-    if (ctx->KEY() != nullptr) {
-        auto key_name = ctx->KEY()->getText();
+    if (auto key_terminal = ctx->KEY()) {
+        auto key_name = key_terminal->getText();
         auto property_var_name = var_name + key_name;
         key_name.erase(0, 1); // remove leading '.'
 
@@ -1504,13 +1578,14 @@ Any QueryVisitor::visitExprValue(MQL_Parser::ExprValueContext* ctx)
 
 Any QueryVisitor::visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext* ctx)
 {
-    ctx->conditionalAndExpr()[0]->accept(this);
+    auto conditional_ands = ctx->conditionalAndExpr();
+    conditional_ands[0]->accept(this);
 
-    if (ctx->conditionalAndExpr().size() > 1) {
+    if (conditional_ands.size() > 1) {
         std::vector<std::unique_ptr<Expr>> or_list;
         or_list.push_back(std::move(current_expr));
-        for (std::size_t i = 1; i < ctx->conditionalAndExpr().size(); i++) {
-            ctx->conditionalAndExpr()[i]->accept(this);
+        for (std::size_t i = 1; i < conditional_ands.size(); i++) {
+            conditional_ands[i]->accept(this);
             or_list.push_back(std::move(current_expr));
         }
         current_expr = std::make_unique<ExprOr>(std::move(or_list));
@@ -1521,13 +1596,14 @@ Any QueryVisitor::visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext* c
 
 Any QueryVisitor::visitConditionalAndExpr(MQL_Parser::ConditionalAndExprContext* ctx)
 {
-    ctx->comparisonExpr()[0]->accept(this);
+    auto comparisons = ctx->comparisonExpr();
+    comparisons[0]->accept(this);
 
-    if (ctx->comparisonExpr().size() > 1) {
+    if (comparisons.size() > 1) {
         std::vector<std::unique_ptr<Expr>> and_list;
         and_list.push_back(std::move(current_expr));
-        for (std::size_t i = 1; i < ctx->comparisonExpr().size(); i++) {
-            ctx->comparisonExpr()[i]->accept(this);
+        for (std::size_t i = 1; i < comparisons.size(); i++) {
+            comparisons[i]->accept(this);
             and_list.push_back(std::move(current_expr));
         }
         current_expr = std::make_unique<ExprAnd>(std::move(and_list));
@@ -1537,10 +1613,11 @@ Any QueryVisitor::visitConditionalAndExpr(MQL_Parser::ConditionalAndExprContext*
 
 Any QueryVisitor::visitComparisonExprOp(MQL_Parser::ComparisonExprOpContext* ctx)
 {
-    ctx->additiveExpr()[0]->accept(this);
-    if (ctx->additiveExpr().size() > 1) {
+    auto additive_exprs = ctx->additiveExpr();
+    additive_exprs[0]->accept(this);
+    if (additive_exprs.size() > 1) {
         auto saved_lhs = std::move(current_expr);
-        ctx->additiveExpr()[1]->accept(this);
+        additive_exprs[1]->accept(this);
         auto op = ctx->op->getText();
         if (op == "==") {
             current_expr = std::make_unique<ExprEquals>(std::move(saved_lhs), std::move(current_expr));
@@ -1570,36 +1647,33 @@ Any QueryVisitor::visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext* ctx
     ExprIs::TypeName type;
 
     uint64_t propertyTypeBitmap = 0;
-    if (ctx->exprTypename()->K_BOOL()) {
+    auto expr_typename = ctx->exprTypename();
+    if (expr_typename->K_BOOL()) {
         type = ExprIs::TypeName::BOOL;
         propertyTypeBitmap = propertyTypeBitmap | static_cast<uint64_t>(PropertyType::TYPE_BOOL);
-    } else if (ctx->exprTypename()->K_FLOAT()) {
+    } else if (expr_typename->K_FLOAT()) {
         type = ExprIs::TypeName::FLOAT;
         propertyTypeBitmap = propertyTypeBitmap | static_cast<uint64_t>(PropertyType::TYPE_FLOAT);
-    } else if (ctx->exprTypename()->K_INTEGER()) {
+    } else if (expr_typename->K_INTEGER()) {
         type = ExprIs::TypeName::INTEGER;
         propertyTypeBitmap = propertyTypeBitmap | static_cast<uint64_t>(PropertyType::TYPE_INTEGER);
-    } else if (ctx->exprTypename()->K_NULL()) {
+    } else if (expr_typename->K_NULL()) {
         type = ExprIs::TypeName::NULL_;
         propertyTypeBitmap = propertyTypeBitmap | static_cast<uint64_t>(PropertyType::TYPE_NULL);
-    } else if (ctx->exprTypename()->K_STRING()) {
+    } else if (expr_typename->K_STRING()) {
         type = ExprIs::TypeName::STRING;
         propertyTypeBitmap = propertyTypeBitmap | static_cast<uint64_t>(PropertyType::TYPE_STRING);
     } else {
         throw std::invalid_argument(
-            "exprTypename '" + ctx->exprTypename()->toString() + "' not recognized in ComparisonExprIs"
+            "exprTypename '" + expr_typename->toString() + "' not recognized in ComparisonExprIs"
         );
     }
 
-    if (ctx->K_NOT() != nullptr) {
+    bool not= ctx->K_NOT() != nullptr;
+    if (not) {
         propertyTypeBitmap = ~propertyTypeBitmap;
     }
-    current_expr = std::make_unique<ExprIs>(
-        ctx->K_NOT() != nullptr,
-        std::move(current_expr),
-        type,
-        propertyTypeBitmap
-    );
+    current_expr = std::make_unique<ExprIs>(not, std::move(current_expr), type, propertyTypeBitmap);
 
     return 0;
 }
@@ -1649,18 +1723,17 @@ Any QueryVisitor::visitMultiplicativeExpr(MQL_Parser::MultiplicativeExprContext*
 
 Any QueryVisitor::visitUnaryExpr(MQL_Parser::UnaryExprContext* ctx)
 {
-    if (ctx->unaryExpr() != nullptr) {
-        ctx->unaryExpr()->accept(this);
+    if (auto unary_expr = ctx->unaryExpr()) {
+        unary_expr->accept(this);
+        auto unary_op = ctx->children[0]->getText();
         if (ctx->K_NOT() != nullptr) {
             current_expr = std::make_unique<ExprNot>(std::move(current_expr));
-        } else if (ctx->children[0]->getText() == "+") {
+        } else if (unary_op == "+") {
             current_expr = std::make_unique<ExprUnaryPlus>(std::move(current_expr));
-        } else if (ctx->children[0]->getText() == "-") {
+        } else if (unary_op == "-") {
             current_expr = std::make_unique<ExprUnaryMinus>(std::move(current_expr));
         } else {
-            throw std::invalid_argument(
-                ctx->children[0]->getText() + " not recognized as a valid UnaryExpr operator"
-            );
+            throw std::invalid_argument(unary_op + " not recognized as a valid UnaryExpr operator");
         }
     } else {
         ctx->atomicExpr()->accept(this);
@@ -1677,14 +1750,15 @@ Any QueryVisitor::visitFunction(MQL_Parser::FunctionContext* ctx)
 
 Any QueryVisitor::visitRegex(MQL_Parser::RegexContext* ctx)
 {
-    visit(ctx->conditionalOrExpr(0));
+    auto conditional_ors = ctx->conditionalOrExpr();
+    visit(conditional_ors[0]);
     auto expr0 = std::move(current_expr);
 
-    visit(ctx->conditionalOrExpr(1));
+    visit(conditional_ors[1]);
     auto expr1 = std::move(current_expr);
 
-    if (ctx->conditionalOrExpr().size() == 3) {
-        visit(ctx->conditionalOrExpr(2));
+    if (conditional_ors.size() == 3) {
+        visit(conditional_ors[2]);
         auto expr2 = std::move(current_expr);
         current_expr = std::make_unique<ExprRegex>(std::move(expr0), std::move(expr1), std::move(expr2));
     } else {
@@ -1696,10 +1770,11 @@ Any QueryVisitor::visitRegex(MQL_Parser::RegexContext* ctx)
 
 Any QueryVisitor::visitCosineSimilarity(MQL_Parser::CosineSimilarityContext* ctx)
 {
-    visit(ctx->conditionalOrExpr(0));
+    auto conditional_ors = ctx->conditionalOrExpr();
+    visit(conditional_ors[0]);
     auto expr0 = std::move(current_expr);
 
-    visit(ctx->conditionalOrExpr(1));
+    visit(conditional_ors[1]);
     auto expr1 = std::move(current_expr);
 
     current_expr = std::make_unique<ExprCosineSimilarity>(std::move(expr0), std::move(expr1));
@@ -1709,10 +1784,11 @@ Any QueryVisitor::visitCosineSimilarity(MQL_Parser::CosineSimilarityContext* ctx
 
 Any QueryVisitor::visitCosineDistance(MQL_Parser::CosineDistanceContext* ctx)
 {
-    visit(ctx->conditionalOrExpr(0));
+    auto conditional_ors = ctx->conditionalOrExpr();
+    visit(conditional_ors[0]);
     auto expr0 = std::move(current_expr);
 
-    visit(ctx->conditionalOrExpr(1));
+    visit(conditional_ors[1]);
     auto expr1 = std::move(current_expr);
 
     current_expr = std::make_unique<ExprCosineDistance>(std::move(expr0), std::move(expr1));
@@ -1722,10 +1798,11 @@ Any QueryVisitor::visitCosineDistance(MQL_Parser::CosineDistanceContext* ctx)
 
 Any QueryVisitor::visitManhattanDistance(MQL_Parser::ManhattanDistanceContext* ctx)
 {
-    visit(ctx->conditionalOrExpr(0));
+    auto conditional_ors = ctx->conditionalOrExpr();
+    visit(conditional_ors[0]);
     auto expr0 = std::move(current_expr);
 
-    visit(ctx->conditionalOrExpr(1));
+    visit(conditional_ors[1]);
     auto expr1 = std::move(current_expr);
 
     current_expr = std::make_unique<ExprManhattanDistance>(std::move(expr0), std::move(expr1));
@@ -1735,10 +1812,11 @@ Any QueryVisitor::visitManhattanDistance(MQL_Parser::ManhattanDistanceContext* c
 
 Any QueryVisitor::visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext* ctx)
 {
-    visit(ctx->conditionalOrExpr(0));
+    auto conditional_ors = ctx->conditionalOrExpr();
+    visit(conditional_ors[0]);
     auto expr0 = std::move(current_expr);
 
-    visit(ctx->conditionalOrExpr(1));
+    visit(conditional_ors[1]);
     auto expr1 = std::move(current_expr);
 
     current_expr = std::make_unique<ExprEuclideanDistance>(std::move(expr0), std::move(expr1));
@@ -1990,10 +2068,10 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
 
 Any QueryVisitor::visitValue(MQL_Parser::ValueContext* ctx)
 {
-    if (ctx->datatypeValue()) {
-        const auto datatype = ctx->datatypeValue()->identifier()->getText();
-        auto str = ctx->datatypeValue()->STRING()->getText();
-        str = str.substr(1, str.size() - 2);
+    if (auto datatype_value = ctx->datatypeValue()) {
+        auto datatype = datatype_value->identifier()->getText();
+        auto str = datatype_value->STRING()->getText();
+        str = str.substr(1, str.size() - 2); // remove double quotes
 
         parse_datatype_value(datatype, str); // will set current_value_oid
     } else {

@@ -90,20 +90,20 @@ uint64_t UpdateExecutor::execute()
                 }
 
                 for (auto record = it1.next(); record != nullptr; record = it1.next()) {
-                    auto edge = (*record)[3];
-                    if (update_context->deleted_objects.emplace(edge).second) {
+                    ObjectId edge((*record)[3]);
+                    if (update_context->deleted_objects.emplace(edge, true).second) {
                         new_deleted_objects.emplace(edge, true);
                     }
                 }
                 for (auto record = it2.next(); record != nullptr; record = it2.next()) {
-                    auto edge = (*record)[3];
-                    if (update_context->deleted_objects.emplace(edge).second) {
+                    ObjectId edge((*record)[3]);
+                    if (update_context->deleted_objects.emplace(edge, true).second) {
                         new_deleted_objects.emplace(edge, true);
                     }
                 }
                 for (auto record = it3.next(); record != nullptr; record = it3.next()) {
-                    auto edge = (*record)[3];
-                    if (update_context->deleted_objects.emplace(edge).second) {
+                    ObjectId edge((*record)[3]);
+                    if (update_context->deleted_objects.emplace(edge, true).second) {
                         new_deleted_objects.emplace(edge, true);
                     }
                 }
