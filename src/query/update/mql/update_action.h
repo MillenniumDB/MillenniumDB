@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "query/exceptions.h"
 #include "query/executor/binding.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
@@ -56,8 +57,12 @@ public:
     {
         ObjectId node_ = node.is_var() ? binding[node.get_var()] : node.get_OID();
 
-        if (node_.is_null() || node_.get_type() == ObjectId::MASK_EDGE) {
-            // TODO: rollback and throw
+        if (node_.is_null()) {
+            throw QueryExecutionException("cannot insert a null node");
+        }
+
+        if (node_.get_type() == ObjectId::MASK_EDGE) {
+            return;
         }
 
         auto node_id = transform_if_tmp(node_).id;
@@ -79,8 +84,16 @@ public:
     {
         ObjectId node_ = node.is_var() ? binding[node.get_var()] : node.get_OID();
 
-        if (node_.is_null() || node_.get_type() == ObjectId::MASK_EDGE) {
-            // TODO: rollback and throw
+        if (node_.is_null()) {
+            throw QueryExecutionException("cannot insert label to a null node");
+        }
+
+        if (label.is_null()) {
+            throw QueryExecutionException("cannot set label null label");
+        }
+
+        if (node_.get_type() == ObjectId::MASK_EDGE) {
+            throw QueryExecutionException("cannot insert label to an edge");
         }
 
         auto node_id = transform_if_tmp(node_).id;
@@ -104,8 +117,12 @@ public:
     {
         ObjectId obj_ = obj.is_var() ? binding[obj.get_var()] : obj.get_OID();
 
-        if (obj_.is_null() || label.is_null()) {
-            // TODO: rollback and throw
+        if (obj_.is_null()) {
+            throw QueryExecutionException("cannot insert label to a null node");
+        }
+
+        if (label.is_null()) {
+            throw QueryExecutionException("cannot set label null label");
         }
 
         auto obj_id = transform_if_tmp(obj_).id;
@@ -185,8 +202,7 @@ public:
         ObjectId obj_ = obj.is_var() ? binding[obj.get_var()] : obj.get_OID();
 
         if (obj_.is_null() || key.is_null()) {
-            // TODO: rollback and throw
-            // TODO: maybe ignore the delete instead of failing?
+            return;
         }
 
         auto obj_id = transform_if_tmp(obj_).id;
@@ -210,8 +226,7 @@ public:
         ObjectId node_ = node.is_var() ? binding[node.get_var()] : node.get_OID();
 
         if (node_.is_null() || node_.get_type() == ObjectId::MASK_EDGE) {
-            // TODO: rollback and throw
-            // TODO: maybe ignore the delete instead of failing?
+            return;
         }
 
         auto node_id = transform_if_tmp(node_).id;
@@ -270,8 +285,7 @@ public:
         ObjectId obj_ = obj.is_var() ? binding[obj.get_var()] : obj.get_OID();
 
         if (obj_.is_null()) {
-            // TODO: rollback and throw
-            // TODO: maybe ignore the delete instead of failing?
+            return;
         }
         auto obj_id = transform_if_tmp(obj_).id;
 

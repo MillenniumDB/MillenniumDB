@@ -90,7 +90,6 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
         return;
     }
 
-    // After parsing the query we don't want to have a connection timeout
     obj->stream.expires_never();
 
     logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
@@ -99,7 +98,6 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
         obj->execute_query(query, response_ostream, response_type);
     } catch (const ConnectionException& e) {
         logger(Category::Error) << "Connection Exception: " << e.what();
-        return;
     } catch (const std::exception& e) {
         logger(Category::Error) << "Unexpected Exception: " << e.what();
     } catch (...) {
@@ -122,7 +120,9 @@ std::unique_ptr<QueryExecutor>
 void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, ReturnType response_type)
 {
     try {
+        const auto start_parser = std::chrono::system_clock::now();
         QueryParser parser(query);
+        parser_duration = std::chrono::system_clock::now() - start_parser;
 
         if (parser.is_update()) {
             run_write_query(parser, os);
@@ -137,7 +137,6 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
               "Content-Type: text/plain\r\n"
               "\r\n"
            << e.what();
-        return;
     } catch (const QueryException& e) {
         logger(Category::Error) << "Query Exception: " << e.what();
 
@@ -170,7 +169,7 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
 
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = parser.get_query_plan();
-    parser_duration = std::chrono::system_clock::now() - start_parser; // TODO: mal
+    parser_duration += std::chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, MQL::ReturnType::TSV);
 
@@ -188,6 +187,10 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
             executor->analyze(os, true);
             os << '\n';
         });
+
+        os << "HTTP/1.1 204 No Content\r\n\r\n";
+        logger(Category::Info) << "Parser duration:    " << parser_duration.count() << "ms\n"
+                               << "Execution duration: " << execution_duration.count() << "ms";
     } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
@@ -197,7 +200,6 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
-        return;
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
         logger(Category::Error) << "Query Execution Exception: " << e.what();
@@ -206,12 +208,7 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
               "Content-Type: text/plain\r\n"
               "\r\n"
            << e.what();
-        return;
     }
-
-    os << "HTTP/1.1 204 No Content\r\n\r\n";
-    logger(Category::Info) << "Parser duration:    " << parser_duration.count() << "ms\n"
-                           << "Execution duration: " << execution_duration.count() << "ms";
 }
 
 void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os, ReturnType return_type)
@@ -228,7 +225,7 @@ void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os,
 
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = parser.get_query_plan();
-    parser_duration = std::chrono::system_clock::now() - start_parser; // TODO: mal
+    parser_duration += std::chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, return_type);
 

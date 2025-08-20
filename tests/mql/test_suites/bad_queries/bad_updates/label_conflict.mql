@@ -1,2 +1,0 @@
-INSERT (N1 :Person)
-REMOVE N1:Person
