@@ -194,7 +194,7 @@ uint64_t StringManager::get_bytes_id(const char* bytes, uint64_t size)
 }
 
 // IMPORTANT: supposing only one thread will call this method at a time
-uint64_t StringManager::get_or_create_(const char* str, uint64_t str_len)
+uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
 {
     {
         std::shared_lock lock(str_hash_mutex);
@@ -216,24 +216,26 @@ uint64_t StringManager::get_or_create_(const char* str, uint64_t str_len)
         { MAX_STRING_SIZE, UINT64_MAX }
     );
 
-    // if no record is found, then write the string at the end of the file
-    // check if pos in the record obtained is in memory or not
-    //      I think I should use seek to write directly to the disk
-    //      Or memcpy to the buffer
-
     auto next_space = bpt_iter.next();
+    uint64_t new_id;
 
     if (next_space == nullptr) {
-        // same implementation as before
-        // writes at the end of the file
-        return get_or_create(str, str_len);
+        // if no space is found, then we write the string at the end of the file
+        new_id = lseek(str_file_id.id, 0, SEEK_END);
+    } else {
+        // else we write in the space obtained
+        new_id = (*next_space)[1];
+        lseek(str_file_id.id, new_id, SEEK_SET);
+
+        // update the bpt
+        uint64_t prev_space_size = (*next_space)[0];
+        uint64_t new_space_size = prev_space_size - (bytes_for_len + str_len);
+        if (new_space_size > 0) {
+            Record<2> record = { new_space_size, new_id + bytes_for_len + str_len };
+            free_space_bpt->insert(record);
+        }
+        free_space_bpt->delete_record(*next_space);
     }
-
-    uint64_t space_size = (*next_space)[0];
-    uint64_t space_pos = (*next_space)[1];
-    uint64_t new_id = space_pos;
-
-    lseek(str_file_id.id, new_id, SEEK_SET);
 
     auto write_res = write(str_file_id.id, len_buf, bytes_for_len);
     if (write_res == -1) {
@@ -290,111 +292,6 @@ uint64_t StringManager::get_or_create_(const char* str, uint64_t str_len)
         str_ptr += bytes_to_copy;
     }
 
-    {
-        std::unique_lock lock(str_hash_mutex);
-        str_hash.create_str_id(str, str_len, new_id);
-    }
-
-    // add remaining space to the bpt
-    uint64_t new_space_size = space_size - (bytes_for_len + str_len);
-    if (new_space_size > 0) {
-        Record<2> record = { new_space_size, new_id + bytes_for_len + str_len };
-        free_space_bpt->insert(record);
-    }
-
-    // remove the original free space
-    free_space_bpt->delete_record(*next_space);
-
-    return new_id;
-}
-
-uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
-{
-    {
-        std::shared_lock lock(str_hash_mutex);
-        auto existing_id = str_hash.get_str_id(str, str_len);
-        if (existing_id != ObjectId::MASK_NOT_FOUND) {
-            return existing_id;
-        }
-    }
-    // need to create a new ID
-
-    // changes on disk are done immediately
-    char len_buf[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
-
-    uint64_t old_file_size = lseek(str_file_id.id, 0, SEEK_END);
-
-    size_t remaining_in_block = BLOCK_SIZE - (old_file_size % StringManager::BLOCK_SIZE);
-
-    if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
-        auto write_res = write(str_file_id.id, len_buf, remaining_in_block);
-        if (write_res == -1) {
-            throw std::runtime_error("Could not write into file");
-        }
-        old_file_size += remaining_in_block;
-    }
-
-    auto new_id = old_file_size;
-
-    const auto bytes_for_len = BytesEncoder::write_size(len_buf, str_len);
-
-    auto write_res = write(str_file_id.id, len_buf, bytes_for_len);
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into string file");
-    }
-
-    write_res = write(str_file_id.id, str, str_len);
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into string file");
-    }
-
-    uint64_t remaining = str_len;
-    uint64_t current_block_number = new_id / BLOCK_SIZE;
-
-    auto* str_ptr = str;
-
-    if (old_file_size < static_buffer_size) {
-        // some part of the str fits in static buffer
-        char* ptr = static_buffer + new_id;
-        memcpy(ptr, len_buf, bytes_for_len);
-        ptr += bytes_for_len;
-
-        const auto bytes_left_in_static_buffer = static_buffer_size - (new_id + bytes_for_len);
-        const auto bytes_to_copy = std::min(bytes_left_in_static_buffer, str_len);
-        memcpy(ptr, str_ptr, bytes_to_copy);
-
-        remaining -= bytes_to_copy;
-        str_ptr += bytes_to_copy;
-    } else {
-        // no data fits in the static buffer
-        auto& first_block = get_block(current_block_number);
-        const auto offset = new_id % BLOCK_SIZE;
-        char* ptr = first_block.bytes + offset;
-
-        memcpy(ptr, len_buf, bytes_for_len);
-        ptr += bytes_for_len;
-
-        const auto bytes_after_len = BLOCK_SIZE - (offset + bytes_for_len);
-        const auto bytes_to_copy = std::min(bytes_after_len, str_len);
-        memcpy(ptr, str_ptr, bytes_to_copy);
-        first_block.pins--;
-
-        remaining -= bytes_to_copy;
-        str_ptr += bytes_to_copy;
-    }
-
-    while (remaining > 0) {
-        // handle remaining bytes
-        ++current_block_number;
-        auto& current_block = get_block(current_block_number);
-        const auto bytes_to_copy = std::min(remaining, BLOCK_SIZE);
-        memcpy(current_block.bytes, str_ptr, bytes_to_copy);
-        current_block.pins--;
-
-        remaining -= bytes_to_copy;
-        str_ptr += bytes_to_copy;
-    }
-
     std::unique_lock lock(str_hash_mutex);
     str_hash.create_str_id(str, str_len, new_id);
 
@@ -418,6 +315,8 @@ void StringManager::delete_str(uint64_t id)
 
     Record<2> free_elem = { bytes_for_len + len, id };
     free_space_bpt->insert(free_elem);
+
+    *ptr = 0;
 }
 
 StringManager::Frame& StringManager::get_frame_available()

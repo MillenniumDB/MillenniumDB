@@ -66,7 +66,6 @@ public:
 
     // !!! NOT THREAD-SAFE !!!
     uint64_t get_or_create(const char* bytes, uint64_t size);
-    uint64_t get_or_create_(const char* bytes, uint64_t size);
 
     void delete_str(uint64_t id);
 
