@@ -30,6 +30,8 @@ uint64_t UpdateExecutor::execute()
 
     update_context->update_indexes();
 
+    // TODO: mark commit?
+
     return 0;
 }
 

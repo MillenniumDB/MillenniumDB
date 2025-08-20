@@ -1,5 +1,6 @@
 #include "buffer_manager.h"
 
+#include <cassert>
 #include <type_traits>
 
 #include "macros/aligned_alloc.h"

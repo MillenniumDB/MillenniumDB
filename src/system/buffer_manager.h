@@ -23,7 +23,6 @@ are not performed or delayed. For example this is used in the StringHash.
 
 #pragma once
 
-#include <cassert>
 #include <map>
 #include <mutex>
 #include <vector>
