@@ -9,11 +9,13 @@
 #include <boost/unordered/unordered_flat_map.hpp>
 
 #include "storage/file_id.h"
+#include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/hash/strings_hash/strings_hash.h"
 
 class StringManager {
 public:
     static constexpr char STRINGS_FILENAME[] = "strings.dat";
+    static constexpr char FREE_SPACE_BPT_NAME[] = "free_space";
 
     static constexpr uint64_t MAX_STRING_SIZE = 1024 * 1024 * 64; // 64 MB
 
@@ -22,7 +24,10 @@ public:
     // we suppose no string will need more than these bytes to encode its length
     static constexpr size_t MAX_LEN_BYTES = 4;
 
-    static_assert((1 << (MAX_LEN_BYTES * 7)) >= MAX_STRING_SIZE, "2^(7*MAX_LEN_BYTES) does not fit the MAX_STRING_SIZE");
+    static_assert(
+        (1 << (MAX_LEN_BYTES * 7)) >= MAX_STRING_SIZE,
+        "2^(7*MAX_LEN_BYTES) does not fit the MAX_STRING_SIZE"
+    );
 
     // minimum space left in a page to consider writing a new string in that page.
     // if the space left is less than this, the next string must start at the next page.
@@ -61,6 +66,9 @@ public:
 
     // !!! NOT THREAD-SAFE !!!
     uint64_t get_or_create(const char* bytes, uint64_t size);
+    uint64_t get_or_create_(const char* bytes, uint64_t size);
+
+    void delete_str(uint64_t id);
 
     bool bytes_eq(const char* bytes, uint64_t size, uint64_t id);
 
@@ -123,7 +131,11 @@ private:
     // block_number => Frame*
     boost::unordered_flat_map<uint64_t, Frame*> frame_map;
 
+    std::unique_ptr<BPlusTree<2>> free_space_bpt;
+
     StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffer_frames);
+
+    void init_free_space();
 
     // returns a block with a pinned frame
     Frame& get_block(uint64_t block_id);
