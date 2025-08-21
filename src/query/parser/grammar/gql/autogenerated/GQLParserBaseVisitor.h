@@ -115,14 +115,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitNestedDataModifyingProcedureSpecification(GQLParser::NestedDataModifyingProcedureSpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitNestedQuerySpecification(GQLParser::NestedQuerySpecificationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitUnsignedNumericLiteral(GQLParser::UnsignedNumericLiteralContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -456,10 +448,6 @@ public:
   }
 
   virtual std::any visitDropGraphTypeStatement(GQLParser::DropGraphTypeStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitCallCatalogModifyingProcedureStatement(GQLParser::CallCatalogModifyingProcedureStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -2084,6 +2072,10 @@ public:
   }
 
   virtual std::any visitGqlSearchedCaseFunction(GQLParser::GqlSearchedCaseFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitLabelsFunction(GQLParser::LabelsFunctionContext *ctx) override {
     return visitChildren(ctx);
   }
 

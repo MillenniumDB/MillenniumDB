@@ -18,5 +18,5 @@ public:
 
     virtual ObjectId eval(const Binding&) = 0;
 
-    virtual void print(std::ostream& os, std::vector<BindingIter*> ops) const = 0;
+    virtual void print(std::ostream& os, std::vector<BindingIter*>& ops) const = 0;
 };

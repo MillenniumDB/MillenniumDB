@@ -2174,6 +2174,7 @@ functionCall
    | durationFunction
    | listFunction
    | stringFunction
+   | labelsFunction
    ;
 
 numericFunction
@@ -2245,6 +2246,10 @@ caseFunction
    | COALESCE LEFT_PAREN expression (COMMA expression)+ RIGHT_PAREN                                                         #gqlCoalesceCaseFunction
    | CASE expressionAtom simpleWhenClause+ elseClause? END                                                                  #gqlSimpleCaseFunction
    | CASE searchedWhenClause+ elseClause? END                                                                               #gqlSearchedCaseFunction
+   ;
+
+labelsFunction
+   : LABELS LEFT_PAREN variable RIGHT_PAREN
    ;
 
 simpleWhenClause

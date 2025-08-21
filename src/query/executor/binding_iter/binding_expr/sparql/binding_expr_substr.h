@@ -99,7 +99,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "SUBSTR(";
         expr_str->print(os, ops);

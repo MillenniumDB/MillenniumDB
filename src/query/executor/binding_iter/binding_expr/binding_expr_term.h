@@ -21,7 +21,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>) const override
+    void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << object_id;
     }

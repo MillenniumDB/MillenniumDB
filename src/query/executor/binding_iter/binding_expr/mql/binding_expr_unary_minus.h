@@ -61,7 +61,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "-(";
         expr->print(os, ops);

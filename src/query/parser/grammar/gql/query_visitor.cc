@@ -1900,6 +1900,15 @@ std::any QueryVisitor::visitLocalDatetimeFunction(GQLParser::LocalDatetimeFuncti
     return 0;
 }
 
+std::any QueryVisitor::visitLabelsFunction(GQLParser::LabelsFunctionContext* ctx)
+{
+    LOG_VISITOR
+    VarId var = get_query_ctx().get_or_create_var(ctx->variable()->getText());
+    VarType::Type type = singleton_types[var];
+    current_expr = std::make_unique<ExprLabels>(var, type);
+    return 0;
+}
+
 std::any QueryVisitor::visitGqlVariableExpression(GQLParser::GqlVariableExpressionContext* ctx)
 {
     LOG_VISITOR
@@ -2078,12 +2087,6 @@ std::any QueryVisitor::visitBindingVariableDefinitionBlock(GQLParser::BindingVar
 }
 
 std::any QueryVisitor::visitCallQueryStatement(GQLParser::CallQueryStatementContext*)
-{
-    throw NotSupportedException("Call");
-}
-
-std::any QueryVisitor::
-    visitCallCatalogModifyingProcedureStatement(GQLParser::CallCatalogModifyingProcedureStatementContext*)
 {
     throw NotSupportedException("Call");
 }

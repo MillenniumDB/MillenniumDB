@@ -55,6 +55,7 @@
 #include "query/parser/expr/gql/expr_simplecase.h" // IWYU pragma: export
 #include "query/parser/expr/gql/expr_searchedcase.h" // IWYU pragma: export
 #include "query/parser/expr/gql/expr_cast.h" // IWYU pragma: export
+#include "query/parser/expr/gql/expr_labels.h" // IWYU pragma: export
 #include "query/parser/expr/gql/agg/expr_agg_count_all.h" // IWYU pragma: export
 #include "query/parser/expr/gql/agg/expr_agg_count.h" // IWYU pragma: export
 #include "query/parser/expr/gql/agg/expr_agg_avg.h" // IWYU pragma: export

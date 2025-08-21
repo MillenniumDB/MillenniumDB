@@ -52,5 +52,7 @@
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_simplecase.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_searchedcase.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/gql/binding_expr_cast.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_node_labels.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/gql/binding_expr_edge_labels.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/binding_expr_term.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/binding_expr_var.h" // IWYU pragma: export

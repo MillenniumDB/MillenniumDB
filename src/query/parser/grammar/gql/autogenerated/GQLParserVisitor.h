@@ -69,10 +69,6 @@ public:
 
     virtual std::any visitNestedProcedureSpecification(GQLParser::NestedProcedureSpecificationContext *context) = 0;
 
-    virtual std::any visitNestedDataModifyingProcedureSpecification(GQLParser::NestedDataModifyingProcedureSpecificationContext *context) = 0;
-
-    virtual std::any visitNestedQuerySpecification(GQLParser::NestedQuerySpecificationContext *context) = 0;
-
     virtual std::any visitUnsignedNumericLiteral(GQLParser::UnsignedNumericLiteralContext *context) = 0;
 
     virtual std::any visitIntegerLiteral(GQLParser::IntegerLiteralContext *context) = 0;
@@ -240,8 +236,6 @@ public:
     virtual std::any visitCopyOfGraphType(GQLParser::CopyOfGraphTypeContext *context) = 0;
 
     virtual std::any visitDropGraphTypeStatement(GQLParser::DropGraphTypeStatementContext *context) = 0;
-
-    virtual std::any visitCallCatalogModifyingProcedureStatement(GQLParser::CallCatalogModifyingProcedureStatementContext *context) = 0;
 
     virtual std::any visitLinearDataModifyingStatement(GQLParser::LinearDataModifyingStatementContext *context) = 0;
 
@@ -1054,6 +1048,8 @@ public:
     virtual std::any visitGqlSimpleCaseFunction(GQLParser::GqlSimpleCaseFunctionContext *context) = 0;
 
     virtual std::any visitGqlSearchedCaseFunction(GQLParser::GqlSearchedCaseFunctionContext *context) = 0;
+
+    virtual std::any visitLabelsFunction(GQLParser::LabelsFunctionContext *context) = 0;
 
     virtual std::any visitSimpleWhenClause(GQLParser::SimpleWhenClauseContext *context) = 0;
 

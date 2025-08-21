@@ -69,7 +69,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "MANHATTAN_DISTANCE(";
         lhs->print(os, ops);

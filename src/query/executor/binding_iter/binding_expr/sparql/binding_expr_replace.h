@@ -129,7 +129,7 @@ private:
         return wstring_to_std_string(wres);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "REPLACE(";
         expr1->print(os, ops);

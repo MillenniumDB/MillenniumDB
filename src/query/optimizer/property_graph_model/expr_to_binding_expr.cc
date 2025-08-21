@@ -517,6 +517,15 @@ void ExprToBindingExpr::visit(ExprSearchedCase& expr)
     tmp = std::make_unique<BindingExprSearchedCase>(std::move(when_clauses), std::move(else_binding_expr));
 }
 
+void ExprToBindingExpr::visit(ExprLabels& expr)
+{
+    if (expr.type == VarType::Node) {
+        tmp = std::make_unique<BindingExprNodeLabels>(expr.var);
+    } else {
+        tmp = std::make_unique<BindingExprEdgeLabels>(expr.var);
+    }
+}
+
 void ExprToBindingExpr::visit(ExprCast& expr)
 {
     expr.expr->accept_visitor(*this);

@@ -310,7 +310,7 @@ void ExprPrinter::visit(ExprLength& expr)
 
 void ExprPrinter::visit(ExprSubStr& expr)
 {
-    if (expr.left){
+    if (expr.left) {
         os << "LEFT";
     } else {
         os << "RIGHT";
@@ -324,7 +324,7 @@ void ExprPrinter::visit(ExprSubStr& expr)
 
 void ExprPrinter::visit(ExprFold& expr)
 {
-    if (expr.upper){
+    if (expr.upper) {
         os << "UPPER";
     } else {
         os << "LOWER";
@@ -380,7 +380,8 @@ void ExprPrinter::visit(ExprNullIf& expr)
     os << ")";
 }
 
-void ExprPrinter::visit(ExprCoalesce& expr) {
+void ExprPrinter::visit(ExprCoalesce& expr)
+{
     os << "COALESCE(";
     for (const auto& expression : expr.exprs) {
         if (expression != nullptr) {
@@ -393,7 +394,8 @@ void ExprPrinter::visit(ExprCoalesce& expr) {
     os << ')';
 }
 
-void ExprPrinter::visit(ExprSimpleCase& expr) {
+void ExprPrinter::visit(ExprSimpleCase& expr)
+{
     os << "CASE ";
     expr.case_operand->accept_visitor(*this);
     for (const auto& clauses : expr.when_clauses) {
@@ -414,7 +416,8 @@ void ExprPrinter::visit(ExprSimpleCase& expr) {
     }
 }
 
-void ExprPrinter::visit(ExprSearchedCase& expr) {
+void ExprPrinter::visit(ExprSearchedCase& expr)
+{
     os << "CASE ";
     for (const auto& clause : expr.when_clauses) {
         os << " WHEN ";
@@ -430,7 +433,8 @@ void ExprPrinter::visit(ExprSearchedCase& expr) {
     }
 }
 
-void ExprPrinter::visit(ExprCast& expr) {
+void ExprPrinter::visit(ExprCast& expr)
+{
     os << "CAST(";
     expr.expr->accept_visitor(*this);
     os << " AS ";
@@ -446,61 +450,74 @@ void ExprPrinter::visit(ExprCast& expr) {
     os << ")";
 }
 
-void ExprPrinter::visit(ExprAggCountAll&) {
+void ExprPrinter::visit(ExprLabels& expr)
+{
+    os << "LABELS(" << expr.var << ")";
+}
+
+void ExprPrinter::visit(ExprAggCountAll&)
+{
     os << "COUNT(*)";
 }
 
-void ExprPrinter::visit(ExprAggCount& expr) {
+void ExprPrinter::visit(ExprAggCount& expr)
+{
     os << "COUNT(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggAvg& expr) {
+void ExprPrinter::visit(ExprAggAvg& expr)
+{
     os << "AVG(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggMax& expr) {
+void ExprPrinter::visit(ExprAggMax& expr)
+{
     os << "MAX(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
-
 }
 
-
-void ExprPrinter::visit(ExprAggMin& expr) {
+void ExprPrinter::visit(ExprAggMin& expr)
+{
     os << "MIN(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggSum& expr) {
+void ExprPrinter::visit(ExprAggSum& expr)
+{
     os << "SUM(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggStddevPop& expr) {
+void ExprPrinter::visit(ExprAggStddevPop& expr)
+{
     os << "STDDEV_POP(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggStddevSamp& expr) {
+void ExprPrinter::visit(ExprAggStddevSamp& expr)
+{
     os << "STDDEV_SAMP(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggCollect& expr) {
+void ExprPrinter::visit(ExprAggCollect& expr)
+{
     os << "COLLECT(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggPercentileCont& expr) {
+void ExprPrinter::visit(ExprAggPercentileCont& expr)
+{
     os << "PERCENTILE_CONT(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ',';
@@ -508,7 +525,8 @@ void ExprPrinter::visit(ExprAggPercentileCont& expr) {
     os << ')';
 }
 
-void ExprPrinter::visit(ExprAggPercentileDisc& expr) {
+void ExprPrinter::visit(ExprAggPercentileDisc& expr)
+{
     os << "PERCENTILE_DISC(" << (expr.distinct ? "DISTINCT " : "");
     expr.expr->accept_visitor(*this);
     os << ',';

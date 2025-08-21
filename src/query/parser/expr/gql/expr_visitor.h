@@ -57,6 +57,7 @@ class ExprCoalesce;
 class ExprSimpleCase;
 class ExprSearchedCase;
 class ExprCast;
+class ExprLabels;
 
 class ExprAggCountAll;
 class ExprAggCount;
@@ -141,5 +142,6 @@ public:
     virtual void visit(GQL::ExprAggCollect&) = 0;
     virtual void visit(GQL::ExprAggPercentileCont&) = 0;
     virtual void visit(GQL::ExprAggPercentileDisc&) = 0;
+    virtual void visit(GQL::ExprLabels&) = 0;
 };
 } // namespace GQL

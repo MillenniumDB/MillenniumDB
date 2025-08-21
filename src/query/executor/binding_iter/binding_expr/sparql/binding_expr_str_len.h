@@ -45,7 +45,7 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*> ops) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << "STRLEN(";
         expr->print(os, ops);

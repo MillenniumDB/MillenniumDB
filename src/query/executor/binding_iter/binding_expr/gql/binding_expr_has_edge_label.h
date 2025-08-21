@@ -43,7 +43,7 @@ public:
         return GQL::Conversions::pack_bool(false);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>) const override
+    void print(std::ostream& os, std::vector<BindingIter*>&) const override
     {
         os << "HasEdgeLabel(";
         os << edge_id << ", " << label_id;
