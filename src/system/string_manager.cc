@@ -54,17 +54,18 @@ StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffe
     // On linux pread won't return more than 0x7ffff000 (2,147,479,552) bytes read
     // so we need to iterate until the read is complete
 
-    // TODO: uncomment this
-    // uint64_t offset = 0;
-    // while (bytes_to_copy != 0) {
-    //     auto read_res = pread(str_file_id.id, static_buffer + offset, BLOCK_SIZE, offset);
-    //     if (read_res == -1) {
-    //         perror("read failed");
-    //         FATAL_ERROR("Could not read StringManager static buffer");
-    //     }
-    //     bytes_to_copy -= read_res;
-    //     offset += read_res;
-    // }
+    this->static_buffer_size = 16;
+
+    uint64_t offset = 0;
+    while (bytes_to_copy != 0) {
+        auto read_res = pread(str_file_id.id, static_buffer + offset, BLOCK_SIZE, offset);
+        if (read_res == -1) {
+            perror("read failed");
+            FATAL_ERROR("Could not read StringManager static buffer");
+        }
+        bytes_to_copy -= read_res;
+        offset += read_res;
+    }
 
     for (uint64_t i = 0; i < frames_size; i++) {
         frames[i].bytes = dynamic_buffer + (i * BLOCK_SIZE);
@@ -213,28 +214,38 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     auto bpt_iter = free_space_bpt->get_range(
         &interruption,
         { bytes_for_len + str_len, 0 },
-        { MAX_STRING_SIZE, UINT64_MAX }
+        { bytes_for_len + str_len, UINT64_MAX }
     );
 
     auto next_space = bpt_iter.next();
     uint64_t new_id;
 
+    // check if the space obtained can store the size of the str
+    while (next_space != nullptr) {
+        new_id = (*next_space)[1];
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block >= MIN_PAGE_REMAINING_BYTES) {
+            break;
+        }
+        next_space = bpt_iter.next();
+    }
+
     if (next_space == nullptr) {
-        // if no space is found, then we write the string at the end of the file
+        // if we cannot find a space, then we write the string at the end of the file
         new_id = lseek(str_file_id.id, 0, SEEK_END);
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
+            char zeros[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
+            auto write_res = write(str_file_id.id, zeros, remaining_in_block);
+            if (write_res == -1) {
+                throw std::runtime_error("Could not write into string file");
+            }
+            new_id += remaining_in_block;
+        }
     } else {
         // else we write in the space obtained
         new_id = (*next_space)[1];
         lseek(str_file_id.id, new_id, SEEK_SET);
-
-        // update the bpt
-        uint64_t prev_space_size = (*next_space)[0];
-        uint64_t new_space_size = prev_space_size - (bytes_for_len + str_len);
-        if (new_space_size > 0) {
-            Record<2> record = { new_space_size, new_id + bytes_for_len + str_len };
-            free_space_bpt->insert(record);
-        }
-        free_space_bpt->delete_record(*next_space);
     }
 
     auto write_res = write(str_file_id.id, len_buf, bytes_for_len);
@@ -251,7 +262,7 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     uint64_t remaining = str_len;
     uint64_t current_block_number = new_id / BLOCK_SIZE;
 
-    if (new_id < static_buffer_size) {
+    if (new_id + bytes_for_len <= static_buffer_size) {
         // part of the str fits in static buffer
         char* ptr = static_buffer + new_id;
         memcpy(ptr, len_buf, bytes_for_len);
@@ -296,6 +307,47 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     str_hash.create_str_id(str, str_len, new_id);
 
     return new_id;
+}
+
+void StringManager::get_next_space_and_seek(uint64_t str_len, uint64_t bytes_for_len, Record<2>& r)
+{
+    bool interruption = false;
+    auto bpt_iter = free_space_bpt->get_range(
+        &interruption,
+        { bytes_for_len + str_len, 0 },
+        { bytes_for_len + str_len, UINT64_MAX }
+    );
+
+    auto next_space = bpt_iter.next();
+    uint64_t new_id;
+
+    // check if the space obtained can store the size of the str
+    while (next_space != nullptr) {
+        new_id = (*next_space)[1];
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block >= MIN_PAGE_REMAINING_BYTES) {
+            break;
+        }
+        next_space = bpt_iter.next();
+    }
+
+    if (next_space == nullptr) {
+        // if we cannot find a space, then we write the string at the end of the file
+        new_id = lseek(str_file_id.id, 0, SEEK_END);
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
+            char zeros[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
+            auto write_res = write(str_file_id.id, zeros, remaining_in_block);
+            if (write_res == -1) {
+                throw std::runtime_error("Could not write into string file");
+            }
+            new_id += remaining_in_block;
+        }
+    } else {
+        // else we write in the space obtained
+        new_id = (*next_space)[1];
+        lseek(str_file_id.id, new_id, SEEK_SET);
+    }
 }
 
 void StringManager::delete_str(uint64_t id)

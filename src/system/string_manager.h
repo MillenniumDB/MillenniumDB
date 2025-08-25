@@ -19,7 +19,8 @@ public:
 
     static constexpr uint64_t MAX_STRING_SIZE = 1024 * 1024 * 64; // 64 MB
 
-    static constexpr uint64_t BLOCK_SIZE = 1024 * 64; // 64 KB
+    // static constexpr uint64_t BLOCK_SIZE = 1024 * 64; // 64 KB
+    static constexpr uint64_t BLOCK_SIZE = 16;
 
     // we suppose no string will need more than these bytes to encode its length
     static constexpr size_t MAX_LEN_BYTES = 4;
@@ -140,6 +141,8 @@ private:
     Frame& get_block(uint64_t block_id);
 
     Frame& get_frame_available();
+
+    void get_next_space_and_seek(uint64_t str_len, uint64_t bytes_for_len, Record<2>& r);
 };
 
 extern StringManager& string_manager; // global object
