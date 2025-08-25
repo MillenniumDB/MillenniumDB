@@ -84,8 +84,6 @@ public:
     // Create a file and initialize it with a zeroed page
     void init_file(const std::string& file_name) const;
 
-    FileId open_file(const std::string& filename);
-
 private:
     // folder where all the used files will be
     const std::string db_folder;

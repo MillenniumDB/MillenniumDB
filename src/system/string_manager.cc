@@ -53,9 +53,6 @@ StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffe
 
     // On linux pread won't return more than 0x7ffff000 (2,147,479,552) bytes read
     // so we need to iterate until the read is complete
-
-    this->static_buffer_size = 16;
-
     uint64_t offset = 0;
     while (bytes_to_copy != 0) {
         auto read_res = pread(str_file_id.id, static_buffer + offset, BLOCK_SIZE, offset);
@@ -210,43 +207,7 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     char len_buf[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
     const auto bytes_for_len = BytesEncoder::write_size(len_buf, str_len);
 
-    bool interruption = false;
-    auto bpt_iter = free_space_bpt->get_range(
-        &interruption,
-        { bytes_for_len + str_len, 0 },
-        { bytes_for_len + str_len, UINT64_MAX }
-    );
-
-    auto next_space = bpt_iter.next();
-    uint64_t new_id;
-
-    // check if the space obtained can store the size of the str
-    while (next_space != nullptr) {
-        new_id = (*next_space)[1];
-        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
-        if (remaining_in_block >= MIN_PAGE_REMAINING_BYTES) {
-            break;
-        }
-        next_space = bpt_iter.next();
-    }
-
-    if (next_space == nullptr) {
-        // if we cannot find a space, then we write the string at the end of the file
-        new_id = lseek(str_file_id.id, 0, SEEK_END);
-        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
-        if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
-            char zeros[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
-            auto write_res = write(str_file_id.id, zeros, remaining_in_block);
-            if (write_res == -1) {
-                throw std::runtime_error("Could not write into string file");
-            }
-            new_id += remaining_in_block;
-        }
-    } else {
-        // else we write in the space obtained
-        new_id = (*next_space)[1];
-        lseek(str_file_id.id, new_id, SEEK_SET);
-    }
+    uint64_t new_id = get_new_id_and_seek(str_len, bytes_for_len);
 
     auto write_res = write(str_file_id.id, len_buf, bytes_for_len);
     if (write_res == -1) {
@@ -309,7 +270,7 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     return new_id;
 }
 
-void StringManager::get_next_space_and_seek(uint64_t str_len, uint64_t bytes_for_len, Record<2>& r)
+uint64_t StringManager::get_new_id_and_seek(uint64_t str_len, uint64_t bytes_for_len)
 {
     bool interruption = false;
     auto bpt_iter = free_space_bpt->get_range(
@@ -348,6 +309,7 @@ void StringManager::get_next_space_and_seek(uint64_t str_len, uint64_t bytes_for
         new_id = (*next_space)[1];
         lseek(str_file_id.id, new_id, SEEK_SET);
     }
+    return new_id;
 }
 
 void StringManager::delete_str(uint64_t id)
@@ -439,12 +401,6 @@ void StringManager::init_free_space()
         write(leaf_file_id.id, static_buffer, VPage::SIZE);
         write(dir_file_id.id, static_buffer, VPage::SIZE);
     }
-    close(leaf_file_id.id);
-    close(dir_file_id.id);
-
-    // TODO: is there a better way to do this?
-    file_manager.open_file(std::string(FREE_SPACE_BPT_NAME) + ".leaf");
-    file_manager.open_file(std::string(FREE_SPACE_BPT_NAME) + ".dir");
 
     free_space_bpt = std::make_unique<BPlusTree<2>>(FREE_SPACE_BPT_NAME);
 }
