@@ -21,6 +21,8 @@ public:
 
     static constexpr uint64_t BLOCK_SIZE = 1024 * 64; // 64 KB
 
+    static constexpr uint64_t MIN_DYNAMIC_BUFFER_FRAMES = 4;
+
     // we suppose no string will need more than these bytes to encode its length
     static constexpr size_t MAX_LEN_BYTES = 4;
 

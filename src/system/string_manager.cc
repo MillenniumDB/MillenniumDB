@@ -19,10 +19,16 @@ StringManager& string_manager = reinterpret_cast<StringManager&>(string_manager_
 
 void StringManager::init(uint64_t static_buffer_size, uint64_t dynamic_buffer_size)
 {
-    auto static_buffer_size_aligned = (static_buffer_size / BLOCK_SIZE)
-                                    * BLOCK_SIZE; // To be multiple of BLOCK_SIZE
-    new (&string_manager)
-        StringManager(static_buffer_size_aligned, dynamic_buffer_size / BLOCK_SIZE); // placement new
+    // To be multiple of BLOCK_SIZE
+    auto static_buffer_size_aligned = (static_buffer_size / BLOCK_SIZE) * BLOCK_SIZE;
+
+    uint64_t dynamic_buffer_frames = dynamic_buffer_size / BLOCK_SIZE;
+    if (dynamic_buffer_frames < MIN_DYNAMIC_BUFFER_FRAMES) {
+        dynamic_buffer_frames = MIN_DYNAMIC_BUFFER_FRAMES;
+    }
+
+    // placement new
+    new (&string_manager) StringManager(static_buffer_size_aligned, dynamic_buffer_frames);
 }
 
 StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffer_frames) :
@@ -223,7 +229,7 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     uint64_t remaining = str_len;
     uint64_t current_block_number = new_id / BLOCK_SIZE;
 
-    if (new_id + bytes_for_len <= static_buffer_size) {
+    if (new_id + bytes_for_len < static_buffer_size) {
         // part of the str fits in static buffer
         char* ptr = static_buffer + new_id;
         memcpy(ptr, len_buf, bytes_for_len);
@@ -397,9 +403,11 @@ void StringManager::init_free_space()
     fstat(leaf_file_id.id, &buf);
     uint64_t file_size = buf.st_size;
     if (file_size == 0) {
-        memset(static_buffer, 0, VPage::SIZE);
-        write(leaf_file_id.id, static_buffer, VPage::SIZE);
-        write(dir_file_id.id, static_buffer, VPage::SIZE);
+        auto buffer = new char[VPage::SIZE];
+        memset(buffer, 0, VPage::SIZE);
+        write(leaf_file_id.id, buffer, VPage::SIZE);
+        write(dir_file_id.id, buffer, VPage::SIZE);
+        delete[] buffer;
     }
 
     free_space_bpt = std::make_unique<BPlusTree<2>>(FREE_SPACE_BPT_NAME);
