@@ -2175,6 +2175,7 @@ functionCall
    | listFunction
    | stringFunction
    | labelsFunction
+   | propertiesFunction
    ;
 
 numericFunction
@@ -2250,6 +2251,10 @@ caseFunction
 
 labelsFunction
    : LABELS LEFT_PAREN variable RIGHT_PAREN
+   ;
+
+propertiesFunction
+   : PROPERTIES LEFT_PAREN variable RIGHT_PAREN
    ;
 
 simpleWhenClause

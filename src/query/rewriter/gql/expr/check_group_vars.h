@@ -57,6 +57,11 @@ public:
         check_group_var(expr.var);
     }
 
+    void visit(ExprProperties& expr) override
+    {
+        check_group_var(expr.var);
+    }
+
     void check_group_var(VarId var_id)
     {
         if (!group_vars.count(var_id)) {

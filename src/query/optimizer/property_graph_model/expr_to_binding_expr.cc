@@ -532,6 +532,11 @@ void ExprToBindingExpr::visit(ExprCast& expr)
     tmp = std::make_unique<BindingExprCast>(std::move(tmp), std::move(expr.targetType));
 }
 
+void ExprToBindingExpr::visit(ExprProperties& expr)
+{
+    tmp = std::make_unique<BindingExprProperties>(expr.var, expr.type);
+}
+
 void ExprToBindingExpr::visit(ExprAggCountAll& expr)
 {
     check_and_make_aggregate<AggCountAll>(nullptr, expr.var);
