@@ -1,40 +1,21 @@
 ---
-name: 🐛 Bug Report
-about: Report a bug or unexpected behavior
-title: "Describe the bug briefly (e.g. Crash when loading config)"
-labels: bug
+name: ❓ General Issue
+about: Ask a question, share feedback, or report a general issue
+title: "Short description of the general issue"
+labels: question
 assignees: ''
 ---
 
-## 🐞 Description
+## ❓ Description
 
-Describe the bug clearly and concisely.
+Describe your issue, question, or feedback.
 
-## 🔁 Steps to Reproduce
+## 🔍 Context
 
-1. ...
-2. ...
-3. ...
-
-## 💥 Expected vs. Actual Behavior
-
-**Expected:**
-What you expected to happen.
-
-**Actual:**
-What actually happened.
-
-## 🧪 Environment
-
-- OS: (e.g. Windows 11, Ubuntu 22.04)
-- Python version: (e.g. 3.13)
-- Project version: (e.g. v1.0.0)
-
-## 📎 Additional Context
-
-Screenshots, logs, error messages, or any other information useful to debug the issue.
+Provide any relevant context or background information that might help us understand your issue better.
 
 ## ✅ Checklist
 
-- [ ] I’ve searched for similar issues
-- [ ] I’ve tested with the latest version of the project
+- [ ] I’ve searched existing issues
+- [ ] This issue doesn’t fit any other issue templates
+- [ ] I understand this may require follow-up discussion
