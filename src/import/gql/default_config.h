@@ -27,11 +27,14 @@ inline void create_default_params(const std::string& db_folder)
     uint64_t ideal_strings_static_buffer_bytes = get_file_size(db_folder + "/strings.dat");
     uint64_t ideal_tensors_static_buffer_bytes = get_file_size(db_folder + "/tensors.dat");
 
-    uint64_t ideal_versioned_pages_buffer_bytes = get_file_size(db_folder + "/d_edges.table")
+    uint64_t ideal_versioned_pages_buffer_bytes = get_file_size(db_folder + "/edge_from_to.dir")
+                                                + get_file_size(db_folder + "/edge_from_to.leaf")
                                                 + get_file_size(db_folder + "/edge_key_value.dir")
                                                 + get_file_size(db_folder + "/edge_key_value.leaf")
                                                 + get_file_size(db_folder + "/edge_label.dir")
                                                 + get_file_size(db_folder + "/edge_label.leaf")
+                                                + get_file_size(db_folder + "/edge_n1_n2.dir")
+                                                + get_file_size(db_folder + "/edge_n1_n2.leaf")
                                                 + get_file_size(db_folder + "/from_to_edge.dir")
                                                 + get_file_size(db_folder + "/from_to_edge.leaf")
                                                 + get_file_size(db_folder + "/key_value_edge.dir")
@@ -48,9 +51,8 @@ inline void create_default_params(const std::string& db_folder)
                                                 + get_file_size(db_folder + "/node_label.leaf")
                                                 + get_file_size(db_folder + "/to_from_edge.dir")
                                                 + get_file_size(db_folder + "/to_from_edge.leaf")
-                                                + get_file_size(db_folder + "/u_edge.dir")
-                                                + get_file_size(db_folder + "/u_edge.leaf")
-                                                + get_file_size(db_folder + "/u_edges.table");
+                                                + get_file_size(db_folder + "/n1_n2_edge.dir")
+                                                + get_file_size(db_folder + "/n1_n2_edge.leaf");
 
     uint64_t ideal_unversioned_pages_buffer_bytes = get_file_size(db_folder + "/str_hash.dat")
                                                   + get_file_size(db_folder + "/tensor_hash.dat");

@@ -24,8 +24,6 @@ GQLModel::GQLModel() :
 {
     QueryContext::_debug_print = GQL::Conversions::debug_print;
 
-    directed_edges = std::make_unique<RandomAccessTable<2>>("d_edges.table");
-    undirected_edges = std::make_unique<RandomAccessTable<2>>("u_edges.table");
     node_label = std::make_unique<BPlusTree<2>>("node_label");
     label_node = std::make_unique<BPlusTree<2>>("label_node");
     edge_label = std::make_unique<BPlusTree<2>>("edge_label");
@@ -36,7 +34,9 @@ GQLModel::GQLModel() :
     key_value_edge = std::make_unique<BPlusTree<3>>("key_value_edge");
     from_to_edge = std::make_unique<BPlusTree<3>>("from_to_edge");
     to_from_edge = std::make_unique<BPlusTree<3>>("to_from_edge");
-    u_edge = std::make_unique<BPlusTree<3>>("u_edge");
+    edge_from_to = std::make_unique<BPlusTree<3>>("edge_from_to");
+    n1_n2_edge = std::make_unique<BPlusTree<3>>("n1_n2_edge");
+    edge_n1_n2 = std::make_unique<BPlusTree<3>>("edge_n1_n2");
     equal_u_edge = std::make_unique<BPlusTree<2>>("equal_u_edge");
     equal_d_edge = std::make_unique<BPlusTree<2>>("equal_d_edge");
 }
