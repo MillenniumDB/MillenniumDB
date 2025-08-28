@@ -3,6 +3,7 @@
 #include <cassert>
 #include <fcntl.h>
 #include <mutex>
+#include <sys/stat.h>
 
 #include "graph_models/object_id.h"
 #include "macros/aligned_alloc.h"
@@ -18,8 +19,16 @@ StringManager& string_manager = reinterpret_cast<StringManager&>(string_manager_
 
 void StringManager::init(uint64_t static_buffer_size, uint64_t dynamic_buffer_size)
 {
-    auto static_buffer_size_aligned = (static_buffer_size / BLOCK_SIZE) * BLOCK_SIZE; // To be multiple of BLOCK_SIZE
-    new (&string_manager) StringManager(static_buffer_size_aligned, dynamic_buffer_size / BLOCK_SIZE); // placement new
+    // To be multiple of BLOCK_SIZE
+    auto static_buffer_size_aligned = (static_buffer_size / BLOCK_SIZE) * BLOCK_SIZE;
+
+    uint64_t dynamic_buffer_frames = dynamic_buffer_size / BLOCK_SIZE;
+    if (dynamic_buffer_frames < MIN_DYNAMIC_BUFFER_FRAMES) {
+        dynamic_buffer_frames = MIN_DYNAMIC_BUFFER_FRAMES;
+    }
+
+    // placement new
+    new (&string_manager) StringManager(static_buffer_size_aligned, dynamic_buffer_frames);
 }
 
 StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffer_frames) :
@@ -31,6 +40,8 @@ StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffe
     str_file_id(file_manager.get_file_id(StringManager::STRINGS_FILENAME)),
     str_hash("str_hash")
 {
+    init_free_space();
+
     if (static_buffer == nullptr || dynamic_buffer == nullptr || frames == nullptr) {
         FATAL_ERROR("Could not allocate StringManager buffers, try using a smaller size");
     }
@@ -39,12 +50,12 @@ StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffe
 
     auto bytes_to_copy = std::min(string_file_size, static_buffer_size);
 
-    #ifdef POSIX_FADV_NOREUSE
+#ifdef POSIX_FADV_NOREUSE
     posix_fadvise(str_file_id.id, 0, bytes_to_copy, POSIX_FADV_NOREUSE);
-    #endif
-    #ifdef POSIX_FADV_RANDOM
+#endif
+#ifdef POSIX_FADV_RANDOM
     posix_fadvise(str_file_id.id, bytes_to_copy, string_file_size - bytes_to_copy, POSIX_FADV_RANDOM);
-    #endif
+#endif
 
     // On linux pread won't return more than 0x7ffff000 (2,147,479,552) bytes read
     // so we need to iterate until the read is complete
@@ -199,23 +210,10 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     // need to create a new ID
 
     // changes on disk are done immediately
-    char len_buf[MIN_PAGE_REMAINING_BYTES] = {0,0,0,0};
-
-    uint64_t old_file_size = lseek(str_file_id.id, 0, SEEK_END);
-
-    size_t remaining_in_block = BLOCK_SIZE - (old_file_size % StringManager::BLOCK_SIZE);
-
-    if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
-        auto write_res = write(str_file_id.id, len_buf, remaining_in_block);
-        if (write_res == -1) {
-            throw std::runtime_error("Could not write into file");
-        }
-        old_file_size += remaining_in_block;
-    }
-
-    auto new_id = old_file_size;
-
+    char len_buf[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
     const auto bytes_for_len = BytesEncoder::write_size(len_buf, str_len);
+
+    uint64_t new_id = get_new_id_and_seek(str_len, bytes_for_len);
 
     auto write_res = write(str_file_id.id, len_buf, bytes_for_len);
     if (write_res == -1) {
@@ -227,13 +225,12 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
         throw std::runtime_error("Could not write into string file");
     }
 
+    auto* str_ptr = str;
     uint64_t remaining = str_len;
     uint64_t current_block_number = new_id / BLOCK_SIZE;
 
-    auto* str_ptr = str;
-
-    if (old_file_size < static_buffer_size) {
-        // some part of the str fits in static buffer
+    if (new_id + bytes_for_len < static_buffer_size) {
+        // part of the str fits in static buffer
         char* ptr = static_buffer + new_id;
         memcpy(ptr, len_buf, bytes_for_len);
         ptr += bytes_for_len;
@@ -245,7 +242,7 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
         remaining -= bytes_to_copy;
         str_ptr += bytes_to_copy;
     } else {
-        // no data fits in the static buffer
+        // no data fits in static buffer
         auto& first_block = get_block(current_block_number);
         const auto offset = new_id % BLOCK_SIZE;
         char* ptr = first_block.bytes + offset;
@@ -263,7 +260,6 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     }
 
     while (remaining > 0) {
-        // handle remaining bytes
         ++current_block_number;
         auto& current_block = get_block(current_block_number);
         const auto bytes_to_copy = std::min(remaining, BLOCK_SIZE);
@@ -278,6 +274,69 @@ uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
     str_hash.create_str_id(str, str_len, new_id);
 
     return new_id;
+}
+
+uint64_t StringManager::get_new_id_and_seek(uint64_t str_len, uint64_t bytes_for_len)
+{
+    bool interruption = false;
+    auto bpt_iter = free_space_bpt->get_range(
+        &interruption,
+        { bytes_for_len + str_len, 0 },
+        { bytes_for_len + str_len, UINT64_MAX }
+    );
+
+    auto next_space = bpt_iter.next();
+    uint64_t new_id;
+
+    // check if the space obtained can store the size of the str
+    while (next_space != nullptr) {
+        new_id = (*next_space)[1];
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block >= MIN_PAGE_REMAINING_BYTES) {
+            break;
+        }
+        next_space = bpt_iter.next();
+    }
+
+    if (next_space == nullptr) {
+        // if we cannot find a space, then we write the string at the end of the file
+        new_id = lseek(str_file_id.id, 0, SEEK_END);
+        size_t remaining_in_block = BLOCK_SIZE - (new_id % StringManager::BLOCK_SIZE);
+        if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
+            char zeros[MIN_PAGE_REMAINING_BYTES] = { 0, 0, 0, 0 };
+            auto write_res = write(str_file_id.id, zeros, remaining_in_block);
+            if (write_res == -1) {
+                throw std::runtime_error("Could not write into string file");
+            }
+            new_id += remaining_in_block;
+        }
+    } else {
+        // else we write in the space obtained
+        new_id = (*next_space)[1];
+        lseek(str_file_id.id, new_id, SEEK_SET);
+    }
+    return new_id;
+}
+
+void StringManager::delete_str(uint64_t id)
+{
+    char* ptr;
+
+    if (id < static_buffer_size) {
+        ptr = static_buffer + id;
+    } else {
+        uint64_t current_block_number = id / BLOCK_SIZE;
+        auto& first_block = get_block(current_block_number);
+        auto offset = (id % BLOCK_SIZE);
+        ptr = first_block.bytes + offset;
+    }
+
+    const auto [len, bytes_for_len] = BytesEncoder::read_size(ptr);
+
+    Record<2> free_elem = { bytes_for_len + len, id };
+    free_space_bpt->insert(free_elem);
+
+    *ptr = 0;
 }
 
 StringManager::Frame& StringManager::get_frame_available()
@@ -333,4 +392,23 @@ StringManager::Frame& StringManager::get_block(uint64_t block_id)
 
         return *frame;
     }
+}
+
+void StringManager::init_free_space()
+{
+    FileId leaf_file_id = file_manager.get_file_id(std::string(FREE_SPACE_BPT_NAME) + ".leaf");
+    FileId dir_file_id = file_manager.get_file_id(std::string(FREE_SPACE_BPT_NAME) + ".dir");
+
+    struct stat buf;
+    fstat(leaf_file_id.id, &buf);
+    uint64_t file_size = buf.st_size;
+    if (file_size == 0) {
+        auto buffer = new char[VPage::SIZE];
+        memset(buffer, 0, VPage::SIZE);
+        write(leaf_file_id.id, buffer, VPage::SIZE);
+        write(dir_file_id.id, buffer, VPage::SIZE);
+        delete[] buffer;
+    }
+
+    free_space_bpt = std::make_unique<BPlusTree<2>>(FREE_SPACE_BPT_NAME);
 }

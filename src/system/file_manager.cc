@@ -136,11 +136,7 @@ void FileManager::init_file(const string& filename) const
 {
     const auto file_path = get_file_path(filename);
 
-    auto fd = open(
-        file_path.c_str(),
-        O_RDWR | O_CREAT,
-        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH
-    );
+    auto fd = open(file_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
     if (fd == -1) {
         throw std::runtime_error("Could not open file " + file_path);
     }
