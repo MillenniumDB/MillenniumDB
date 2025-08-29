@@ -127,6 +127,7 @@ namespace GQL_OID {
         case (ObjectId::MASK_GQL_PATH >> 56):
             return Type::PATH;
         case (ObjectId::MASK_DICTIONARY >> 56):
+        case (ObjectId::MASK_DICTIONARY_TMP >> 56):
             return Type::DICTIONARY;
 
         case (ObjectId::MASK_DT_DATE >> 56):

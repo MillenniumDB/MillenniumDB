@@ -37,14 +37,18 @@ public:
         std::vector<ObjectId> properties;
 
         auto record = it.next();
+        std::map<ObjectId, std::unique_ptr<DictionaryItem>> properties_map;
+
         while (record != nullptr) {
             ObjectId key_oid((*record)[1]);
             ObjectId value_oid((*record)[2]);
-            properties.push_back(key_oid);
-            properties.push_back(value_oid);
+
+            properties_map.emplace(key_oid, std::make_unique<DictionaryLiteral>(value_oid));
             record = it.next();
         }
-        ObjectId dict_oid = Conversions::pack_list(properties);
+
+        auto dict = std::make_unique<DictionaryObject>(std::move(properties_map));
+        ObjectId dict_oid = Conversions::pack_dictionary(dict);
         return dict_oid;
     }
 

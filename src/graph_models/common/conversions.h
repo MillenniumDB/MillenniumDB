@@ -404,7 +404,7 @@ inline double to_double(ObjectId oid)
     }
 }
 
-inline ObjectId pack_dictionary(const std::unique_ptr<DictionaryItem>& dict)
+inline ObjectId pack_dictionary(const std::unique_ptr<DictionaryObject>& dict)
 {
     DictionaryEncoder encoder;
     char* buffer = get_query_ctx().get_buffer1();
@@ -417,18 +417,23 @@ inline ObjectId pack_dictionary(const std::unique_ptr<DictionaryItem>& dict)
     if (str_id != ObjectId::MASK_NOT_FOUND) {
         dict_id = ObjectId::MASK_DICTIONARY | ObjectId::MOD_EXTERNAL | str_id;
     } else {
-        dict_id = ObjectId::MASK_DICTIONARY | ObjectId::MOD_TMP | tmp_manager.get_str_id(dict_str);
+        dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
     }
 
     return ObjectId(dict_id | ObjectId::MASK_DICTIONARY);
 }
 
-// TODO:
 inline void unpack_dictionary(ObjectId oid, std::unique_ptr<DictionaryItem>& out)
 {
     std::stringstream ss;
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-    string_manager.print(ss, external_id);
+
+    switch (oid.get_type()) {
+    case ObjectId::MASK_DICTIONARY:
+        string_manager.print(ss, external_id);
+    case ObjectId::MASK_DICTIONARY_TMP:
+        tmp_manager.print_str(ss, external_id);
+    }
 
     DictionaryEncoder encoder;
     std::string dict_str = ss.str();

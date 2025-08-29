@@ -27,7 +27,7 @@ public:
         return std::move(tmp);
     }
 
-    uint64_t encode(const std::unique_ptr<DictionaryItem>& item, char* buffer)
+    uint64_t encode(const std::unique_ptr<DictionaryObject>& item, char* buffer)
     {
         char* initial_buffer = buffer;
         buffer = item->to_external_string(buffer);
