@@ -1666,6 +1666,19 @@ Any QueryVisitor::visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext* c
     return 0;
 }
 
+Any QueryVisitor::visitEditDistance(MQL_Parser::EditDistanceContext* ctx)
+{
+    visit(ctx->conditionalOrExpr(0));
+    auto expr0 = std::move(current_expr);
+
+    visit(ctx->conditionalOrExpr(1));
+    auto expr1 = std::move(current_expr);
+
+    current_expr = std::make_unique<ExprEditDistance>(std::move(expr0), std::move(expr1));
+
+    return 0;
+}
+
 template<typename IndexOptions, typename OptionHandlerFunc>
 void QueryVisitor::parse_index_options(
     MQL_Parser::CreateIndexOptionsContext* ctx,

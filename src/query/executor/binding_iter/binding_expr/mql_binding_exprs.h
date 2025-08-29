@@ -3,6 +3,7 @@
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_cosine_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_cosine_similarity.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_division.h" // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_edit_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_equals.h"   // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_euclidean_distance.h" // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_is.h"             // IWYU pragma: export

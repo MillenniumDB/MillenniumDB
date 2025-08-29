@@ -99,6 +99,7 @@ public:
     void visit(ExprCosineDistance&) override;
     void visit(ExprManhattanDistance&) override;
     void visit(ExprEuclideanDistance&) override;
+    void visit(ExprEditDistance&) override;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;

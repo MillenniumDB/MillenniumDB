@@ -39,6 +39,7 @@ public:
     void visit(ExprCosineSimilarity&) override;
     void visit(ExprManhattanDistance&) override;
     void visit(ExprEuclideanDistance&) override;
+    void visit(ExprEditDistance&) override;
 
     void visit(MQL::ExprAggAvg&) override;
     void visit(MQL::ExprAggCountAll&) override;

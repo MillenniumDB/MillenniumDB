@@ -381,6 +381,17 @@ void ExprToBindingExpr::visit(ExprEuclideanDistance& expr)
     tmp = std::make_unique<BindingExprEuclideanDistance>(std::move(expr1), std::move(expr2));
 }
 
+void ExprToBindingExpr::visit(ExprEditDistance& expr)
+{
+    expr.expr1->accept_visitor(*this);
+    auto expr1 = std::move(tmp);
+
+    expr.expr2->accept_visitor(*this);
+    auto expr2 = std::move(tmp);
+
+    tmp = std::make_unique<BindingExprEditDistance>(std::move(expr1), std::move(expr2));
+}
+
 template<typename AggType, class... Args>
 void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
 {

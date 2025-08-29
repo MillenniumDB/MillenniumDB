@@ -197,6 +197,8 @@ public:
 
     virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext *context) = 0;
 
+    virtual std::any visitEditDistance(MQL_Parser::EditDistanceContext *context) = 0;
+
     virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *context) = 0;
 
     virtual std::any visitExprTypename(MQL_Parser::ExprTypenameContext *context) = 0;
