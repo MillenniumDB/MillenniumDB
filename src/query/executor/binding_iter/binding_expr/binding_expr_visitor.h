@@ -26,6 +26,7 @@ class BindingExprCosineSimilarity;
 class BindingExprCosineDistance;
 class BindingExprManhattanDistance;
 class BindingExprEuclideanDistance;
+class BindingExprEditDistance;
 } // namespace MQL
 
 namespace SPARQL {
@@ -187,6 +188,7 @@ public:
     virtual void visit(MQL::BindingExprCosineDistance&)    { throw LogicException("visit MQL::BindingExprCosineDistance not implemented"); }
     virtual void visit(MQL::BindingExprManhattanDistance&) { throw LogicException("visit MQL::BindingExprManhattanDistance not implemented"); }
     virtual void visit(MQL::BindingExprEuclideanDistance&) { throw LogicException("visit MQL::BindingExprEuclideanDistance not implemented"); }
+    virtual void visit(MQL::BindingExprEditDistance&)      { throw LogicException("visit MQL::BindingExprEuclideanDistance not implemented"); }
 
     virtual void visit(SPARQL::BindingExprAbs&)            { throw LogicException("visit SPARQL::BindingExprAbs not implemented"); }
     virtual void visit(SPARQL::BindingExprAddition&)       { throw LogicException("visit SPARQL::BindingExprAddition not implemented"); }
