@@ -17,6 +17,7 @@ namespace GQL_OID {
         LABEL,
         KEY,
         LIST,
+        DICTIONARY,
         // GEOMETRY, ?
     };
 
@@ -242,6 +243,8 @@ namespace GQL_OID {
                 return GenericType::DATE;
             case Type::PATH:
                 return GenericType::PATH;
+            case Type::DICTIONARY:
+                return GenericType::DICTIONARY;
             default:
                 assert(false);
                 return GenericType::NULL_ID;

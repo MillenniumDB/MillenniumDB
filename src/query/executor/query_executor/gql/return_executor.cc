@@ -74,9 +74,21 @@ uint64_t ReturnExecutor::execute(std::ostream& os)
     return result_count;
 }
 
-void ReturnExecutor::print(std::ostream& os, std::ostream& /* escaped_os */, ObjectId oid)
+void ReturnExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    Conversions::debug_print(os, oid);
+    switch (GQL_OID::get_generic_sub_type(oid)) {
+    case GQL_OID::GenericSubType::STRING_SIMPLE:
+        Conversions::debug_print(os, oid);
+        break;
+    case GQL_OID::GenericSubType::LIST:
+    case GQL_OID::GenericSubType::DICTIONARY:
+        os << '"';
+        Conversions::debug_print(escaped_os, oid);
+        os << '"';
+        break;
+    default:
+        Conversions::debug_print(os, oid);
+    }
 }
 
 void ReturnExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
