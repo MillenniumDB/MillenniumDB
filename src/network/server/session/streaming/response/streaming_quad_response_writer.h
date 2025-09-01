@@ -102,12 +102,9 @@ public:
         }
         case ObjectId::MASK_DICTIONARY:
         case ObjectId::MASK_DICTIONARY_TMP: {
-            std::unique_ptr<DictionaryItem> dictionary;
+            std::unique_ptr<Dictionary> dictionary;
             Common::Conversions::unpack_dictionary(oid, dictionary);
-            if (auto dictionary_ptr = dynamic_cast<DictionaryObject*>(dictionary.get())) {
-                return encode_dictionary(*dictionary_ptr);
-            }
-            return encode_null();
+            return encode_dictionary(*dictionary);
         }
         default:
             throw std::logic_error(

@@ -404,7 +404,7 @@ inline double to_double(ObjectId oid)
     }
 }
 
-inline ObjectId pack_dictionary(const std::unique_ptr<DictionaryObject>& dict)
+inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
 {
     DictionaryEncoder encoder;
     char* buffer = get_query_ctx().get_buffer1();
@@ -423,7 +423,7 @@ inline ObjectId pack_dictionary(const std::unique_ptr<DictionaryObject>& dict)
     return ObjectId(dict_id | ObjectId::MASK_DICTIONARY);
 }
 
-inline void unpack_dictionary(ObjectId oid, std::unique_ptr<DictionaryItem>& out)
+inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
 {
     std::stringstream ss;
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;

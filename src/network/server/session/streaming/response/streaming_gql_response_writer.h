@@ -167,12 +167,9 @@ public:
             return encode_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
         }
         case GQL_OID::Type::DICTIONARY: {
-            std::unique_ptr<DictionaryItem> dictionary;
+            std::unique_ptr<Dictionary> dictionary;
             Common::Conversions::unpack_dictionary(oid, dictionary);
-            if (auto dictionary_ptr = dynamic_cast<DictionaryObject*>(dictionary.get())) {
-                return encode_dictionary(*dictionary_ptr);
-            }
-            return encode_null();
+            return encode_dictionary(*dictionary);
         }
         case GQL_OID::Type::LIST: {
             return encode_gql_list(oid);

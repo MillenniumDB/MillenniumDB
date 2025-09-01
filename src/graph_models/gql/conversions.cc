@@ -341,7 +341,7 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         break;
     }
     case GQL_OID::Type::DICTIONARY: {
-        std::unique_ptr<DictionaryItem> dict;
+        std::unique_ptr<Dictionary> dict;
         Common::Conversions::unpack_dictionary(oid, dict);
         dict->to_string(os);
         break;

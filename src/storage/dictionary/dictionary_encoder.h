@@ -8,7 +8,7 @@ private:
     std::unique_ptr<DictionaryItem> tmp;
 
 public:
-    std::unique_ptr<DictionaryItem> decode(char* buffer)
+    std::unique_ptr<Dictionary> decode(char* buffer)
     {
         char type = *buffer;
         buffer++;
@@ -24,10 +24,10 @@ public:
             decode_object(buffer);
             break;
         }
-        return std::move(tmp);
+        return std::make_unique<Dictionary>(std::move(tmp));
     }
 
-    uint64_t encode(const std::unique_ptr<DictionaryObject>& item, char* buffer)
+    uint64_t encode(const std::unique_ptr<Dictionary>& item, char* buffer)
     {
         char* initial_buffer = buffer;
         buffer = item->to_external_string(buffer);

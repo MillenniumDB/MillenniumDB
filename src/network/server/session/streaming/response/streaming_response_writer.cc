@@ -413,7 +413,19 @@ void StreamingResponseWriter::write_size(uint_fast32_t value)
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_dictionary(const DictionaryObject& dictionary) const
+std::string StreamingResponseWriter::encode_dictionary(const Dictionary& dictionary) const
+{
+    if (auto literal = dynamic_cast<DictionaryLiteral*>(dictionary.dictionary.get())) {
+        return encode_dictionary_literal(*literal);
+    } else if (auto array = dynamic_cast<DictionaryArray*>(dictionary.dictionary.get())) {
+        return encode_dictionary_array(*array);
+    } else if (auto object = dynamic_cast<DictionaryObject*>(dictionary.dictionary.get())) {
+        return encode_dictionary_object(*object);
+    }
+    return encode_null();
+}
+
+std::string StreamingResponseWriter::encode_dictionary_object(const DictionaryObject& dictionary) const
 {
     std::string res;
     res += static_cast<uint8_t>(Protocol::DataType::MAP);
@@ -429,7 +441,7 @@ std::string StreamingResponseWriter::encode_dictionary(const DictionaryObject& d
         } else if (auto array = dynamic_cast<DictionaryArray*>(value.get())) {
             res += encode_dictionary_array(*array);
         } else if (auto object = dynamic_cast<DictionaryObject*>(value.get())) {
-            res += encode_dictionary(*object);
+            res += encode_dictionary_object(*object);
         }
     }
     return res;
@@ -448,7 +460,7 @@ std::string StreamingResponseWriter::encode_dictionary_array(const DictionaryArr
         } else if (auto array = dynamic_cast<DictionaryArray*>(elem.get())) {
             res += encode_dictionary_array(*array);
         } else if (auto object = dynamic_cast<DictionaryObject*>(elem.get())) {
-            res += encode_dictionary(*object);
+            res += encode_dictionary_object(*object);
         }
     }
     return res;

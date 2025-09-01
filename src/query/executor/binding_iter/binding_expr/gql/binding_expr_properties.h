@@ -47,7 +47,7 @@ public:
             record = it.next();
         }
 
-        auto dict = std::make_unique<DictionaryObject>(std::move(properties_map));
+        auto dict = std::make_unique<Dictionary>(std::move(properties_map));
         ObjectId dict_oid = Conversions::pack_dictionary(dict);
         return dict_oid;
     }
