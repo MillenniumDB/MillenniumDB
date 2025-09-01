@@ -1,0 +1,5 @@
+PREFIX : <http://www.example.org/>
+
+SELECT ?s (STR(?t) as ?tensor) WHERE {
+    ?s ?p ?t
+}

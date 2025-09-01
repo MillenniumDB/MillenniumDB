@@ -1,0 +1,17 @@
+{
+    "head": {
+        "vars": [
+            "tensor"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.70016, 0.225800, 0.000000]"
+                }
+            }
+        ]
+    }
+}

@@ -580,7 +580,7 @@ public:
         }
 
         std::string res = "[" + std::to_string(data_[0]);
-        for (size_type i = 0; i < size_; ++i) {
+        for (size_type i = 1; i < size_; ++i) {
             res += ", ";
             res += std::to_string(data_[i]);
         }
