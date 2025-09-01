@@ -20,8 +20,6 @@ public:
 
     virtual ~DictionaryItem() = default;
     virtual void to_string(std::ostream& os) const = 0;
-
-    // TODO: make private
     virtual char* to_external_string(char* buffer) const = 0;
 
     friend DictionaryEncoder;
@@ -29,22 +27,22 @@ public:
 
 class DictionaryLiteral : public DictionaryItem {
 public:
-    ObjectId object;
+    ObjectId object_id;
 
     DictionaryLiteral(ObjectId object) :
-        object(object)
+        object_id(object)
     { }
 
     void to_string(std::ostream& os) const override
     {
-        os << object;
+        os << object_id;
     }
 
     char* to_external_string(char* buffer) const override
     {
         *buffer = static_cast<char>(TYPE_LITERAL);
         buffer++;
-        memcpy(buffer, &(object.id), sizeof(ObjectId));
+        memcpy(buffer, &(object_id.id), sizeof(ObjectId));
         buffer += sizeof(ObjectId);
         return buffer;
     }

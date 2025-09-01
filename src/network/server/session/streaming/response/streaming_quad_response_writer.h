@@ -8,18 +8,23 @@ namespace MDBServer {
 
 class StreamingQuadResponseWriter : public StreamingResponseWriter {
 public:
-    StreamingQuadResponseWriter(StreamingSession& session) : StreamingResponseWriter(session) { }
+    StreamingQuadResponseWriter(StreamingSession& session) :
+        StreamingResponseWriter(session)
+    { }
 
-    uint64_t get_model_id() const override {
+    uint64_t get_model_id() const override
+    {
         return QuadCatalog::MODEL_ID;
     }
 
-    uint64_t get_catalog_version() const override {
+    uint64_t get_catalog_version() const override
+    {
         return QuadCatalog::MAJOR_VERSION;
     }
 
-    std::string encode_object_id(const ObjectId& oid) const override {
-        const auto type  = oid.get_type();
+    std::string encode_object_id(const ObjectId& oid) const override
+    {
+        const auto type = oid.get_type();
         const auto value = oid.get_value();
         switch (type) {
         case ObjectId::MASK_NULL: {
@@ -95,8 +100,19 @@ public:
             const auto tensor = Common::Conversions::unpack_tensor<double>(oid);
             return encode_tensor<double>(tensor);
         }
+        case ObjectId::MASK_DICTIONARY:
+        case ObjectId::MASK_DICTIONARY_TMP: {
+            std::unique_ptr<DictionaryItem> dictionary;
+            Common::Conversions::unpack_dictionary(oid, dictionary);
+            if (auto dictionary_ptr = dynamic_cast<DictionaryObject*>(dictionary.get())) {
+                return encode_dictionary(*dictionary_ptr);
+            }
+            return encode_null();
+        }
         default:
-            throw std::logic_error("Unmanaged type in StreamingQuadResponseWriter::encode_object_id: " + std::to_string(type));
+            throw std::logic_error(
+                "Unmanaged type in StreamingQuadResponseWriter::encode_object_id: " + std::to_string(type)
+            );
         }
     }
 };
