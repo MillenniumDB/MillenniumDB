@@ -159,7 +159,6 @@ class BindingExprSearchedCase;
 class BindingExprCast;
 class BindingExprNodeLabels;
 class BindingExprEdgeLabels;
-class BindingExprNodeProperties;
 class BindingExprProperties;
 } // namespace GQL
 
@@ -318,6 +317,5 @@ public:
     virtual void visit(GQL::BindingExprCast&) { throw LogicException("visit GQL::BindingExprCast not implemented"); }
     virtual void visit(GQL::BindingExprNodeLabels&) { throw LogicException("visit GQL::BindingExprNodeLabels not implemented"); }
     virtual void visit(GQL::BindingExprEdgeLabels&) { throw LogicException("visit GQL::BindingExprEdgeLabels not implemented"); }
-    virtual void visit(GQL::BindingExprNodeProperties&) { throw LogicException("visit GQL::BindingExprEdgeLabels not implemented"); }
     virtual void visit(GQL::BindingExprProperties&) { throw LogicException("visit GQL::BindingExprEdgeLabels not implemented"); }
 };

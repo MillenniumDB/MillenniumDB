@@ -420,7 +420,7 @@ inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
         dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
     }
 
-    return ObjectId(dict_id | ObjectId::MASK_DICTIONARY);
+    return ObjectId(dict_id);
 }
 
 inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
@@ -431,8 +431,10 @@ inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
     switch (oid.get_type()) {
     case ObjectId::MASK_DICTIONARY:
         string_manager.print(ss, external_id);
+        break;
     case ObjectId::MASK_DICTIONARY_TMP:
         tmp_manager.print_str(ss, external_id);
+        break;
     }
 
     DictionaryEncoder encoder;
