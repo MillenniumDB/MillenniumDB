@@ -41,7 +41,7 @@ void RandomAccessTable<N>::append_record(const Record<N>& record)
             );
         }
     } else {
-        last_block = make_unique<RandomAccessTableBlock<N>>(buffer_manager.append_vpage(file_id));
+        last_block = make_unique<RandomAccessTableBlock<N>>(buffer_manager.append_page(file_id));
     }
     last_block->append_record(record);
 }

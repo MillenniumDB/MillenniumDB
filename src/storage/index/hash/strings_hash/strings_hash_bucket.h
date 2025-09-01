@@ -2,13 +2,14 @@
 
 #include <cstdint>
 
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 
 class StringsHashBucket {
 public:
-    static constexpr auto MAX_KEYS = (UPage::SIZE - 2*sizeof(uint32_t) ) / (sizeof(uint64_t) + sizeof(uint32_t));
+    static constexpr auto MAX_KEYS = (Page::SIZE - 2 * sizeof(uint32_t))
+                                   / (sizeof(uint64_t) + sizeof(uint32_t));
 
-    StringsHashBucket(UPage& page);
+    StringsHashBucket(Page& page);
 
     ~StringsHashBucket();
 
@@ -19,11 +20,13 @@ public:
 
     void redistribute(StringsHashBucket& other, uint64_t mask, uint64_t other_suffix);
 
-    UPage& page;
+    Page* page;
 
-    uint32_t* const key_count;
-    uint32_t* const local_depth;
+    uint32_t* key_count;
+    uint32_t* local_depth;
 
-    uint64_t* const arr1; // most significant 12bits:ID, 52 least significant bits:hash
-    uint32_t* const arr2; // 32 least significant bits of ID
+    uint64_t* arr1; // most significant 12bits:ID, 52 least significant bits:hash
+    uint32_t* arr2; // 32 least significant bits of ID
+
+    void upgrade_page_to_editable();
 };

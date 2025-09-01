@@ -13,14 +13,13 @@ System::System(
     uint64_t str_dynamic_size,
     uint64_t shared_buffer_size,
     uint64_t private_buffer_size,
-    uint64_t str_hash_buffer_size,
     uint64_t tensor_static_size,
     uint64_t tensor_dynamic_size,
     uint64_t workers
 )
 {
     FileManager::init(db_folder);
-    BufferManager::init(shared_buffer_size, private_buffer_size, str_hash_buffer_size, workers);
+    BufferManager::init(shared_buffer_size, private_buffer_size, workers);
     PathManager::init(workers);
     StringManager::init(str_static_size, str_dynamic_size);
     TensorManager::init(tensor_static_size, tensor_dynamic_size);

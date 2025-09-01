@@ -3,7 +3,7 @@
 #include <filesystem>
 
 #include "storage/disk_int_stack.h"
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 
 namespace TextSearch {
 
@@ -20,9 +20,12 @@ public:
         uint64_t end_page_ptr;
     };
 
-    static std::unique_ptr<Table> create(std::filesystem::path path, uint64_t column_count);
+    // static std::unique_ptr<Table> create(std::filesystem::path path, uint64_t column_count);
 
-    static std::unique_ptr<Table> load(std::filesystem::path path);
+    // static std::unique_ptr<Table> load(std::filesystem::path path);
+
+    // Table(FileId file_id, FileId tombstones_file_id, Page& first_page);
+    Table(bool create_new, const std::filesystem::path& path, uint64_t column_count);
 
     ~Table();
 
@@ -36,19 +39,17 @@ public:
     void remove(uint64_t table_pointer);
 
 private:
-    explicit Table(FileId file_id, FileId tombstones_file_id, UPage& first_page);
-
     // FileId of the file containing the table
     const FileId file_id;
 
     // The first page of the table, used to save metadata
-    UPage& first_page;
+    Page* first_page;
 
     Header* header;
 
     // The currently last page, to avoid having to obtain the page
     // for every consecutive insert
-    UPage* current_insert_page;
+    Page* current_insert_page;
 
     TombstoneStackType tombstones_stack;
 };

@@ -83,7 +83,6 @@ int main(int argc, char* argv[])
         config.strings_dynamic_buffer,
         config.versioned_pages_buffer,
         config.private_pages_buffer,
-        config.unversioned_pages_buffer,
         config.tensors_static_buffer,
         config.tensors_dynamic_buffer,
         config.workers

@@ -2,16 +2,18 @@
 
 #include <cassert>
 #include <cmath>
+#include <string>
+#include <vector>
 
+#include "storage/file_id.h"
 #include "storage/index/text_search/trie.h"
 #include "storage/index/text_search/utils.h"
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 #include "system/buffer_manager.h"
-
 
 namespace TextSearch {
 
-Node::Node(Trie& trie, UPage* page, uint64_t page_offset) :
+Node::Node(Trie& trie, Page* page, uint64_t page_offset) :
     trie(trie),
     page(page),
     page_offset(page_offset)
@@ -19,14 +21,14 @@ Node::Node(Trie& trie, UPage* page, uint64_t page_offset) :
     init_pointers_using_page();
 }
 
-
-Node::Node(Trie& trie, uint64_t page_pointer) : trie(trie) {
-    auto page_number = page_pointer / UPage::SIZE;
-    page_offset = page_pointer % UPage::SIZE;
+Node::Node(Trie& trie, uint64_t page_pointer) :
+    trie(trie)
+{
+    auto page_number = page_pointer / Page::SIZE;
+    page_offset = page_pointer % Page::SIZE;
     page = &buffer_manager.get_unversioned_page(trie.file_id, page_number);
     init_pointers_using_page();
 }
-
 
 Node::Node(
     Trie& trie,
@@ -35,7 +37,8 @@ Node::Node(
     size_t child_count,
     Node* child_node,
     unsigned char child_char
-) : trie(trie)
+) :
+    trie(trie)
 {
     assert(child_count > 0 || child_node == nullptr);
 
@@ -76,71 +79,69 @@ Node::Node(
     page->make_dirty();
 }
 
-
-Node::~Node() {
+Node::~Node()
+{
     assert(page != nullptr);
     buffer_manager.unpin(*page);
 }
 
-
-void Node::init_pointers_using_page() {
+void Node::init_pointers_using_page()
+{
     node_id_ptr = reinterpret_cast<unsigned char*>(page->get_bytes()) + page_offset;
-    capacity_ptr       = node_id_ptr + NODE_ID_SIZE;
+    capacity_ptr = node_id_ptr + NODE_ID_SIZE;
     document_count_ptr = capacity_ptr + CAPACITY_SIZE;
-    str_len_ptr        = document_count_ptr + DOCUMENT_COUNT_SIZE;
+    str_len_ptr = document_count_ptr + DOCUMENT_COUNT_SIZE;
     auto string_length = read_bytes(str_len_ptr, STR_LEN_SIZE);
-    child_count_ptr    = str_len_ptr + STR_LEN_SIZE;
-    string_ptr         = child_count_ptr + CHILD_COUNT_SIZE;
-    children_ptr       = string_ptr + string_length;
+    child_count_ptr = str_len_ptr + STR_LEN_SIZE;
+    string_ptr = child_count_ptr + CHILD_COUNT_SIZE;
+    children_ptr = string_ptr + string_length;
 }
 
-
-void Node::init_pointers_using_string_length(size_t string_length) {
+void Node::init_pointers_using_string_length(size_t string_length)
+{
     node_id_ptr = reinterpret_cast<unsigned char*>(page->get_bytes()) + page_offset;
-    capacity_ptr       = node_id_ptr + NODE_ID_SIZE;
+    capacity_ptr = node_id_ptr + NODE_ID_SIZE;
     document_count_ptr = capacity_ptr + CAPACITY_SIZE;
-    str_len_ptr        = document_count_ptr + DOCUMENT_COUNT_SIZE;
-    child_count_ptr    = str_len_ptr + STR_LEN_SIZE;
-    string_ptr         = child_count_ptr + CHILD_COUNT_SIZE;
-    children_ptr       = string_ptr + string_length;
+    str_len_ptr = document_count_ptr + DOCUMENT_COUNT_SIZE;
+    child_count_ptr = str_len_ptr + STR_LEN_SIZE;
+    string_ptr = child_count_ptr + CHILD_COUNT_SIZE;
+    children_ptr = string_ptr + string_length;
 }
 
-
-std::unique_ptr<Node> Node::clone() {
+std::unique_ptr<Node> Node::clone()
+{
     buffer_manager.pin(*page);
     return std::make_unique<Node>(trie, page, page_offset);
 }
 
-
-size_t Node::size() {
+size_t Node::size()
+{
     auto string_length = read_bytes(str_len_ptr, STR_LEN_SIZE);
     auto child_count = read_bytes(child_count_ptr, CHILD_COUNT_SIZE);
 
-    return NODE_ID_SIZE
-         + CAPACITY_SIZE
-         + DOCUMENT_COUNT_SIZE
-         + STR_LEN_SIZE
-         + CHILD_COUNT_SIZE
-         + string_length
-         + child_count * CHILD_SIZE;
+    return NODE_ID_SIZE + CAPACITY_SIZE + DOCUMENT_COUNT_SIZE + STR_LEN_SIZE + CHILD_COUNT_SIZE
+         + string_length + child_count * CHILD_SIZE;
 }
 
-
-size_t Node::size(size_t string_length, size_t child_count) {
-    return NODE_ID_SIZE
-         + CAPACITY_SIZE
-         + DOCUMENT_COUNT_SIZE
-         + STR_LEN_SIZE
-         + CHILD_COUNT_SIZE
-         + string_length
-         + child_count * CHILD_SIZE;
+size_t Node::size(size_t string_length, size_t child_count)
+{
+    return NODE_ID_SIZE + CAPACITY_SIZE + DOCUMENT_COUNT_SIZE + STR_LEN_SIZE + CHILD_COUNT_SIZE
+         + string_length + child_count * CHILD_SIZE;
 }
-
 
 // Splits the node and returns the newly inserted node between parent and this node.
-std::unique_ptr<Node> Node::split(Node* parent, unsigned char* parent_child_page_pointer_ptr, size_t split_position) {
+std::unique_ptr<Node>
+    Node::split(Node* parent, unsigned char* parent_child_page_pointer_ptr, size_t split_position)
+{
     // Create the node that will be inserted between the parent node and this node.
-    auto new_node = std::make_unique<Node>(trie, string_ptr, split_position, 1, this, string_ptr[split_position]);
+    auto new_node = std::make_unique<Node>(
+        trie,
+        string_ptr,
+        split_position,
+        1,
+        this,
+        string_ptr[split_position]
+    );
 
     // The parent node will now point to the new node.
     if (parent != nullptr) {
@@ -162,8 +163,12 @@ std::unique_ptr<Node> Node::split(Node* parent, unsigned char* parent_child_page
     return new_node;
 }
 
-
-std::unique_ptr<Node> Node::insert_child(Node* parent, unsigned char* parent_child_page_pointer_ptr, const unsigned char* string) {
+std::unique_ptr<Node> Node::insert_child(
+    Node* parent,
+    unsigned char* parent_child_page_pointer_ptr,
+    const unsigned char* string
+)
+{
     // The string should be non-empty
     assert(string != nullptr && *string != '\0');
 
@@ -227,8 +232,8 @@ std::unique_ptr<Node> Node::insert_child(Node* parent, unsigned char* parent_chi
     return child;
 }
 
-
-void Node::increment_document_count() {
+void Node::increment_document_count()
+{
     auto document_count = read_bytes(document_count_ptr, DOCUMENT_COUNT_SIZE);
     if (document_count < DOCUMENT_COUNT_MAX) {
         write_bytes(document_count_ptr, DOCUMENT_COUNT_SIZE, document_count + 1);
@@ -236,8 +241,12 @@ void Node::increment_document_count() {
     }
 }
 
-
-uint64_t Node::insert_string(Node* parent, unsigned char* parent_child_page_pointer_ptr, const unsigned char* string_to_insert) {
+uint64_t Node::insert_string(
+    Node* parent,
+    unsigned char* parent_child_page_pointer_ptr,
+    const unsigned char* string_to_insert
+)
+{
     auto string_ptr_copy = string_ptr;
     size_t split_position = 0;
 
@@ -251,7 +260,8 @@ uint64_t Node::insert_string(Node* parent, unsigned char* parent_child_page_poin
     if (split_position < *str_len_ptr) {
         // We have to split this node
         auto new_node = split(parent, parent_child_page_pointer_ptr, split_position);
-        return new_node->insert_string(parent, parent_child_page_pointer_ptr, string_to_insert - split_position);
+        return new_node
+            ->insert_string(parent, parent_child_page_pointer_ptr, string_to_insert - split_position);
     } else if (*string_to_insert == '\0') {
         // string_to_insert belongs in this node
         increment_document_count();
@@ -275,18 +285,18 @@ uint64_t Node::insert_string(Node* parent, unsigned char* parent_child_page_poin
     }
 }
 
-
-void Node::print_trie_node(std::ostream& os) {
+void Node::print_trie_node(std::ostream& os)
+{
     auto node_id = read_bytes(node_id_ptr, NODE_ID_SIZE);
     auto document_count = read_bytes(document_count_ptr, DOCUMENT_COUNT_SIZE);
     os << node_id << " [label=\"'";
     os << escape(string_ptr, *str_len_ptr);
-    os << "'\\n" << node_id << " | "<< document_count << "\"]\n";
+    os << "'\\n" << node_id << " | " << document_count << "\"]\n";
 
     for (size_t child = 0; child < *child_count_ptr; child++) {
-        auto child_char_ptr         = &children_ptr[child * CHILD_SIZE];
+        auto child_char_ptr = &children_ptr[child * CHILD_SIZE];
         auto child_page_pointer_ptr = &children_ptr[child * CHILD_SIZE + CHILD_CHAR_SIZE];
-        auto child_page_pointer     = read_bytes(child_page_pointer_ptr, CHILD_POINTER_SIZE);
+        auto child_page_pointer = read_bytes(child_page_pointer_ptr, CHILD_POINTER_SIZE);
 
         auto child_node = std::make_unique<Node>(trie, child_page_pointer);
         auto child_node_id = read_bytes(child_node->node_id_ptr, NODE_ID_SIZE);
@@ -297,8 +307,8 @@ void Node::print_trie_node(std::ostream& os) {
     }
 }
 
-
-std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity) {
+std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity)
+{
     // Make sure capacity is a power of 2
     capacity = std::pow(2, std::ceil(std::log2(capacity)));
 
@@ -306,12 +316,12 @@ std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity) {
     uint64_t page_pointer;
     if (trie.garbage->search_and_pop_capacity(capacity, page_pointer)) {
         // Found free space in garbage
-        return { page_pointer / UPage::SIZE, page_pointer % UPage::SIZE };
+        return { page_pointer / Page::SIZE, page_pointer % Page::SIZE };
     }
 
     // Check if the space fits in the remainder of the last page
     page_pointer = read_bytes(trie.end_page_pointer_ptr, Trie::PAGE_POINTER_SIZE);
-    auto available_space = UPage::SIZE - (page_pointer % UPage::SIZE);
+    auto available_space = Page::SIZE - (page_pointer % Page::SIZE);
     if (available_space < capacity) {
         // Not enough space in the remainder of page.
         // Add it to the garbage if it is useful.
@@ -326,7 +336,7 @@ std::pair<uint64_t, uint64_t> Node::get_space(uint64_t& capacity) {
     write_bytes(trie.end_page_pointer_ptr, Trie::PAGE_POINTER_SIZE, page_pointer + capacity);
     trie.root_page.make_dirty();
 
-    return { page_pointer / UPage::SIZE, page_pointer % UPage::SIZE };
+    return { page_pointer / Page::SIZE, page_pointer % Page::SIZE };
 }
 
 } // namespace TextSearch

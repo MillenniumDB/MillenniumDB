@@ -403,10 +403,10 @@ void StringManager::init_free_space()
     fstat(leaf_file_id.id, &buf);
     uint64_t file_size = buf.st_size;
     if (file_size == 0) {
-        auto buffer = new char[VPage::SIZE];
-        memset(buffer, 0, VPage::SIZE);
-        write(leaf_file_id.id, buffer, VPage::SIZE);
-        write(dir_file_id.id, buffer, VPage::SIZE);
+        auto buffer = new char[Page::SIZE];
+        memset(buffer, 0, Page::SIZE);
+        write(leaf_file_id.id, buffer, Page::SIZE);
+        write(dir_file_id.id, buffer, Page::SIZE);
         delete[] buffer;
     }
 

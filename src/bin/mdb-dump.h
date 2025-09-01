@@ -634,7 +634,6 @@ inline int mdb_dump(const DumpConfig& config)
         StringManager::DEFAULT_DYNAMIC_BUFFER,
         BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE,
         BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE,
-        BufferManager::DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE,
         TensorManager::DEFAULT_STATIC_BUFFER,
         TensorManager::DEFAULT_DYNAMIC_BUFFER,
         1

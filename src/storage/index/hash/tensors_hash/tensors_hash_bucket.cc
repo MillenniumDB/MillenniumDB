@@ -7,7 +7,7 @@
 #include "system/buffer_manager.h"
 #include "system/tensor_manager.h"
 
-TensorsHashBucket::TensorsHashBucket(UPage& page) :
+TensorsHashBucket::TensorsHashBucket(Page& page) :
     page { page },
     key_count { reinterpret_cast<uint32_t*>(page.get_bytes()) },
     local_depth { reinterpret_cast<uint32_t*>(page.get_bytes() + sizeof(uint32_t)) },

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <fstream>
 #include <string>
 
 #include "storage/file_id.h"
@@ -11,7 +10,6 @@ public:
     static constexpr auto MIN_GLOBAL_DEPTH = 8;
 
     StringsHash(const std::string& filename);
-    ~StringsHash();
 
     // returns ObjectId::MASK_NOT_FOUND if string does not exist
     uint64_t get_str_id(const char* bytes, uint64_t size) const;
@@ -28,16 +26,17 @@ private:
     const FileId buckets_file_id;
 
     // MIN_GLOBAL_DEPTH <= global_depth < 32
-    uint_fast8_t global_depth;
+    uint_fast8_t global_depth() const;
 
-    std::fstream dir_file;
+    uint32_t total_pages() const;
 
-    uint32_t total_pages;
+    void set_global_depth(uint_fast8_t);
 
-    // array of size 2^global_depth
-    uint32_t* dir;
+    void set_total_pages(uint32_t);
 
-    bool directory_modified = false;
+    uint32_t get_dir(uint64_t pos) const;
+
+    void set_dir(uint64_t pos, uint32_t value);
 
     void duplicate_dir();
 };

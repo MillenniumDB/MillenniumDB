@@ -31,7 +31,6 @@ struct SystemConfig {
     uint64_t strings_dynamic_buffer = StringManager::DEFAULT_DYNAMIC_BUFFER;
     uint64_t private_pages_buffer = BufferManager::DEFAULT_PRIVATE_PAGES_BUFFER_SIZE;
     uint64_t versioned_pages_buffer = BufferManager::DEFAULT_VERSIONED_PAGES_BUFFER_SIZE;
-    uint64_t unversioned_pages_buffer = BufferManager::DEFAULT_UNVERSIONED_PAGES_BUFFER_SIZE;
     uint64_t tensors_static_buffer = TensorManager::DEFAULT_STATIC_BUFFER;
     uint64_t tensors_dynamic_buffer = TensorManager::DEFAULT_DYNAMIC_BUFFER;
 
@@ -58,7 +57,6 @@ struct SystemOptions {
     std::optional<uint64_t> strings_dynamic_buffer;
     std::optional<uint64_t> private_pages_buffer;
     std::optional<uint64_t> versioned_pages_buffer;
-    std::optional<uint64_t> unversioned_pages_buffer;
     std::optional<uint64_t> tensors_static_buffer;
     std::optional<uint64_t> tensors_dynamic_buffer;
     std::optional<PathSearchMode> path_mode;
@@ -75,7 +73,6 @@ inline int mdb_server(const SystemConfig& conf)
         conf.strings_dynamic_buffer,
         conf.versioned_pages_buffer,
         conf.private_pages_buffer,
-        conf.unversioned_pages_buffer,
         conf.tensors_static_buffer,
         conf.tensors_dynamic_buffer,
         conf.workers
@@ -230,15 +227,6 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     return "";
                 } });
 
-    opt.insert({ "unversioned-buffer", [](SystemOptions& config, const std::string& value) {
-                    auto bytes = parse_bytes(value);
-                    if (bytes < 0) {
-                        return "invalid value for unversioned-buffer";
-                    }
-                    config.unversioned_pages_buffer = static_cast<uint64_t>(bytes);
-                    return "";
-                } });
-
     opt.insert({ "private-buffer", [](SystemOptions& config, const std::string& value) {
                     auto bytes = parse_bytes(value);
                     if (bytes < 0) {
@@ -363,7 +351,6 @@ inline SystemConfig get_system_config(const std::string& db_directory, const Sys
     try_replace(res.strings_dynamic_buffer, args.strings_dynamic_buffer, db_config.strings_dynamic_buffer);
     try_replace(res.private_pages_buffer, args.private_pages_buffer, db_config.private_pages_buffer);
     try_replace(res.versioned_pages_buffer, args.versioned_pages_buffer, db_config.versioned_pages_buffer);
-    try_replace(res.unversioned_pages_buffer, args.unversioned_pages_buffer, db_config.unversioned_pages_buffer);
     try_replace(res.tensors_dynamic_buffer, args.tensors_dynamic_buffer, db_config.tensors_dynamic_buffer);
     try_replace(res.tensors_static_buffer, args.tensors_static_buffer, db_config.tensors_static_buffer);
     try_replace(res.path_mode, args.path_mode, db_config.path_mode);

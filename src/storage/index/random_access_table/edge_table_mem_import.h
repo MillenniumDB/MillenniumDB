@@ -18,7 +18,7 @@ public:
     EdgeTableMemImport(const std::string& filename)
     {
         file.open(filename, std::ios::out | std::ios::binary);
-        buffer = new char[VPage::SIZE];
+        buffer = new char[Page::SIZE];
         record_count = reinterpret_cast<uint32_t*>(buffer + ((N - 1) * sizeof(uint64_t) * max_records));
         *record_count = 0;
         current_pos = 0;
@@ -26,7 +26,7 @@ public:
 
     ~EdgeTableMemImport()
     {
-        file.write(buffer, VPage::SIZE);
+        file.write(buffer, Page::SIZE);
         file.close();
         delete[] buffer;
     }
@@ -40,7 +40,7 @@ public:
             }
             (*record_count)++;
         } else {
-            file.write(buffer, VPage::SIZE);
+            file.write(buffer, Page::SIZE);
             for (std::size_t i = 0; i < N; i++) {
                 records[i] = edge[i];
             }

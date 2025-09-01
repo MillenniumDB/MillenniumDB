@@ -3,7 +3,7 @@
 #include "system/buffer_manager.h"
 
 template<std::size_t N>
-RandomAccessTableBlock<N>::RandomAccessTableBlock(VPage& page) :
+RandomAccessTableBlock<N>::RandomAccessTableBlock(Page& page) :
     page(page),
     records(reinterpret_cast<uint64_t*>(page.get_bytes())),
     record_count(reinterpret_cast<uint32_t*>(

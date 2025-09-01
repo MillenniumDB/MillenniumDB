@@ -11,7 +11,6 @@
 #include "macros/count_zeros.h"
 #include "storage/index/hash/strings_hash/strings_hash.h"
 #include "storage/index/hash/strings_hash/strings_hash_bucket.h"
-#include "storage/page/unversioned_page.h"
 #include "third_party/hashes/hash_function_wrapper.h"
 
 class StringsHashBulkOnDiskImport {
@@ -101,7 +100,7 @@ public:
 
         uint64_t buffer_bits = 64UL - (MDB_COUNT_LEADING_ZEROS_64(buffer_capacity) + 1);
 
-        uint64_t buffer_number_of_elements = (1UL << buffer_bits) / UPage::SIZE;
+        uint64_t buffer_number_of_elements = (1UL << buffer_bits) / Page::SIZE;
         buffer_bitmask = buffer_number_of_elements - 1;
 
         buffer_page_number = new uint64_t[buffer_number_of_elements];
@@ -110,7 +109,7 @@ public:
         uint_fast32_t dir_size = 1 << global_depth;
         dir = new uint32_t[dir_size];
 
-        // if StringsHash::MIN_GLOBAL_DEPTH = 8, import buffer is 2GB (2^31) and UPage::SIZE = 4KB (2^12)
+        // if StringsHash::MIN_GLOBAL_DEPTH = 8, import buffer is 2GB (2^31) and Page::SIZE = 4KB (2^12)
         // dir_size is 2^8 and buffer_number_of_elements is 2^(31-12) => 2^19
         if (buffer_number_of_elements < dir_size) {
             throw std::invalid_argument("Need bigger buffer to create the initial StringsHash directory");
@@ -118,19 +117,19 @@ public:
 
         for (uint_fast32_t i = 0; i < dir_size; ++i) {
             buffer_page_number[i] = i;
-            auto page = buffer + (UPage::SIZE * i);
+            auto page = buffer + (Page::SIZE * i);
             Bucket bucket(page);
             *bucket.key_count = 0;
             *bucket.local_depth = StringsHash::MIN_GLOBAL_DEPTH;
             dir[i] = i;
         }
         total_pages = dir_size;
-        check_io(ftruncate(buckets_fd, dir_size * UPage::SIZE));
+        check_io(ftruncate(buckets_fd, dir_size * Page::SIZE));
         for (uint64_t i = dir_size; i < buffer_number_of_elements; ++i) {
             // assign page to unassigned
             buffer_page_number[i] = UINT64_MAX;
         }
-        split_buffer = new char[UPage::SIZE];
+        split_buffer = new char[Page::SIZE];
     }
 
     ~StringsHashBulkOnDiskImport()
@@ -149,9 +148,9 @@ public:
         for (uint64_t i = 0; i <= buffer_bitmask; ++i) {
             auto page_number = buffer_page_number[i];
             if (page_number != UINT64_MAX) {
-                check_io(pwrite(buckets_fd, current_page, UPage::SIZE, page_number * UPage::SIZE));
+                check_io(pwrite(buckets_fd, current_page, Page::SIZE, page_number * Page::SIZE));
             }
-            current_page += UPage::SIZE;
+            current_page += Page::SIZE;
         }
         close(buckets_fd);
         delete[] split_buffer;
@@ -207,7 +206,7 @@ public:
                 );
 
                 lseek(buckets_fd, 0, SEEK_END);
-                check_io(write(buckets_fd, split_buffer, UPage::SIZE));
+                check_io(write(buckets_fd, split_buffer, Page::SIZE));
             } else {
                 return;
             }
@@ -238,21 +237,21 @@ private:
         auto buffer_idx = page_number & buffer_bitmask;
 
         auto old_page_number = buffer_page_number[buffer_idx];
-        auto page = buffer + (UPage::SIZE * buffer_idx);
+        auto page = buffer + (Page::SIZE * buffer_idx);
         if (old_page_number == page_number) {
             // cache hit
             return page;
         } else if (old_page_number == UINT64_MAX) {
             // load new page from disk
-            check_io(pread(buckets_fd, page, UPage::SIZE, page_number * UPage::SIZE));
+            check_io(pread(buckets_fd, page, Page::SIZE, page_number * Page::SIZE));
 
             buffer_page_number[buffer_idx] = page_number;
             return page;
         } else {
             // flush old page to disk
-            check_io(pwrite(buckets_fd, page, UPage::SIZE, old_page_number * UPage::SIZE));
+            check_io(pwrite(buckets_fd, page, Page::SIZE, old_page_number * Page::SIZE));
             // load new page from disk
-            check_io(pread(buckets_fd, page, UPage::SIZE, page_number * UPage::SIZE));
+            check_io(pread(buckets_fd, page, Page::SIZE, page_number * Page::SIZE));
 
             buffer_page_number[buffer_idx] = page_number;
             return page;

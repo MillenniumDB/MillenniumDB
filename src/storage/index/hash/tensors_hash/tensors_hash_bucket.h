@@ -2,16 +2,16 @@
 
 #include <cstdint>
 
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 
 class TensorsHashBucket {
 public:
-    static constexpr auto MAX_KEYS = (UPage::SIZE - 2 * sizeof(uint32_t))
+    static constexpr auto MAX_KEYS = (Page::SIZE - 2 * sizeof(uint32_t))
                                    / (sizeof(uint64_t) + sizeof(uint32_t));
 
     static constexpr uint64_t HASH_MASK = 0x00'0F'FF'FF'FF'FF'FF'FFULL;
 
-    UPage& page;
+    Page& page;
 
     uint32_t* const key_count;
     uint32_t* const local_depth;
@@ -19,7 +19,7 @@ public:
     uint64_t* const arr1; // most significant 12bits:ID, 52 least significant bits:hash
     uint32_t* const arr2; // 32 least significant bits of ID
 
-    TensorsHashBucket(UPage& page);
+    TensorsHashBucket(Page& page);
 
     ~TensorsHashBucket();
 

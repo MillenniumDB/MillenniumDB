@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "storage/file_id.h"
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 
 namespace TextSearch {
 
@@ -45,12 +45,13 @@ public:
     static constexpr int OP_SNP = 4; // Size of next page number (Offsets page)
     static constexpr int OP_SO = 5;  // Size of each offset stored in page (Offsets page)
     // Max number of offset in Offsets pages: (2B offsets count + 4B prev page + 4B next page and 5B each value)
-    static constexpr uint64_t MAX_VALUES_IN_PAGE = (UPage::SIZE - (OP_SN + OP_SPP + OP_SNP)) / OP_SO;
+    static constexpr uint64_t MAX_VALUES_IN_PAGE = (Page::SIZE - (OP_SN + OP_SPP + OP_SNP)) / OP_SO;
 
     // Directory of garbage
-    UPage& dir_page;
+    Page& dir_page;
 
     // Constructor
+    explicit TrieGarbage(FileId file_id, Page& dir_page);
 
     // Destructor
     ~TrieGarbage();
@@ -75,8 +76,6 @@ public:
     void status(std::ostream& os);
 
 private:
-    explicit TrieGarbage(FileId file_id, UPage& dir_page);
-
     // Function to write the value in B bytes from pos
     static inline void write_xbytes(uint64_t value, unsigned char* pos, int B) {
         for (int i = 0, shift = 0; i < B; ++i, shift += 8) {

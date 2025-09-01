@@ -15,12 +15,12 @@
 namespace TextSearch {
 
 class Trie {
-    friend class Node;
-
 public:
-    static std::unique_ptr<Trie> create(const std::filesystem::path& path);
+    // FileId of the file containing the trie.
+    // All the nodes are in one file.
+    const FileId file_id;
 
-    static std::unique_ptr<Trie> load(const std::filesystem::path& path);
+    Trie(bool is_new, const std::filesystem::path& path);
 
     ~Trie();
 
@@ -38,12 +38,6 @@ public:
     void print_trie(std::ostream& os, std::vector<std::string>&& text_list);
 
 private:
-    explicit Trie(FileId file_id, UPage& root_page, std::unique_ptr<TrieGarbage> garbage, bool load);
-
-    // FileId of the file containing the trie.
-    // All the nodes are in one file.
-    const FileId file_id;
-
     // Definition of constants
     static constexpr uint64_t CAPACITY = 16; // Initial capacity for nodes
     static constexpr uint64_t PAGE_POINTER_SIZE = 5;
@@ -51,12 +45,17 @@ private:
     static constexpr uint64_t HEADER_SIZE = 2 * PAGE_POINTER_SIZE + NEXT_ID_SIZE;
 
     // Pointers to offsets to write in files
-    unsigned char* end_page_pointer_ptr;  // ptr to the page pointer to the start of unused space, 5B
-    unsigned char* root_page_pointer_ptr; // ptr to the page pointer to the root node, 5B
-    unsigned char* next_id_ptr;           // ptr to the next id to use for nodes, 5B
+    // unsigned char* end_page_pointer_ptr;  // ptr to the page pointer to the start of unused space, 5B
+    // unsigned char* root_page_pointer_ptr; // ptr to the page pointer to the root node, 5B
+    // unsigned char* next_id_ptr;           // ptr to the next id to use for nodes, 5B
+    uint64_t get_end_page_pointer();
+    uint64_t get_root_page_pointer();
 
+    void set_end_page_pointer(uint64_t);
+    void set_root_page_pointer(uint64_t);
+
+    Page* root_page;
     std::unique_ptr<Node> root_node;
-    UPage& root_page;
 
     // Garbage Collector
     std::unique_ptr<TrieGarbage> garbage;

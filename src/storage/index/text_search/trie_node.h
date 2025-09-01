@@ -3,11 +3,8 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <string>
-#include <vector>
 
-#include "storage/file_id.h"
-#include "storage/page/unversioned_page.h"
+#include "storage/page/versioned_page.h"
 #include "storage/index/text_search/search_type.h"
 
 namespace TextSearch {
@@ -21,7 +18,7 @@ class Node {
 public:
     // Initialize pre-existing node
     Node(Trie& trie, uint64_t page_pointer);
-    Node(Trie& trie, UPage* page, uint64_t page_offset);
+    Node(Trie& trie, Page* page, uint64_t page_offset);
 
     // Create new node with string of length <new_string> and capacity for <child_count> children, and possibly a pointer to <child_node>
     Node(Trie& trie, const unsigned char* new_string, size_t string_length, size_t child_count, Node* child_node, unsigned char child_char);
@@ -42,7 +39,7 @@ public:
 
     // Returns the pointer to this node (combination of page_number and page_offset)
     uint64_t page_pointer() {
-        return page->get_page_number() * UPage::SIZE + page_offset;
+        return page->get_page_number() * Page::SIZE + page_offset;
     }
 
     // Print tire in dot format
@@ -51,7 +48,7 @@ public:
 private:
     Trie& trie;
 
-    UPage* page;
+    Page* page;
     uint64_t page_offset;
 
 

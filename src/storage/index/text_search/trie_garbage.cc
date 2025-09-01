@@ -13,7 +13,7 @@ std::unique_ptr<TrieGarbage> TrieGarbage::create(const std::filesystem::path& pa
     const auto garbage_file_id = file_manager.get_file_id(path);
     auto& dir_page = buffer_manager.append_unversioned_page(garbage_file_id);
 
-    return std::unique_ptr<TrieGarbage>(new TrieGarbage(garbage_file_id, dir_page));
+    return std::make_unique<TrieGarbage>(garbage_file_id, dir_page);
 }
 
 std::unique_ptr<TrieGarbage> TrieGarbage::load(const std::filesystem::path& path)
@@ -21,10 +21,10 @@ std::unique_ptr<TrieGarbage> TrieGarbage::load(const std::filesystem::path& path
     const auto garbage_file_id = file_manager.get_file_id(path);
     auto& dir_page = buffer_manager.get_unversioned_page(garbage_file_id, 0);
 
-    return std::unique_ptr<TrieGarbage>(new TrieGarbage(garbage_file_id, dir_page));
+    return std::make_unique<TrieGarbage>(garbage_file_id, dir_page);
 }
 
-TrieGarbage::TrieGarbage(FileId file_id, UPage& dir_page_) :
+TrieGarbage::TrieGarbage(FileId file_id, Page& dir_page_) :
     garbage_file_id { file_id },
     dir_page { dir_page_ }
 {
@@ -99,7 +99,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value)
         dir_page.make_dirty();
     }
 
-    UPage& page = buffer_manager.get_or_append_unversioned_page(garbage_file_id, target_page);
+    Page& page = buffer_manager.get_or_append_unversioned_page(garbage_file_id, target_page);
 
     // Write new value:
     unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());
@@ -117,7 +117,7 @@ void TrieGarbage::add_capacity(uint64_t capacity, uint64_t value)
         }
 
         // Edit next page information and add value
-        UPage& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
+        Page& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
         unsigned char* next_page_pos = reinterpret_cast<unsigned char*>(next_page.get_bytes());
         write_xbytes(1, next_page_pos, OP_SN);                    // Value count = 1
         write_xbytes(target_page, next_page_pos + OP_SN, OP_SPP); // Previous page
@@ -168,7 +168,7 @@ bool TrieGarbage::search_and_pop_capacity(uint64_t& capacity, uint64_t& value)
         if (last_page_of_capacity == 0) {
             continue;
         } // If no values, next capacity
-        UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_capacity);
+        Page& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_capacity);
         unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());
 
         // Get number of values in page
@@ -252,7 +252,7 @@ void TrieGarbage::add_node(uint64_t value)
         dir_page.make_dirty();
     }
 
-    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, target_page);
+    Page& page = buffer_manager.get_unversioned_page(garbage_file_id, target_page);
 
     // Write new value:
     unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());
@@ -270,7 +270,7 @@ void TrieGarbage::add_node(uint64_t value)
         }
 
         // Edit next page information and add value
-        UPage& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
+        Page& next_page = buffer_manager.get_unversioned_page(garbage_file_id, next_page_num);
         unsigned char* next_page_pos = reinterpret_cast<unsigned char*>(next_page.get_bytes());
         write_xbytes(1, next_page_pos, OP_SN);                    // Value count = 1
         write_xbytes(target_page, next_page_pos + OP_SN, OP_SPP); // Previous page
@@ -312,7 +312,7 @@ bool TrieGarbage::search_and_pop_node(uint64_t& value)
     }
 
     // Else get page
-    UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_node);
+    Page& page = buffer_manager.get_unversioned_page(garbage_file_id, last_page_of_node);
     unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());
 
     // Get number of values in page
@@ -362,7 +362,7 @@ void TrieGarbage::status(std::ostream& os)
         uint64_t counter = 0;
         while (curr_page != 0) {
             // Get page
-            UPage& page = buffer_manager.get_unversioned_page(garbage_file_id, curr_page);
+            Page& page = buffer_manager.get_unversioned_page(garbage_file_id, curr_page);
             unsigned char* page_pos = reinterpret_cast<unsigned char*>(page.get_bytes());
 
             // Update count

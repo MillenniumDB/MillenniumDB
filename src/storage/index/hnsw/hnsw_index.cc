@@ -40,7 +40,7 @@ std::unique_ptr<HNSWIndex> HNSWIndex::create(
     params.M = max_neighbors;
     params.ef_construction = n_candidates_insertion;
 
-    return std::unique_ptr<HNSWIndex>(new HNSWIndex(params, metric_func));
+    return std::make_unique<HNSWIndex>(params, metric_func);
 }
 
 std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, MetricFuncType metric_func)
@@ -117,13 +117,13 @@ std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, M
     }
     boost::from_block_range(tombstone_blocks.begin(), tombstone_blocks.end(), tombstone_bitset);
 
-    return std::unique_ptr<HNSWIndex>(new HNSWIndex(
+    return std::make_unique<HNSWIndex>(
         params,
         metric_func,
         std::move(node_storage),
         std::move(node_neighbors),
         std::move(tombstone_bitset)
-    ));
+    );
 }
 
 HNSWHeap HNSWIndex::query(

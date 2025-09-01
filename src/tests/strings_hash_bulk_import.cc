@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "macros/aligned_alloc.h"
 #include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "system/string_manager.h"
