@@ -224,6 +224,13 @@ void ExprPrinter::visit(ExprEditDistance& expr)
     os << ')';
 }
 
+void ExprPrinter::visit(MQL::ExprNormalize& expr)
+{
+    os << "NORMALIZE(";
+    expr.expr->accept_visitor(*this);
+    os << ")";
+}
+
 void ExprPrinter::visit(MQL::ExprAggAvg& expr)
 {
     os << "AVG(";

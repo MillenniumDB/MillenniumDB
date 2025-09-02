@@ -241,28 +241,23 @@ unaryExpr:
 
 atomicExpr:
     VARIABLE KEY?               # exprVar
+    | function                  # exprFunction
     | value                     # exprValue
     | fixedNodeInside           # exprFixedNodeInside
-    | '(' conditionalOrExpr ')' # exprParenthesis
-    | function                  # exprFunction;
+    | '(' conditionalOrExpr ')' # exprParenthesis;
 
 function:
     regex
-    | textSearch
     | cosineSimilarity
     | cosineDistance
     | manhattanDistance
     | euclideanDistance
-    | editDistance;
+    | editDistance
+    | normalize;
 
 regex:
     K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (
         ',' conditionalOrExpr
-    )? ')';
-
-textSearch:
-    K_TEXT_SEARCH '(' STRING ',' STRING ',' textSearchIndexMode ',' VARIABLE (
-        ',' VARIABLE
     )? ')';
 
 cosineSimilarity:
@@ -279,6 +274,8 @@ euclideanDistance:
 
 editDistance:
     K_EDIT_DISTANCE '(' conditionalOrExpr ',' conditionalOrExpr ')';
+
+normalize: K_NORMALIZE '(' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 
@@ -326,6 +323,7 @@ keyword:
     | K_MATCH
     | K_MAX
     | K_MIN
+    | K_NORMALIZE
     | K_OBJECTS
     | K_OFFSET
     | K_OPTIONAL

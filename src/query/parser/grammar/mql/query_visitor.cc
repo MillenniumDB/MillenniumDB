@@ -1679,6 +1679,16 @@ Any QueryVisitor::visitEditDistance(MQL_Parser::EditDistanceContext* ctx)
     return 0;
 }
 
+Any QueryVisitor::visitNormalize(MQL_Parser::NormalizeContext* ctx)
+{
+    visit(ctx->conditionalOrExpr());
+    auto expr = std::move(current_expr);
+
+    current_expr = std::make_unique<ExprNormalize>(std::move(expr));
+
+    return 0;
+}
+
 template<typename IndexOptions, typename OptionHandlerFunc>
 void QueryVisitor::parse_index_options(
     MQL_Parser::CreateIndexOptionsContext* ctx,

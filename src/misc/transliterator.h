@@ -3,9 +3,9 @@
 #include <mutex>
 #include <string>
 
+#include <unicode/locid.h>
 #include <unicode/translit.h>
 #include <unicode/utypes.h>
-#include <unicode/locid.h>
 
 /**
  * Singleton class that holds transliterators and transformers for text
@@ -39,5 +39,5 @@ private:
 
     UErrorCode ec { U_ZERO_ERROR };
 
-    icu::Transliterator* nfkd_casefold_transliterator;
+    const icu::Transliterator* nfkd_casefold_transliterator;
 };

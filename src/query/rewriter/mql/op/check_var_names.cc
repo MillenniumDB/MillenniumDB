@@ -336,6 +336,11 @@ void CheckVarNamesExpr::visit(ExprEditDistance& expr)
     expr.expr2->accept_visitor(*this);
 }
 
+void CheckVarNamesExpr::visit(ExprNormalize& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
 void CheckVarNamesExpr::visit(ExprAggAvg& expr)
 {
     expr.expr->accept_visitor(*this);

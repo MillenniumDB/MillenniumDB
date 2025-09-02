@@ -392,6 +392,13 @@ void ExprToBindingExpr::visit(ExprEditDistance& expr)
     tmp = std::make_unique<BindingExprEditDistance>(std::move(expr1), std::move(expr2));
 }
 
+void ExprToBindingExpr::visit(ExprNormalize& expr)
+{
+    expr.expr->accept_visitor(*this);
+
+    tmp = std::make_unique<BindingExprNormalize>(std::move(tmp));
+}
+
 template<typename AggType, class... Args>
 void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
 {

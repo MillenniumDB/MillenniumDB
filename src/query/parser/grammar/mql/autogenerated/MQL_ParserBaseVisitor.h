@@ -327,6 +327,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExprValue(MQL_Parser::ExprValueContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -339,19 +343,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitFunction(MQL_Parser::FunctionContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitRegex(MQL_Parser::RegexContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTextSearch(MQL_Parser::TextSearchContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -372,6 +368,10 @@ public:
   }
 
   virtual std::any visitEditDistance(MQL_Parser::EditDistanceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitNormalize(MQL_Parser::NormalizeContext *ctx) override {
     return visitChildren(ctx);
   }
 

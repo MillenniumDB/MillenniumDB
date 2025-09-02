@@ -72,6 +72,7 @@ public:
     void visit(ExprManhattanDistance&) override;
     void visit(ExprEuclideanDistance&) override;
     void visit(ExprEditDistance&) override;
+    void visit(ExprNormalize&) override;
 
 private:
 
