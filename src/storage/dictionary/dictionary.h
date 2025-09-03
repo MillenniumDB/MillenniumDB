@@ -23,4 +23,9 @@ public:
     {
         dictionary->to_string(os);
     }
+
+    bool operator==(const Dictionary& other)
+    {
+        return dictionary->is_equal(other.dictionary);
+    }
 };

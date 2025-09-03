@@ -38,6 +38,8 @@ public:
         case RDF_OID::GenericSubType::BLANK:
         case RDF_OID::GenericSubType::IRI:
         case RDF_OID::GenericSubType::PATH:
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE:
+        case RDF_OID::GenericSubType::TENSOR_FLOAT:
             return ObjectId::get_null();
         default:
             assert(false);

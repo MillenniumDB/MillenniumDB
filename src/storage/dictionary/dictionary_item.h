@@ -10,7 +10,7 @@
 
 class DictionaryItem {
 public:
-    enum type {
+    enum Type {
         TYPE_LITERAL,
         TYPE_ARRAY,
         TYPE_OBJECT
@@ -19,6 +19,7 @@ public:
     virtual ~DictionaryItem() = default;
     virtual void to_string(std::ostream& os) const = 0;
     virtual char* to_external_string(char* buffer) const = 0;
+    virtual bool is_equal(const std::unique_ptr<DictionaryItem>& other) const = 0;
 };
 
 class DictionaryLiteral : public DictionaryItem {
@@ -29,6 +30,13 @@ public:
         object_id(object)
     { }
 
+    bool is_equal(const std::unique_ptr<DictionaryItem>& other) const override
+    {
+        auto other_ptr = dynamic_cast<DictionaryLiteral*>(other.get());
+        return other_ptr != nullptr && object_id == other_ptr->object_id;
+    }
+
+protected:
     void to_string(std::ostream& os) const override
     {
         os << object_id;
@@ -57,6 +65,22 @@ public:
     void add(std::unique_ptr<DictionaryItem> item)
     {
         values.push_back(std::move(item));
+    }
+
+    bool is_equal(const std::unique_ptr<DictionaryItem>& other) const override
+    {
+        auto other_ptr = dynamic_cast<DictionaryArray*>(other.get());
+
+        if (other_ptr == nullptr || other_ptr->values.size() != values.size()) {
+            return false;
+        }
+
+        for (uint64_t i = 0; i < values.size(); ++i) {
+            if (!values[i]->is_equal(other_ptr->values[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
 protected:
@@ -106,6 +130,21 @@ public:
         keys[key] = std::move(item);
     }
 
+    bool is_equal(const std::unique_ptr<DictionaryItem>& other) const override
+    {
+        auto other_ptr = dynamic_cast<DictionaryObject*>(other.get());
+        if (other_ptr == nullptr || keys.size() != other_ptr->keys.size()) {
+            return false;
+        }
+
+        auto comp = [](const std::pair<const ObjectId, std::unique_ptr<DictionaryItem>>& pair1,
+                       const std::pair<const ObjectId, std::unique_ptr<DictionaryItem>>& pair2) {
+            return pair1.first == pair2.first && pair1.second->is_equal(pair2.second);
+        };
+        return std::equal(keys.begin(), keys.end(), other_ptr->keys.begin(), other_ptr->keys.end(), comp);
+    }
+
+protected:
     void to_string(std::ostream& os) const override
     {
         os << "{";
