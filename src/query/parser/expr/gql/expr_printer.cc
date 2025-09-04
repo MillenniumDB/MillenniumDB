@@ -460,6 +460,11 @@ void ExprPrinter::visit(ExprAggCountAll&)
     os << "COUNT(*)";
 }
 
+void ExprPrinter::visit(ExprProperties& expr)
+{
+    os << "PROPERTIES(" << expr.var << ")";
+}
+
 void ExprPrinter::visit(ExprAggCount& expr)
 {
     os << "COUNT(" << (expr.distinct ? "DISTINCT " : "");

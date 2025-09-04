@@ -15,86 +15,99 @@
 
 #include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
-#include "storage/page/versioned_page.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
+#include "storage/page/versioned_page.h"
 
 namespace Import {
-template <std::size_t N>
+template<std::size_t N>
 struct RunRecordComparator {
-    constexpr bool operator()(const std::pair<std::array<uint64_t, N>, uint64_t>& lhs,
-                              const std::pair<std::array<uint64_t, N>, uint64_t>& rhs) const
+    constexpr bool operator()(
+        const std::pair<std::array<uint64_t, N>, uint64_t>& lhs,
+        const std::pair<std::array<uint64_t, N>, uint64_t>& rhs
+    ) const
     {
         return lhs.first > rhs.first;
     }
 };
 
-template <std::size_t N>
+template<std::size_t N>
 class DiskVector {
 public:
     DiskVector(const std::string& filename) :
-        filename (filename),
-        buffer_size (VPage::SIZE*N*sizeof(uint64_t)),
-        buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size)))
+        filename(filename),
+        buffer_size(VPage::SIZE * N * sizeof(uint64_t)),
+        buffer(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size)))
     {
-        file.open(filename, std::ios::out|std::ios::app);
+        file.open(filename, std::ios::out | std::ios::app);
         if (file.fail()) {
             throw std::runtime_error("Could not open file " + filename);
         }
         file.close();
-        file.open(filename, std::ios::in|std::ios::out|std::ios::binary);
+        file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
 
-        compression_buffer = new char[VPage::SIZE*2];
+        compression_buffer = new char[VPage::SIZE * 2];
     }
 
-    ~DiskVector() {
+    ~DiskVector()
+    {
         delete[] compression_buffer;
     }
 
     // returns the tuple count
-    void create_bpt(const std::string& base_name,
-                    std::array<uint64_t, N>&& new_permutation,
-                    StatsProcessor<N>& stat_processor)
+    void create_bpt(
+        const std::string& base_name,
+        std::array<uint64_t, N>&& new_permutation,
+        StatsProcessor<N>& stat_processor
+    )
     {
         reorder_cols(std::move(new_permutation));
         merge_sort(base_name, stat_processor);
     }
 
-    void finish_appends() {
-        file.write(buffer, buffer_append_current_pos*N*sizeof(uint64_t));
+    void finish_appends()
+    {
+        file.write(buffer, buffer_append_current_pos * N * sizeof(uint64_t));
         uint64_t file_length = file.tellg();
-        total_tuples = file_length / (N*sizeof(uint64_t));
+        total_tuples = file_length / (N * sizeof(uint64_t));
     }
 
-    void start_indexing(char* new_buffer,
-                        uint64_t max_buffer_size,
-                        std::array<uint64_t, N> original_permutation)
+    void start_indexing(
+        char* new_buffer,
+        uint64_t max_buffer_size,
+        std::array<uint64_t, N> original_permutation
+    )
     {
         // free append buffer
         MDB_ALIGNED_FREE(buffer);
         current_permutation = original_permutation;
         // buffer_size must be divisible by (VPage::SIZE*N*sizeof(uint64_t)
-        auto max_blocks_per_run = max_buffer_size / (VPage::SIZE*N*sizeof(uint64_t));
-        auto new_buffer_size = max_blocks_per_run * (VPage::SIZE*N*sizeof(uint64_t));
+        auto max_blocks_per_run = max_buffer_size / (VPage::SIZE * N * sizeof(uint64_t));
+        auto new_buffer_size = max_blocks_per_run * (VPage::SIZE * N * sizeof(uint64_t));
         this->buffer_size = new_buffer_size;
         buffer = new_buffer;
     }
 
-    void finish_indexing() {
+    void finish_indexing()
+    {
         file.close();
         std::remove(filename.c_str());
     }
 
     // If start_indexing() was not called, need to call this at the end
-    void skip_indexing() {
+    void skip_indexing()
+    {
         file.close();
         std::remove(filename.c_str());
         free(buffer);
     }
 
-    void push_back(const std::array<uint64_t, N>&& record) {
-        std::memcpy(&buffer[buffer_append_current_pos*N*sizeof(uint64_t)],
-                    &record[0],
-                    N * sizeof(uint64_t));
+    void push_back(const std::array<uint64_t, N>&& record)
+    {
+        std::memcpy(
+            &buffer[buffer_append_current_pos * N * sizeof(uint64_t)],
+            &record[0],
+            N * sizeof(uint64_t)
+        );
         buffer_append_current_pos++;
         if (buffer_append_current_pos == VPage::SIZE) {
             file.write(buffer, buffer_size);
@@ -103,28 +116,32 @@ public:
     }
 
     // This number may have duplicates
-    inline uint64_t get_total_tuples() const {
+    inline uint64_t get_total_tuples() const
+    {
         return total_tuples;
     }
-    void begin_tuple_iter() {
+    void begin_tuple_iter()
+    {
         file.seekg(0, file.beg);
         iter_current_tuple = 0;
         // set iter_buffer_offset so its 0 when next_tuple() is called the first time
         iter_buffer_offset = VPage::SIZE - 1;
     }
 
-    bool has_next_tuple() {
+    bool has_next_tuple()
+    {
         return iter_current_tuple < total_tuples;
     }
 
-    std::array<uint64_t, N>& next_tuple() {
+    std::array<uint64_t, N>& next_tuple()
+    {
         // max tuples in buffer is VPage::SIZE
-        iter_buffer_offset = (iter_buffer_offset+1) % VPage::SIZE;
+        iter_buffer_offset = (iter_buffer_offset + 1) % VPage::SIZE;
         iter_current_tuple++;
 
         if (iter_buffer_offset == 0) {
             // leer del disco a buffer
-            file.read(buffer, VPage::SIZE*N*sizeof(uint64_t));
+            file.read(buffer, VPage::SIZE * N * sizeof(uint64_t));
             file.clear();
         }
         auto ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer) + iter_buffer_offset;
@@ -132,15 +149,19 @@ public:
     }
 
 private:
-    constexpr uint64_t division_round_up(uint64_t a, uint64_t b) {
+    constexpr uint64_t division_round_up(uint64_t a, uint64_t b)
+    {
         return (a / b) + (a % b != 0);
     }
 
-    uint32_t get_page_size(std::bitset<N * 8> bitset, uint64_t leaf_records) {
-        return 2 * sizeof(uint32_t) + N + bitset.count() + leaf_records * (sizeof(uint64_t) * N - bitset.count());
+    uint32_t get_page_size(std::bitset<N * 8> bitset, uint64_t leaf_records)
+    {
+        return 2 * sizeof(uint32_t) + N + bitset.count()
+             + leaf_records * (sizeof(uint64_t) * N - bitset.count());
     }
 
-    void merge_sort(const std::string& base_name, StatsProcessor<N>& stat_processor) {
+    void merge_sort(const std::string& base_name, StatsProcessor<N>& stat_processor)
+    {
         BPTLeafWriter<N> leaf_writer(base_name + ".leaf");
         BPTDirWriter<N> dir_writer(base_name + ".dir");
 
@@ -197,19 +218,13 @@ private:
                 if (current_tuple + leaf_tuples < valid_tuples) {
                     // this leaf is full and there are more leaves
                     tuples_written = leaf_tuples;
-                    leaf_writer.process_block(compression_buffer,
-                                              tuples_written,
-                                              bitset,
-                                              ++leaf_current_block);
+                    leaf_writer
+                        .process_block(compression_buffer, tuples_written, bitset, ++leaf_current_block);
                 } else {
                     // last leaf
                     tuples_written = leaf_tuples;
-                    leaf_writer.process_block(compression_buffer,
-                                              tuples_written,
-                                              bitset,
-                                              0);
+                    leaf_writer.process_block(compression_buffer, tuples_written, bitset, 0);
                 }
-
 
                 for (uint64_t i = 0; i < tuples_written; i++) {
                     stat_processor.process_tuple(*(ptr + i));
@@ -227,7 +242,7 @@ private:
         // A run is a set of ordered tuples (ordered when method reorder_cols was called)
         // A run is divided in blocks. Tuples from disk are read 1 block at a time
         // buffer_size was chosen to be a multiple of block_size
-        constexpr uint64_t block_size = VPage::SIZE*N*sizeof(uint64_t);
+        constexpr uint64_t block_size = VPage::SIZE * N * sizeof(uint64_t);
 
         const uint64_t total_runs = division_round_up(file_length, buffer_size);
         const uint64_t total_blocks = division_round_up(file_length, block_size);
@@ -236,36 +251,37 @@ private:
         const uint64_t max_blocks_per_run = buffer_size / block_size;
 
         const uint64_t tuples_in_last_block = (total_tuples % max_tuples_per_block == 0)
-                                            ? max_tuples_per_block
-                                            : (total_tuples % max_tuples_per_block);
+                                                ? max_tuples_per_block
+                                                : (total_tuples % max_tuples_per_block);
 
         const uint64_t blocks_in_last_run = (total_blocks % max_blocks_per_run == 0)
-                                            ? max_blocks_per_run
-                                            : (total_blocks % max_blocks_per_run);
-
+                                              ? max_blocks_per_run
+                                              : (total_blocks % max_blocks_per_run);
 
         // throw exception if we can't order with 1 merge
-        if (total_runs*block_size + (BPTLeafWriter<N>::max_records*N*sizeof(uint64_t)) > buffer_size) {
+        if (total_runs * block_size + (BPTLeafWriter<N>::max_records * N * sizeof(uint64_t)) > buffer_size) {
             throw std::logic_error("Can't order tuples with one merge, need a bigger buffer size.");
         }
 
         // When we have only one run we skip the merge
-        std::priority_queue<std::pair<std::array<uint64_t, N>, uint64_t>,               // tuple: (record, run_number)
-                            std::vector< std::pair<std::array<uint64_t, N>, uint64_t>>, // container
-                            RunRecordComparator<N>                                      // comparator
-                            > queue;
+        std::priority_queue<
+            std::pair<std::array<uint64_t, N>, uint64_t>, // tuple: (record, run_number)
+            std::vector<std::pair<std::array<uint64_t, N>, uint64_t>>, // container
+            RunRecordComparator<N> // comparator
+            >
+            queue;
 
         // Fill buffers and put the first tuple of the run in the heap
-        std::array<uint64_t, N>** start_pos   = new std::array<uint64_t, N>*[total_runs];
-        std::array<uint64_t, N>** end_pos     = new std::array<uint64_t, N>*[total_runs];
+        std::array<uint64_t, N>** start_pos = new std::array<uint64_t, N>*[total_runs];
+        std::array<uint64_t, N>** end_pos = new std::array<uint64_t, N>*[total_runs];
         std::array<uint64_t, N>** current_pos = new std::array<uint64_t, N>*[total_runs];
 
         uint64_t* current_block = new uint64_t[total_runs];
-        uint64_t* end_block     = new uint64_t[total_runs];
+        uint64_t* end_block = new uint64_t[total_runs];
 
-        for (uint64_t run = 0; run < total_runs-1; ++run) {
-            start_pos[run] = reinterpret_cast<std::array<uint64_t, N>*>(buffer + (run*block_size));
-            end_pos[run]   = reinterpret_cast<std::array<uint64_t, N>*>(buffer + ((run+1)*block_size));
+        for (uint64_t run = 0; run < total_runs - 1; ++run) {
+            start_pos[run] = reinterpret_cast<std::array<uint64_t, N>*>(buffer + (run * block_size));
+            end_pos[run] = reinterpret_cast<std::array<uint64_t, N>*>(buffer + ((run + 1) * block_size));
             current_pos[run] = start_pos[run];
             current_block[run] = 0;
             end_block[run] = max_blocks_per_run;
@@ -276,12 +292,16 @@ private:
         }
         const auto last_run = total_runs - 1;
         { // last run case
-            start_pos[last_run] = reinterpret_cast<std::array<uint64_t, N>*>(buffer + (last_run*block_size));
+            start_pos[last_run] = reinterpret_cast<std::array<uint64_t, N>*>(
+                buffer + (last_run * block_size)
+            );
             if (blocks_in_last_run == 1) {
                 // the last block of the last run may be not full
                 end_pos[last_run] = start_pos[last_run] + tuples_in_last_block;
             } else {
-                end_pos[last_run] = reinterpret_cast<std::array<uint64_t, N>*>(buffer + ((last_run+1)*block_size));
+                end_pos[last_run] = reinterpret_cast<std::array<uint64_t, N>*>(
+                    buffer + ((last_run + 1) * block_size)
+                );
             }
             current_pos[last_run] = start_pos[last_run];
             current_block[last_run] = 0;
@@ -297,14 +317,16 @@ private:
         }
 
         // the output block is the last block
-        auto output_block = reinterpret_cast<std::array<uint64_t, N>*>(buffer + (total_runs*block_size));
+        auto output_block = reinterpret_cast<std::array<uint64_t, N>*>(buffer + (total_runs * block_size));
         auto output_block_curr = 0;
 
         uint32_t leaf_current_block = 0;
         const uint32_t leaf_last_block = division_round_up(total_tuples, BPTLeafWriter<N>::max_records);
         // set last_seen_record as an impossible record
         std::array<uint64_t, N> last_seen_record; // used to remove duplicates
-        for (uint64_t i = 0; i < N; i++) { last_seen_record[i] = UINT64_MAX; }
+        for (uint64_t i = 0; i < N; i++) {
+            last_seen_record[i] = UINT64_MAX;
+        }
 
         std::bitset<N * 8> bitset_tmp;
         std::bitset<N * 8> bitset;
@@ -346,11 +368,7 @@ private:
 
                 ++leaf_current_block;
                 uint32_t next_bpt_block = leaf_current_block < leaf_last_block ? leaf_current_block : 0;
-                leaf_writer.process_block(compression_buffer,
-                                          output_block_curr - 1,
-                                          bitset,
-                                          next_bpt_block);
-
+                leaf_writer.process_block(compression_buffer, output_block_curr - 1, bitset, next_bpt_block);
 
                 output_block[0] = last_seen_record;
                 output_block_curr = 1;
@@ -399,17 +417,21 @@ private:
         }
 
         // delete aux arrays
-        delete[](start_pos);
-        delete[](end_pos);
-        delete[](current_pos);
-        delete[](current_block);
-        delete[](end_block);
+        delete[] (start_pos);
+        delete[] (end_pos);
+        delete[] (current_pos);
+        delete[] (current_block);
+        delete[] (end_block);
 
         return;
     }
 
-
-    void write_to_buffer(std::array<uint64_t, N>* records_buffer, std::bitset<N * 8> bitset, uint32_t n_records) {
+    void write_to_buffer(
+        std::array<uint64_t, N>* records_buffer,
+        std::bitset<N * 8> bitset,
+        uint32_t n_records
+    )
+    {
         uint64_t buffer_pos = 0;
 
         // bitset
@@ -439,8 +461,8 @@ private:
         }
     }
 
-
-    void reorder_cols(std::array<uint64_t, N>&& new_permutation) {
+    void reorder_cols(std::array<uint64_t, N>&& new_permutation)
+    {
         file.seekg(0, file.end);
         const uint64_t file_length = file.tellg();
         // repeated_tuples is 0 when buffer_size < file_length even if there are repeated tuples
@@ -473,7 +495,7 @@ private:
                     read_ptr++;
                     while (read_ptr != end_ptr && *read_ptr == *write_ptr) {
                         read_ptr++;
-                        write_size -= N*sizeof(uint64_t);
+                        write_size -= N * sizeof(uint64_t);
                         repeated_tuples++;
                     }
                     write_ptr++;
@@ -490,8 +512,7 @@ private:
         current_permutation = std::move(new_permutation);
     }
 
-    void reorder_chunk(uint64_t read_size,
-                       const std::array<uint64_t, N>& new_permutation)
+    void reorder_chunk(uint64_t read_size, const std::array<uint64_t, N>& new_permutation)
     {
         static_assert(N == 1 || N == 2 || N == 3 || N == 4, "Unsupported N");
         assert(current_permutation.size() == new_permutation.size());
@@ -503,108 +524,105 @@ private:
         auto end_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer + read_size);
 
         if (N == 2) {
-            for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                    key_ptr < end_ptr;
-                    ++key_ptr)
+            for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
+                 ++key_ptr)
             {
                 std::swap((*key_ptr)[0], (*key_ptr)[1]);
             }
         }
 
         if (N == 3) {
-            if (new_permutation[0] == current_permutation[1]
-                && new_permutation[1] == current_permutation[2]
+            if (new_permutation[0] == current_permutation[1] && new_permutation[1] == current_permutation[2]
                 && new_permutation[2] == current_permutation[0])
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux      = (*key_ptr)[0];
+                    auto aux = (*key_ptr)[0];
                     (*key_ptr)[0] = (*key_ptr)[1];
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            }
-            else if (new_permutation[0] == current_permutation[1]
-                  && new_permutation[1] == current_permutation[0]
-                  && new_permutation[2] == current_permutation[2])
+            } else if (new_permutation[0] == current_permutation[1]
+                       && new_permutation[1] == current_permutation[0]
+                       && new_permutation[2] == current_permutation[2])
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux      = (*key_ptr)[0];
+                    auto aux = (*key_ptr)[0];
                     (*key_ptr)[0] = (*key_ptr)[1];
                     (*key_ptr)[1] = aux;
                 }
-            }
-            else if (new_permutation[0] == current_permutation[2]
-                  && new_permutation[1] == current_permutation[1]
-                  && new_permutation[2] == current_permutation[0])
+            } else if (new_permutation[0] == current_permutation[2]
+                       && new_permutation[1] == current_permutation[1]
+                       && new_permutation[2] == current_permutation[0])
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux      = (*key_ptr)[0];
+                    auto aux = (*key_ptr)[0];
                     (*key_ptr)[0] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            }
-            else {
+            } else if (new_permutation[0] == current_permutation[2]
+                       && new_permutation[1] == current_permutation[0]
+                       && new_permutation[2] == current_permutation[1])
+            {
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
+                     ++key_ptr)
+                {
+                    auto aux = (*key_ptr)[0];
+                    (*key_ptr)[0] = (*key_ptr)[2];
+                    (*key_ptr)[2] = (*key_ptr)[1];
+                    (*key_ptr)[1] = aux;
+                }
+            } else {
                 throw std::invalid_argument("Unsupported permutation");
             }
         }
 
         if (N == 4) {
-            if (new_permutation[0] == current_permutation[1]
-                && new_permutation[1] == current_permutation[2]
+            if (new_permutation[0] == current_permutation[1] && new_permutation[1] == current_permutation[2]
                 && new_permutation[2] == current_permutation[0]
                 && new_permutation[3] == current_permutation[3])
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux      = (*key_ptr)[0];
+                    auto aux = (*key_ptr)[0];
                     (*key_ptr)[0] = (*key_ptr)[1];
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            }
-            else if (new_permutation[0] == current_permutation[0]
-                  && new_permutation[1] == current_permutation[2]
-                  && new_permutation[2] == current_permutation[1]
-                  && new_permutation[3] == current_permutation[3])
+            } else if (new_permutation[0] == current_permutation[0]
+                       && new_permutation[1] == current_permutation[2]
+                       && new_permutation[2] == current_permutation[1]
+                       && new_permutation[3] == current_permutation[3])
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux      = (*key_ptr)[1];
+                    auto aux = (*key_ptr)[1];
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            }
-            else if (new_permutation[0] == current_permutation[3] // edge
-                  && new_permutation[1] == current_permutation[2] // from
-                  && new_permutation[2] == current_permutation[1]  // to
-                  && new_permutation[3] == current_permutation[0]) // type
+            } else if (new_permutation[0] == current_permutation[3] // edge
+                       && new_permutation[1] == current_permutation[2] // from
+                       && new_permutation[2] == current_permutation[1] // to
+                       && new_permutation[3] == current_permutation[0]) // type
             {
-                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer);
-                     key_ptr < end_ptr;
+                for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
                 {
-                    auto aux0     = (*key_ptr)[0];
-                    auto aux1     = (*key_ptr)[1];
+                    auto aux0 = (*key_ptr)[0];
+                    auto aux1 = (*key_ptr)[1];
                     (*key_ptr)[0] = (*key_ptr)[3];
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux1;
                     (*key_ptr)[3] = aux0;
                 }
-            }
-            else {
+            } else {
                 throw std::invalid_argument("Unsupported permutation");
             }
         }

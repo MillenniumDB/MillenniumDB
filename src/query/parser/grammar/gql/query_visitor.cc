@@ -1909,6 +1909,15 @@ std::any QueryVisitor::visitLabelsFunction(GQLParser::LabelsFunctionContext* ctx
     return 0;
 }
 
+std::any QueryVisitor::visitPropertiesFunction(GQLParser::PropertiesFunctionContext* ctx)
+{
+    LOG_VISITOR
+    VarId var = get_query_ctx().get_or_create_var(ctx->variable()->getText());
+    VarType::Type type = singleton_types[var];
+    current_expr = std::make_unique<ExprProperties>(var, type);
+    return 0;
+}
+
 std::any QueryVisitor::visitGqlVariableExpression(GQLParser::GqlVariableExpressionContext* ctx)
 {
     LOG_VISITOR

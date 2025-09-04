@@ -1051,6 +1051,8 @@ public:
 
     virtual std::any visitLabelsFunction(GQLParser::LabelsFunctionContext *context) = 0;
 
+    virtual std::any visitPropertiesFunction(GQLParser::PropertiesFunctionContext *context) = 0;
+
     virtual std::any visitSimpleWhenClause(GQLParser::SimpleWhenClauseContext *context) = 0;
 
     virtual std::any visitSearchedWhenClause(GQLParser::SearchedWhenClauseContext *context) = 0;

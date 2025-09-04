@@ -1,0 +1,172 @@
+{
+    "head": {
+        "vars": [
+            "s",
+            "tensor"
+        ]
+    },
+    "results": {
+        "bindings": [
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/emptyFloat"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/emptyDouble"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski1"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-10.000000, -10.000000, -10.000000, -10.000000, -10.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski2"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-1.000000, -1.000000, -1.000000, -1.000000, -1.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski3"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-0.100000, -0.100000, -0.100000, -0.100000, -0.100000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski4"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.000000, 0.000000, 0.000000, 0.000000, 0.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski5"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.100000, 0.100000, 0.100000, 0.100000, 0.100000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski6"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[1.000000, 1.000000, 1.000000, 1.000000, 1.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/minkowski7"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[10.000000, 10.000000, 10.000000, 10.000000, 10.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine1"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[1.000000, 0.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine2"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.809017, 0.587785]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine3"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.500000, 0.866025]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine4"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[0.000000, 1.000000]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine5"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-0.500000, 0.866025]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine6"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-0.809017, 0.587785]"
+                }
+            },
+            {
+                "s": {
+                    "type": "uri",
+                    "value": "https://example.com/cosine7"
+                },
+                "tensor": {
+                    "type": "literal",
+                    "value": "[-1.000000, 0.000000]"
+                }
+            }
+        ]
+    }
+}

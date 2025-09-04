@@ -201,7 +201,8 @@ std::string Conversions::to_lexical_str(ObjectId oid)
     case GQL_OID::Type::EDGE_LABEL:
     case GQL_OID::Type::NODE_KEY:
     case GQL_OID::Type::EDGE_KEY:
-    case GQL_OID::Type::LIST: {
+    case GQL_OID::Type::LIST:
+    case GQL_OID::Type::DICTIONARY: {
         return "";
     }
     }
@@ -337,6 +338,12 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
             debug_print(os, *it);
         }
         os << "]";
+        break;
+    }
+    case GQL_OID::Type::DICTIONARY: {
+        std::unique_ptr<Dictionary> dict;
+        Common::Conversions::unpack_dictionary(oid, dict);
+        dict->to_string(os);
         break;
     }
     case GQL_OID::Type::STRING_SIMPLE_INLINE:

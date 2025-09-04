@@ -166,6 +166,11 @@ public:
         case GQL_OID::Type::EDGE_KEY: {
             return encode_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
         }
+        case GQL_OID::Type::DICTIONARY: {
+            std::unique_ptr<Dictionary> dictionary;
+            Common::Conversions::unpack_dictionary(oid, dictionary);
+            return encode_dictionary(*dictionary);
+        }
         case GQL_OID::Type::LIST: {
             return encode_gql_list(oid);
         }

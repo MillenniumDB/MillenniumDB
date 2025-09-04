@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "graph_models/quad_model/comparisons.h"
 
 namespace MQL {
 
@@ -23,9 +24,8 @@ public:
         // Check if the ids are equal
         if (lhs_oid == rhs_oid) {
             return ObjectId(ObjectId::BOOL_TRUE);
-        } else {
-            return ObjectId(ObjectId::BOOL_FALSE);
         }
+        return ObjectId(Comparisons::compare(lhs_oid, rhs_oid) == 0);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override {

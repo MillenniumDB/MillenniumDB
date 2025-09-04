@@ -234,6 +234,7 @@ public:
     std::any visitGqlBinarySetFunction(GQLParser::GqlBinarySetFunctionContext* ctx) override;
 
     std::any visitLabelsFunction(GQLParser::LabelsFunctionContext* ctx) override;
+    std::any visitPropertiesFunction(GQLParser::PropertiesFunctionContext* ctx) override;
 
     std::any visitFilterStatement(GQLParser::FilterStatementContext* ctx) override;
 };

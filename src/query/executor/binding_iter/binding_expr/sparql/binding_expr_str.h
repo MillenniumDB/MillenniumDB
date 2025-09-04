@@ -30,7 +30,9 @@ public:
         case RDF_OID::GenericSubType::DOUBLE:
         case RDF_OID::GenericSubType::DECIMAL:
         case RDF_OID::GenericSubType::BOOL:
-        case RDF_OID::GenericSubType::DATE: {
+        case RDF_OID::GenericSubType::DATE:
+        case RDF_OID::GenericSubType::TENSOR_FLOAT:
+        case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
             auto str = Conversions::to_lexical_str(expr_oid);
             return Conversions::pack_string_simple(str);
         }

@@ -1,10 +1,10 @@
 #include "transliterator.h"
 
+#include <cassert>
 #include <stdexcept>
 
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
-#include <unicode/uchar.h>
 
 Transliterator* Transliterator::instance = nullptr;
 std::mutex Transliterator::instance_mutex;
@@ -20,17 +20,19 @@ const Transliterator* Transliterator::get_instance()
 
 Transliterator::Transliterator()
 {
+    auto check_ec = [&](const std::string& msg) {
+        if (U_FAILURE(ec)) {
+            throw std::runtime_error("Could not create " + msg + ". ICU Error code: " + std::to_string(ec));
+        }
+    };
+
     nfkd_casefold_transliterator = icu::Transliterator::createInstance(
         // NFKD, then remove Mark (nonspacing), then lowercase
         "NFKD; [:Mn:] Remove; Lower",
         UTRANS_FORWARD,
         ec
     );
-    if (U_FAILURE(ec)) {
-        throw std::runtime_error(
-            "Could not create NFKD casefold transliterator. ICU Error code: " + std::to_string(ec)
-        );
-    }
+    check_ec("NFKD casefold transliterator");
 }
 
 std::string Transliterator::nfkd_casefold(const std::string& input) const

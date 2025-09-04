@@ -1058,26 +1058,6 @@ void OnDiskImport::start_import(MDBIstream& in)
     directed_equal_edges.finish_appends();
     undirected_equal_edges.finish_appends();
 
-    { // DIRECTED EDGES TABLE
-        EdgeTableMemImport<3> table_writer(db_folder + "/d_edges.table");
-
-        directed_edges.begin_tuple_iter();
-        while (directed_edges.has_next_tuple()) {
-            auto& tuple = directed_edges.next_tuple();
-            table_writer.insert_tuple(tuple);
-        }
-    }
-
-    { // UNDIRECTED EDGES TABLE
-        EdgeTableMemImport<3> table_writer(db_folder + "/u_edges.table");
-
-        undirected_edges.begin_tuple_iter();
-        while (undirected_edges.has_next_tuple()) {
-            auto& tuple = undirected_edges.next_tuple();
-            table_writer.insert_tuple(tuple);
-        }
-    }
-
     node_labels.start_indexing(buffer, buffer_size, { 0, 1 });
     edge_labels.start_indexing(buffer, buffer_size, { 0, 1 });
     node_properties.start_indexing(buffer, buffer_size, { 0, 1, 2 });
@@ -1153,7 +1133,8 @@ void OnDiskImport::start_import(MDBIstream& in)
         size_t COL_N1 = 0, COL_N2 = 1, COL_EDGE = 2;
         NoStat<3> stat;
 
-        undirected_edges.create_bpt(db_folder + "/u_edge", { COL_N1, COL_N2, COL_EDGE }, stat);
+        undirected_edges.create_bpt(db_folder + "/n1_n2_edge", { COL_N1, COL_N2, COL_EDGE }, stat);
+        undirected_edges.create_bpt(db_folder + "/edge_n1_n2", { COL_EDGE, COL_N1, COL_N2 }, stat);
     }
 
     { // DIRECTED EDGES
@@ -1162,6 +1143,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         directed_edges.create_bpt(db_folder + "/from_to_edge", { COL_FROM, COL_TO, COL_EDGE }, no_stat);
         directed_edges.create_bpt(db_folder + "/to_from_edge", { COL_TO, COL_FROM, COL_EDGE }, no_stat);
+        directed_edges.create_bpt(db_folder + "/edge_from_to", { COL_EDGE, COL_FROM, COL_TO }, no_stat);
     }
 
     { // UNDIRECTED EQUAL EDGES

@@ -1,0 +1,5 @@
+PREFIX : <http://www.example.org/>
+
+SELECT (STR(?t) as ?tensor) WHERE {
+    BIND("[0.70016, 0.225800, 0.000000]"^^mdbtype:tensorDouble as ?t)
+}

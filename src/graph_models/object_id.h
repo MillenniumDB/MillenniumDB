@@ -129,6 +129,8 @@ public:
     static constexpr uint64_t MASK_LIST                    = 0xF0'00000000000000UL; // 0b1111'00'00
     static constexpr uint64_t MASK_GQL_PATH                = 0xF4'00000000000000UL; // 0b1111'01'00
     static constexpr uint64_t MASK_DIRECTION               = 0xF8'00000000000000UL; // 0b1111'10'00
+    static constexpr uint64_t MASK_DICTIONARY              = 0xFC'00000000000000UL; // 0b1111'11'00
+    static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xFE'00000000000000UL; // 0b1111'11'10
 
     static constexpr uint64_t MASK_NOT_FOUND               = 0xFF'00000000000000UL; // 0b1111'11'11
 

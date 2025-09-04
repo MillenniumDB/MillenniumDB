@@ -96,6 +96,11 @@ public:
         tmp = std::make_unique<ExprLabels>(expr.var, expr.type);
     }
 
+    void visit(ExprProperties& expr)
+    {
+        tmp = std::make_unique<ExprProperties>(expr.var, expr.type);
+    }
+
     void visit(ExprOr& expr_or)
     {
         tmp = expr_or.clone();

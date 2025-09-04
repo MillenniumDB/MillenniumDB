@@ -10,6 +10,8 @@
 #include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/object_id.h"
 #include "query/exceptions.h"
+#include "storage/dictionary/dictionary.h"
+#include "storage/dictionary/dictionary_encoder.h"
 #include "system/string_manager.h"
 #include "system/tensor_manager.h"
 #include "system/tmp_manager.h"
@@ -400,6 +402,45 @@ inline double to_double(ObjectId oid)
     default:
         throw LogicException("Called to_double with incorrect ObjectId type, this should never happen");
     }
+}
+
+inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
+{
+    DictionaryEncoder encoder;
+    char* buffer = get_query_ctx().get_buffer1();
+    uint64_t encoded_size = encoder.encode(dict, buffer);
+
+    std::string dict_str(buffer, encoded_size);
+
+    uint64_t dict_id;
+    auto str_id = string_manager.get_str_id(dict_str);
+    if (str_id != ObjectId::MASK_NOT_FOUND) {
+        dict_id = ObjectId::MASK_DICTIONARY | ObjectId::MOD_EXTERNAL | str_id;
+    } else {
+        dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
+    }
+
+    return ObjectId(dict_id);
+}
+
+inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
+{
+    std::stringstream ss;
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+
+    switch (oid.get_type()) {
+    case ObjectId::MASK_DICTIONARY:
+        string_manager.print(ss, external_id);
+        break;
+    case ObjectId::MASK_DICTIONARY_TMP:
+        tmp_manager.print_str(ss, external_id);
+        break;
+    }
+
+    DictionaryEncoder encoder;
+    std::string dict_str = ss.str();
+    char* dict_ptr = dict_str.data();
+    out = encoder.decode(dict_ptr);
 }
 
 }} // namespace Common::Conversions

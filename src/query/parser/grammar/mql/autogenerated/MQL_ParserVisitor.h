@@ -175,19 +175,17 @@ public:
 
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext *context) = 0;
 
+    virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *context) = 0;
+
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext *context) = 0;
 
     virtual std::any visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext *context) = 0;
 
     virtual std::any visitExprParenthesis(MQL_Parser::ExprParenthesisContext *context) = 0;
 
-    virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *context) = 0;
-
     virtual std::any visitFunction(MQL_Parser::FunctionContext *context) = 0;
 
     virtual std::any visitRegex(MQL_Parser::RegexContext *context) = 0;
-
-    virtual std::any visitTextSearch(MQL_Parser::TextSearchContext *context) = 0;
 
     virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext *context) = 0;
 
@@ -196,6 +194,10 @@ public:
     virtual std::any visitManhattanDistance(MQL_Parser::ManhattanDistanceContext *context) = 0;
 
     virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext *context) = 0;
+
+    virtual std::any visitEditDistance(MQL_Parser::EditDistanceContext *context) = 0;
+
+    virtual std::any visitNormalize(MQL_Parser::NormalizeContext *context) = 0;
 
     virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *context) = 0;
 

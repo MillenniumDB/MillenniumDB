@@ -4,7 +4,6 @@
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/edge_direction_left.h"
 #include "query/executor/binding_iter/edge_direction_right.h"
-#include "query/executor/binding_iter/edge_table_lookup_gql.h"
 #include "query/executor/binding_iter/index_scan.h"
 
 using namespace GQL;
@@ -60,16 +59,12 @@ void DirectedEdgePlan::set_input_vars(const std::set<VarId>& input_vars)
 
 std::unique_ptr<BindingIter> DirectedEdgePlan::get_binding_iter() const
 {
+    std::array<std::unique_ptr<ScanRange>, 3> ranges;
     if (edge_assigned) {
-        return add_direction_iter(std::make_unique<EdgeTableLookupGQL>(
-            *gql_model.directed_edges,
-            edge.get_var(),
-            from,
-            to,
-            from_assigned,
-            to_assigned,
-            ObjectId::MASK_DIRECTED_EDGE
-        ));
+        ranges[0] = ScanRange::get(edge, edge_assigned);
+        ranges[1] = ScanRange::get(from, from_assigned);
+        ranges[2] = ScanRange::get(to, to_assigned);
+        return add_direction_iter(std::make_unique<IndexScan<3>>(*gql_model.edge_from_to, std::move(ranges)));
     }
 
     if (from == to) {
@@ -79,7 +74,6 @@ std::unique_ptr<BindingIter> DirectedEdgePlan::get_binding_iter() const
         return add_direction_iter(std::make_unique<IndexScan<2>>(*gql_model.equal_d_edge, std::move(ranges)));
     }
 
-    std::array<std::unique_ptr<ScanRange>, 3> ranges;
     if (to_assigned) {
         ranges[0] = ScanRange::get(to, to_assigned);
         ranges[1] = ScanRange::get(from, from_assigned);

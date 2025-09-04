@@ -49,6 +49,24 @@ namespace MQL { namespace Conversions {
         }
     }
 
+    inline ObjectId pack_string(const std::string& str)
+    {
+        uint64_t oid;
+        if (str.size() == 0) {
+            return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
+        } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
+            oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        } else {
+            const auto str_id = string_manager.get_str_id(str);
+            if (str_id != ObjectId::MASK_NOT_FOUND) {
+                oid = ObjectId::MASK_STRING_SIMPLE_EXTERN | str_id;
+            } else {
+                oid = ObjectId::MASK_STRING_SIMPLE_TMP | tmp_manager.get_str_id(str);
+            }
+        }
+        return ObjectId(oid);
+    }
+
     inline std::string unpack_named_node(ObjectId oid) {
         switch (oid.get_type()) {
         case ObjectId::MASK_NAMED_NODE_INLINED: {

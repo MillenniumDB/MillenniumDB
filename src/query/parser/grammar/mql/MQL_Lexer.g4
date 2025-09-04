@@ -1,6 +1,8 @@
 lexer grammar MQL_Lexer;
 
-channels { WS_CHANNEL }
+channels {
+    WS_CHANNEL
+}
 
 // KEYWORDS
 K_ACYCLIC: A C Y C L I C;
@@ -23,6 +25,7 @@ K_DESC: D E S C;
 K_DIMENSIONS: D I M E N S I O N S;
 K_DISTINCT: D I S T I N C T;
 K_EDGE: E D G E;
+K_EDIT_DISTANCE: E D I T '_' D I S T A N C E;
 K_EUCLIDEAN_DISTANCE: E U C L I D E A N '_' D I S T A N C E;
 K_FROM: F R O M;
 K_INCOMING: I N C O M I N G;
@@ -44,6 +47,7 @@ K_MANHATTAN_DISTANCE: M A N H A T T A N '_' D I S T A N C E;
 K_MATCH: M A T C H;
 K_MAX: M A X;
 K_MIN: M I N;
+K_NORMALIZE: N O R M A L I Z E;
 K_OBJECTS: O B J E C T S;
 K_OFFSET: O F F S E T;
 K_OPTIONAL: O P T I O N A L;
@@ -71,7 +75,6 @@ K_WITH: W I T H;
 K_WHERE: W H E R E;
 K_YIELD: Y I E L D;
 
-
 // Special cases: true and false are not a valid identifier
 TRUE_PROP: ':' 'true';
 FALSE_PROP: ':' 'false';
@@ -87,48 +90,49 @@ VARIABLE: '?' [A-Za-z] [A-Za-z0-9_]*;
 STRING: '"' ( ~'"' | '\\"')* '"';
 
 UNSIGNED_INTEGER: DIGIT+;
-UNSIGNED_FLOAT: DIGIT+ '.' DIGIT*
-              | '.' DIGIT+;
-UNSIGNED_SCIENTIFIC_NOTATION: DIGIT+ '.' DIGIT* EXPONENT
-                            | '.' DIGIT+ EXPONENT
-                            | DIGIT+ EXPONENT;
+UNSIGNED_FLOAT: DIGIT+ '.' DIGIT* | '.' DIGIT+;
+UNSIGNED_SCIENTIFIC_NOTATION:
+    DIGIT+ '.' DIGIT* EXPONENT
+    | '.' DIGIT+ EXPONENT
+    | DIGIT+ EXPONENT;
 
 NAME: [A-Za-z] [A-Za-z0-9_]*;
 
 // SYMBOLS
-LEQ:                                 '<=';
-GEQ:                                 '>=';
-EQ:                                  '==';
-NEQ:                                 '!=';
+LEQ: '<=';
+GEQ: '>=';
+EQ: '==';
+NEQ: '!=';
 
-LT:                                  '<';
-GT:                                  '>';
-SINGLE_EQ:                           '=';
-PATH_SEQUENCE:                       '/';
-PATH_ALTERNATIVE:                    '|';
-PATH_NEGATION:                       '^';
-STAR:                                '*';
-PERCENT:                             '%';
-QUESTION_MARK:                       '?';
-PLUS:                                '+';
-MINUS:                               '-';
-L_PAR:                               '(';
-R_PAR:                               ')';
-LCURLY_BRACKET:                      '{';
-RCURLY_BRACKET:                      '}';
-LSQUARE_BRACKET:                     '[';
-RSQUARE_BRACKET:                     ']';
-COMMA:                               ',';
-COLON:                               ':';
+LT: '<';
+GT: '>';
+SINGLE_EQ: '=';
+PATH_SEQUENCE: '/';
+PATH_ALTERNATIVE: '|';
+PATH_NEGATION: '^';
+STAR: '*';
+PERCENT: '%';
+QUESTION_MARK: '?';
+PLUS: '+';
+MINUS: '-';
+L_PAR: '(';
+R_PAR: ')';
+LCURLY_BRACKET: '{';
+RCURLY_BRACKET: '}';
+LSQUARE_BRACKET: '[';
+RSQUARE_BRACKET: ']';
+COMMA: ',';
+COLON: ':';
 
 WHITE_SPACE: [ \t\r\n]+ -> channel(WS_CHANNEL);
-SINGLE_LINE_COMMENT: '//' ~[\r\n]* (('\r'? '\n') | EOF) -> channel(HIDDEN);
+SINGLE_LINE_COMMENT:
+    '//' ~[\r\n]* (('\r'? '\n') | EOF) -> channel(HIDDEN);
 
-UNRECOGNIZED: . ;
+UNRECOGNIZED: .;
 
 fragment DIGIT: [0-9];
 
-fragment EXPONENT : ('e'|'E') ('+' | '-')? DIGIT+;
+fragment EXPONENT: ('e' | 'E') ('+' | '-')? DIGIT+;
 
 fragment A: [aA];
 fragment B: [bB];

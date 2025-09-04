@@ -100,6 +100,7 @@ public:
     void visit(ExprSearchedCase&) override;
     void visit(ExprCast&) override;
     void visit(ExprLabels&) override;
+    void visit(ExprProperties&) override;
 
     void visit(ExprAggCountAll&) override;
     void visit(ExprAggCount&) override;

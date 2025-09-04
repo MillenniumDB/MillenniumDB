@@ -442,6 +442,7 @@ public:
     void visit(GQL::ExprVar&) override { }
     void visit(GQL::ExprProperty&) override { }
     void visit(GQL::ExprLabels&) override { }
+    void visit(GQL::ExprProperties&) override { }
 
 private:
     template<typename T>

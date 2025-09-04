@@ -2079,6 +2079,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPropertiesFunction(GQLParser::PropertiesFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitSimpleWhenClause(GQLParser::SimpleWhenClauseContext *ctx) override {
     return visitChildren(ctx);
   }

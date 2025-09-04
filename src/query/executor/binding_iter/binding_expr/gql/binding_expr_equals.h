@@ -9,39 +9,6 @@
 
 namespace GQL {
 
-// The following datatypes have know semantics and special handling in MillenniumDB.
-// If literals with any of the following datatypes have an invalid format, then during
-// parsing they are stored as a string with datatype instead of the specialized format.
-// This means any strings with datatype with any of the following datatypes are ill-typed
-// literals. They still have to be stored, but equality testing on them returns an error.
-static std::set<std::string> known_datatypes = {
-    "http://www.w3.org/2001/XMLSchema#date",
-    "http://www.w3.org/2001/XMLSchema#time",
-    "http://www.w3.org/2001/XMLSchema#dateTime",
-    "http://www.w3.org/2001/XMLSchema#dateTimeStamp",
-
-    "http://www.w3.org/2001/XMLSchema#string",
-    "http://www.w3.org/2001/XMLSchema#boolean",
-
-    "http://www.w3.org/2001/XMLSchema#integer",
-    "http://www.w3.org/2001/XMLSchema#decimal",
-    "http://www.w3.org/2001/XMLSchema#float",
-    "http://www.w3.org/2001/XMLSchema#double",
-
-    "http://www.w3.org/2001/XMLSchema#byte",
-    "http://www.w3.org/2001/XMLSchema#short",
-    "http://www.w3.org/2001/XMLSchema#int",
-    "http://www.w3.org/2001/XMLSchema#long",
-    "http://www.w3.org/2001/XMLSchema#positiveInteger",
-    "http://www.w3.org/2001/XMLSchema#negativeInteger",
-    "http://www.w3.org/2001/XMLSchema#nonPositiveInteger",
-    "http://www.w3.org/2001/XMLSchema#nonNegativeInteger",
-    "http://www.w3.org/2001/XMLSchema#unsignedByte",
-    "http://www.w3.org/2001/XMLSchema#unsignedShort",
-    "http://www.w3.org/2001/XMLSchema#unsignedInt",
-    "http://www.w3.org/2001/XMLSchema#unsignedLong",
-};
-
 class BindingExprEquals : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> lhs;
@@ -51,14 +18,6 @@ public:
         lhs(std::move(lhs)),
         rhs(std::move(rhs))
     { }
-
-    bool datatype_has_special_representation(const std::string& datatype)
-    {
-        if (known_datatypes.find(datatype) != known_datatypes.end()) {
-            return true;
-        }
-        return false;
-    }
 
     ObjectId eval(const Binding& binding) override
     {
@@ -93,8 +52,7 @@ public:
             return GQL::Conversions::pack_bool(true);
         }
 
-        if (lhs_generic_type == GQL_OID::GenericType::BOOL
-            && rhs_generic_type == GQL_OID::GenericType::BOOL)
+        if (lhs_generic_type == GQL_OID::GenericType::BOOL && rhs_generic_type == GQL_OID::GenericType::BOOL)
         {
             auto lhs = GQL::Conversions::to_boolean(lhs_oid);
             auto rhs = GQL::Conversions::to_boolean(rhs_oid);
@@ -157,7 +115,27 @@ public:
             return GQL::Conversions::pack_bool(equals);
         }
 
-        // At this point only string literals with different datatypes are left.
+        if (lhs_subtype == GQL_OID::GenericSubType::DICTIONARY
+            && rhs_subtype == GQL_OID::GenericSubType::DICTIONARY)
+        {
+            std::unique_ptr<Dictionary> lhs_dict;
+            std::unique_ptr<Dictionary> rhs_dict;
+            Common::Conversions::unpack_dictionary(lhs_oid, lhs_dict);
+            Common::Conversions::unpack_dictionary(rhs_oid, rhs_dict);
+            Dictionary& lhs(*lhs_dict);
+            Dictionary& rhs(*rhs_dict);
+            return GQL::Conversions::pack_bool(lhs == rhs);
+        }
+
+        if (lhs_subtype == GQL_OID::GenericSubType::LIST && rhs_subtype == GQL_OID::GenericSubType::LIST) {
+            std::vector<ObjectId> lhs_list;
+            std::vector<ObjectId> rhs_list;
+            Conversions::unpack_list(lhs_oid, lhs_list);
+            Conversions::unpack_list(rhs_oid, rhs_list);
+
+            return GQL::Conversions::pack_bool(lhs_list == rhs_list);
+        }
+
         return ObjectId::get_null();
     }
 

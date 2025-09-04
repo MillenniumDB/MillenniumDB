@@ -12,6 +12,7 @@
 #include "network/server/session/streaming/response/streaming_response_buffer.h"
 #include "query/executor/binding.h"
 #include "query/var_id.h"
+#include "storage/dictionary/dictionary.h"
 
 namespace MDBServer {
 
@@ -52,6 +53,10 @@ public:
     std::string encode_date(DateTime datetime) const;
     std::string encode_time(DateTime datetime) const;
     std::string encode_datetime(DateTime datetime) const;
+    std::string encode_dictionary(const Dictionary& dictionary) const;
+    std::string encode_dictionary_object(const DictionaryObject& dictionary) const;
+    std::string encode_dictionary_array(const DictionaryArray& dictionary) const;
+    std::string encode_dictionary_literal(const DictionaryLiteral& dictionary) const;
     template<typename T>
     std::string encode_tensor(const tensor::Tensor<T>& tensor) const;
 

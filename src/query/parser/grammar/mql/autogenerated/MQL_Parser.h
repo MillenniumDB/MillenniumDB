@@ -16,24 +16,25 @@ public:
     K_ASC = 7, K_BY = 8, K_BOOL = 9, K_CALL = 10, K_COSINE_DISTANCE = 11, 
     K_COSINE_SIMILARITY = 12, K_COUNT = 13, K_CREATE = 14, K_DELETE = 15, 
     K_DESCRIBE = 16, K_DESC = 17, K_DIMENSIONS = 18, K_DISTINCT = 19, K_EDGE = 20, 
-    K_EUCLIDEAN_DISTANCE = 21, K_FROM = 22, K_INCOMING = 23, K_INDEX = 24, 
-    K_INSERT = 25, K_INTEGER = 26, K_INTO = 27, K_IS = 28, K_FALSE = 29, 
-    K_FLOAT = 30, K_GROUP = 31, K_GROUPS = 32, K_IDENTITY = 33, K_LABELS = 34, 
-    K_LABEL = 35, K_LET = 36, K_LIMIT = 37, K_MANHATTAN_DISTANCE = 38, K_MATCH = 39, 
-    K_MAX = 40, K_MIN = 41, K_OBJECTS = 42, K_OFFSET = 43, K_OPTIONAL = 44, 
-    K_ORDER = 45, K_OR = 46, K_OUTGOING = 47, K_PREFIX = 48, K_PROPERTIES = 49, 
-    K_PROPERTY = 50, K_NOT = 51, K_NULL = 52, K_SHORTEST = 53, K_SHOW = 54, 
-    K_SIMPLE = 55, K_TEXT_SEARCH = 56, K_REGEX = 57, K_RETURN = 58, K_SUM = 59, 
-    K_STRING = 60, K_TRUE = 61, K_TRAILS = 62, K_VALUES = 63, K_WALKS = 64, 
-    K_WITH = 65, K_WHERE = 66, K_YIELD = 67, TRUE_PROP = 68, FALSE_PROP = 69, 
-    ANON_ID = 70, EDGE_ID = 71, KEY = 72, TYPE = 73, TYPE_VAR = 74, VARIABLE = 75, 
-    STRING = 76, UNSIGNED_INTEGER = 77, UNSIGNED_FLOAT = 78, UNSIGNED_SCIENTIFIC_NOTATION = 79, 
-    NAME = 80, LEQ = 81, GEQ = 82, EQ = 83, NEQ = 84, LT = 85, GT = 86, 
-    SINGLE_EQ = 87, PATH_SEQUENCE = 88, PATH_ALTERNATIVE = 89, PATH_NEGATION = 90, 
-    STAR = 91, PERCENT = 92, QUESTION_MARK = 93, PLUS = 94, MINUS = 95, 
-    L_PAR = 96, R_PAR = 97, LCURLY_BRACKET = 98, RCURLY_BRACKET = 99, LSQUARE_BRACKET = 100, 
-    RSQUARE_BRACKET = 101, COMMA = 102, COLON = 103, WHITE_SPACE = 104, 
-    SINGLE_LINE_COMMENT = 105, UNRECOGNIZED = 106
+    K_EDIT_DISTANCE = 21, K_EUCLIDEAN_DISTANCE = 22, K_FROM = 23, K_INCOMING = 24, 
+    K_INDEX = 25, K_INSERT = 26, K_INTEGER = 27, K_INTO = 28, K_IS = 29, 
+    K_FALSE = 30, K_FLOAT = 31, K_GROUP = 32, K_GROUPS = 33, K_IDENTITY = 34, 
+    K_LABELS = 35, K_LABEL = 36, K_LET = 37, K_LIMIT = 38, K_MANHATTAN_DISTANCE = 39, 
+    K_MATCH = 40, K_MAX = 41, K_MIN = 42, K_NORMALIZE = 43, K_OBJECTS = 44, 
+    K_OFFSET = 45, K_OPTIONAL = 46, K_ORDER = 47, K_OR = 48, K_OUTGOING = 49, 
+    K_PREFIX = 50, K_PROPERTIES = 51, K_PROPERTY = 52, K_NOT = 53, K_NULL = 54, 
+    K_SHORTEST = 55, K_SHOW = 56, K_SIMPLE = 57, K_TEXT_SEARCH = 58, K_REGEX = 59, 
+    K_RETURN = 60, K_SUM = 61, K_STRING = 62, K_TRUE = 63, K_TRAILS = 64, 
+    K_VALUES = 65, K_WALKS = 66, K_WITH = 67, K_WHERE = 68, K_YIELD = 69, 
+    TRUE_PROP = 70, FALSE_PROP = 71, ANON_ID = 72, EDGE_ID = 73, KEY = 74, 
+    TYPE = 75, TYPE_VAR = 76, VARIABLE = 77, STRING = 78, UNSIGNED_INTEGER = 79, 
+    UNSIGNED_FLOAT = 80, UNSIGNED_SCIENTIFIC_NOTATION = 81, NAME = 82, LEQ = 83, 
+    GEQ = 84, EQ = 85, NEQ = 86, LT = 87, GT = 88, SINGLE_EQ = 89, PATH_SEQUENCE = 90, 
+    PATH_ALTERNATIVE = 91, PATH_NEGATION = 92, STAR = 93, PERCENT = 94, 
+    QUESTION_MARK = 95, PLUS = 96, MINUS = 97, L_PAR = 98, R_PAR = 99, LCURLY_BRACKET = 100, 
+    RCURLY_BRACKET = 101, LSQUARE_BRACKET = 102, RSQUARE_BRACKET = 103, 
+    COMMA = 104, COLON = 105, WHITE_SPACE = 106, SINGLE_LINE_COMMENT = 107, 
+    UNRECOGNIZED = 108
   };
 
   enum {
@@ -57,9 +58,9 @@ public:
     RuleValue = 58, RuleConditionalOrExpr = 59, RuleConditionalAndExpr = 60, 
     RuleComparisonExpr = 61, RuleAdditiveExpr = 62, RuleMultiplicativeExpr = 63, 
     RuleUnaryExpr = 64, RuleAtomicExpr = 65, RuleFunction = 66, RuleRegex = 67, 
-    RuleTextSearch = 68, RuleCosineSimilarity = 69, RuleCosineDistance = 70, 
-    RuleManhattanDistance = 71, RuleEuclideanDistance = 72, RuleTextSearchIndexMode = 73, 
-    RuleExprTypename = 74, RuleKeyword = 75
+    RuleCosineSimilarity = 68, RuleCosineDistance = 69, RuleManhattanDistance = 70, 
+    RuleEuclideanDistance = 71, RuleEditDistance = 72, RuleNormalize = 73, 
+    RuleTextSearchIndexMode = 74, RuleExprTypename = 75, RuleKeyword = 76
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -147,11 +148,12 @@ public:
   class AtomicExprContext;
   class FunctionContext;
   class RegexContext;
-  class TextSearchContext;
   class CosineSimilarityContext;
   class CosineDistanceContext;
   class ManhattanDistanceContext;
   class EuclideanDistanceContext;
+  class EditDistanceContext;
+  class NormalizeContext;
   class TextSearchIndexModeContext;
   class ExprTypenameContext;
   class KeywordContext; 
@@ -1401,10 +1403,10 @@ public:
 
   class  AdditiveExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s94 = nullptr;
+    antlr4::Token *s96 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s95 = nullptr;
-    antlr4::Token *_tset1392 = nullptr;
+    antlr4::Token *s97 = nullptr;
+    antlr4::Token *_tset1417 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<MultiplicativeExprContext *> multiplicativeExpr();
@@ -1423,11 +1425,11 @@ public:
 
   class  MultiplicativeExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s91 = nullptr;
+    antlr4::Token *s93 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s88 = nullptr;
-    antlr4::Token *s92 = nullptr;
-    antlr4::Token *_tset1411 = nullptr;
+    antlr4::Token *s90 = nullptr;
+    antlr4::Token *s94 = nullptr;
+    antlr4::Token *_tset1440 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExprContext *> unaryExpr();
@@ -1531,11 +1533,12 @@ public:
     FunctionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     RegexContext *regex();
-    TextSearchContext *textSearch();
     CosineSimilarityContext *cosineSimilarity();
     CosineDistanceContext *cosineDistance();
     ManhattanDistanceContext *manhattanDistance();
     EuclideanDistanceContext *euclideanDistance();
+    EditDistanceContext *editDistance();
+    NormalizeContext *normalize();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1562,28 +1565,6 @@ public:
   };
 
   RegexContext* regex();
-
-  class  TextSearchContext : public antlr4::ParserRuleContext {
-  public:
-    TextSearchContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_TEXT_SEARCH();
-    antlr4::tree::TerminalNode *L_PAR();
-    std::vector<antlr4::tree::TerminalNode *> STRING();
-    antlr4::tree::TerminalNode* STRING(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    TextSearchIndexModeContext *textSearchIndexMode();
-    std::vector<antlr4::tree::TerminalNode *> VARIABLE();
-    antlr4::tree::TerminalNode* VARIABLE(size_t i);
-    antlr4::tree::TerminalNode *R_PAR();
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  TextSearchContext* textSearch();
 
   class  CosineSimilarityContext : public antlr4::ParserRuleContext {
   public:
@@ -1656,6 +1637,40 @@ public:
   };
 
   EuclideanDistanceContext* euclideanDistance();
+
+  class  EditDistanceContext : public antlr4::ParserRuleContext {
+  public:
+    EditDistanceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_EDIT_DISTANCE();
+    antlr4::tree::TerminalNode *L_PAR();
+    std::vector<ConditionalOrExprContext *> conditionalOrExpr();
+    ConditionalOrExprContext* conditionalOrExpr(size_t i);
+    antlr4::tree::TerminalNode *COMMA();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  EditDistanceContext* editDistance();
+
+  class  NormalizeContext : public antlr4::ParserRuleContext {
+  public:
+    NormalizeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_NORMALIZE();
+    antlr4::tree::TerminalNode *L_PAR();
+    ConditionalOrExprContext *conditionalOrExpr();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NormalizeContext* normalize();
 
   class  TextSearchIndexModeContext : public antlr4::ParserRuleContext {
   public:
@@ -1732,6 +1747,7 @@ public:
     antlr4::tree::TerminalNode *K_MATCH();
     antlr4::tree::TerminalNode *K_MAX();
     antlr4::tree::TerminalNode *K_MIN();
+    antlr4::tree::TerminalNode *K_NORMALIZE();
     antlr4::tree::TerminalNode *K_OBJECTS();
     antlr4::tree::TerminalNode *K_OFFSET();
     antlr4::tree::TerminalNode *K_OPTIONAL();

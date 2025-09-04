@@ -215,6 +215,22 @@ void ExprPrinter::visit(ExprEuclideanDistance& expr)
     os << ')';
 }
 
+void ExprPrinter::visit(ExprEditDistance& expr)
+{
+    os << "EDIT_DISTANCE(";
+    expr.expr1->accept_visitor(*this);
+    os << ", ";
+    expr.expr2->accept_visitor(*this);
+    os << ')';
+}
+
+void ExprPrinter::visit(MQL::ExprNormalize& expr)
+{
+    os << "NORMALIZE(";
+    expr.expr->accept_visitor(*this);
+    os << ")";
+}
+
 void ExprPrinter::visit(MQL::ExprAggAvg& expr)
 {
     os << "AVG(";

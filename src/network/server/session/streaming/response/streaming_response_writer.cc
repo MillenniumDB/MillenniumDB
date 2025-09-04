@@ -413,6 +413,65 @@ void StreamingResponseWriter::write_size(uint_fast32_t value)
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
+std::string StreamingResponseWriter::encode_dictionary(const Dictionary& dictionary) const
+{
+    if (auto literal = dynamic_cast<DictionaryLiteral*>(dictionary.dictionary.get())) {
+        return encode_dictionary_literal(*literal);
+    } else if (auto array = dynamic_cast<DictionaryArray*>(dictionary.dictionary.get())) {
+        return encode_dictionary_array(*array);
+    } else if (auto object = dynamic_cast<DictionaryObject*>(dictionary.dictionary.get())) {
+        return encode_dictionary_object(*object);
+    }
+    return encode_null();
+}
+
+std::string StreamingResponseWriter::encode_dictionary_object(const DictionaryObject& dictionary) const
+{
+    std::string res;
+    res += static_cast<uint8_t>(Protocol::DataType::MAP);
+    res += encode_size(dictionary.keys.size());
+
+    for (auto&& [key, value] : dictionary.keys) {
+        std::stringstream ss;
+        ss << key;
+        res += encode_string(ss.str(), Protocol::DataType::STRING);
+
+        if (auto literal = dynamic_cast<DictionaryLiteral*>(value.get())) {
+            res += encode_dictionary_literal(*literal);
+        } else if (auto array = dynamic_cast<DictionaryArray*>(value.get())) {
+            res += encode_dictionary_array(*array);
+        } else if (auto object = dynamic_cast<DictionaryObject*>(value.get())) {
+            res += encode_dictionary_object(*object);
+        }
+    }
+    return res;
+}
+
+std::string StreamingResponseWriter::encode_dictionary_array(const DictionaryArray& dictionary_array) const
+{
+    std::string res;
+
+    res += static_cast<uint8_t>(Protocol::DataType::LIST);
+    res += encode_size(dictionary_array.values.size());
+
+    for (auto& elem : dictionary_array.values) {
+        if (auto literal = dynamic_cast<DictionaryLiteral*>(elem.get())) {
+            res += encode_dictionary_literal(*literal);
+        } else if (auto array = dynamic_cast<DictionaryArray*>(elem.get())) {
+            res += encode_dictionary_array(*array);
+        } else if (auto object = dynamic_cast<DictionaryObject*>(elem.get())) {
+            res += encode_dictionary_object(*object);
+        }
+    }
+    return res;
+}
+
+std::string StreamingResponseWriter::encode_dictionary_literal(const DictionaryLiteral& dictionary_literal
+) const
+{
+    return encode_object_id(dictionary_literal.object_id);
+}
+
 template std::string StreamingResponseWriter::encode_tensor<float>(const tensor::Tensor<float>& tensor) const;
 template std::string StreamingResponseWriter::encode_tensor<double>(const tensor::Tensor<double>& tensor
 ) const;
