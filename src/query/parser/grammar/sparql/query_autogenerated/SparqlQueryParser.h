@@ -35,13 +35,14 @@ public:
     DOUBLE = 117, INTEGER_POSITIVE = 118, DECIMAL_POSITIVE = 119, DOUBLE_POSITIVE = 120, 
     INTEGER_NEGATIVE = 121, DECIMAL_NEGATIVE = 122, DOUBLE_NEGATIVE = 123, 
     STRING_LITERAL1 = 124, STRING_LITERAL2 = 125, STRING_LITERAL_LONG1 = 126, 
-    STRING_LITERAL_LONG2 = 127, COMMENT = 128, REFERENCE = 129, LESS_EQUAL = 130, 
-    GREATER_EQUAL = 131, NOT_EQUAL = 132, AND = 133, OR = 134, INVERSE = 135, 
-    OPEN_BRACE = 136, CLOSE_BRACE = 137, OPEN_CURLY_BRACE = 138, CLOSE_CURLY_BRACE = 139, 
-    OPEN_SQUARE_BRACKET = 140, CLOSE_SQUARE_BRACKET = 141, SEMICOLON = 142, 
-    DOT = 143, PLUS_SIGN = 144, MINUS_SIGN = 145, ASTERISK = 146, QUESTION_MARK = 147, 
-    COMMA = 148, NEGATION = 149, DIVIDE = 150, EQUAL = 151, LESS = 152, 
-    GREATER = 153, PIPE = 154, ANY_OTHER = 155
+    STRING_LITERAL_LONG2 = 127, STRING_RAW1 = 128, STRING_RAW2 = 129, STRING_RAW_LONG1 = 130, 
+    STRING_RAW_LONG2 = 131, COMMENT = 132, REFERENCE = 133, LESS_EQUAL = 134, 
+    GREATER_EQUAL = 135, NOT_EQUAL = 136, AND = 137, OR = 138, INVERSE = 139, 
+    OPEN_BRACE = 140, CLOSE_BRACE = 141, OPEN_CURLY_BRACE = 142, CLOSE_CURLY_BRACE = 143, 
+    OPEN_SQUARE_BRACKET = 144, CLOSE_SQUARE_BRACKET = 145, SEMICOLON = 146, 
+    DOT = 147, PLUS_SIGN = 148, MINUS_SIGN = 149, ASTERISK = 150, QUESTION_MARK = 151, 
+    COMMA = 152, NEGATION = 153, DIVIDE = 154, EQUAL = 155, LESS = 156, 
+    GREATER = 157, PIPE = 158, ANY_OTHER = 159
   };
 
   enum {
@@ -1797,9 +1798,9 @@ public:
 
   class  RhsAdditiveExpressionContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s146 = nullptr;
-    std::vector<antlr4::Token *> op;
     antlr4::Token *s150 = nullptr;
+    std::vector<antlr4::Token *> op;
+    antlr4::Token *s154 = nullptr;
     antlr4::Token *_tset1723 = nullptr;
     RhsAdditiveExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
@@ -1837,9 +1838,9 @@ public:
 
   class  MultiplicativeExpressionContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s146 = nullptr;
-    std::vector<antlr4::Token *> op;
     antlr4::Token *s150 = nullptr;
+    std::vector<antlr4::Token *> op;
+    antlr4::Token *s154 = nullptr;
     antlr4::Token *_tset1766 = nullptr;
     MultiplicativeExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
@@ -2248,6 +2249,10 @@ public:
     antlr4::tree::TerminalNode *STRING_LITERAL2();
     antlr4::tree::TerminalNode *STRING_LITERAL_LONG1();
     antlr4::tree::TerminalNode *STRING_LITERAL_LONG2();
+    antlr4::tree::TerminalNode *STRING_RAW1();
+    antlr4::tree::TerminalNode *STRING_RAW2();
+    antlr4::tree::TerminalNode *STRING_RAW_LONG1();
+    antlr4::tree::TerminalNode *STRING_RAW_LONG2();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

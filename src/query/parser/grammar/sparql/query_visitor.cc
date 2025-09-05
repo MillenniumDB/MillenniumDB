@@ -1281,8 +1281,7 @@ Any QueryVisitor::visitAggregate(SparqlParser::AggregateContext* ctx) {
     } else if (ctx->GROUP_CONCAT()) {
         std::string separator = " "; // default separator
         if (ctx->SEPARATOR()) {
-            separator =  ctx->string()->getText();
-            separator = separator.substr(1, separator.size() - 2); // delete quotes
+            separator = stringCtxToString(ctx->string());
         }
         current_expr = std::make_unique<ExprAggGroupConcat>(std::move(current_expr), separator, distinct);
     } else {
@@ -2209,14 +2208,27 @@ std::string QueryVisitor::iriCtxToString(SparqlParser::IriContext* ctx) {
 
 std::string QueryVisitor::stringCtxToString(SparqlParser::StringContext* ctx) {
     std::string str = ctx->getText();
+
     if (ctx->STRING_LITERAL1() || ctx->STRING_LITERAL2()) {
         // One quote per side
         str = str.substr(1, str.size() - 2);
-    } else {
+        return UnicodeEscape::normalize_string(str);
+    }
+
+    if (ctx->STRING_LITERAL_LONG1() || ctx->STRING_LITERAL_LONG2()) {
         // Three quotes per side
         str = str.substr(3, str.size() - 6);
+        return UnicodeEscape::normalize_string(str);
     }
-    return UnicodeEscape::normalize_string(str);
+
+    if (ctx->STRING_RAW1() || ctx->STRING_RAW2()) {
+        // Raw character + one quote per side
+        return str.substr(2, str.size() - 3);
+    }
+
+    // if (ctx->STRING_RAW_LONG1() || ctx->STRING_RAW_LONG2())
+    // Raw character + three quote per side
+    return str.substr(4, str.size() - 7);
 }
 
 /**
