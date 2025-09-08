@@ -23,10 +23,10 @@ public:
     K_MATCH = 40, K_MAX = 41, K_MIN = 42, K_NORMALIZE = 43, K_OBJECTS = 44, 
     K_OFFSET = 45, K_OPTIONAL = 46, K_ORDER = 47, K_OR = 48, K_OUTGOING = 49, 
     K_PREFIX = 50, K_PROPERTIES = 51, K_PROPERTY = 52, K_NOT = 53, K_NULL = 54, 
-    K_SHORTEST = 55, K_SHOW = 56, K_SIMPLE = 57, K_STR = 58, K_TEXT_SEARCH = 59, 
-    K_REGEX = 60, K_RETURN = 61, K_SUM = 62, K_STRING = 63, K_TRUE = 64, 
-    K_TRAILS = 65, K_VALUES = 66, K_WALKS = 67, K_WITH = 68, K_WHERE = 69, 
-    K_YIELD = 70, K_TYPE = 71, TRUE_PROP = 72, FALSE_PROP = 73, ANON_ID = 74, 
+    K_SHORTEST = 55, K_SHOW = 56, K_SIMPLE = 57, K_STRING = 58, K_STR = 59, 
+    K_TEXT_SEARCH = 60, K_TYPE = 61, K_REGEX = 62, K_RETURN = 63, K_SUM = 64, 
+    K_TRUE = 65, K_TRAILS = 66, K_VALUES = 67, K_WALKS = 68, K_WITH = 69, 
+    K_WHERE = 70, K_YIELD = 71, TRUE_PROP = 72, FALSE_PROP = 73, ANON_ID = 74, 
     EDGE_ID = 75, KEY = 76, TYPE = 77, TYPE_VAR = 78, VARIABLE = 79, STRING = 80, 
     UNSIGNED_INTEGER = 81, UNSIGNED_FLOAT = 82, UNSIGNED_SCIENTIFIC_NOTATION = 83, 
     NAME = 84, LEQ = 85, GEQ = 86, EQ = 87, NEQ = 88, LT = 89, GT = 90, 
@@ -1782,6 +1782,7 @@ public:
     antlr4::tree::TerminalNode *K_DIMENSIONS();
     antlr4::tree::TerminalNode *K_DISTINCT();
     antlr4::tree::TerminalNode *K_EDGE();
+    antlr4::tree::TerminalNode *K_EDIT_DISTANCE();
     antlr4::tree::TerminalNode *K_EUCLIDEAN_DISTANCE();
     antlr4::tree::TerminalNode *K_FROM();
     antlr4::tree::TerminalNode *K_INCOMING();
@@ -1817,12 +1818,13 @@ public:
     antlr4::tree::TerminalNode *K_SHORTEST();
     antlr4::tree::TerminalNode *K_SHOW();
     antlr4::tree::TerminalNode *K_SIMPLE();
+    antlr4::tree::TerminalNode *K_STRING();
+    antlr4::tree::TerminalNode *K_STR();
     antlr4::tree::TerminalNode *K_TEXT_SEARCH();
+    antlr4::tree::TerminalNode *K_TYPE();
     antlr4::tree::TerminalNode *K_REGEX();
     antlr4::tree::TerminalNode *K_RETURN();
     antlr4::tree::TerminalNode *K_SUM();
-    antlr4::tree::TerminalNode *K_STR();
-    antlr4::tree::TerminalNode *K_STRING();
     antlr4::tree::TerminalNode *K_TRAILS();
     antlr4::tree::TerminalNode *K_VALUES();
     antlr4::tree::TerminalNode *K_WALKS();

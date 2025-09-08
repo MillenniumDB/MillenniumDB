@@ -62,12 +62,13 @@ K_NULL: N U L L;
 K_SHORTEST: S H O R T E S T;
 K_SHOW: S H O W;
 K_SIMPLE: S I M P L E;
+K_STRING: S T R I N G;
 K_STR: S T R;
 K_TEXT_SEARCH: T E X T '_' S E A R C H;
+K_TYPE: T Y P E;
 K_REGEX: R E G E X;
 K_RETURN: R E T U R N;
 K_SUM: S U M;
-K_STRING: S T R I N G;
 K_TRUE: 'true';
 K_TRAILS: T R A I L S;
 K_VALUES: V A L U E S;
@@ -75,7 +76,6 @@ K_WALKS: W A L K S;
 K_WITH: W I T H;
 K_WHERE: W H E R E;
 K_YIELD: Y I E L D;
-K_TYPE: T Y P E;
 
 // Special cases: true and false are not a valid identifier
 TRUE_PROP: ':' 'true';
