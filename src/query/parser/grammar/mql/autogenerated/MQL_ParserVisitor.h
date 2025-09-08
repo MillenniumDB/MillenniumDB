@@ -199,11 +199,9 @@ public:
 
     virtual std::any visitNormalize(MQL_Parser::NormalizeContext *context) = 0;
 
-<<<<<<< HEAD
     virtual std::any visitStr(MQL_Parser::StrContext *context) = 0;
-=======
+
     virtual std::any visitLabels(MQL_Parser::LabelsContext *context) = 0;
->>>>>>> 77901cc (added labels function in mql)
 
     virtual std::any visitType(MQL_Parser::TypeContext *context) = 0;
 
