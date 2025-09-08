@@ -9,6 +9,7 @@
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 #include "graph_models/inliner.h"
+#include "third_party/dragonbox/dragonbox_to_chars.h"
 
 namespace MQL { namespace Conversions {
     using namespace Common::Conversions;
@@ -106,10 +107,73 @@ namespace MQL { namespace Conversions {
     }
 
     // Returns a string with the lexical representation of the value
-    inline std::string to_lexical_str(ObjectId oid) {
-        std::stringstream ss;
-        MQL::ReturnExecutor<MQL::ReturnType::TSV>::print(ss, oid);
-        return ss.str();
+    inline std::string to_lexical_str(ObjectId oid)
+    {
+        const auto type = oid.id & ObjectId::TYPE_MASK;
+
+        switch (type) {
+        case ObjectId::MASK_ANON_INLINED:
+            return "_:b" + std::to_string(unpack_blank(oid));
+        case ObjectId::MASK_ANON_TMP:
+            return "_:c" + std::to_string(unpack_blank(oid));
+        case ObjectId::MASK_NAMED_NODE_INLINED:
+        case ObjectId::MASK_NAMED_NODE_EXTERN:
+        case ObjectId::MASK_NAMED_NODE_TMP:
+            return unpack_named_node(oid);
+        case ObjectId::MASK_STRING_SIMPLE_INLINED:
+        case ObjectId::MASK_STRING_SIMPLE_EXTERN:
+        case ObjectId::MASK_STRING_SIMPLE_TMP:
+            return unpack_string(oid);
+        case ObjectId::MASK_NEGATIVE_INT:
+        case ObjectId::MASK_POSITIVE_INT: {
+            const int64_t i = unpack_int(oid);
+            return std::to_string(i);
+        }
+        case ObjectId::MASK_FLOAT: {
+            const float f = unpack_float(oid);
+
+            char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
+            jkj::dragonbox::to_chars(f, float_buffer);
+
+            return std::string(float_buffer);
+        }
+        case ObjectId::MASK_DT_DATE: {
+            const DateTime datetime = unpack_date(oid);
+            return "date(\"" + datetime.get_value_string() + "\")";
+        }
+        case ObjectId::MASK_DT_DATETIME: {
+            const DateTime datetime = unpack_date(oid);
+            return "dateTime(\"" + datetime.get_value_string() + "\")";
+        }
+        case ObjectId::MASK_DT_DATETIMESTAMP: {
+            const DateTime datetime = unpack_date(oid);
+            return "dateTimeStamp(\"" + datetime.get_value_string() + "\")";
+        }
+        case ObjectId::MASK_DT_TIME: {
+            const DateTime datetime = unpack_date(oid);
+            return "time(\"" + datetime.get_value_string() + "\")";
+        }
+        case ObjectId::MASK_BOOL:
+            return unpack_bool(oid) ? "true" : "false";
+        case ObjectId::MASK_EDGE:
+            return "_e" + std::to_string(unpack_edge(oid));
+
+        case ObjectId::MASK_TENSOR_FLOAT_INLINED:
+        case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
+        case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+            const auto tensor = unpack_tensor<float>(oid);
+            return tensor.to_string();
+        }
+        case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
+        case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
+        case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+            const auto tensor = unpack_tensor<double>(oid);
+            return tensor.to_string();
+        }
+        default:
+            assert(false);
+            return "";
+        }
     }
 
     inline ObjectId to_boolean(ObjectId oid) {

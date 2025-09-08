@@ -199,6 +199,8 @@ public:
 
     virtual std::any visitNormalize(MQL_Parser::NormalizeContext *context) = 0;
 
+    virtual std::any visitStr(MQL_Parser::StrContext *context) = 0;
+
     virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *context) = 0;
 
     virtual std::any visitExprTypename(MQL_Parser::ExprTypenameContext *context) = 0;

@@ -101,6 +101,7 @@ public:
     void visit(ExprEuclideanDistance&) override;
     void visit(ExprEditDistance&) override;
     void visit(ExprNormalize&) override;
+    void visit(ExprStr&) override;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;

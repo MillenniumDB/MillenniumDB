@@ -52,5 +52,6 @@ public:
     virtual void visit(ExprEuclideanDistance&) override { }
     virtual void visit(ExprEditDistance&) override { }
     virtual void visit(ExprNormalize&) override { }
+    virtual void visit(ExprStr&) override { }
 };
 } // namespace MQL

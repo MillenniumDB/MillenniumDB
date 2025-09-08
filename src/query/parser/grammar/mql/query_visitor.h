@@ -291,6 +291,7 @@ public:
     virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext* ctx) override;
     virtual std::any visitEditDistance(MQL_Parser::EditDistanceContext* ctx) override;
     virtual std::any visitNormalize(MQL_Parser::NormalizeContext* ctx) override;
+    virtual std::any visitStr(MQL_Parser::StrContext* ctx) override;
 
     virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx) override;
 

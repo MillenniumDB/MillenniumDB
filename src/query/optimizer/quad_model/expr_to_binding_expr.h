@@ -73,6 +73,7 @@ public:
     void visit(ExprEuclideanDistance&) override;
     void visit(ExprEditDistance&) override;
     void visit(ExprNormalize&) override;
+    void visit(ExprStr&) override;
 
 private:
 

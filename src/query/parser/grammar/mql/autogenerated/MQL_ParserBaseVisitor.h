@@ -375,6 +375,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitStr(MQL_Parser::StrContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitTextSearchIndexMode(MQL_Parser::TextSearchIndexModeContext *ctx) override {
     return visitChildren(ctx);
   }

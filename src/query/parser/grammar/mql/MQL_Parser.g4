@@ -253,7 +253,8 @@ function:
     | manhattanDistance
     | euclideanDistance
     | editDistance
-    | normalize;
+    | normalize
+    | str;
 
 regex:
     K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (
@@ -276,6 +277,8 @@ editDistance:
     K_EDIT_DISTANCE '(' conditionalOrExpr ',' conditionalOrExpr ')';
 
 normalize: K_NORMALIZE '(' conditionalOrExpr ')';
+
+str: K_STR '(' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 
@@ -342,6 +345,7 @@ keyword:
     | K_REGEX
     | K_RETURN
     | K_SUM
+    | K_STR
     | K_STRING
     | K_TRAILS
     | K_VALUES

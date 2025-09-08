@@ -341,6 +341,11 @@ void CheckVarNamesExpr::visit(ExprNormalize& expr)
     expr.expr->accept_visitor(*this);
 }
 
+void CheckVarNamesExpr::visit(ExprStr& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
 void CheckVarNamesExpr::visit(ExprAggAvg& expr)
 {
     expr.expr->accept_visitor(*this);
