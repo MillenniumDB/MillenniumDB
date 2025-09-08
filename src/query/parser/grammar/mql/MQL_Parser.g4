@@ -255,7 +255,8 @@ function:
     | editDistance
     | normalize
     | str
-    | labels;
+    | labels
+    | type;
 
 regex:
     K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (
@@ -282,6 +283,8 @@ normalize: K_NORMALIZE '(' conditionalOrExpr ')';
 str: K_STR '(' conditionalOrExpr ')';
 
 labels: K_LABELS '(' VARIABLE ')';
+
+type: K_TYPE '(' VARIABLE ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 

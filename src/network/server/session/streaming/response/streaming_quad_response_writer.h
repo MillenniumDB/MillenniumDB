@@ -24,8 +24,7 @@ public:
 
     std::string encode_list(const ObjectId& oid) const
     {
-        std::vector<ObjectId> oid_list;
-        MQL::Conversions::unpack_list(oid, oid_list);
+        std::vector<ObjectId> oid_list = MQL::Conversions::unpack_list(oid);
 
         std::string res;
         res += static_cast<char>(Protocol::DataType::LIST);
@@ -122,8 +121,7 @@ public:
             return encode_dictionary(*dictionary);
         }
         case ObjectId::MASK_LIST: {
-            std::vector<ObjectId> list;
-            MQL::Conversions::unpack_list(oid, list);
+            std::vector<ObjectId> list = MQL::Conversions::unpack_list(oid);
             return encode_list(oid);
         }
         default:

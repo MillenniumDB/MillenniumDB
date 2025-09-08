@@ -134,10 +134,8 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
         }
     }
     case ObjectId::MASK_LIST: {
-        std::vector<ObjectId> lhs_list;
-        std::vector<ObjectId> rhs_list;
-        Conversions::unpack_list(lhs, lhs_list);
-        Conversions::unpack_list(rhs, rhs_list);
+        std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs);
+        std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs);
         if (lhs_list == rhs_list) {
             return 0;
         }

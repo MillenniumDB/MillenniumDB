@@ -1,0 +1,2 @@
+MATCH (?e)
+RETURN ?e, TYPE(?e) AS ?type

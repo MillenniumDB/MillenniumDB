@@ -75,6 +75,7 @@ K_WALKS: W A L K S;
 K_WITH: W I T H;
 K_WHERE: W H E R E;
 K_YIELD: Y I E L D;
+K_TYPE: T Y P E;
 
 // Special cases: true and false are not a valid identifier
 TRUE_PROP: ':' 'true';

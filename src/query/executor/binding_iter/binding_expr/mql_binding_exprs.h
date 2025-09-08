@@ -22,3 +22,4 @@
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_minus.h"        // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_unary_plus.h"         // IWYU pragma: export
 #include "query/executor/binding_iter/binding_expr/mql/binding_expr_labels.h"             // IWYU pragma: export
+#include "query/executor/binding_iter/binding_expr/mql/binding_expr_type.h"             // IWYU pragma: export

@@ -281,4 +281,11 @@ inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
     lists.get(out, list_id.id & LIST_OFFSET_MASK);
 }
 
+inline std::vector<ObjectId> unpack_list(ObjectId list_id)
+{
+    std::vector<ObjectId> list;
+    unpack_list(list_id, list);
+    return list;
+}
+
 }} // namespace MQL::Conversions

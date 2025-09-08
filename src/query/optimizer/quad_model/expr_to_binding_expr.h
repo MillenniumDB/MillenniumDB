@@ -75,6 +75,7 @@ public:
     void visit(ExprNormalize&) override;
     void visit(ExprStr&) override;
     void visit(ExprLabels&) override;
+    void visit(ExprType&) override;
 
 private:
 

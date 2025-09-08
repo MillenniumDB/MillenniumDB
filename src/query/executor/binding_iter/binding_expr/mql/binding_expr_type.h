@@ -5,35 +5,31 @@
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
-class BindingExprLabels : public BindingExpr {
+class BindingExprType : public BindingExpr {
 public:
     VarId var;
 
-    BindingExprLabels(VarId var) :
+    BindingExprType(VarId var) :
         var(var)
     { }
 
     ObjectId eval(const Binding& binding) override
     {
-        ObjectId node = binding[var];
+        ObjectId edge = binding[var];
 
-        if ((node.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_NAMED_NODE) {
+        if (edge.get_type() != ObjectId::MASK_EDGE) {
             return ObjectId::get_null();
         }
 
         bool interruption = false;
-        BptIter<2> iter = quad_model.node_label
-                              ->get_range(&interruption, { node.id, 0 }, { node.id, UINT64_MAX });
-
-        std::vector<ObjectId> labels;
+        BptIter<4> iter = quad_model.edge_from_to_type->get_range(
+            &interruption,
+            { edge.id, 0, 0, 0 },
+            { edge.id, UINT64_MAX, UINT64_MAX, UINT64_MAX }
+        );
 
         auto record = iter.next();
-
-        while (record != nullptr) {
-            labels.emplace_back((*record)[1]);
-            record = iter.next();
-        }
-        return Conversions::pack_list(labels);
+        return record == nullptr ? ObjectId::get_null() : ObjectId((*record)[3]);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override
@@ -43,7 +39,7 @@ public:
 
     void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
-        os << "LABELS(" << var << ')';
+        os << "TYPE(" << var << ')';
     }
 };
 } // namespace MQL

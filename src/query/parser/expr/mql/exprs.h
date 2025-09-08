@@ -35,3 +35,4 @@
 #include "query/parser/expr/mql/function/expr_regex.h"                               // IWYU pragma: export
 #include "query/parser/expr/mql/function/expr_str.h"                                 // IWYU pragma: export
 #include "query/parser/expr/mql/function/expr_labels.h"                              // IWYU pragma: export
+#include "query/parser/expr/mql/function/expr_type.h"                                // IWYU pragma: export
