@@ -50,6 +50,7 @@ TEST_SUITES: list[str] = [
     "escape-unicode",
     "property_types_queries",
     "regex",
+    "labels",
 ]
 
 # Tests with the following query files fill be ignored

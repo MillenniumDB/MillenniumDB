@@ -60,7 +60,12 @@ public:
     RuleUnaryExpr = 64, RuleAtomicExpr = 65, RuleFunction = 66, RuleRegex = 67, 
     RuleCosineSimilarity = 68, RuleCosineDistance = 69, RuleManhattanDistance = 70, 
     RuleEuclideanDistance = 71, RuleEditDistance = 72, RuleNormalize = 73, 
+<<<<<<< HEAD
     RuleStr = 74, RuleTextSearchIndexMode = 75, RuleExprTypename = 76, RuleKeyword = 77
+=======
+    RuleLabels = 74, RuleTextSearchIndexMode = 75, RuleExprTypename = 76, 
+    RuleKeyword = 77
+>>>>>>> 77901cc (added labels function in mql)
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -154,7 +159,11 @@ public:
   class EuclideanDistanceContext;
   class EditDistanceContext;
   class NormalizeContext;
+<<<<<<< HEAD
   class StrContext;
+=======
+  class LabelsContext;
+>>>>>>> 77901cc (added labels function in mql)
   class TextSearchIndexModeContext;
   class ExprTypenameContext;
   class KeywordContext; 
@@ -1540,7 +1549,11 @@ public:
     EuclideanDistanceContext *euclideanDistance();
     EditDistanceContext *editDistance();
     NormalizeContext *normalize();
+<<<<<<< HEAD
     StrContext *str();
+=======
+    LabelsContext *labels();
+>>>>>>> 77901cc (added labels function in mql)
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1674,6 +1687,7 @@ public:
 
   NormalizeContext* normalize();
 
+<<<<<<< HEAD
   class  StrContext : public antlr4::ParserRuleContext {
   public:
     StrContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1681,6 +1695,15 @@ public:
     antlr4::tree::TerminalNode *K_STR();
     antlr4::tree::TerminalNode *L_PAR();
     ConditionalOrExprContext *conditionalOrExpr();
+=======
+  class  LabelsContext : public antlr4::ParserRuleContext {
+  public:
+    LabelsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_LABELS();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+>>>>>>> 77901cc (added labels function in mql)
     antlr4::tree::TerminalNode *R_PAR();
 
 
@@ -1688,7 +1711,11 @@ public:
    
   };
 
+<<<<<<< HEAD
   StrContext* str();
+=======
+  LabelsContext* labels();
+>>>>>>> 77901cc (added labels function in mql)
 
   class  TextSearchIndexModeContext : public antlr4::ParserRuleContext {
   public:

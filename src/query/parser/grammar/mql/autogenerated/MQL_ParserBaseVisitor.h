@@ -375,7 +375,11 @@ public:
     return visitChildren(ctx);
   }
 
+<<<<<<< HEAD
   virtual std::any visitStr(MQL_Parser::StrContext *ctx) override {
+=======
+  virtual std::any visitLabels(MQL_Parser::LabelsContext *ctx) override {
+>>>>>>> 77901cc (added labels function in mql)
     return visitChildren(ctx);
   }
 

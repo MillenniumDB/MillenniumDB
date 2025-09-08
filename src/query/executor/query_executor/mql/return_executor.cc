@@ -12,12 +12,12 @@
 using namespace MQL;
 
 template<ReturnType ret>
-void ReturnExecutor<ret>::print(std::ostream& os, ObjectId oid) {
+void ReturnExecutor<ret>::print(std::ostream& os, ObjectId oid)
+{
     if constexpr (ret == ReturnType::CSV) {
         CSVOstreamEscape csv_ostream_escape(os);
         std::ostream escaped_os(&csv_ostream_escape);
         print(os, escaped_os, oid);
-
     }
     if constexpr (ret == ReturnType::TSV) {
         TSVOstreamEscape tsv_ostream_escape(os);
@@ -26,17 +26,17 @@ void ReturnExecutor<ret>::print(std::ostream& os, ObjectId oid) {
     }
 }
 
-
 template<ReturnType ret>
-void ReturnExecutor<ret>::print_path_node(std::ostream& os, ObjectId node_id) {
+void ReturnExecutor<ret>::print_path_node(std::ostream& os, ObjectId node_id)
+{
     os << "(";
     ReturnExecutor::print(os, os, node_id);
     os << ")";
 }
 
-
 template<ReturnType ret>
-void ReturnExecutor<ret>::print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
+void ReturnExecutor<ret>::print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse)
+{
     if (inverse) {
         os << "<-[:";
         ReturnExecutor::print(os, os, edge_id);
@@ -48,10 +48,25 @@ void ReturnExecutor<ret>::print_path_edge(std::ostream& os, ObjectId edge_id, bo
     }
 }
 
+template<ReturnType ret>
+void ReturnExecutor<ret>::print_list(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
+{
+    std::vector<ObjectId> out;
+    Conversions::unpack_list(oid, out);
+    os << "[";
+    for (auto it = out.begin(); it != out.end(); ++it) {
+        if (it != out.begin()) {
+            os << ",";
+        }
+        print(escaped_os, escaped_os, *it);
+    }
+    os << "]";
+}
 
 template<ReturnType ret>
-void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid) {
-    const auto mask        = oid.id & ObjectId::TYPE_MASK;
+void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
+{
+    const auto mask = oid.id & ObjectId::TYPE_MASK;
     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
     switch (mask) {
     case ObjectId::MASK_NULL: {
@@ -114,10 +129,12 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
     case ObjectId::MASK_PATH: {
         using namespace std::placeholders;
         os << '[';
-        path_manager.print(os,
-                           unmasked_id,
-                           std::bind(&ReturnExecutor<ret>::print_path_node, _1, _2),
-                           std::bind(&ReturnExecutor<ret>::print_path_edge, _1, _2, _3));
+        path_manager.print(
+            os,
+            unmasked_id,
+            std::bind(&ReturnExecutor<ret>::print_path_node, _1, _2),
+            std::bind(&ReturnExecutor<ret>::print_path_edge, _1, _2, _3)
+        );
         os << ']';
         break;
     }
@@ -155,14 +172,20 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "tensorDouble(\"" << tensor.to_string() << "\")";
         break;
     }
+    case ObjectId::MASK_LIST: {
+        os << '"';
+        print_list(os, escaped_os, oid);
+        os << '"';
+        break;
+    }
     default:
-        throw std::logic_error("Unmanaged mask in ReturnExecutor print: "
-            + std::to_string(mask));
+        throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + std::to_string(mask));
     }
 }
 
 template<ReturnType ret>
-uint64_t ReturnExecutor<ret>::execute(std::ostream& os) {
+uint64_t ReturnExecutor<ret>::execute(std::ostream& os)
+{
     // print header
     auto it = projection_vars.cbegin();
     if (it != projection_vars.cend()) {
@@ -228,10 +251,10 @@ uint64_t ReturnExecutor<ret>::execute(std::ostream& os) {
 }
 
 template<ReturnType ret>
-void ReturnExecutor<ret>::analyze(std::ostream& os, bool print_stats, int indent) const {
+void ReturnExecutor<ret>::analyze(std::ostream& os, bool print_stats, int indent) const
+{
     iter->print(os, indent, print_stats);
 }
-
 
 template class MQL::ReturnExecutor<MQL::ReturnType::CSV>;
 template class MQL::ReturnExecutor<MQL::ReturnType::TSV>;

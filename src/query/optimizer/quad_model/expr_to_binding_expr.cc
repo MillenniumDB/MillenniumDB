@@ -406,6 +406,11 @@ void ExprToBindingExpr::visit(ExprStr& expr)
     tmp = std::make_unique<BindingExprStr>(std::move(tmp));
 }
 
+void ExprToBindingExpr::visit(ExprLabels& expr)
+{
+    tmp = std::make_unique<BindingExprLabels>(expr.var);
+}
+
 template<typename AggType, class... Args>
 void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
 {

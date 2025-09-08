@@ -133,7 +133,7 @@ Any QueryVisitor::visitMatchQuery(MQL_Parser::MatchQueryContext* ctx)
             visit(primitiveStatement);
             sequence.emplace_back(std::move(current_op));
         }
-        current_op =  std::make_unique<OpSequence>(std::move(sequence));
+        current_op = std::make_unique<OpSequence>(std::move(sequence));
     } else {
         visit(primitiveStatements[0]);
     }
@@ -231,7 +231,7 @@ Any QueryVisitor::visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContex
     ctx->children[0]->accept(this);
     saved_node = last_node;
     for (size_t i = 2; i < ctx->children.size(); i += 2) {
-        ctx->children[i]->accept(this);     // accept node
+        ctx->children[i]->accept(this); // accept node
         ctx->children[i - 1]->accept(this); // accept edge
         saved_node = last_node;
     }
@@ -341,10 +341,10 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
 
     if (procedure_name_lowercased == "hnsw_top_k") {
         procedure_type = OpCall::ProcedureType::HNSW_TOP_K;
-        } else if (procedure_name_lowercased == "hnsw_scan") {
-            procedure_type = OpCall::ProcedureType::HNSW_SCAN;
-        } else if (procedure_name_lowercased == "text_search") {
-            procedure_type = OpCall::ProcedureType::TEXT_SEARCH;
+    } else if (procedure_name_lowercased == "hnsw_scan") {
+        procedure_type = OpCall::ProcedureType::HNSW_SCAN;
+    } else if (procedure_name_lowercased == "text_search") {
+        procedure_type = OpCall::ProcedureType::TEXT_SEARCH;
     } else {
         throw QueryException("Invalid CALL statement procedure: \"" + procedure_name + "\"");
     }
@@ -355,11 +355,13 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
     case OpCall::ProcedureType::HNSW_TOP_K:
     case OpCall::ProcedureType::HNSW_SCAN: {
         if (current_call_argument_exprs.size() != 4) {
-            throw QueryException(OpCall::get_procedure_string(procedure_type) + " expects exactly 4 arguments");
+            throw QueryException(
+                OpCall::get_procedure_string(procedure_type) + " expects exactly 4 arguments"
+            );
         }
         break;
     }
-    case OpCall::ProcedureType::TEXT_SEARCH:{
+    case OpCall::ProcedureType::TEXT_SEARCH: {
         if (current_call_argument_exprs.size() == 2) {
             // set default arguments
             current_call_argument_exprs.emplace_back(
@@ -432,7 +434,8 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitCallArguments(MQL_Parser::CallArgumentsContext* ctx) {
+Any QueryVisitor::visitCallArguments(MQL_Parser::CallArgumentsContext* ctx)
+{
     const auto conditionalAndExprs = ctx->conditionalOrExpr();
 
     std::vector<std::unique_ptr<Expr>> call_argument_exprs;
@@ -448,8 +451,9 @@ Any QueryVisitor::visitCallArguments(MQL_Parser::CallArgumentsContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx) {
-    if (ctx->STAR()){
+Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx)
+{
+    if (ctx->STAR()) {
         return 0;
     }
 
@@ -480,7 +484,8 @@ Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx) {
+Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx)
+{
     OpLet::VarExprType var_expr;
 
     const auto letDefinitionList = ctx->letDefinitionList();
@@ -551,7 +556,10 @@ Any QueryVisitor::visitReturnItemVar(MQL_Parser::ReturnItemVarContext* ctx)
         auto property_var = get_query_ctx().get_or_create_var(property_var_name);
 
         auto key_id = QuadObjectId::get_string(key_name);
-        return_info.items.emplace_back(std::make_unique<ExprVarProperty>(var, key_id, property_var), property_var);
+        return_info.items.emplace_back(
+            std::make_unique<ExprVarProperty>(var, key_id, property_var),
+            property_var
+        );
     } else {
         return_info.items.emplace_back(std::make_unique<ExprVar>(var), var);
     }
@@ -890,7 +898,7 @@ Any QueryVisitor::visitLinearPattern(MQL_Parser::LinearPatternContext* ctx)
     ctx->children[0]->accept(this);
     saved_node = last_node;
     for (size_t i = 2; i < ctx->children.size(); i += 2) {
-        ctx->children[i]->accept(this);     // accept node
+        ctx->children[i]->accept(this); // accept node
         ctx->children[i - 1]->accept(this); // accept edge or path
         saved_node = last_node;
     }
@@ -936,7 +944,6 @@ Any QueryVisitor::visitProperty2(MQL_Parser::Property2Context* property)
 {
     auto key_str = property->identifier()->getText();
     auto key_id = QuadObjectId::get_string(key_str);
-
 
     std::string datatype = property->TYPE()->getText();
     // remove leading ':'
@@ -1695,7 +1702,15 @@ Any QueryVisitor::visitStr(MQL_Parser::StrContext* ctx)
     auto expr = std::move(current_expr);
 
     current_expr = std::make_unique<ExprStr>(std::move(expr));
+    return 0;
+}
 
+Any QueryVisitor::visitLabels(MQL_Parser::LabelsContext* ctx)
+{
+    std::string var_name = ctx->VARIABLE()->getText();
+    var_name.erase(0, 1); // remove leading '?'
+    VarId var_id = get_query_ctx().get_or_create_var(var_name);
+    current_expr = std::make_unique<ExprLabels>(var_id);
     return 0;
 }
 
@@ -1752,11 +1767,11 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
     auto value_to_str = [&](MQL_Parser::ValueContext* ctx, const std::string& key) -> std::string {
         visit(ctx);
         const auto gen_sub_t = current_value_oid.id & ObjectId::SUB_TYPE_MASK;
-        switch(gen_sub_t) {
-            case ObjectId::MASK_STRING_SIMPLE:
-                return MQL::Conversions::unpack_string(current_value_oid);
-            default:
-                break;
+        switch (gen_sub_t) {
+        case ObjectId::MASK_STRING_SIMPLE:
+            return MQL::Conversions::unpack_string(current_value_oid);
+        default:
+            break;
         }
 
         throw QueryException("index option \"" + key + "\" is expected to be a string");
@@ -1766,11 +1781,11 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
     auto value_to_uint64 = [&](MQL_Parser::ValueContext* ctx, const std::string& key) -> uint64_t {
         visit(ctx);
         const auto gen_sub_t = current_value_oid.id & ObjectId::SUB_TYPE_MASK;
-        switch(gen_sub_t) {
-            case ObjectId::MASK_INT:
-                return MQL::Conversions::unpack_int(current_value_oid);
-            default:
-                break;
+        switch (gen_sub_t) {
+        case ObjectId::MASK_INT:
+            return MQL::Conversions::unpack_int(current_value_oid);
+        default:
+            break;
         }
 
         throw QueryException("index option \"" + key + "\" is expected to be an unsigned integer");
@@ -1895,7 +1910,8 @@ Any QueryVisitor::visitValue(MQL_Parser::ValueContext* ctx)
     return 0;
 }
 
-void QueryVisitor::parse_datatype_value(const std::string& datatype, const std::string& str) {
+void QueryVisitor::parse_datatype_value(const std::string& datatype, const std::string& str)
+{
     if (datatype == "date") {
         current_value_oid = ObjectId(DateTime::from_date(str));
         if (current_value_oid.is_null()) {

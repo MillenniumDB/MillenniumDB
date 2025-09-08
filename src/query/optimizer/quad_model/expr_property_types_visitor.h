@@ -38,6 +38,7 @@ public:
     virtual void visit(ExprLess&) override { }
     virtual void visit(ExprNotEquals&) override { }
     virtual void visit(ExprNot&) override { }
+    virtual void visit(ExprLabels&) override { }
 
     virtual void visit(ExprAggAvg&) override { }
     virtual void visit(ExprAggCountAll&) override { }

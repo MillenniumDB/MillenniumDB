@@ -75,7 +75,7 @@ public:
         return res;
     }
 
-    std::string encode_gql_list(const ObjectId& oid) const
+    std::string encode_list(const ObjectId& oid) const
     {
         std::vector<ObjectId> oid_list;
         GQL::Conversions::unpack_list(oid, oid_list);
@@ -172,7 +172,7 @@ public:
             return encode_dictionary(*dictionary);
         }
         case GQL_OID::Type::LIST: {
-            return encode_gql_list(oid);
+            return encode_list(oid);
         }
         default: {
             return encode_null();
