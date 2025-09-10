@@ -40,6 +40,7 @@ public:
     virtual void visit(ExprNot&) override { }
     virtual void visit(ExprLabels&) override { }
     virtual void visit(ExprType&) override { }
+    virtual void visit(ExprProperties&) override { }
 
     virtual void visit(ExprAggAvg&) override { }
     virtual void visit(ExprAggCountAll&) override { }

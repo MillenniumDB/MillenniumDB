@@ -60,8 +60,8 @@ public:
     RuleUnaryExpr = 64, RuleAtomicExpr = 65, RuleFunction = 66, RuleRegex = 67, 
     RuleCosineSimilarity = 68, RuleCosineDistance = 69, RuleManhattanDistance = 70, 
     RuleEuclideanDistance = 71, RuleEditDistance = 72, RuleNormalize = 73, 
-    RuleStr = 74, RuleLabels = 75, RuleType = 76, RuleTextSearchIndexMode = 77, 
-    RuleExprTypename = 78, RuleKeyword = 79
+    RuleStr = 74, RuleLabels = 75, RulePropertiesFunction = 76, RuleType = 77, 
+    RuleTextSearchIndexMode = 78, RuleExprTypename = 79, RuleKeyword = 80
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -157,6 +157,7 @@ public:
   class NormalizeContext;
   class StrContext;
   class LabelsContext;
+  class PropertiesFunctionContext;
   class TypeContext;
   class TextSearchIndexModeContext;
   class ExprTypenameContext;
@@ -1546,6 +1547,7 @@ public:
     StrContext *str();
     LabelsContext *labels();
     TypeContext *type();
+    PropertiesFunctionContext *propertiesFunction();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1710,6 +1712,22 @@ public:
   };
 
   LabelsContext* labels();
+
+  class  PropertiesFunctionContext : public antlr4::ParserRuleContext {
+  public:
+    PropertiesFunctionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_PROPERTIES();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertiesFunctionContext* propertiesFunction();
 
   class  TypeContext : public antlr4::ParserRuleContext {
   public:

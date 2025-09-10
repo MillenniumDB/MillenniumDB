@@ -90,6 +90,13 @@ public:
         return res;
     }
 
+    std::string encode_dictionary_key(const ObjectId& oid) const override
+    {
+        std::stringstream ss;
+        ss << oid;
+        return encode_string(ss.str(), Protocol::DataType::STRING);
+    }
+
     std::string encode_object_id(const ObjectId& oid) const override
     {
         const auto type = GQL_OID::get_type(oid);

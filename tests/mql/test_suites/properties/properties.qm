@@ -1,0 +1,16 @@
+N0 :Person name:"p_identical" year:2000 verified:true
+N1 :Person name:"p1" year:2010 verified:true
+N2 :Person name:"p2" year:2022 verified:true
+N3 :Person name:"p3" year:2001 verified:true
+N4 :Person name:"p4" year:2016 verified:true
+N5 :Person name:"p5" year:2017 verified:true
+N6 :Person name:"p6" year:2019 verified:false
+N7 :Person name:"p7" year:2022 verified:true
+N8 :Person name:"p8" year:2010 verified:true
+N9 :Person name:"p_identical" year:2000 verified:true
+N0->N1 :Follows since:date("2024-05-28")
+N1->N4 :Follows since:date("2022-04-30")
+N2->N5 :Follows since:date("2024-04-04")
+N6->N4 :Follows since:date("2024-07-12")
+N4->N1 :Follows since:date("2023-07-13")
+N0->N9 :Follows

@@ -37,8 +37,17 @@ private:
     uint64_t decode_object(char* buffer)
     {
         char* initial_buffer = buffer;
-        auto [size, size_bytes] = BytesEncoder::read_size(buffer);
-        buffer += size_bytes;
+
+        uint64_t size;
+        // check if dictionary is empty
+        if (*buffer == 0) {
+            size = 0;
+            buffer++;
+        } else {
+            auto encoder_res = BytesEncoder::read_size(buffer);
+            size = encoder_res.first;
+            buffer += encoder_res.second;
+        }
 
         std::map<ObjectId, std::unique_ptr<DictionaryItem>> oid2item;
 
@@ -73,8 +82,17 @@ private:
     uint64_t decode_array(char* buffer)
     {
         char* initial_buffer = buffer;
-        auto [size, size_bytes] = BytesEncoder::read_size(buffer);
-        buffer += size_bytes;
+
+        uint64_t size;
+        // check if array is empty
+        if (*buffer == 0) {
+            size = 0;
+            buffer++;
+        } else {
+            auto encoder_res = BytesEncoder::read_size(buffer);
+            size = encoder_res.first;
+            buffer += encoder_res.second;
+        }
 
         std::vector<std::unique_ptr<DictionaryItem>> array;
 

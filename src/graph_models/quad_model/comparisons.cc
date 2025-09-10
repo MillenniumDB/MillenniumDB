@@ -141,6 +141,16 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
         }
         return lhs_unmasked_id - rhs_unmasked_id;
     }
+    case ObjectId::MASK_DICTIONARY: {
+        auto lhs_dict = Common::Conversions::unpack_dictionary(lhs);
+        auto rhs_dict = Common::Conversions::unpack_dictionary(rhs);
+        Dictionary& lhs_ref(*lhs_dict);
+        Dictionary& rhs_ref(*rhs_dict);
+        if (lhs_ref == rhs_ref) {
+            return 0;
+        }
+        return lhs_unmasked_id - rhs_unmasked_id;
+    }
     default:
         throw std::logic_error(
             "Unmanaged generic mask in Quad Comparisons " + std::to_string(lhs_generic_type)

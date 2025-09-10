@@ -383,6 +383,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitType(MQL_Parser::TypeContext *ctx) override {
     return visitChildren(ctx);
   }

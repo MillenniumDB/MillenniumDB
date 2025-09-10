@@ -178,6 +178,14 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << '"';
         break;
     }
+    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_TMP: {
+        std::unique_ptr<Dictionary> dict = Common::Conversions::unpack_dictionary(oid);
+        os << '"';
+        dict->to_string(escaped_os);
+        os << '"';
+        break;
+    }
     default:
         throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + std::to_string(mask));
     }

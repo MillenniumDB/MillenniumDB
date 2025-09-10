@@ -116,6 +116,29 @@ inline float to_float(ObjectId oid)
     }
 }
 
+inline ObjectId pack_list(const std::vector<ObjectId>& list)
+{
+    TmpLists& tmp_list = tmp_manager.get_tmp_list();
+    uint32_t file_id = tmp_list.get_file_id();
+    uint64_t list_offset = tmp_list.insert(list);
+    return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
+}
+
+inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
+{
+    auto& lists = tmp_manager.get_tmp_list();
+    assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
+
+    lists.get(out, list_id.id & LIST_OFFSET_MASK);
+}
+
+inline std::vector<ObjectId> unpack_list(ObjectId list_id)
+{
+    std::vector<ObjectId> list;
+    unpack_list(list_id, list);
+    return list;
+}
+
 // Returns a string with the lexical representation of the value
 inline std::string to_lexical_str(ObjectId oid)
 {
@@ -179,6 +202,26 @@ inline std::string to_lexical_str(ObjectId oid)
     case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
         const auto tensor = unpack_tensor<double>(oid);
         return tensor.to_string();
+    }
+    case ObjectId::MASK_LIST: {
+        auto list = unpack_list(oid);
+        std::stringstream ss;
+        ss << "[";
+        for (auto it = list.begin(); it != list.end(); ++it) {
+            if (it != list.begin()) {
+                ss << ",";
+            }
+            to_lexical_str(*it);
+        }
+        ss << "]";
+        return ss.str();
+    }
+    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_TMP: {
+        std::unique_ptr<Dictionary> dict = unpack_dictionary(oid);
+        std::stringstream ss;
+        dict->to_string(ss);
+        return ss.str();
     }
     default:
         assert(false);
@@ -263,29 +306,6 @@ inline size_t print_string(ObjectId oid, char* out)
     default:
         throw std::logic_error("Unmanaged mask in MQL::Conversions::print_string: " + std::to_string(mask));
     }
-}
-
-inline ObjectId pack_list(const std::vector<ObjectId>& list)
-{
-    TmpLists& tmp_list = tmp_manager.get_tmp_list();
-    uint32_t file_id = tmp_list.get_file_id();
-    uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
-}
-
-inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
-{
-    auto& lists = tmp_manager.get_tmp_list();
-    assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
-
-    lists.get(out, list_id.id & LIST_OFFSET_MASK);
-}
-
-inline std::vector<ObjectId> unpack_list(ObjectId list_id)
-{
-    std::vector<ObjectId> list;
-    unpack_list(list_id, list);
-    return list;
 }
 
 }} // namespace MQL::Conversions
