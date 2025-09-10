@@ -52,7 +52,7 @@ std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, M
     std::fstream ifs(absolute_data_file_path, std::ios::in | std::ios::binary);
 
     // load params
-    HNSWIndex::HNSWIndexParams params {};
+    HNSWIndex::HNSWIndexParams params;
     ifs.read(reinterpret_cast<char*>(&params), sizeof(HNSWIndex::HNSWIndexParams));
     if (!ifs.good()) {
         throw std::runtime_error("Could not read index file");

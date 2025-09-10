@@ -15,7 +15,7 @@
 #include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 namespace Import {
 template<std::size_t N>

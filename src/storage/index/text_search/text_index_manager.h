@@ -52,14 +52,12 @@ public:
         TOKENIZE_TYPE tokenization_type
     );
 
-    // TODO: why return copy?
-    boost::unordered_flat_map<std::string, TextIndexMetadata> get_name2metadata() const
+    const boost::unordered_flat_map<std::string, TextIndexMetadata>& get_name2metadata() const
     {
         return name2metadata;
     }
 
-    // TODO: why return copy?
-    boost::unordered_flat_map<std::string, std::vector<std::string>> get_predicate2names() const
+    const boost::unordered_flat_map<std::string, std::vector<std::string>>& get_predicate2names() const
     {
         return predicate2names;
     }

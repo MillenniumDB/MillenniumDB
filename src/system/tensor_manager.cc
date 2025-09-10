@@ -23,13 +23,14 @@ void TensorManager::init(uint64_t static_buffer_size, uint64_t dynamic_buffer_si
 }
 
 TensorManager::TensorManager(uint64_t aligned_static_buffer_size, uint64_t aligned_dynamic_buffer_size) :
-    static_buffer_size { aligned_static_buffer_size },
-    dynamic_buffer_size { aligned_dynamic_buffer_size },
-    num_frames { dynamic_buffer_size / BLOCK_SIZE },
-    tensor_file_id { file_manager.get_file_id(TensorManager::TENSORS_FILENAME) },
-    static_buffer { reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(static_buffer_size)) },
-    dynamic_buffer { reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(dynamic_buffer_size)) },
-    frames { new TensorManager::Frame[num_frames] }
+    static_buffer_size (aligned_static_buffer_size),
+    dynamic_buffer_size (aligned_dynamic_buffer_size),
+    num_frames (dynamic_buffer_size / BLOCK_SIZE),
+    tensor_file_id (file_manager.get_file_id(TensorManager::TENSORS_FILENAME)),
+    static_buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(static_buffer_size))),
+    dynamic_buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(dynamic_buffer_size))),
+    frames (new TensorManager::Frame[num_frames]),
+    tensors_hash("tensor_hash")
 {
     if (static_buffer == nullptr || dynamic_buffer == nullptr || frames == nullptr) {
         FATAL_ERROR("Could not allocate TensorManager buffers, try using a smaller size");

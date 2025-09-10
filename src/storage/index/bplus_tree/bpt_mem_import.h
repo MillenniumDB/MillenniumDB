@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 template <std::size_t N>
 class BPTLeafWriter {

@@ -70,10 +70,10 @@ private:
         bool second_chance;
 
         Frame() :
-            block_id { 0 },
-            bytes { nullptr },
-            pins { 0 },
-            second_chance { false }
+            block_id(0),
+            bytes(nullptr),
+            pins(0),
+            second_chance(false)
         { }
     };
 

@@ -2,23 +2,14 @@
 
 #include <cstdint>
 
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 class StringsHashBucket {
 public:
     static constexpr auto MAX_KEYS = (Page::SIZE - 2 * sizeof(uint32_t))
                                    / (sizeof(uint64_t) + sizeof(uint32_t));
 
-    StringsHashBucket(Page& page);
-
-    ~StringsHashBucket();
-
-    uint64_t get_id(const char* bytes, uint64_t size, uint64_t hash) const;
-
-    // only call this when no split is needed (*key_count < MAX_KEYS)
-    void create_str_id(uint64_t new_id, uint64_t hash);
-
-    void redistribute(StringsHashBucket& other, uint64_t mask, uint64_t other_suffix);
+    static constexpr uint64_t HASH_MASK = 0x00'0F'FF'FF'FF'FF'FF'FFULL;
 
     Page* page;
 
@@ -28,5 +19,14 @@ public:
     uint64_t* arr1; // most significant 12bits:ID, 52 least significant bits:hash
     uint32_t* arr2; // 32 least significant bits of ID
 
-    void upgrade_page_to_editable();
+    StringsHashBucket(Page& page);
+
+    ~StringsHashBucket();
+
+    uint64_t get_id(const char* bytes, uint64_t size, uint64_t hash) const;
+
+    // only call this when no split is needed (*key_count < MAX_KEYS)
+    void create_id(uint64_t new_id, uint64_t hash);
+
+    void redistribute(StringsHashBucket& other, uint64_t mask, uint64_t other_suffix);
 };

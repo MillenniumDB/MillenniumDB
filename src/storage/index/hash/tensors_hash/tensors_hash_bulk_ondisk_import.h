@@ -11,8 +11,7 @@
 #include "macros/count_zeros.h"
 #include "storage/index/hash/tensors_hash/tensors_hash.h"
 #include "storage/index/hash/tensors_hash/tensors_hash_bucket.h"
-#include "storage/page/versioned_page.h"
-#include "system/file_manager.h"
+#include "storage/page/page.h"
 #include "third_party/hashes/hash_function_wrapper.h"
 
 class TensorsHashBulkOnDiskImport {
@@ -24,12 +23,12 @@ class TensorsHashBulkOnDiskImport {
         uint32_t* const arr2; // 32 least significant bits of ID
 
         Bucket(char* page) :
-            key_count { reinterpret_cast<uint32_t*>(page) },
-            local_depth { reinterpret_cast<uint32_t*>(page + sizeof(uint32_t)) },
-            arr1 { reinterpret_cast<uint64_t*>(page + 2 * sizeof(uint32_t)) },
-            arr2 { reinterpret_cast<uint32_t*>(
+            key_count(reinterpret_cast<uint32_t*>(page)),
+            local_depth(reinterpret_cast<uint32_t*>(page + sizeof(uint32_t))),
+            arr1(reinterpret_cast<uint64_t*>(page + 2 * sizeof(uint32_t))),
+            arr2(reinterpret_cast<uint32_t*>(
                 page + 2 * sizeof(uint32_t) + sizeof(uint64_t) * TensorsHashBucket::MAX_KEYS
-            ) }
+            ))
         { }
 
         void create_id(uint64_t new_id, uint64_t hash, bool* const need_split)
@@ -79,11 +78,11 @@ class TensorsHashBulkOnDiskImport {
     };
 
 public:
-    TensorsHashBulkOnDiskImport(char* buffer, uint64_t buffer_capacity) :
-        buffer { buffer }
+    TensorsHashBulkOnDiskImport(const std::string& filename, char* buffer, uint64_t buffer_capacity) :
+        buffer(buffer)
     {
-        const auto dir_path = file_manager.get_file_path(TensorsHash::DIR_FILENAME);
-        const auto buckets_path = file_manager.get_file_path(TensorsHash::BUCKETS_FILENAME);
+        auto dir_path = filename + ".dir";
+        auto buckets_path = filename + ".dat";
         dir_fd = open(dir_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
         if (dir_fd == -1) {
             throw std::runtime_error("Could not open file " + dir_path);
@@ -139,6 +138,12 @@ public:
 
         const std::size_t dir_size = 1 << global_depth;
         check_io(write(dir_fd, reinterpret_cast<const char*>(dir), sizeof(uint32_t) * dir_size));
+
+        auto written = 2 * sizeof(uint32_t) + (sizeof(uint32_t) * dir_size);
+        auto desired_size = (written / Page::SIZE + (written % Page::SIZE != 0)) * Page::SIZE;
+
+        check_io(ftruncate(dir_fd, desired_size));
+
         delete[] (dir);
         close(dir_fd);
 

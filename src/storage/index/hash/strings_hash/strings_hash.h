@@ -23,20 +23,7 @@ public:
     void create_str_id(const char* bytes, uint64_t size, uint64_t new_id);
 
 private:
+    const FileId dir_file_id;
+
     const FileId buckets_file_id;
-
-    // MIN_GLOBAL_DEPTH <= global_depth < 32
-    uint_fast8_t global_depth() const;
-
-    uint32_t total_pages() const;
-
-    void set_global_depth(uint_fast8_t);
-
-    void set_total_pages(uint32_t);
-
-    uint32_t get_dir(uint64_t pos) const;
-
-    void set_dir(uint64_t pos, uint32_t value);
-
-    void duplicate_dir();
 };

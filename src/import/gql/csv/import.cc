@@ -7,7 +7,6 @@
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
-#include "storage/index/random_access_table/edge_table_mem_import.h"
 
 using namespace Import::GQL::CSV;
 

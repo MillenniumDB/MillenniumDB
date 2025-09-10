@@ -7,7 +7,7 @@
 
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 // forward declarations
 template <std::size_t N> class BPlusTreeDir;

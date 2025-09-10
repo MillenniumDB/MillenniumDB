@@ -26,7 +26,7 @@ certain worker.
 
 #include "storage/file_id.h"
 #include "storage/page/private_page.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 class BufferManager {
 public:

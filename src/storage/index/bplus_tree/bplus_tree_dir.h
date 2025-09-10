@@ -7,7 +7,7 @@
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 template <std::size_t N> class BPlusTree;
 

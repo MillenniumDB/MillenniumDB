@@ -26,11 +26,9 @@ class StringsHashBulkOnDiskImport {
             key_count(reinterpret_cast<uint32_t*>(page)),
             local_depth(reinterpret_cast<uint32_t*>(page + sizeof(uint32_t))),
             arr1(reinterpret_cast<uint64_t*>(page + 2 * sizeof(uint32_t))),
-            arr2(
-                reinterpret_cast<uint32_t*>(
-                    page + 2 * sizeof(uint32_t) + sizeof(uint64_t) * StringsHashBucket::MAX_KEYS
-                )
-            )
+            arr2(reinterpret_cast<uint32_t*>(
+                page + 2 * sizeof(uint32_t) + sizeof(uint64_t) * StringsHashBucket::MAX_KEYS
+            ))
         { }
 
         void create_id(uint64_t new_id, uint64_t hash, bool* const need_split)
@@ -140,6 +138,12 @@ public:
 
         uint_fast32_t dir_size = 1 << global_depth;
         check_io(write(dir_fd, reinterpret_cast<const char*>(dir), sizeof(uint32_t) * dir_size));
+
+        auto written = 2 * sizeof(uint32_t) + (sizeof(uint32_t) * dir_size);
+        auto desired_size = (written / Page::SIZE + (written % Page::SIZE != 0)) * Page::SIZE;
+
+        check_io(ftruncate(dir_fd, desired_size));
+
         delete[] dir;
         close(dir_fd);
 
@@ -222,7 +226,7 @@ private:
 
     char* split_buffer;
 
-    uint_fast8_t global_depth;
+    uint32_t global_depth;
 
     int dir_fd;
     int buckets_fd;

@@ -58,7 +58,7 @@ uint64_t ShowStreamingExecutor<type>::execute(MDBServer::StreamingResponseWriter
         };
 
         auto& hnsw_index_manager = quad_model.catalog.hnsw_index_manager;
-        const auto name2metadata = hnsw_index_manager.get_name2metadata();
+        const auto& name2metadata = hnsw_index_manager.get_name2metadata();
         res = name2metadata.size();
 
         for (const auto& [name, metadata] : name2metadata) {
@@ -92,7 +92,7 @@ uint64_t ShowStreamingExecutor<type>::execute(MDBServer::StreamingResponseWriter
         };
 
         auto& text_index_manager = quad_model.catalog.text_index_manager;
-        const auto name2metadata = text_index_manager.get_name2metadata();
+        const auto& name2metadata = text_index_manager.get_name2metadata();
         res = name2metadata.size();
 
         for (const auto& [name, metadata] : name2metadata) {

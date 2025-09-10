@@ -27,7 +27,7 @@ file paths from the file manager.
 #endif
 
 #include "storage/page/private_page.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 class FileManager {
     friend class BufferManager; // to allow calling read_page and update_appends

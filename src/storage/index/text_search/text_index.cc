@@ -32,9 +32,9 @@ TextIndex::TextIndex(
         }
     }
 
-    trie = std::make_unique<Trie>(create_new, relative_index_path / TRIE_FILENAME);
+    trie = std::make_unique<Trie>(relative_index_path / TRIE_FILENAME);
     bpt = std::make_unique<BPlusTree<2>>(relative_index_path / BPT_NAME);
-    table = std::make_unique<Table>(create_new, relative_index_path / TABLE_FILENAME, 2);
+    table = std::make_unique<Table>(relative_index_path / TABLE_FILENAME, 2);
     normalize_func = get_normalize_func(normalize_type);
     tokenize_func = get_tokenize_func(tokenize_type);
 }

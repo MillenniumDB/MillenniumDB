@@ -67,15 +67,15 @@ void FileManager::read_tmp_page(int fd, uint64_t page_number, char* bytes) const
 
 void FileManager::read_page(PageId page_id, char* bytes) const
 {
-    if (fid2pages.find(page_id.file_id) == fid2pages.end()) {
-        memset(bytes, 0, Page::SIZE);
-        return;
-    }
-
     auto fd = page_id.file_id.id;
 
     auto read_res = pread(fd, bytes, Page::SIZE, page_id.page_number * Page::SIZE);
-    if (read_res == -1) {
+    if (read_res != Page::SIZE) {
+        if (fid2pages.find(fd) == fid2pages.end()) {
+            memset(bytes, 0, Page::SIZE);
+            return;
+        }
+
         for (auto&& [filename, file_id] : filename2file_id) {
             if (page_id.file_id == file_id) {
                 auto msg = "Could not read file " + filename + " at page "

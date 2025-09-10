@@ -1,6 +1,7 @@
 #include "import.h"
 
 #include <cctype>
+#include <unordered_set>
 
 #include "graph_models/inliner.h"
 #include "import/import_helper.h"

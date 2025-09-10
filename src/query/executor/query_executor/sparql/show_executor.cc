@@ -57,7 +57,7 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
     if constexpr (type == OpShow::Type::HNSW_INDEX) {
         assert(projection_vars.size() == 6);
         auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;
-        const auto name2metadata = hnsw_index_manager.get_name2metadata();
+        const auto& name2metadata = hnsw_index_manager.get_name2metadata();
         for (const auto& [name, metadata] : name2metadata) {
             auto* hnsw_index_ptr = hnsw_index_manager.get_hnsw_index(name);
             auto& params = hnsw_index_ptr->get_params();
@@ -76,7 +76,7 @@ uint64_t ShowExecutor<ret, type>::execute(std::ostream& os)
         }
     } else if constexpr (type == OpShow::Type::TEXT_INDEX) {
         assert(projection_vars.size() == 4);
-        const auto name2metadata = rdf_model.catalog.text_index_manager.get_name2metadata();
+        const auto& name2metadata = rdf_model.catalog.text_index_manager.get_name2metadata();
         res = name2metadata.size();
         for (const auto& [name, metadata] : name2metadata) {
             os << '"' << name << '"';

@@ -1,8 +1,9 @@
 #include "quad.h"
 
+#include <unordered_set>
+
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_object_id.h"
-#include "misc/fatal_error.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/query_context.h"
 #include "storage/index/text_search/utils.h"
