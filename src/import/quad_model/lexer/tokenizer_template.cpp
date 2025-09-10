@@ -91,7 +91,7 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             false        = "false";
             string       = ["] ([^"\\] | [\\][^])* ["];
             typed_string = [a-zA-Z]+ [ \r\t]* [(] [ \r\t]* ["] ([^"\\] | [\\][^])* ["] [ \r\t]* [)];
-            identifier   = [a-zA-z][a-zA-Z0-9_]*;
+            identifier   = [a-zA-Z][a-zA-Z0-9_]*;
             integer      = [-+]?[0-9]+;
             decimal      = [-+]?([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)?;
             whitespace   = [ \r\t]+;

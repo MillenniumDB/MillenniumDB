@@ -92,11 +92,14 @@ Import::GQL::Token GQLTokenizer::_get_token()
             false        = "false";
             string       = ["] ([^"\\] | [\\][^])* ["];
             typed_string = [a-zA-Z]+ [ \r\t]* [(] [ \r\t]* ["] ([^"\\] | [\\][^])* ["] [ \r\t]* [)];
-            identifier   = [a-zA-z][a-zA-Z0-9_]*;
+            identifier   = [a-zA-Z][a-zA-Z0-9_]*;
             integer      = [-+]?[0-9]+;
             decimal      = [-+]?([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)?;
             whitespace   = [ \r\t]+;
             endline      = [\n];
+            l_bracket    = '[';
+            r_bracket    = ']';
+            comma        = ',';
 
             colon        { return Import::GQL::Token::COLON; }
             l_arrow      { return Import::GQL::Token::L_ARROW; }
@@ -111,6 +114,9 @@ Import::GQL::Token GQLTokenizer::_get_token()
             decimal      { return Import::GQL::Token::FLOAT; }
             whitespace   { return Import::GQL::Token::WHITESPACE; }
             endline      { return Import::GQL::Token::ENDLINE; }
+            l_bracket    { return Import::GQL::Token::L_BRACKET; }
+            r_bracket    { return Import::GQL::Token::R_BRACKET; }
+            comma        { return Import::GQL::Token::COMMA; }
             *            { return Import::GQL::Token::UNRECOGNIZED; }
         */
     return Import::GQL::Token::END_OF_FILE;

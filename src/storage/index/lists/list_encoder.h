@@ -12,14 +12,13 @@ public:
     // writes the encoded list to the buffer and returns the size
     static uint64_t encode(std::vector<ObjectId>& list, char* buffer)
     {
-        uint64_t size_len;
         if (list.empty()) {
-            size_len = 0;
             *buffer = 0;
-        } else {
-            size_len = BytesEncoder::write_size(buffer, list.size());
-            buffer += size_len;
+            return 1;
         }
+
+        uint64_t size_len = BytesEncoder::write_size(buffer, list.size());
+        buffer += size_len;
 
         for (auto oid : list) {
             memcpy(buffer, &(oid.id), sizeof(ObjectId));

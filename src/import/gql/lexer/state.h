@@ -41,6 +41,12 @@ enum State {
     // A key property and the ':' were read in an edge line, we expect the value
     EXPECT_EDGE_PROP_VALUE = 11,
 
-    TOTAL_STATES = 12
+    EXPECT_NODE_LIST_ELEMENT = 12,
+    EXPECT_EDGE_LIST_ELEMENT = 13,
+
+    EXPECT_NODE_LIST_COMMA = 14,
+    EXPECT_EDGE_LIST_COMMA = 15,
+
+    TOTAL_STATES = 16
 };
 }} // namespace Import::GQL

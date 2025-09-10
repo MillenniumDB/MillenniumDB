@@ -72,6 +72,8 @@ private:
 
     uint64_t current_edge_key = 0;
 
+    std::vector<ObjectId> current_list;
+
     std::unique_ptr<DiskVector<2>> pending_node_labels;
     std::unique_ptr<DiskVector<3>> pending_node_properties;
     std::unique_ptr<DiskVector<3>> pending_edge_properties;
@@ -161,6 +163,13 @@ private:
     void add_edge_prop_true();
 
     void add_edge_prop_false();
+
+    void add_list_value_false();
+    void add_list_value_true();
+    void add_list_value_integer();
+    void add_list_value_string();
+    void save_node_list();
+    void save_edge_list();
 
     void finish_line();
 
