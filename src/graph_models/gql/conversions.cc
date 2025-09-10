@@ -8,6 +8,7 @@
 #include "graph_models/gql/gql_model.h"
 #include "graph_models/gql/gql_object_id.h"
 #include "graph_models/inliner.h"
+#include "storage/index/lists/list_encoder.h"
 #include "system/path_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
@@ -277,10 +278,22 @@ ObjectId Conversions::pack_list(const std::vector<ObjectId>& list)
 
 void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
 {
-    auto& lists = tmp_manager.get_tmp_list();
-    assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
+    switch (list_id.get_type()) {
+    case ObjectId::MASK_LIST_TMP: {
+        auto& lists = tmp_manager.get_tmp_list();
+        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
+        lists.get(out, list_id.id & LIST_OFFSET_MASK);
+        break;
+    }
+    case ObjectId::MASK_LIST_EXTERN: {
+        char* buffer = get_query_ctx().get_buffer1();
 
-    lists.get(out, list_id.id & LIST_OFFSET_MASK);
+        auto external_id = list_id.get_value();
+        string_manager.print_to_buffer(buffer, external_id);
+        out = ListEncoder::decode(buffer);
+        break;
+    }
+    }
 }
 
 std::vector<ObjectId> Conversions::unpack_list(ObjectId list_id)

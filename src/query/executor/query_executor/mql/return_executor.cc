@@ -172,7 +172,9 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "tensorDouble(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectId::MASK_LIST: {
+    case ObjectId::MASK_LIST:
+    case ObjectId::MASK_LIST_EXTERN:
+    case ObjectId::MASK_LIST_TMP: {
         os << '"';
         print_list(os, escaped_os, oid);
         os << '"';

@@ -4,6 +4,7 @@
 #include "graph_models/inliner.h"
 #include "import/import_helper.h"
 #include "misc/unicode_escape.h"
+#include "storage/index/lists/list_encoder.h"
 #include "storage/index/random_access_table/edge_table_mem_import.h"
 
 using namespace Import::GQL;
@@ -316,12 +317,29 @@ uint64_t OnDiskImport::get_datatype_value_id()
             std::cout << "ERROR on line " << current_line << ", ";
             std::cout << "invalid dateTimeStamp: " << lexer.str << "\n";
         }
+    } else if (strcmp(datatype_beg, "list") == 0) {
+        value_id = from_list(lexer.str);
+        if (value_id == ObjectId::NULL_ID) {
+            parsing_errors++;
+            std::cout << "ERROR on line " << current_line << ", ";
+            std::cout << "invalid dateTimeStamp: " << lexer.str << "\n";
+        }
     } else {
         parsing_errors++;
         std::cout << "ERROR on line " << current_line << ", ";
         std::cout << "unknown datatype: " << datatype_beg << "\n";
     }
     return value_id;
+}
+
+uint64_t OnDiskImport::from_list(const std::string& str)
+{
+    //
+    std::vector<ObjectId> list = { ObjectId(ObjectId::BOOL_TRUE), ObjectId(ObjectId::BOOL_FALSE) };
+    char buffer[100];
+
+    uint64_t encoded_size = ListEncoder::encode(list, buffer);
+    return external_helper->get_or_create_external_string_id(buffer, encoded_size) | ObjectId::MASK_LIST;
 }
 
 void OnDiskImport::save_second_id_identifier()

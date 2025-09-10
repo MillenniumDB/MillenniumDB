@@ -7,10 +7,10 @@
 
 #include "graph_models/gql/gql_catalog.h"
 #include "import/disk_vector.h"
+#include "import/external_helper.h"
 #include "import/gql/lexer/state.h"
 #include "import/gql/lexer/token.h"
 #include "import/gql/lexer/tokenizer.h"
-#include "import/external_helper.h"
 #include "misc/istream.h"
 
 namespace Import { namespace GQL {
@@ -165,6 +165,8 @@ private:
     void finish_line();
 
     void print_error();
+
+    uint64_t from_list(const std::string& str);
 
     void try_save_node_label(uint64_t node, uint64_t label);
     void try_save_node_property(uint64_t node, uint64_t key, uint64_t value);
