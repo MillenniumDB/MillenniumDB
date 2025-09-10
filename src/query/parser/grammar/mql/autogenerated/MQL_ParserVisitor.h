@@ -31,13 +31,13 @@ public:
 
     virtual std::any visitInsertEdge(MQL_Parser::InsertEdgeContext *context) = 0;
 
-    virtual std::any visitInsert_properties(MQL_Parser::Insert_propertiesContext *context) = 0;
+    virtual std::any visitInsertProperties(MQL_Parser::InsertPropertiesContext *context) = 0;
 
-    virtual std::any visitInsert_property1(MQL_Parser::Insert_property1Context *context) = 0;
+    virtual std::any visitInsertProperty1(MQL_Parser::InsertProperty1Context *context) = 0;
 
-    virtual std::any visitInsert_property2(MQL_Parser::Insert_property2Context *context) = 0;
+    virtual std::any visitInsertProperty2(MQL_Parser::InsertProperty2Context *context) = 0;
 
-    virtual std::any visitInsert_property3(MQL_Parser::Insert_property3Context *context) = 0;
+    virtual std::any visitInsertProperty3(MQL_Parser::InsertProperty3Context *context) = 0;
 
     virtual std::any visitDeleteStatement(MQL_Parser::DeleteStatementContext *context) = 0;
 

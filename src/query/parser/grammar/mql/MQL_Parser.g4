@@ -24,21 +24,20 @@ insertStatement:
 insertLinearPattern: insertNode (insertEdge insertNode)*;
 
 insertNode:
-	'(' (identifier | VARIABLE)? TYPE* insert_properties? ')';
+	'(' (identifier | VARIABLE)? TYPE* insertProperties? ')';
 
 insertEdge:
-	'<' '-' '[' TYPE insert_properties? ']' '-'
-	| '-' '[' TYPE insert_properties? ']' '-' '>';
+	'<' '-' '[' TYPE insertProperties? ']' '-'
+	| '-' '[' TYPE insertProperties? ']' '-' '>';
 
-insert_properties:
-	'{' insert_property (',' insert_property)* '}';
+insertProperties: '{' insertProperty (',' insertProperty)* '}';
 
-// insert_property2 is necessary when the property is written without spaces after the colon,
+// insertProperty2 is necessary when the property is written without spaces after the colon,
 // example: key:date("2001-02-03") key :date identifier TYPE '(' STRING ')';
-insert_property:
-	identifier (':' value | TRUE_PROP | FALSE_PROP)	# insert_property1
-	| identifier TYPE '(' STRING ')'				# insert_property2
-	| identifier ':' conditionalOrExpr				# insert_property3;
+insertProperty:
+	identifier (':' value | TRUE_PROP | FALSE_PROP)	# insertProperty1
+	| identifier TYPE '(' STRING ')'				# insertProperty2
+	| identifier ':' conditionalOrExpr				# insertProperty3;
 
 deleteStatement:
 	K_DETACH? K_DELETE (fixedObj | VARIABLE) (
@@ -48,7 +47,7 @@ deleteStatement:
 setStatement: K_SET setAtom (',' setAtom)*;
 
 setAtom: (fixedObj | VARIABLE) KEY '=' value
-	| (fixedObj | VARIABLE) insert_properties
+	| (fixedObj | VARIABLE) insertProperties
 	| (fixedObj | VARIABLE) (TYPE)+;
 
 removeStatement: K_REMOVE removeAtom (',' removeAtom)*;

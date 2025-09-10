@@ -39,19 +39,19 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsert_properties(MQL_Parser::Insert_propertiesContext *ctx) override {
+  virtual std::any visitInsertProperties(MQL_Parser::InsertPropertiesContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsert_property1(MQL_Parser::Insert_property1Context *ctx) override {
+  virtual std::any visitInsertProperty1(MQL_Parser::InsertProperty1Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsert_property2(MQL_Parser::Insert_property2Context *ctx) override {
+  virtual std::any visitInsertProperty2(MQL_Parser::InsertProperty2Context *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsert_property3(MQL_Parser::Insert_property3Context *ctx) override {
+  virtual std::any visitInsertProperty3(MQL_Parser::InsertProperty3Context *ctx) override {
     return visitChildren(ctx);
   }
 

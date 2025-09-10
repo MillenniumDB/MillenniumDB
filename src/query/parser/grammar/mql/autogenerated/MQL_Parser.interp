@@ -237,8 +237,8 @@ insertStatement
 insertLinearPattern
 insertNode
 insertEdge
-insert_properties
-insert_property
+insertProperties
+insertProperty
 deleteStatement
 setStatement
 setAtom

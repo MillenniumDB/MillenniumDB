@@ -39,7 +39,7 @@ public:
 
   enum {
     RuleRoot = 0, RuleUpdateStatement = 1, RuleInsertStatement = 2, RuleInsertLinearPattern = 3, 
-    RuleInsertNode = 4, RuleInsertEdge = 5, RuleInsert_properties = 6, RuleInsert_property = 7, 
+    RuleInsertNode = 4, RuleInsertEdge = 5, RuleInsertProperties = 6, RuleInsertProperty = 7, 
     RuleDeleteStatement = 8, RuleSetStatement = 9, RuleSetAtom = 10, RuleRemoveStatement = 11, 
     RuleRemoveAtom = 12, RuleSimpleQuery = 13, RulePrimitiveStatement = 14, 
     RuleCreateIndexQuery = 15, RuleCreateIndexOptions = 16, RuleCreateIndexOption = 17, 
@@ -87,8 +87,8 @@ public:
   class InsertLinearPatternContext;
   class InsertNodeContext;
   class InsertEdgeContext;
-  class Insert_propertiesContext;
-  class Insert_propertyContext;
+  class InsertPropertiesContext;
+  class InsertPropertyContext;
   class DeleteStatementContext;
   class SetStatementContext;
   class SetAtomContext;
@@ -244,7 +244,7 @@ public:
     antlr4::tree::TerminalNode *VARIABLE();
     std::vector<antlr4::tree::TerminalNode *> TYPE();
     antlr4::tree::TerminalNode* TYPE(size_t i);
-    Insert_propertiesContext *insert_properties();
+    InsertPropertiesContext *insertProperties();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -263,7 +263,7 @@ public:
     antlr4::tree::TerminalNode *LSQUARE_BRACKET();
     antlr4::tree::TerminalNode *TYPE();
     antlr4::tree::TerminalNode *RSQUARE_BRACKET();
-    Insert_propertiesContext *insert_properties();
+    InsertPropertiesContext *insertProperties();
     antlr4::tree::TerminalNode *GT();
 
 
@@ -273,13 +273,13 @@ public:
 
   InsertEdgeContext* insertEdge();
 
-  class  Insert_propertiesContext : public antlr4::ParserRuleContext {
+  class  InsertPropertiesContext : public antlr4::ParserRuleContext {
   public:
-    Insert_propertiesContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    InsertPropertiesContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *LCURLY_BRACKET();
-    std::vector<Insert_propertyContext *> insert_property();
-    Insert_propertyContext* insert_property(size_t i);
+    std::vector<InsertPropertyContext *> insertProperty();
+    InsertPropertyContext* insertProperty(size_t i);
     antlr4::tree::TerminalNode *RCURLY_BRACKET();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
@@ -289,14 +289,14 @@ public:
    
   };
 
-  Insert_propertiesContext* insert_properties();
+  InsertPropertiesContext* insertProperties();
 
-  class  Insert_propertyContext : public antlr4::ParserRuleContext {
+  class  InsertPropertyContext : public antlr4::ParserRuleContext {
   public:
-    Insert_propertyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    InsertPropertyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
    
-    Insert_propertyContext() = default;
-    void copyFrom(Insert_propertyContext *context);
+    InsertPropertyContext() = default;
+    void copyFrom(InsertPropertyContext *context);
     using antlr4::ParserRuleContext::copyFrom;
 
     virtual size_t getRuleIndex() const override;
@@ -304,33 +304,9 @@ public:
    
   };
 
-  class  Insert_property3Context : public Insert_propertyContext {
+  class  InsertProperty2Context : public InsertPropertyContext {
   public:
-    Insert_property3Context(Insert_propertyContext *ctx);
-
-    IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *COLON();
-    ConditionalOrExprContext *conditionalOrExpr();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  Insert_property1Context : public Insert_propertyContext {
-  public:
-    Insert_property1Context(Insert_propertyContext *ctx);
-
-    IdentifierContext *identifier();
-    antlr4::tree::TerminalNode *COLON();
-    ValueContext *value();
-    antlr4::tree::TerminalNode *TRUE_PROP();
-    antlr4::tree::TerminalNode *FALSE_PROP();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  Insert_property2Context : public Insert_propertyContext {
-  public:
-    Insert_property2Context(Insert_propertyContext *ctx);
+    InsertProperty2Context(InsertPropertyContext *ctx);
 
     IdentifierContext *identifier();
     antlr4::tree::TerminalNode *TYPE();
@@ -341,7 +317,31 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  Insert_propertyContext* insert_property();
+  class  InsertProperty3Context : public InsertPropertyContext {
+  public:
+    InsertProperty3Context(InsertPropertyContext *ctx);
+
+    IdentifierContext *identifier();
+    antlr4::tree::TerminalNode *COLON();
+    ConditionalOrExprContext *conditionalOrExpr();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  InsertProperty1Context : public InsertPropertyContext {
+  public:
+    InsertProperty1Context(InsertPropertyContext *ctx);
+
+    IdentifierContext *identifier();
+    antlr4::tree::TerminalNode *COLON();
+    ValueContext *value();
+    antlr4::tree::TerminalNode *TRUE_PROP();
+    antlr4::tree::TerminalNode *FALSE_PROP();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  InsertPropertyContext* insertProperty();
 
   class  DeleteStatementContext : public antlr4::ParserRuleContext {
   public:
@@ -389,7 +389,7 @@ public:
     ValueContext *value();
     FixedObjContext *fixedObj();
     antlr4::tree::TerminalNode *VARIABLE();
-    Insert_propertiesContext *insert_properties();
+    InsertPropertiesContext *insertProperties();
     std::vector<antlr4::tree::TerminalNode *> TYPE();
     antlr4::tree::TerminalNode* TYPE(size_t i);
 

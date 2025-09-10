@@ -53,7 +53,7 @@ void mql_parserParserInitialize() {
   auto staticData = std::make_unique<MQL_ParserStaticData>(
     std::vector<std::string>{
       "root", "updateStatement", "insertStatement", "insertLinearPattern", 
-      "insertNode", "insertEdge", "insert_properties", "insert_property", 
+      "insertNode", "insertEdge", "insertProperties", "insertProperty", 
       "deleteStatement", "setStatement", "setAtom", "removeStatement", "removeAtom", 
       "simpleQuery", "primitiveStatement", "createIndexQuery", "createIndexOptions", 
       "createIndexOption", "showQuery", "describeQuery", "describeFlag", 
@@ -898,8 +898,8 @@ tree::TerminalNode* MQL_Parser::InsertNodeContext::TYPE(size_t i) {
   return getToken(MQL_Parser::TYPE, i);
 }
 
-MQL_Parser::Insert_propertiesContext* MQL_Parser::InsertNodeContext::insert_properties() {
-  return getRuleContext<MQL_Parser::Insert_propertiesContext>(0);
+MQL_Parser::InsertPropertiesContext* MQL_Parser::InsertNodeContext::insertProperties() {
+  return getRuleContext<MQL_Parser::InsertPropertiesContext>(0);
 }
 
 
@@ -1040,7 +1040,7 @@ MQL_Parser::InsertNodeContext* MQL_Parser::insertNode() {
     _la = _input->LA(1);
     if (_la == MQL_Parser::LCURLY_BRACKET) {
       setState(214);
-      insert_properties();
+      insertProperties();
     }
     setState(217);
     match(MQL_Parser::R_PAR);
@@ -1085,8 +1085,8 @@ tree::TerminalNode* MQL_Parser::InsertEdgeContext::RSQUARE_BRACKET() {
   return getToken(MQL_Parser::RSQUARE_BRACKET, 0);
 }
 
-MQL_Parser::Insert_propertiesContext* MQL_Parser::InsertEdgeContext::insert_properties() {
-  return getRuleContext<MQL_Parser::Insert_propertiesContext>(0);
+MQL_Parser::InsertPropertiesContext* MQL_Parser::InsertEdgeContext::insertProperties() {
+  return getRuleContext<MQL_Parser::InsertPropertiesContext>(0);
 }
 
 tree::TerminalNode* MQL_Parser::InsertEdgeContext::GT() {
@@ -1138,7 +1138,7 @@ MQL_Parser::InsertEdgeContext* MQL_Parser::insertEdge() {
         _la = _input->LA(1);
         if (_la == MQL_Parser::LCURLY_BRACKET) {
           setState(223);
-          insert_properties();
+          insertProperties();
         }
         setState(226);
         match(MQL_Parser::RSQUARE_BRACKET);
@@ -1161,7 +1161,7 @@ MQL_Parser::InsertEdgeContext* MQL_Parser::insertEdge() {
         _la = _input->LA(1);
         if (_la == MQL_Parser::LCURLY_BRACKET) {
           setState(231);
-          insert_properties();
+          insertProperties();
         }
         setState(234);
         match(MQL_Parser::RSQUARE_BRACKET);
@@ -1186,52 +1186,52 @@ MQL_Parser::InsertEdgeContext* MQL_Parser::insertEdge() {
   return _localctx;
 }
 
-//----------------- Insert_propertiesContext ------------------------------------------------------------------
+//----------------- InsertPropertiesContext ------------------------------------------------------------------
 
-MQL_Parser::Insert_propertiesContext::Insert_propertiesContext(ParserRuleContext *parent, size_t invokingState)
+MQL_Parser::InsertPropertiesContext::InsertPropertiesContext(ParserRuleContext *parent, size_t invokingState)
   : ParserRuleContext(parent, invokingState) {
 }
 
-tree::TerminalNode* MQL_Parser::Insert_propertiesContext::LCURLY_BRACKET() {
+tree::TerminalNode* MQL_Parser::InsertPropertiesContext::LCURLY_BRACKET() {
   return getToken(MQL_Parser::LCURLY_BRACKET, 0);
 }
 
-std::vector<MQL_Parser::Insert_propertyContext *> MQL_Parser::Insert_propertiesContext::insert_property() {
-  return getRuleContexts<MQL_Parser::Insert_propertyContext>();
+std::vector<MQL_Parser::InsertPropertyContext *> MQL_Parser::InsertPropertiesContext::insertProperty() {
+  return getRuleContexts<MQL_Parser::InsertPropertyContext>();
 }
 
-MQL_Parser::Insert_propertyContext* MQL_Parser::Insert_propertiesContext::insert_property(size_t i) {
-  return getRuleContext<MQL_Parser::Insert_propertyContext>(i);
+MQL_Parser::InsertPropertyContext* MQL_Parser::InsertPropertiesContext::insertProperty(size_t i) {
+  return getRuleContext<MQL_Parser::InsertPropertyContext>(i);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_propertiesContext::RCURLY_BRACKET() {
+tree::TerminalNode* MQL_Parser::InsertPropertiesContext::RCURLY_BRACKET() {
   return getToken(MQL_Parser::RCURLY_BRACKET, 0);
 }
 
-std::vector<tree::TerminalNode *> MQL_Parser::Insert_propertiesContext::COMMA() {
+std::vector<tree::TerminalNode *> MQL_Parser::InsertPropertiesContext::COMMA() {
   return getTokens(MQL_Parser::COMMA);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_propertiesContext::COMMA(size_t i) {
+tree::TerminalNode* MQL_Parser::InsertPropertiesContext::COMMA(size_t i) {
   return getToken(MQL_Parser::COMMA, i);
 }
 
 
-size_t MQL_Parser::Insert_propertiesContext::getRuleIndex() const {
-  return MQL_Parser::RuleInsert_properties;
+size_t MQL_Parser::InsertPropertiesContext::getRuleIndex() const {
+  return MQL_Parser::RuleInsertProperties;
 }
 
 
-std::any MQL_Parser::Insert_propertiesContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any MQL_Parser::InsertPropertiesContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
-    return parserVisitor->visitInsert_properties(this);
+    return parserVisitor->visitInsertProperties(this);
   else
     return visitor->visitChildren(this);
 }
 
-MQL_Parser::Insert_propertiesContext* MQL_Parser::insert_properties() {
-  Insert_propertiesContext *_localctx = _tracker.createInstance<Insert_propertiesContext>(_ctx, getState());
-  enterRule(_localctx, 12, MQL_Parser::RuleInsert_properties);
+MQL_Parser::InsertPropertiesContext* MQL_Parser::insertProperties() {
+  InsertPropertiesContext *_localctx = _tracker.createInstance<InsertPropertiesContext>(_ctx, getState());
+  enterRule(_localctx, 12, MQL_Parser::RuleInsertProperties);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -1246,7 +1246,7 @@ MQL_Parser::Insert_propertiesContext* MQL_Parser::insert_properties() {
     setState(239);
     match(MQL_Parser::LCURLY_BRACKET);
     setState(240);
-    insert_property();
+    insertProperty();
     setState(245);
     _errHandler->sync(this);
     _la = _input->LA(1);
@@ -1254,7 +1254,7 @@ MQL_Parser::Insert_propertiesContext* MQL_Parser::insert_properties() {
       setState(241);
       match(MQL_Parser::COMMA);
       setState(242);
-      insert_property();
+      insertProperty();
       setState(247);
       _errHandler->sync(this);
       _la = _input->LA(1);
@@ -1272,109 +1272,109 @@ MQL_Parser::Insert_propertiesContext* MQL_Parser::insert_properties() {
   return _localctx;
 }
 
-//----------------- Insert_propertyContext ------------------------------------------------------------------
+//----------------- InsertPropertyContext ------------------------------------------------------------------
 
-MQL_Parser::Insert_propertyContext::Insert_propertyContext(ParserRuleContext *parent, size_t invokingState)
+MQL_Parser::InsertPropertyContext::InsertPropertyContext(ParserRuleContext *parent, size_t invokingState)
   : ParserRuleContext(parent, invokingState) {
 }
 
 
-size_t MQL_Parser::Insert_propertyContext::getRuleIndex() const {
-  return MQL_Parser::RuleInsert_property;
+size_t MQL_Parser::InsertPropertyContext::getRuleIndex() const {
+  return MQL_Parser::RuleInsertProperty;
 }
 
-void MQL_Parser::Insert_propertyContext::copyFrom(Insert_propertyContext *ctx) {
+void MQL_Parser::InsertPropertyContext::copyFrom(InsertPropertyContext *ctx) {
   ParserRuleContext::copyFrom(ctx);
 }
 
-//----------------- Insert_property3Context ------------------------------------------------------------------
+//----------------- InsertProperty2Context ------------------------------------------------------------------
 
-MQL_Parser::IdentifierContext* MQL_Parser::Insert_property3Context::identifier() {
+MQL_Parser::IdentifierContext* MQL_Parser::InsertProperty2Context::identifier() {
   return getRuleContext<MQL_Parser::IdentifierContext>(0);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_property3Context::COLON() {
-  return getToken(MQL_Parser::COLON, 0);
-}
-
-MQL_Parser::ConditionalOrExprContext* MQL_Parser::Insert_property3Context::conditionalOrExpr() {
-  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
-}
-
-MQL_Parser::Insert_property3Context::Insert_property3Context(Insert_propertyContext *ctx) { copyFrom(ctx); }
-
-
-std::any MQL_Parser::Insert_property3Context::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
-    return parserVisitor->visitInsert_property3(this);
-  else
-    return visitor->visitChildren(this);
-}
-//----------------- Insert_property1Context ------------------------------------------------------------------
-
-MQL_Parser::IdentifierContext* MQL_Parser::Insert_property1Context::identifier() {
-  return getRuleContext<MQL_Parser::IdentifierContext>(0);
-}
-
-tree::TerminalNode* MQL_Parser::Insert_property1Context::COLON() {
-  return getToken(MQL_Parser::COLON, 0);
-}
-
-MQL_Parser::ValueContext* MQL_Parser::Insert_property1Context::value() {
-  return getRuleContext<MQL_Parser::ValueContext>(0);
-}
-
-tree::TerminalNode* MQL_Parser::Insert_property1Context::TRUE_PROP() {
-  return getToken(MQL_Parser::TRUE_PROP, 0);
-}
-
-tree::TerminalNode* MQL_Parser::Insert_property1Context::FALSE_PROP() {
-  return getToken(MQL_Parser::FALSE_PROP, 0);
-}
-
-MQL_Parser::Insert_property1Context::Insert_property1Context(Insert_propertyContext *ctx) { copyFrom(ctx); }
-
-
-std::any MQL_Parser::Insert_property1Context::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
-    return parserVisitor->visitInsert_property1(this);
-  else
-    return visitor->visitChildren(this);
-}
-//----------------- Insert_property2Context ------------------------------------------------------------------
-
-MQL_Parser::IdentifierContext* MQL_Parser::Insert_property2Context::identifier() {
-  return getRuleContext<MQL_Parser::IdentifierContext>(0);
-}
-
-tree::TerminalNode* MQL_Parser::Insert_property2Context::TYPE() {
+tree::TerminalNode* MQL_Parser::InsertProperty2Context::TYPE() {
   return getToken(MQL_Parser::TYPE, 0);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_property2Context::L_PAR() {
+tree::TerminalNode* MQL_Parser::InsertProperty2Context::L_PAR() {
   return getToken(MQL_Parser::L_PAR, 0);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_property2Context::STRING() {
+tree::TerminalNode* MQL_Parser::InsertProperty2Context::STRING() {
   return getToken(MQL_Parser::STRING, 0);
 }
 
-tree::TerminalNode* MQL_Parser::Insert_property2Context::R_PAR() {
+tree::TerminalNode* MQL_Parser::InsertProperty2Context::R_PAR() {
   return getToken(MQL_Parser::R_PAR, 0);
 }
 
-MQL_Parser::Insert_property2Context::Insert_property2Context(Insert_propertyContext *ctx) { copyFrom(ctx); }
+MQL_Parser::InsertProperty2Context::InsertProperty2Context(InsertPropertyContext *ctx) { copyFrom(ctx); }
 
 
-std::any MQL_Parser::Insert_property2Context::accept(tree::ParseTreeVisitor *visitor) {
+std::any MQL_Parser::InsertProperty2Context::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
-    return parserVisitor->visitInsert_property2(this);
+    return parserVisitor->visitInsertProperty2(this);
   else
     return visitor->visitChildren(this);
 }
-MQL_Parser::Insert_propertyContext* MQL_Parser::insert_property() {
-  Insert_propertyContext *_localctx = _tracker.createInstance<Insert_propertyContext>(_ctx, getState());
-  enterRule(_localctx, 14, MQL_Parser::RuleInsert_property);
+//----------------- InsertProperty3Context ------------------------------------------------------------------
+
+MQL_Parser::IdentifierContext* MQL_Parser::InsertProperty3Context::identifier() {
+  return getRuleContext<MQL_Parser::IdentifierContext>(0);
+}
+
+tree::TerminalNode* MQL_Parser::InsertProperty3Context::COLON() {
+  return getToken(MQL_Parser::COLON, 0);
+}
+
+MQL_Parser::ConditionalOrExprContext* MQL_Parser::InsertProperty3Context::conditionalOrExpr() {
+  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
+}
+
+MQL_Parser::InsertProperty3Context::InsertProperty3Context(InsertPropertyContext *ctx) { copyFrom(ctx); }
+
+
+std::any MQL_Parser::InsertProperty3Context::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
+    return parserVisitor->visitInsertProperty3(this);
+  else
+    return visitor->visitChildren(this);
+}
+//----------------- InsertProperty1Context ------------------------------------------------------------------
+
+MQL_Parser::IdentifierContext* MQL_Parser::InsertProperty1Context::identifier() {
+  return getRuleContext<MQL_Parser::IdentifierContext>(0);
+}
+
+tree::TerminalNode* MQL_Parser::InsertProperty1Context::COLON() {
+  return getToken(MQL_Parser::COLON, 0);
+}
+
+MQL_Parser::ValueContext* MQL_Parser::InsertProperty1Context::value() {
+  return getRuleContext<MQL_Parser::ValueContext>(0);
+}
+
+tree::TerminalNode* MQL_Parser::InsertProperty1Context::TRUE_PROP() {
+  return getToken(MQL_Parser::TRUE_PROP, 0);
+}
+
+tree::TerminalNode* MQL_Parser::InsertProperty1Context::FALSE_PROP() {
+  return getToken(MQL_Parser::FALSE_PROP, 0);
+}
+
+MQL_Parser::InsertProperty1Context::InsertProperty1Context(InsertPropertyContext *ctx) { copyFrom(ctx); }
+
+
+std::any MQL_Parser::InsertProperty1Context::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<MQL_ParserVisitor*>(visitor))
+    return parserVisitor->visitInsertProperty1(this);
+  else
+    return visitor->visitChildren(this);
+}
+MQL_Parser::InsertPropertyContext* MQL_Parser::insertProperty() {
+  InsertPropertyContext *_localctx = _tracker.createInstance<InsertPropertyContext>(_ctx, getState());
+  enterRule(_localctx, 14, MQL_Parser::RuleInsertProperty);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -1388,7 +1388,7 @@ MQL_Parser::Insert_propertyContext* MQL_Parser::insert_property() {
     _errHandler->sync(this);
     switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 12, _ctx)) {
     case 1: {
-      _localctx = _tracker.createInstance<MQL_Parser::Insert_property1Context>(_localctx);
+      _localctx = _tracker.createInstance<MQL_Parser::InsertProperty1Context>(_localctx);
       enterOuterAlt(_localctx, 1);
       setState(250);
       identifier();
@@ -1422,7 +1422,7 @@ MQL_Parser::Insert_propertyContext* MQL_Parser::insert_property() {
     }
 
     case 2: {
-      _localctx = _tracker.createInstance<MQL_Parser::Insert_property2Context>(_localctx);
+      _localctx = _tracker.createInstance<MQL_Parser::InsertProperty2Context>(_localctx);
       enterOuterAlt(_localctx, 2);
       setState(257);
       identifier();
@@ -1438,7 +1438,7 @@ MQL_Parser::Insert_propertyContext* MQL_Parser::insert_property() {
     }
 
     case 3: {
-      _localctx = _tracker.createInstance<MQL_Parser::Insert_property3Context>(_localctx);
+      _localctx = _tracker.createInstance<MQL_Parser::InsertProperty3Context>(_localctx);
       enterOuterAlt(_localctx, 3);
       setState(263);
       identifier();
@@ -1843,8 +1843,8 @@ tree::TerminalNode* MQL_Parser::SetAtomContext::VARIABLE() {
   return getToken(MQL_Parser::VARIABLE, 0);
 }
 
-MQL_Parser::Insert_propertiesContext* MQL_Parser::SetAtomContext::insert_properties() {
-  return getRuleContext<MQL_Parser::Insert_propertiesContext>(0);
+MQL_Parser::InsertPropertiesContext* MQL_Parser::SetAtomContext::insertProperties() {
+  return getRuleContext<MQL_Parser::InsertPropertiesContext>(0);
 }
 
 std::vector<tree::TerminalNode *> MQL_Parser::SetAtomContext::TYPE() {
@@ -2076,7 +2076,7 @@ MQL_Parser::SetAtomContext* MQL_Parser::setAtom() {
         throw NoViableAltException(this);
       }
       setState(307);
-      insert_properties();
+      insertProperties();
       break;
     }
 
