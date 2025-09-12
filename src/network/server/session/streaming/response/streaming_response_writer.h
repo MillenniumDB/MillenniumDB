@@ -58,7 +58,7 @@ public:
     std::string encode_dictionary_array(const DictionaryArray& dictionary) const;
     std::string encode_dictionary_literal(const DictionaryLiteral& dictionary) const;
 
-    virtual std::string encode_dictionary_key(const ObjectId& oid) const
+    virtual std::string encode_dictionary_key(const ObjectId&) const
     {
         return encode_null();
     }

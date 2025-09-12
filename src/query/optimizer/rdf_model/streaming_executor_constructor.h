@@ -4,7 +4,6 @@
 
 #include "query/parser/op/sparql/op_visitor.h"
 
-
 class StreamingQueryExecutor;
 
 namespace SPARQL {
@@ -49,4 +48,4 @@ public:
     void visit(OpBind&) override { }
     void visit(OpValues&) override { }
 };
-} // namespace MQL
+} // namespace SPARQL

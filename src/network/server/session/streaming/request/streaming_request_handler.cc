@@ -153,6 +153,7 @@ void StreamingRequestHandler::handle_update_run()
 
         auto execution_start = std::chrono::system_clock::now();
         executor->execute(*response_writer);
+        version_scope->commited = true;
         auto execution_duration = get_duration(execution_start);
 
         logger.log(Category::ExecutionStats, [&](std::ostream& os) {

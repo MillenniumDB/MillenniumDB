@@ -208,7 +208,7 @@ void BindingIterConstructor::visit(OpCall& op_call)
         break;
     default:
         throw NotSupportedException(
-            "BindingiterConstructor::visit(OpCall&): Not implemented procedure with procedure_type: "
+            "BindingIterConstructor::visit(OpCall&): Not implemented procedure with procedure_type: "
             + std::to_string(static_cast<uint8_t>(op_call.procedure_type))
         );
     }

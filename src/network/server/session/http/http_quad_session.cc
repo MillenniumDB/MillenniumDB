@@ -181,6 +181,7 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
         });
 
         executor->execute(os);
+        version_scope->commited = true;
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {

@@ -319,6 +319,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         for (auto& update : current_logical_plan->updates) {
             update->accept_visitor(update_executor);
         }
+        version_scope->commited = true;
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {

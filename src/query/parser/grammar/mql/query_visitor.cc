@@ -19,6 +19,8 @@
 #include "query/parser/paths/path_optional.h"
 #include "query/parser/paths/path_sequence.h"
 #include "query/query_context.h"
+#include "query/update/mql/hnsw_index_options.h"
+#include "query/update/mql/text_index_options.h"
 
 using namespace MQL;
 using antlrcpp::Any;
@@ -319,16 +321,13 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
     }
     update_info.update_actions.push_back(std::make_unique<InsertNode>(last_node));
 
-
     // Process Labels
     for (auto& label : ctx->TYPE()) {
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
         auto label_id = QuadObjectId::get_string(label_str);
 
-
-            update_info.update_actions.push_back(std::make_unique<InsertLabel>(last_node, label_id)
-            );
+        update_info.update_actions.push_back(std::make_unique<InsertLabel>(last_node, label_id));
     }
 
     if (auto properties = ctx->insertProperties()) {
@@ -1977,13 +1976,13 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
 
-        // TODO:
-        // current_op = std::make_unique<OpCreateTextIndex>(
-        //     std::move(index_name),
-        //     std::move(text_index_opts.property),
-        //     normalize_type,
-        //     tokenize_type
-        // );
+        update_info.update_actions.push_back(std::make_unique<CreateTextIndex>(
+            std::move(index_name),
+            std::move(text_index_opts.property),
+            normalize_type,
+            tokenize_type
+        ));
+
     } else if (index_type_lowercased == "hnsw") {
         // Check if hnsw index existed before
         if (quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name) != nullptr) {
@@ -2022,15 +2021,14 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
         }
 
-        // TODO:
-        // current_op = std::make_unique<OpCreateHNSWIndex>(
-        //     std::move(index_name),
-        //     std::move(hnsw_index_opts.property),
-        //     hnsw_index_opts.dimension,
-        //     hnsw_index_opts.max_edges,
-        //     hnsw_index_opts.max_candidates,
-        //     metric_type
-        // );
+        update_info.update_actions.push_back(std::make_unique<CreateHNSWIndex>(
+            std::move(index_name),
+            std::move(hnsw_index_opts.property),
+            hnsw_index_opts.dimension,
+            hnsw_index_opts.max_edges,
+            hnsw_index_opts.max_candidates,
+            metric_type
+        ));
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }

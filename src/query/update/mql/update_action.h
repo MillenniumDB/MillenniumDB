@@ -4,6 +4,7 @@
 
 #include "query/exceptions.h"
 #include "query/executor/binding.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
 #include "query/update/mql/update_context.h"
@@ -43,6 +44,8 @@ public:
 
         return oid;
     }
+
+    virtual void print(std::ostream& os, int indent) const = 0;
 };
 
 class InsertNode : public UpdateAction {
@@ -67,6 +70,11 @@ public:
 
         auto node_id = transform_if_tmp(node_).id;
         ctx.insert_node(node_id);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "InsertNode(" << node << ")";
     }
 };
 
@@ -101,6 +109,11 @@ public:
 
         ctx.insert_label(node_id, label_id);
     }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "InsertLabel(" << node << "," << label << ")";
+    }
 };
 
 class SetLabelOrType : public UpdateAction {
@@ -133,6 +146,11 @@ public:
             ctx.insert_label(obj_id, label_id);
         }
     }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "SetLabelOrType(" << obj << "," << label << ")";
+    }
 };
 
 class InsertProperty : public UpdateAction {
@@ -153,18 +171,23 @@ public:
         ObjectId val_ = val.is_var() ? binding[val.get_var()] : val.get_OID();
 
         if (obj_.is_null() || key.is_null()) {
-            // TODO: rollback and throw
+            throw QueryExecutionException("cannot create a property with null key or object");
         }
 
         // TODO: validate val_id is not a node/edge/path?
         if (val_.is_null()) {
-            // TODO: rollback and throw
+            throw QueryExecutionException("cannot create a property with null value");
         }
 
         auto obj_id = transform_if_tmp(obj_).id;
         auto key_id = transform_if_tmp(key).id;
         auto value_id = transform_if_tmp(val_).id;
         ctx.insert_property(obj_id, key_id, value_id);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << "," << val << ")";
     }
 };
 
@@ -173,6 +196,7 @@ public:
     Id obj;
     ObjectId key;
     std::unique_ptr<Expr> value;
+    std::unique_ptr<BindingExpr> binding_expr;
 
     InsertPropertyExpr(Id obj, ObjectId key, std::unique_ptr<Expr> value) :
         obj(obj),
@@ -182,8 +206,26 @@ public:
 
     void process(Binding& binding, UpdateContext& ctx) override
     {
-        // TODO: throw exception if value evaluated is null
-        assert(false);
+        assert(binding_expr != nullptr);
+        auto val_ = binding_expr->eval(binding);
+
+        // TODO: validate val_id is not a node/edge/path?
+        if (val_.is_null()) {
+            throw QueryExecutionException("cannot create a property with null value");
+        }
+
+        ObjectId obj_ = obj.is_var() ? binding[obj.get_var()] : obj.get_OID();
+        auto obj_id = transform_if_tmp(obj_).id;
+        auto key_id = transform_if_tmp(key).id;
+        auto value_id = transform_if_tmp(val_).id;
+        ctx.insert_property(obj_id, key_id, value_id);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        // TODO: print expr
+        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ","
+           << ")";
     }
 };
 
@@ -208,6 +250,11 @@ public:
         auto obj_id = transform_if_tmp(obj_).id;
         auto key_id = transform_if_tmp(key).id;
         ctx.delete_property(obj_id, key_id);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "DeleteProperty(" << obj << "," << key << ")";
     }
 };
 
@@ -234,6 +281,11 @@ public:
 
         ctx.delete_label(node_id, label_id);
     }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "DeleteLabel(" << node << "," << label << ")";
+    }
 };
 
 class InsertEdge : public UpdateAction {
@@ -256,7 +308,7 @@ public:
         ObjectId to_ = to.is_var() ? binding[to.get_var()] : to.get_OID();
 
         if (from_.is_null() || to_.is_null() || type.is_null()) {
-            // TODO: rollback and throw
+            throw QueryExecutionException("cannot create an edge using a null node");
         }
 
         auto edge_id = ctx.get_new_edge_id().id;
@@ -267,6 +319,12 @@ public:
         auto type_id = transform_if_tmp(to_).id;
 
         ctx.insert_edge(from_id, to_id, type_id, edge_id);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "InsertEdge(" << from << "," << to << "," << type << "," << edge
+           << ")";
     }
 };
 
@@ -290,6 +348,83 @@ public:
         auto obj_id = transform_if_tmp(obj_).id;
 
         ctx.delete_object(obj_id, detach);
+    }
+
+    void print(std::ostream& os, int indent) const override
+    {
+        os << std::string(indent, ' ') << "DeleteObject(" << obj
+           << ", DETACH: " << (detach ? "true" : "false") << ")";
+    }
+};
+
+class CreateTextIndex : public UpdateAction {
+public:
+    const std::string index_name;
+    const std::string property;
+    const TextSearch::NORMALIZE_TYPE normalize_type;
+    const TextSearch::TOKENIZE_TYPE tokenize_type;
+
+    CreateTextIndex(
+        std::string&& index_name,
+        std::string&& property,
+        TextSearch::NORMALIZE_TYPE normalize_type,
+        TextSearch::TOKENIZE_TYPE tokenize_type
+    ) :
+        index_name(std::move(index_name)),
+        property(std::move(property)),
+        normalize_type(normalize_type),
+        tokenize_type(tokenize_type)
+    { }
+
+    void process(Binding&, UpdateContext& ctx) override
+    {
+        ctx.create_text_index(*this);
+    }
+
+    void print(std::ostream& os, int indent = 0) const override
+    {
+        os << std::string(indent, ' ');
+        os << "OpCreateTextIndex(index_name: " << index_name << ", property: " << property
+           << ", normalize_type: " << normalize_type << ", tokenize_type: " << tokenize_type << ")\n";
+    }
+};
+
+class CreateHNSWIndex : public UpdateAction {
+public:
+    const std::string index_name;
+    const std::string property;
+    const uint64_t dimension;
+    const uint64_t max_edges;
+    const uint64_t max_candidates;
+    const HNSW::MetricType metric_type;
+
+    CreateHNSWIndex(
+        std::string&& index_name,
+        std::string&& property,
+        uint64_t dimension,
+        uint64_t num_edges,
+        uint64_t num_candidates,
+        HNSW::MetricType metric_type
+    ) :
+        index_name(std::move(index_name)),
+        property(std::move(property)),
+        dimension(dimension),
+        max_edges(num_edges),
+        max_candidates(num_candidates),
+        metric_type(metric_type)
+    { }
+
+    void process(Binding&, UpdateContext& ctx) override
+    {
+        ctx.create_hnsw_index(*this);
+    }
+
+    void print(std::ostream& os, int indent = 0) const override
+    {
+        os << std::string(indent, ' ');
+        os << "OpCreateHNSWIndex(index_name: " << index_name << ", property: " << property
+           << ", dimension: " << dimension << ", num_edges: " << max_edges
+           << ", num_candidates: " << max_candidates << ", metric_type: " << metric_type << ")\n";
     }
 };
 

@@ -13,5 +13,11 @@ public:
         is_update = true;
         return 0;
     }
+
+    virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext*) override
+    {
+        is_update = true;
+        return 0;
+    }
 };
 } // namespace MQL

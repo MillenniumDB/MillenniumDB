@@ -6,6 +6,9 @@
 
 namespace MQL {
 
+class CreateHNSWIndex;
+class CreateTextIndex;
+
 class UpdateContext {
 public:
     uint_fast32_t new_nodes = 0;
@@ -39,14 +42,15 @@ public:
         current_edge = quad_model.catalog.max_edge;
     }
 
-    void process_new_property(uint64_t obj, uint64_t key, uint64_t val) { } // TODO: index
+    void process_new_property(uint64_t obj, uint64_t key, uint64_t val);
 
-    void process_deleted_property(uint64_t obj, uint64_t key, uint64_t val) { } // TODO: index
+    void process_deleted_property(uint64_t obj, uint64_t key, uint64_t val);
 
-    void update_indexes()
-    {
-        // TODO:
-    }
+    void update_indexes();
+
+    void create_hnsw_index(CreateHNSWIndex&);
+
+    void create_text_index(CreateTextIndex&);
 
     void insert_node(uint64_t node)
     {

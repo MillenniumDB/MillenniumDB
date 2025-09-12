@@ -100,6 +100,7 @@ int main(int argc, const char* argv[])
                 auto execution_start = std::chrono::system_clock::now();
                 MQL::UpdateExecutor update_executor;
                 update_executor.execute(*logical_plan);
+                version_scope->commited = true;
                 auto execution_duration = std::chrono::system_clock::now() - execution_start;
 
                 logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
@@ -147,6 +148,7 @@ int main(int argc, const char* argv[])
                 for (auto& update : logical_plan->updates) {
                     update->accept_visitor(update_executor);
                 }
+                version_scope->commited = true;
 
                 logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
                     os << "Update Stats\n";

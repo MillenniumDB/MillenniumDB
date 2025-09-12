@@ -13,8 +13,6 @@ public:
     std::unique_ptr<UpdateContext> update_ctx;
     std::vector<std::unique_ptr<UpdateAction>> update_actions;
 
-    OpUpdate() = default;
-
     OpUpdate(
         std::unique_ptr<Op> op,
         std::unique_ptr<UpdateContext> update_ctx,
@@ -27,10 +25,7 @@ public:
 
     std::unique_ptr<Op> clone() const override
     {
-        // TODO:
-        assert(false);
-        return nullptr;
-        // return std::make_unique<OpUpdate>(op->clone(), update_ctx->clone(), );
+        throw LogicException("must not clone OpUpdate");
     }
 
     void accept_visitor(OpVisitor& visitor) override
@@ -48,7 +43,7 @@ public:
         os << std::string(indent, ' ') << "OpUpdate()\n";
 
         for (auto& update : update_actions) {
-            // update->print(os, indent + 2);
+            update->print(os, indent + 2);
         }
 
         return os;
