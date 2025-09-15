@@ -261,8 +261,8 @@ void CheckVarNames::visit(OpBind& op_bind)
     op_bind.op->accept_visitor(*this);
 
     auto& var = op_bind.var;
-    auto declared_vars = op_bind.op->get_scope_vars();
-    if (declared_vars.find(var) != declared_vars.end()) {
+    const auto bind_scope_vars = op_bind.op->get_scope_vars();
+    if (bind_scope_vars.find(var) != bind_scope_vars.end()) {
         throw QuerySemanticException(
             "Cannot BIND expression to ?" + get_query_ctx().get_var_name(var) + ", it is previously used"
         );
