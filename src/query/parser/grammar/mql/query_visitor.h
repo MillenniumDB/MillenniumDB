@@ -17,6 +17,11 @@ class Expr;
 class OpBasicGraphPattern;
 
 class QueryVisitor : public MQL_ParserBaseVisitor {
+public:
+struct GlobalInfo {
+    std::map<VarId, ObjectId> query_parameters;
+};
+
 private:
     struct ReturnInfo {
         std::vector<std::pair<std::unique_ptr<Expr>, VarId>> items;
@@ -143,6 +148,8 @@ private:
         }
     };
 
+    GlobalInfo& global_info;
+
     ReturnInfo return_info;
 
     OrderByInfo order_by_info;
@@ -214,6 +221,8 @@ private:
 
 public:
     std::unique_ptr<Op> current_op;
+
+    QueryVisitor(GlobalInfo& global_info) : global_info(global_info) { }
 
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;

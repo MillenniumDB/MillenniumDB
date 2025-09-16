@@ -16,6 +16,7 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     const auto request_type = request_reader.read_request_type();
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
+        // TODO: parameters
         const auto query = request_reader.read_string();
         logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
         handle_run(query);
@@ -51,6 +52,7 @@ void StreamingRequestHandler::handle_run(const std::string& query)
 
     try {
         auto parser_start = std::chrono::system_clock::now();
+        // TODO: PARAMETERS
         auto current_logical_plan = create_logical_plan(query);
         parser_duration_ms = get_duration(parser_start);
 

@@ -138,6 +138,24 @@ Any QueryVisitor::visitMatchQuery(MQL_Parser::MatchQueryContext* ctx)
         visit(primitiveStatements[0]);
     }
 
+    if (!global_info.query_parameters.empty()) {
+        // bind parameters
+        OpLet::VarExprVecType var_expr_vec;
+        var_expr_vec.reserve(global_info.query_parameters.size());
+
+        for (const auto& [var_id, object_id] : global_info.query_parameters) {
+            var_expr_vec.emplace_back(var_id, std::make_unique<ExprConstant>(object_id));
+        }
+
+        // Create JOIN(lhs=QueryParams, rhs=Rest)
+        auto query_parameters_op = std::make_unique<OpLet>(std::move(var_expr_vec));
+        std::vector<std::unique_ptr<Op>> tmp_vec;
+        tmp_vec.emplace_back(std::move(query_parameters_op));
+        tmp_vec.emplace_back(std::move(current_op));
+
+        current_op = std::make_unique<OpSequence>(std::move(tmp_vec));
+    }
+
     assert(current_op != nullptr);
 
     if (ctx->whereStatement()) {
@@ -481,7 +499,7 @@ Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx) {
 }
 
 Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx) {
-    OpLet::VarExprType var_expr;
+    OpLet::VarExprVecType var_expr;
 
     const auto letDefinitionList = ctx->letDefinitionList();
     for (auto& definition : letDefinitionList->letDefinition()) {

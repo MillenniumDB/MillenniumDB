@@ -46,7 +46,7 @@ protected:
 
     StreamingRequestReader request_reader;
 
-    virtual OpUptr create_logical_plan(const std::string& query) = 0;
+    virtual OpUptr create_logical_plan(const std::string& query, const std::map<VarId, ObjectId>& query_parameters) = 0;
 
     virtual std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) = 0;
 

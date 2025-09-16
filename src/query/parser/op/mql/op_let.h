@@ -8,11 +8,11 @@ namespace MQL {
 
 class OpLet : public Op {
 public:
-    using VarExprType = std::vector<std::pair<VarId, std::unique_ptr<Expr>>>;
+    using VarExprVecType = std::vector<std::pair<VarId, std::unique_ptr<Expr>>>;
 
-    VarExprType var_expr;
+    VarExprVecType var_expr;
 
-    OpLet(VarExprType&& var_expr_) :
+    OpLet(VarExprVecType&& var_expr_) :
         var_expr { std::move(var_expr_) }
     {
         assert(!var_expr.empty());
@@ -20,7 +20,7 @@ public:
 
     std::unique_ptr<Op> clone() const override
     {
-        VarExprType var_expr_clone;
+        VarExprVecType var_expr_clone;
         var_expr_clone.reserve(var_expr.size());
         for (const auto& [var, expr] : var_expr) {
             var_expr_clone.emplace_back(var, expr->clone());

@@ -107,7 +107,8 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    auto logical_plan = MQL::QueryParser::get_query_plan(query);
+                    std::map<VarId, ObjectId> query_parameters;
+                    auto logical_plan = MQL::QueryParser::get_query_plan(query, std::move(query_parameters));
                     MQL::ExecutorConstructor query_optimizer(MQL::ReturnType::CSV);
                     logical_plan->accept_visitor(query_optimizer);
 
@@ -120,7 +121,8 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = MQL::QueryParser::get_query_plan(query);
+                std::map<VarId, ObjectId> query_parameters;
+                auto logical_plan = MQL::QueryParser::get_query_plan(query, std::move(query_parameters));
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();
