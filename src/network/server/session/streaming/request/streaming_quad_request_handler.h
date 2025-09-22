@@ -17,7 +17,7 @@ public:
 
     ~StreamingQuadRequestHandler() = default;
 
-    OpUptr create_logical_plan(const std::string& query, const std::map<VarId, ObjectId>& query_parameters) override
+    OpUptr create_logical_plan(const std::string& query, const std::map<std::string, ObjectId>& query_parameters) override
     {
         auto logical_plan = MQL::QueryParser::get_query_plan(query, query_parameters);
         return logical_plan;

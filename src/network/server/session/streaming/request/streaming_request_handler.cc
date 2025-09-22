@@ -16,10 +16,10 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     const auto request_type = request_reader.read_request_type();
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
-        // TODO: parameters
         const auto query = request_reader.read_string();
+        const auto parameters = request_reader.read_parameters();
         logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
-        handle_run(query);
+        handle_run(query, parameters);
         break;
     }
     case Protocol::RequestType::CATALOG: {
@@ -38,7 +38,10 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     }
 }
 
-void StreamingRequestHandler::handle_run(const std::string& query)
+void StreamingRequestHandler::handle_run(
+    const std::string& query,
+    const std::map<std::string, ObjectId>& parameters
+)
 {
     auto readonly_version_scope = buffer_manager.init_version_readonly();
 
@@ -52,8 +55,7 @@ void StreamingRequestHandler::handle_run(const std::string& query)
 
     try {
         auto parser_start = std::chrono::system_clock::now();
-        // TODO: PARAMETERS
-        auto current_logical_plan = create_logical_plan(query);
+        auto current_logical_plan = create_logical_plan(query, parameters);
         parser_duration_ms = get_duration(parser_start);
 
         if (is_update(current_logical_plan)) {

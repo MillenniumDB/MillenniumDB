@@ -25,8 +25,6 @@ namespace MDBServer::Protocol {
 static constexpr uint16_t BUFFER_SIZE       = 1400U;
 static constexpr uint16_t CHUNK_HEADER_SIZE = sizeof(uint16_t);
 
-static constexpr uint_fast32_t MAX_STREAMING_TCP_READ_BUFFER_SIZE = 4096U;
-
 static constexpr std::string_view DRIVER_PREAMBLE = "MDB_DRVR";
 static constexpr std::string_view SERVER_PREAMBLE = "MDB_SRVR";
 

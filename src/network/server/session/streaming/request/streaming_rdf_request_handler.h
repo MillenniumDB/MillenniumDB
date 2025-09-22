@@ -16,7 +16,7 @@ public:
 
     ~StreamingRdfRequestHandler() = default;
 
-    OpUptr create_logical_plan(const std::string& query) override
+    OpUptr create_logical_plan(const std::string& query, const std::map<std::string, ObjectId>& parameters) override
     {
         // TODO: Support updates
         auto logical_plan = SPARQL::QueryParser::get_query_plan(query);

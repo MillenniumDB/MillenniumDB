@@ -47,7 +47,7 @@ void Let::print(std::ostream& os, int indent, bool stats) const
         os << var_binding_expr[0].first << '=';
         printer.print(*var_binding_expr[0].second);
 
-        for (std::size_t i = 0; i < var_binding_expr.size(); ++i) {
+        for (std::size_t i = 1; i < var_binding_expr.size(); ++i) {
             os << ", ";
             os << var_binding_expr[i].first << '=';
             printer.print(*var_binding_expr[i].second);

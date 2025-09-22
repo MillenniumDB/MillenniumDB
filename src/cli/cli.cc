@@ -1738,7 +1738,7 @@ void CLI::ProcessMQLQuery(std::ostream& os, const std::string& query) {
         get_query_ctx().prepare(*version_scope, timeout);
 
         std::unique_ptr<MQL::Op> logical_plan;
-        logical_plan = MQL::QueryParser::get_query_plan(query);
+        logical_plan = MQL::QueryParser::get_query_plan(query, {});
 
         auto query_optimizer = MQL::ExecutorConstructor(MQL::ReturnType::TSV);
         logical_plan->accept_visitor(query_optimizer);

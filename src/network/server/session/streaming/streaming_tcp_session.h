@@ -37,8 +37,12 @@ private:
 
     boost::asio::streambuf request_buffer;
 
+    std::vector<uint8_t> decoded_chunks;
+
     std::unique_ptr<StreamingRequestHandler> request_handler;
 
-    void read_request(uint32_t request_size);
+    void start_decode_chunk();
+
+    void decode_chunk(uint16_t size);
 };
 } // namespace MDBServer

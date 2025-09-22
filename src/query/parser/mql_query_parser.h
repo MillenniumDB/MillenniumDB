@@ -13,7 +13,7 @@ namespace MQL {
 class QueryParser {
 public:
     static std::unique_ptr<Op>
-        get_query_plan(const std::string& query, const std::map<VarId, ObjectId>& query_parameters)
+        get_query_plan(const std::string& query, const std::map<std::string, ObjectId>& query_parameters)
     {
         antlr4::ANTLRInputStream input(query);
         MQL_Lexer lexer(&input);
@@ -31,7 +31,7 @@ public:
         MQL_Parser::RootContext* tree = parser.root();
 
         QueryVisitor::GlobalInfo global_info;
-        global_info.query_parameters = query_parameters;
+        global_info.set_query_parameters(query_parameters);
         QueryVisitor visitor(global_info);
         visitor.visitRoot(tree);
 

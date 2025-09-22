@@ -17,7 +17,7 @@ public:
 
     ~StreamingGQLRequestHandler() = default;
 
-    OpUptr create_logical_plan(const std::string& query) override
+    OpUptr create_logical_plan(const std::string& query, const std::map<std::string, ObjectId>& parameters) override
     {
         auto logical_plan = GQL::QueryParser::get_query_plan(query);
         return logical_plan;

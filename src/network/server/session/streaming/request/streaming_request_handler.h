@@ -46,7 +46,7 @@ protected:
 
     StreamingRequestReader request_reader;
 
-    virtual OpUptr create_logical_plan(const std::string& query, const std::map<VarId, ObjectId>& query_parameters) = 0;
+    virtual OpUptr create_logical_plan(const std::string& query, const std::map<std::string, ObjectId>& query_parameters) = 0;
 
     virtual std::unique_ptr<StreamingQueryExecutor> create_readonly_physical_plan(OpUptr& logical_plan) = 0;
 
@@ -54,7 +54,7 @@ protected:
 
     // Build the logical and physical plan. On success store the result in current_physical_plan and transition to
     // STREAMING state.
-    void handle_run(const std::string& query);
+    void handle_run(const std::string& query, const std::map<std::string, ObjectId>& parameters);
 
     // Send a catalog response to the client
     void handle_catalog();

@@ -75,6 +75,6 @@ void StreamingRequestReader::check_datatype(Protocol::DataType expected) {
 
 void StreamingRequestReader::check_remaining_bytes(uint_fast32_t expected) const {
     if (current_pos + expected > request_size) {
-        throw ProtocolException("Not enough data in the request");
+        throw ProtocolException("Not enough data in the request: Request is incomplete");
     }
 }
