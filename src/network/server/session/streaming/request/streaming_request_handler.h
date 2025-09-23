@@ -23,13 +23,16 @@ public:
 
     StreamingSession& session;
 
+    std::unique_ptr<StreamingRequestReader> request_reader;
     std::unique_ptr<StreamingResponseWriter> response_writer;
 
     StreamingRequestHandler(
         StreamingSession& session,
+        std::unique_ptr<StreamingRequestReader> request_reader,
         std::unique_ptr<StreamingResponseWriter> response_writer
     ) :
         session(session),
+        request_reader(std::move(request_reader)),
         response_writer(std::move(response_writer))
     { }
 
@@ -43,8 +46,6 @@ protected:
     DurationMS parser_duration_ms;
     DurationMS optimizer_duration_ms;
     DurationMS execution_duration_ms;
-
-    StreamingRequestReader request_reader;
 
     virtual OpUptr create_logical_plan(const std::string& query, const std::map<std::string, ObjectId>& query_parameters) = 0;
 

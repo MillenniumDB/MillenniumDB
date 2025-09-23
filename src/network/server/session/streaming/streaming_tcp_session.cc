@@ -75,7 +75,11 @@ void StreamingTCPSession::start_decode_chunk()
 
 void StreamingTCPSession::decode_chunk(uint16_t chunk_size)
 {
-    // TODO: here we could set a max-message size for queries to prevent memory overflow
+    if (decoded_chunks.size() + chunk_size > Protocol::MAX_REQUEST_BYTES) {
+        // max request size reached
+        close_with_error("Protocol exception: Protocol::MAX_REQUEST_BYTES reached");
+        return;
+    }
 
     if (chunk_size == 0) {
         // no more chunks to decode, handle request
@@ -84,26 +88,21 @@ void StreamingTCPSession::decode_chunk(uint16_t chunk_size)
         try {
             request_handler->handle(decoded_chunks.data(), decoded_chunks.size());
         } catch (const InterruptedException& e) {
-            request_handler->response_writer->write_error("Interruption exception: Query timed out");
-            request_handler->response_writer->flush();
-
-            socket.close(ec);
-            logger(Category::Error) << "Interruption exception: Query timed out";
-            if (ec) {
-                logger(Category::Debug) << "Close failed:" << ec.what();
-            }
+            close_with_error("Interruption exception: Query timed out");
         } catch (const ProtocolException& e) {
-            logger(Category::Error) << "Protocol exception: " << e.what();
+            close_with_error("Protocol exception: " + std::string(e.what()));
         } catch (const ConnectionException& e) {
             logger(Category::Error) << "Connection exception: " << e.what();
+            return;
         } catch (const std::exception& e) {
             logger(Category::Error) << "Uncaught exception: " << e.what();
+            return;
         } catch (...) {
             logger(Category::Error) << "Unexpected exception!";
+            return;
         }
 
         run();
-
         return;
     }
 
@@ -171,4 +170,15 @@ std::chrono::seconds StreamingTCPSession::get_timeout()
 bool StreamingTCPSession::try_cancel(uint_fast32_t worker_idx, const std::string& cancel_token)
 {
     return server.try_cancel(worker_idx, cancel_token);
+}
+
+void StreamingTCPSession::close_with_error(const std::string& msg) {
+    logger(Category::Error) << msg;
+    request_handler->response_writer->write_error(msg);
+    request_handler->response_writer->flush();
+
+    socket.close(ec);
+    if (ec) {
+        logger(Category::Debug) << "Close failed:" << ec.what();
+    }
 }

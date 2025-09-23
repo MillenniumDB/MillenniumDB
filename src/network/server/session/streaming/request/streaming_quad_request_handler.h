@@ -1,10 +1,10 @@
 #pragma once
 
-#include "streaming_request_handler.h"
-
+#include "network/server/session/streaming/request/streaming_quad_request_reader.h"
 #include "network/server/session/streaming/response/streaming_quad_response_writer.h"
 #include "query/optimizer/quad_model/streaming_executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
+#include "streaming_request_handler.h"
 #include "update/mql/update_executor.h"
 
 namespace MDBServer {
@@ -12,7 +12,11 @@ namespace MDBServer {
 class StreamingQuadRequestHandler : public StreamingRequestHandler {
 public:
     StreamingQuadRequestHandler(StreamingSession& session) :
-        StreamingRequestHandler(session, std::make_unique<StreamingQuadResponseWriter>(session))
+        StreamingRequestHandler(
+            session,
+            std::make_unique<StreamingQuadRequestReader>(),
+            std::make_unique<StreamingQuadResponseWriter>(session)
+        )
     { }
 
     ~StreamingQuadRequestHandler() = default;

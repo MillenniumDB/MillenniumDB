@@ -44,5 +44,7 @@ private:
     void start_decode_chunk();
 
     void decode_chunk(uint16_t size);
+
+    void close_with_error(const std::string& msg);
 };
 } // namespace MDBServer

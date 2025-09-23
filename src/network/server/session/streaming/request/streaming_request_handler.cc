@@ -11,13 +11,14 @@ using namespace MDBServer;
 
 void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t request_size)
 {
-    request_reader.set_request(request_bytes, request_size);
+    request_reader->set_request(request_bytes, request_size);
 
-    const auto request_type = request_reader.read_request_type();
+    const auto request_type = request_reader->read_request_type();
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
-        const auto query = request_reader.read_string();
-        const auto parameters = request_reader.read_parameters();
+        request_reader->check_datatype(Protocol::DataType::STRING);
+        const auto query = request_reader->read_string();
+        const auto parameters = request_reader->read_parameters();
         logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
         handle_run(query, parameters);
         break;
@@ -144,8 +145,11 @@ void StreamingRequestHandler::handle_catalog()
 
 void StreamingRequestHandler::handle_cancel()
 {
-    uint_fast32_t worker_idx = request_reader.read_uint32();
-    auto cancel_token = request_reader.read_string();
+    // TODO: test this
+    request_reader->check_datatype(Protocol::DataType::UINT32);
+    const uint_fast32_t worker_idx = request_reader->read_uint32();
+    request_reader->check_datatype(Protocol::DataType::STRING);
+    const std::string cancel_token = request_reader->read_string();
 
     bool res = session.try_cancel(worker_idx, cancel_token);
 
