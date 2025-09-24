@@ -2,6 +2,7 @@
 
 #include "graph_models/quad_model/conversions.h"
 #include "network/server/session/streaming/request/streaming_request_reader.h"
+#include "query/exceptions.h"
 
 namespace MDBServer {
 
@@ -31,9 +32,8 @@ public:
             return MQL::Conversions::pack_float(f);
         }
         default:
-            throw std::logic_error(
-                "Unmanaged datatype in StreamingQuadResponseWriter::encode_object_id: "
-                + std::to_string(static_cast<uint8_t>(type))
+            throw QueryException(
+                "Unsupported datatype received as parameter: " + Protocol::datatype_to_string(type)
             );
         };
     }

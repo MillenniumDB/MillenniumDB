@@ -17,6 +17,7 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
         request_reader->check_datatype(Protocol::DataType::STRING);
+        // TODO: this are not handling errors!
         const auto query = request_reader->read_string();
         const auto parameters = request_reader->read_parameters();
         logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";

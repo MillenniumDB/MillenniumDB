@@ -70,23 +70,21 @@ int64_t StreamingRequestReader::read_int64()
 float StreamingRequestReader::read_float()
 {
     check_remaining_bytes(4);
-
     float value;
-    auto value_bytes = reinterpret_cast<char*>(&value);
-    value_bytes[0] = request_bytes[current_pos++];
-    value_bytes[1] = request_bytes[current_pos++];
-    value_bytes[2] = request_bytes[current_pos++];
+    auto value_bytes = reinterpret_cast<uint8_t*>(&value);
     value_bytes[3] = request_bytes[current_pos++];
+    value_bytes[2] = request_bytes[current_pos++];
+    value_bytes[1] = request_bytes[current_pos++];
+    value_bytes[0] = request_bytes[current_pos++];
     return value;
 }
 
 uint_fast32_t StreamingRequestReader::read_size() {
     check_remaining_bytes(4);
-    uint32_t value = 0;
-    for (auto i = 0; i < 4; ++i) {
-        value <<= 8;
-        value |= request_bytes[current_pos++];
-    }
+    uint32_t value = request_bytes[current_pos++] << 24;
+    value = request_bytes[current_pos++] << 16;
+    value = request_bytes[current_pos++] << 8;
+    value = request_bytes[current_pos++];
     return value;
 }
 
