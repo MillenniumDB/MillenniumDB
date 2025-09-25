@@ -10,7 +10,6 @@ class StreamingQuadRequestReader : public StreamingRequestReader {
 public:
     ObjectId read_object() override
     {
-        // check_remaining_bytes(size);
         const auto type = read_datatype();
         switch (type) {
         case Protocol::DataType::NULL_:
@@ -30,6 +29,18 @@ public:
         case Protocol::DataType::FLOAT: {
             const auto f = read_float();
             return MQL::Conversions::pack_float(f);
+        }
+        case Protocol::DataType::NAMED_NODE: {
+            const auto node_id = read_string();
+            return MQL::Conversions::pack_named_node(node_id);
+        }
+        case Protocol::DataType::EDGE:{
+            const auto edge_id = read_int64();
+            return MQL::Conversions::pack_edge(edge_id);
+        }
+        case Protocol::DataType::ANON: {
+            const auto anon_id = read_int64();
+            return MQL::Conversions::pack_anon(anon_id);
         }
         default:
             throw QueryException(

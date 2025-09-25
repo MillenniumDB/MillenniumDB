@@ -16,12 +16,23 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     const auto request_type = request_reader->read_request_type();
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
-        request_reader->check_datatype(Protocol::DataType::STRING);
-        // TODO: this are not handling errors!
-        const auto query = request_reader->read_string();
-        const auto parameters = request_reader->read_parameters();
-        logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
-        handle_run(query, parameters);
+        try {
+            request_reader->check_datatype(Protocol::DataType::STRING);
+            const auto query = request_reader->read_string();
+            const auto parameters = request_reader->read_parameters();
+            logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
+            handle_run(query, parameters);
+        } catch (const std::exception& e) {
+            const auto msg = std::string("Exception on request: ") + e.what();
+            logger(Category::Error) << msg;
+            response_writer->write_error(msg);
+            response_writer->flush();
+        } catch (...) {
+            const auto msg = std::string("Unknown exception on request");
+            logger(Category::Error) << msg;
+            response_writer->write_error(msg);
+            response_writer->flush();
+        }
         break;
     }
     case Protocol::RequestType::CATALOG: {
