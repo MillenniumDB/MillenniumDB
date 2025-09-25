@@ -27,12 +27,14 @@ OnDiskImport::OnDiskImport(
     directed_equal_edges(db_folder + "/directed_equal_edges"),
     undirected_equal_edges(db_folder + "/undirected_equal_edges")
 {
+    list_buffer = new char[StringManager::MAX_STRING_SIZE];
     state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     create_automata();
 }
 
 OnDiskImport::~OnDiskImport()
 {
+    delete[] list_buffer;
     delete[] (state_transitions);
 }
 
@@ -505,14 +507,13 @@ void OnDiskImport::add_list_value_string()
 
 void OnDiskImport::save_node_list()
 {
-    auto buffer = new char[strings_buffer_size];
-    uint64_t encoded_size = ListEncoder::encode(current_list, buffer);
+    uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
     current_list.clear();
 
-    uint64_t value_id = external_helper->get_or_create_external_string_id(buffer, encoded_size) | ObjectId::MASK_LIST;
-    auto key_id = get_node_key_id();
+    uint64_t value_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                      | ObjectId::MASK_LIST;
 
-    delete[] buffer;
+    auto key_id = get_node_key_id();
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
         || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
@@ -525,13 +526,13 @@ void OnDiskImport::save_node_list()
 
 void OnDiskImport::save_edge_list()
 {
-    auto buffer = new char[strings_buffer_size];
-    uint64_t encoded_size = ListEncoder::encode(current_list, buffer);
+    uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+    current_list.clear();
 
-    uint64_t value_id = external_helper->get_or_create_external_string_id(buffer, encoded_size);
+    uint64_t value_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                      | ObjectId::MASK_LIST;
+
     auto key_id = get_edge_key_id();
-
-    delete[] buffer;
 
     if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
         || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)

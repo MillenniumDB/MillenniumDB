@@ -118,6 +118,8 @@ private:
 
     boost::unordered_flat_map<std::string, uint64_t> edge_keys_map;
 
+    char* list_buffer;
+
     void do_nothing() { }
 
     void save_direction(EdgeDir);
