@@ -83,25 +83,22 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
     // Process connections
     for (auto& op_edge : op_basic_graph_pattern.edges) {
-        base_plans.push_back(
-            std::make_unique<EdgePlan>(op_edge.from, op_edge.to, op_edge.type, op_edge.edge)
+        base_plans.push_back(std::make_unique<EdgePlan>(op_edge.from, op_edge.to, op_edge.type, op_edge.edge)
         );
     }
 
     // Process property paths
     for (auto& path : op_basic_graph_pattern.paths) {
-        base_plans.push_back(
-            std::make_unique<PathPlan>(
-                begin_at_left,
-                path.direction,
-                path.var,
-                path.from,
-                path.to,
-                *path.path,
-                path.semantic,
-                path.K
-            )
-        );
+        base_plans.push_back(std::make_unique<PathPlan>(
+            begin_at_left,
+            path.direction,
+            path.var,
+            path.from,
+            path.to,
+            *path.path,
+            path.semantic,
+            path.K
+        ));
     }
 
     std::set<VarId> join_vars;
@@ -469,18 +466,25 @@ void BindingIterConstructor::visit(OpReturn& op_return)
 
 void BindingIterConstructor::visit(OpUpdate& op_update)
 {
+    // TODO: maybe exprs in updates cannot have aggregation?
     for (auto& action : op_update.update_actions) {
-        // TODO: get each expr
-        // if (expr != nullptr && expr->has_aggregation()) {
-        //     grouping = true;
-        //     break;
-        // }
+        if (auto action_expr = dynamic_cast<InsertPropertyExpr*>(action.get())) {
+            if (action_expr->value->has_aggregation()) {
+                // TODO: maybe throw instead?
+                grouping = true;
+                break;
+            }
+        }
     }
 
     op_update.op->accept_visitor(*this);
 
     for (auto& action : op_update.update_actions) {
-        // TODO: visit each expr and transform into binding_expr
+        if (auto action_expr = dynamic_cast<InsertPropertyExpr*>(action.get())) {
+            ExprToBindingExpr expr_to_binding_expr(this, {}, false);
+            action_expr->value->accept_visitor(expr_to_binding_expr);
+            action_expr->binding_expr = std::move(expr_to_binding_expr.tmp);
+        }
     }
 
     tmp = get_pending_properties(std::move(tmp));

@@ -13,9 +13,6 @@ uint64_t UpdateExecutor::execute()
             action->process(binding, *update_context);
         }
     }
-
-    update_context->update_indexes();
-
     // TODO: update catalog
 
     return 0;

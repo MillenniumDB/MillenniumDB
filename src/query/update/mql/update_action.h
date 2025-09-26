@@ -5,6 +5,7 @@
 #include "query/exceptions.h"
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
 #include "query/update/mql/update_context.h"
@@ -223,9 +224,10 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        // TODO: print expr
-        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ","
-           << ")";
+        BindingExprPrinter printer(os, indent, false);
+        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ",";
+        printer.print(*binding_expr);
+        os << ")";
     }
 };
 

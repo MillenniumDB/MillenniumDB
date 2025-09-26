@@ -198,6 +198,7 @@ uint64_t StringManager::get_bytes_id(const char* bytes, uint64_t size)
 }
 
 // IMPORTANT: supposing only one thread will call this method at a time
+// TODO: handle possible rollbacks when creating a new string
 uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
 {
     {
@@ -336,7 +337,7 @@ void StringManager::delete_str(uint64_t id)
     Record<2> free_elem = { bytes_for_len + len, id };
     free_space_bpt->insert(free_elem);
 
-    *ptr = 0;
+    // *ptr = 0;
 }
 
 StringManager::Frame& StringManager::get_frame_available()

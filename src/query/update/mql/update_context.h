@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "graph_models/object_id.h"
 #include "graph_models/quad_model/quad_model.h"
 #include "query/exceptions.h"
@@ -32,21 +34,17 @@ public:
     boost::unordered_flat_map<uint64_t, int64_t> type2equal_from_type_count;
     boost::unordered_flat_map<uint64_t, int64_t> type2equal_to_type_count;
 
+    std::map<uint64_t, std::vector<std::string>> indexed_keys;
+
     uint64_t current_anon;
 
     uint64_t current_edge;
 
-    UpdateContext()
-    {
-        current_anon = quad_model.catalog.max_anon;
-        current_edge = quad_model.catalog.max_edge;
-    }
+    UpdateContext();
 
     void process_new_property(uint64_t obj, uint64_t key, uint64_t val);
 
     void process_deleted_property(uint64_t obj, uint64_t key, uint64_t val);
-
-    void update_indexes();
 
     void create_hnsw_index(CreateHNSWIndex&);
 

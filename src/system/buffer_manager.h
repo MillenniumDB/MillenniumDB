@@ -32,16 +32,16 @@ class BufferManager {
 public:
     class VersionScope {
     public:
-        uint64_t start_version;
+        const uint64_t start_version;
 
-        bool is_editable;
+        const uint64_t string_manager_original_end;
+
+        const bool is_editable;
 
         bool commited = false;
 
-        VersionScope(uint64_t start_version, bool is_editable) :
-            start_version(start_version),
-            is_editable(is_editable)
-        { }
+
+        VersionScope(uint64_t start_version, bool is_editable);
 
         ~VersionScope();
     };
@@ -124,8 +124,6 @@ public:
     std::unique_ptr<VersionScope> init_version_readonly();
 
     std::unique_ptr<VersionScope> init_version_editable();
-
-    void upgrade_to_editable(VersionScope&);
 
     // Returns true if version_number is being used
     bool version_not_being_used(uint64_t version_number);

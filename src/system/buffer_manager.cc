@@ -7,6 +7,7 @@
 #include "misc/fatal_error.h"
 #include "query/query_context.h"
 #include "system/file_manager.h"
+#include "system/tensor_manager.h"
 
 // memory for the object
 static typename std::aligned_storage<sizeof(BufferManager), alignof(BufferManager)>::type buffer_manager_buf;
@@ -394,6 +395,13 @@ void BufferManager::remove_tmp(TmpFileId tmp_file_id)
     }
 }
 
+BufferManager::VersionScope::VersionScope(uint64_t start_version, bool is_editable) :
+    start_version(start_version),
+    string_manager_original_end(string_manager.get_end()),
+    tensor_manager_original_end(tensor_manager.get_end()),
+    is_editable(is_editable)
+{ }
+
 BufferManager::VersionScope::~VersionScope()
 {
     tmp_manager.reset_tmp_list();
@@ -407,7 +415,8 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_readonl
     running_version_count[ver]++;
     auto worker = get_query_ctx().thread_info.worker_index;
     tmp_info[worker].clear();
-    return std::make_unique<BufferManager::VersionScope>(ver, false);
+    auto string_manager_end = string_manager.get_end();
+    return std::make_unique<BufferManager::VersionScope>(ver, string_manager_end, false);
 }
 
 std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editable()
@@ -418,20 +427,8 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editabl
     running_version_count[ver + 1]++;
     auto worker = get_query_ctx().thread_info.worker_index;
     tmp_info[worker].clear();
-    return std::make_unique<BufferManager::VersionScope>(ver, true);
-}
-
-void BufferManager::upgrade_to_editable(VersionScope& version_scope)
-{
-    if (version_scope.is_editable) {
-        return;
-    }
-
-    version_scope.is_editable = true;
-    get_query_ctx().result_version += 1;
-
-    std::lock_guard<std::mutex> lck(running_version_count_mutex);
-    running_version_count[version_scope.start_version + 1]++;
+    auto string_manager_end = string_manager.get_end();
+    return std::make_unique<BufferManager::VersionScope>(ver, string_manager_end, true);
 }
 
 bool BufferManager::version_not_being_used(uint64_t version_number)
@@ -480,6 +477,8 @@ void BufferManager::terminate(const VersionScope& version_scope)
             }
             file_manager.update_appends(appended_pages);
         } else {
+            string_manager.rollback(version_scope.string_manager_original_end);
+            tensor_manager.rollback(version_scope.string_manager_original_end);
             for (Page* page : current_modifications) {
                 page->reset();
             }

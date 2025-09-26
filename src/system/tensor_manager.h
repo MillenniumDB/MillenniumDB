@@ -59,6 +59,11 @@ public:
     // check if the bytes equals to the stored tensor_id
     bool bytes_eq(const char* bytes, std::size_t num_bytes, uint64_t tensor_id);
 
+    uint64_t get_end();
+
+    // receives the original file size and truncates
+    void rollback(uint64_t original_end);
+
 private:
     struct Frame {
         uint64_t block_id;
