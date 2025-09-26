@@ -172,7 +172,7 @@ void HttpRdfSession::execute_readonly_query(
 std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
-    auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+    auto logical_plan = SPARQL::QueryParser::get_query_plan(query, {});
     parser_duration = std::chrono::system_clock::now() - start_parser;
     return logical_plan;
 }

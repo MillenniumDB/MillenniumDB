@@ -20,7 +20,16 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
             request_reader->check_datatype(Protocol::DataType::STRING);
             const auto query = request_reader->read_string();
             const auto parameters = request_reader->read_parameters();
-            logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
+
+            auto log_stream = logger(Category::Info);
+            log_stream << "\nQuery received:\n" << trim_string(query) << "\n";
+            if (!parameters.empty()) {
+                log_stream << "Parameters:\n";
+                for (const auto& [var_name, object_id] : parameters) {
+                    log_stream << var_name << " -> " << object_id << "\n";
+                }
+            }
+
             handle_run(query, parameters);
         } catch (const std::exception& e) {
             const auto msg = std::string("Exception on request: ") + e.what();

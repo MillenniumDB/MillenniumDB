@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+                    auto logical_plan = SPARQL::QueryParser::get_query_plan(query, {});
                     SPARQL::ExecutorConstructor executor_constructor(SPARQL::ResponseType::TSV);
                     logical_plan->accept_visitor(executor_constructor);
 
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+                auto logical_plan = SPARQL::QueryParser::get_query_plan(query, {});
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();

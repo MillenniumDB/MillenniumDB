@@ -1669,7 +1669,7 @@ void CLI::ProcessSPARQLQuery(std::ostream& os, const std::string& query) {
         get_query_ctx().prepare(*version_scope, timeout);
 
         std::unique_ptr<SPARQL::Op> logical_plan;
-        logical_plan = SPARQL::QueryParser::get_query_plan(query);
+        logical_plan = SPARQL::QueryParser::get_query_plan(query, {});
 
         auto query_optimizer = SPARQL::ExecutorConstructor(SPARQL::ResponseType::TSV);
         logical_plan->accept_visitor(query_optimizer);

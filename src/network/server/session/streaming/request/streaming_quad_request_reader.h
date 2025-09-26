@@ -40,7 +40,7 @@ public:
         }
         case Protocol::DataType::ANON: {
             const auto anon_id = read_int64();
-            return MQL::Conversions::pack_anon(anon_id);
+            return MQL::Conversions::pack_anon_tmp(anon_id);
         }
         default:
             throw QueryException(

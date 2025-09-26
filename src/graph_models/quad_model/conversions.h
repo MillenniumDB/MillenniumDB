@@ -110,8 +110,9 @@ namespace MQL { namespace Conversions {
         return ObjectId(ObjectId::MASK_EDGE | edge_id);
     }
 
-    inline ObjectId pack_anon(int64_t anon_id) {
-        return ObjectId(ObjectId::MASK_ANON_INLINED | anon_id);
+    inline ObjectId pack_anon_tmp(int64_t anon_id)
+    {
+        return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
     }
 
     inline DateTime unpack_datetime(ObjectId oid) {

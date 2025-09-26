@@ -37,7 +37,7 @@ namespace SPARQL {
 
 class QueryParser {
 public:
-    static std::unique_ptr<Op> get_query_plan(const std::string& query)
+    static std::unique_ptr<Op> get_query_plan(const std::string& query, const std::map<std::string, ObjectId>& query_parameters)
     {
         antlr4::ANTLRInputStream input(query);
         SparqlQueryLexer lexer(&input);
@@ -55,6 +55,7 @@ public:
         SparqlParser::QueryContext* tree = parser.query();
 
         QueryVisitor::GlobalInfo global_info;
+        global_info.set_query_parameters(query_parameters);
         QueryVisitor visitor(global_info);
         visitor.visitQuery(tree);
 
