@@ -480,66 +480,87 @@ void OnDiskImport::add_edge_prop_false()
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
 
+void OnDiskImport::init_list()
+{
+    lists_stack.emplace();
+}
+
 void OnDiskImport::add_list_value_false()
 {
     ObjectId value = Common::Conversions::pack_bool(false);
-    current_list.push_back(value);
+    lists_stack.top().push_back(value);
 }
 
 void OnDiskImport::add_list_value_true()
 {
     ObjectId value = Common::Conversions::pack_bool(true);
-    current_list.push_back(value);
+    lists_stack.top().push_back(value);
 }
 
 void OnDiskImport::add_list_value_integer()
 {
     int64_t integer = try_parse_int(lexer.str);
-    current_list.push_back(ObjectId(integer));
+    lists_stack.top().push_back(ObjectId(integer));
 }
 
 void OnDiskImport::add_list_value_string()
 {
     normalize_string_literal();
     uint64_t str_id = get_str_id();
-    current_list.push_back(ObjectId(str_id));
+    lists_stack.top().push_back(ObjectId(str_id));
 }
 
 void OnDiskImport::save_node_list()
 {
+    std::vector<ObjectId> current_list = lists_stack.top();
     uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
-    current_list.clear();
+    lists_stack.pop();
 
-    uint64_t value_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                      | ObjectId::MASK_LIST;
+    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                     | ObjectId::MASK_LIST;
+
+    // if there is a list in the stack, then this list is nested and we do not store the property yet
+    if (!lists_stack.empty()) {
+        current_state = EXPECT_NODE_LIST_COMMA;
+        lists_stack.top().push_back(ObjectId(list_id));
+        return;
+    }
 
     auto key_id = get_node_key_id();
 
     if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
     {
-        pending_node_properties->push_back({ id1, key_id, value_id });
+        pending_node_properties->push_back({ id1, key_id, list_id });
     } else {
-        node_properties.push_back({ id1, key_id, value_id });
+        node_properties.push_back({ id1, key_id, list_id });
     }
 }
 
 void OnDiskImport::save_edge_list()
 {
+    std::vector<ObjectId> current_list = lists_stack.top();
     uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
-    current_list.clear();
+    lists_stack.pop();
 
-    uint64_t value_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                      | ObjectId::MASK_LIST;
+    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                     | ObjectId::MASK_LIST;
+
+    // if there is a list in the stack, then this list is nested and we do not store the property yet
+    if (!lists_stack.empty()) {
+        current_state = EXPECT_EDGE_LIST_COMMA;
+        lists_stack.top().push_back(ObjectId(list_id));
+        return;
+    }
 
     auto key_id = get_edge_key_id();
 
     if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
-        || (value_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
     {
-        pending_edge_properties->push_back({ edge_id, key_id, value_id });
+        pending_edge_properties->push_back({ edge_id, key_id, list_id });
     } else {
-        edge_properties.push_back({ edge_id, key_id, value_id });
+        edge_properties.push_back({ edge_id, key_id, list_id });
     }
 }
 
@@ -611,13 +632,13 @@ void OnDiskImport::start_import(MDBIstream& in)
 
     lexer.begin(in);
 
-    int current_state = State::LINE_BEGIN;
+    current_state = State::LINE_BEGIN;
     current_line = 1;
     while (auto token = lexer.get_token()) {
-        current_state = get_transition(current_state, token);
+        advance_automaton(token);
     }
     // After EOF simulate and endline
-    get_transition(current_state, Token::ENDLINE);
+    advance_automaton(Token::ENDLINE);
 
     std::cout << "-------------------------------------\n";
     if (parsing_errors != 0) {
@@ -997,16 +1018,17 @@ void OnDiskImport::set_transition(int state, int token, int value, std::function
     state_transitions[State::TOTAL_STATES * state + token] = value;
 }
 
-int OnDiskImport::get_transition(int state, int token)
+void OnDiskImport::advance_automaton(int token)
 {
     try {
-        state_funcs[State::TOTAL_STATES * state + token]();
-        return state_transitions[State::TOTAL_STATES * state + token];
+        auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
+        current_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        func();
     } catch (std::exception& e) {
         parsing_errors++;
         std::cout << "ERROR on line " << current_line << "\n";
         std::cout << e.what() << "\n";
-        return State::WRONG_LINE;
+        current_state = State::WRONG_LINE;
     }
 }
 

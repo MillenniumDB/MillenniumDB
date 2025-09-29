@@ -4,6 +4,7 @@
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <stack>
 
 #include "graph_models/gql/gql_catalog.h"
 #include "import/disk_vector.h"
@@ -46,6 +47,11 @@ private:
 
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 
+    int current_state;
+
+    // we use a stack to represent nested lists
+    std::stack<std::vector<ObjectId>> lists_stack;
+
     GQLTokenizer lexer;
 
     int current_line;
@@ -71,8 +77,6 @@ private:
     uint64_t current_edge_label = 0;
 
     uint64_t current_edge_key = 0;
-
-    std::vector<ObjectId> current_list;
 
     std::unique_ptr<DiskVector<2>> pending_node_labels;
     std::unique_ptr<DiskVector<3>> pending_node_properties;
@@ -166,6 +170,7 @@ private:
 
     void add_edge_prop_false();
 
+    void init_list();
     void add_list_value_false();
     void add_list_value_true();
     void add_list_value_integer();
@@ -192,7 +197,7 @@ private:
 
     void set_transition(int state, int token, int value, std::function<void()> func);
 
-    int get_transition(int state, int token);
+    void advance_automaton(int token);
 
     // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place
     void normalize_string_literal();
