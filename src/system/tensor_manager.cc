@@ -383,5 +383,16 @@ uint64_t TensorManager::create_bytes_id(const char* bytes, uint64_t num_bytes)
     return new_id;
 }
 
+uint64_t TensorManager::get_end() const
+{
+    return lseek(tensor_file_id.id, 0, SEEK_END);
+}
+
+void TensorManager::rollback(uint64_t original_end)
+{
+    ftruncate(tensor_file_id.id, original_end);
+}
+
+
 template tensor::Tensor<float> TensorManager::get_tensor<float>(ObjectId);
 template tensor::Tensor<double> TensorManager::get_tensor<double>(ObjectId);

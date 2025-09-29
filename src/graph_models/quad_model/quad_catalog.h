@@ -26,9 +26,7 @@ public:
     uint64_t equal_from_type_with_type(uint64_t type_id) const;
     uint64_t equal_to_type_with_type(uint64_t type_id) const;
 
-    // uint64_t insert_new_edge(uint64_t from, uint64_t to, uint64_t type);
-    // void insert_property(uint64_t key);
-    // void insert_label(uint64_t label);
+    bool index_name_exists(const std::string& index_name);
 
     uint64_t edge_count() const
     {

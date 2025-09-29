@@ -43,7 +43,7 @@ public:
 
     // Create a new hnsw index with the given name and predicate
     template<Catalog::ModelID model_id>
-    std::tuple<uint_fast32_t> create_hnsw_index(
+    uint_fast32_t create_hnsw_index(
         const std::string& name,
         const std::string& predicate,
         uint64_t dimension,

@@ -415,8 +415,7 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_readonl
     running_version_count[ver]++;
     auto worker = get_query_ctx().thread_info.worker_index;
     tmp_info[worker].clear();
-    auto string_manager_end = string_manager.get_end();
-    return std::make_unique<BufferManager::VersionScope>(ver, string_manager_end, false);
+    return std::make_unique<BufferManager::VersionScope>(ver, false);
 }
 
 std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editable()
@@ -427,8 +426,7 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editabl
     running_version_count[ver + 1]++;
     auto worker = get_query_ctx().thread_info.worker_index;
     tmp_info[worker].clear();
-    auto string_manager_end = string_manager.get_end();
-    return std::make_unique<BufferManager::VersionScope>(ver, string_manager_end, true);
+    return std::make_unique<BufferManager::VersionScope>(ver, true);
 }
 
 bool BufferManager::version_not_being_used(uint64_t version_number)
@@ -478,7 +476,7 @@ void BufferManager::terminate(const VersionScope& version_scope)
             file_manager.update_appends(appended_pages);
         } else {
             string_manager.rollback(version_scope.string_manager_original_end);
-            tensor_manager.rollback(version_scope.string_manager_original_end);
+            tensor_manager.rollback(version_scope.tensor_manager_original_end);
             for (Page* page : current_modifications) {
                 page->reset();
             }

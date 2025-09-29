@@ -36,10 +36,11 @@ public:
 
         const uint64_t string_manager_original_end;
 
+        const uint64_t tensor_manager_original_end;
+
         const bool is_editable;
 
         bool commited = false;
-
 
         VersionScope(uint64_t start_version, bool is_editable);
 

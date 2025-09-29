@@ -13,16 +13,21 @@ class CreateTextIndex;
 
 class UpdateContext {
 public:
-    uint_fast32_t new_nodes = 0;
-    uint_fast32_t new_edges = 0;
-    uint_fast32_t new_labels = 0;
-    uint_fast32_t new_properties = 0;
-    uint_fast32_t deleted_nodes = 0;
-    uint_fast32_t deleted_edges = 0;
-    uint_fast32_t deleted_labels = 0;
-    uint_fast32_t deleted_properties = 0;
-    uint_fast32_t overwritten_properties = 0;
-    uint_fast32_t overwritten_edges = 0;
+    int64_t new_nodes = 0;
+    int64_t new_edges = 0;
+    int64_t new_labels = 0;
+    int64_t new_properties = 0;
+    int64_t deleted_nodes = 0;
+    int64_t deleted_edges = 0;
+    int64_t deleted_labels = 0;
+    int64_t deleted_properties = 0;
+    int64_t overwritten_properties = 0;
+    int64_t overwritten_edges = 0;
+
+    int64_t hnsw_index_inserts = 0;
+    int64_t hnsw_index_deletes = 0;
+    int64_t text_index_inserts = 0;
+    int64_t text_index_deletes = 0;
 
     // IMPORTANT: stats may be negative, use int64_t
     boost::unordered_flat_map<uint64_t, int64_t> label2total_count;

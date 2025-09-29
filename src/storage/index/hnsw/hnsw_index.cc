@@ -228,7 +228,7 @@ HNSWHeap HNSWIndex::resume_query(
     );
 }
 
-std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicate)
+uint_fast32_t HNSWIndex::index_predicate(const std::string& predicate)
 {
     const auto subject_var = get_query_ctx().get_internal_var();
     const auto predicate_val = SPARQL::Conversions::pack_iri(predicate);
@@ -245,7 +245,7 @@ std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicat
     node_storage.reserve(num_expected_insertions);
     node_neighbors_at_layer.reserve(num_expected_insertions);
 
-    uint_fast32_t total_inserted_elements { 0 };
+    uint_fast32_t total_inserted_elements = 0;
     while (triple_plan_iter->next()) {
         const auto object_oid = binding[object_var];
         const auto subject_oid = binding[subject_var];
@@ -255,10 +255,10 @@ std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicat
         }
     }
 
-    return { total_inserted_elements };
+    return total_inserted_elements;
 }
 
-std::tuple<uint_fast32_t> HNSWIndex::index_property(const std::string& key)
+uint_fast32_t HNSWIndex::index_property(const std::string& key)
 {
     const auto object_var = get_query_ctx().get_internal_var();
     const auto key_val = QuadObjectId::get_string(key);
@@ -290,7 +290,7 @@ std::tuple<uint_fast32_t> HNSWIndex::index_property(const std::string& key)
         }
     }
 
-    return { total_inserted_elements };
+    return total_inserted_elements;
 }
 
 template<bool CheckTombstones>

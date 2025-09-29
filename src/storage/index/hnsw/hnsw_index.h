@@ -89,10 +89,12 @@ public:
     );
 
     // index all { subject, object } pairs given a predicate (SPARQL)
-    std::tuple<uint_fast32_t> index_predicate(const std::string& predicate);
+    // returns total inserted elements
+    uint_fast32_t index_predicate(const std::string& predicate);
 
     // index all { object, value } pairs given a key (MQL)
-    std::tuple<uint_fast32_t> index_property(const std::string& key);
+    // returns total inserted elements
+    uint_fast32_t index_property(const std::string& key);
 
     // index a single entry
     template<bool CheckTombstones>

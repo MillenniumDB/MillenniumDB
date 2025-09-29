@@ -10,8 +10,6 @@ UpdateContext::UpdateContext()
     current_anon = quad_model.catalog.max_anon;
     current_edge = quad_model.catalog.max_edge;
 
-    // TODO: asegurar que np pueden haber 2 indices con el mismo nombre
-
     for (auto&& [predicate, names] : quad_model.catalog.text_index_manager.get_predicate2names()) {
         auto predicate_id = Conversions::pack_string(predicate).id;
         for (auto& name : names) {
@@ -38,14 +36,14 @@ void UpdateContext::process_new_property(uint64_t obj, uint64_t key, uint64_t va
         if (auto text_index = quad_model.catalog.text_index_manager.get_text_index(index_name)) {
             auto inserted_tokens = text_index->index_single(ObjectId(obj), ObjectId(val));
             if (inserted_tokens > 0) {
-                // TODO: add to stats?
+                text_index_inserts += inserted_tokens;
             }
         }
 
         if (auto hnsw_index = quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name)) {
             auto inserted_elements = hnsw_index->index_single<true>(ObjectId(obj), ObjectId(val));
             if (inserted_elements > 0) {
-                // TODO: add to stats?
+                hnsw_index_inserts += inserted_elements;
             }
         }
     }
@@ -62,14 +60,14 @@ void UpdateContext::process_deleted_property(uint64_t obj, uint64_t key, uint64_
         if (auto text_index = quad_model.catalog.text_index_manager.get_text_index(index_name)) {
             auto deleted_tokens = text_index->remove_single(ObjectId(obj), ObjectId(val));
             if (deleted_tokens > 0) {
-                // TODO: add to stats?
+                text_index_deletes += deleted_tokens;
             }
         }
 
         if (auto hnsw_index = quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name)) {
             auto deleted_elements = hnsw_index->remove_single(ObjectId(obj), ObjectId(val));
             if (deleted_elements > 0) {
-                // TODO: add to stats?
+                hnsw_index_deletes += deleted_elements;
             }
         }
     }
@@ -84,7 +82,7 @@ void UpdateContext::create_text_index(CreateTextIndex& index_info)
         index_info.normalize_type,
         index_info.tokenize_type
     );
-    // TODO: add stats
+    hnsw_index_inserts += inserted_elements;
 }
 
 void UpdateContext::create_hnsw_index(CreateHNSWIndex& index_info)
@@ -98,5 +96,5 @@ void UpdateContext::create_hnsw_index(CreateHNSWIndex& index_info)
         index_info.max_candidates,
         index_info.metric_type
     );
-    // TODO: add stats
+    text_index_inserts += inserted_elements;
 }

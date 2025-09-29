@@ -1931,12 +1931,12 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
         throw QueryException("index option \"" + key + "\" is expected to be an unsigned integer");
     };
 
-    if (index_type_lowercased == "text") {
-        // Check if text index existed before
-        if (quad_model.catalog.text_index_manager.get_text_index(index_name) != nullptr) {
-            throw QueryException("Text index \"" + index_name + "\" already exists");
-        }
+    // Check if index name is used
+    if (quad_model.catalog.index_name_exists(index_name)) {
+        throw QueryException("Index \"" + index_name + "\" already exists");
+    }
 
+    if (index_type_lowercased == "text") {
         TextIndexOptions text_index_opts;
 
         parse_index_options(
@@ -1984,11 +1984,6 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
         ));
 
     } else if (index_type_lowercased == "hnsw") {
-        // Check if hnsw index existed before
-        if (quad_model.catalog.hnsw_index_manager.get_hnsw_index(index_name) != nullptr) {
-            throw QueryException("HNSW index \"" + index_name + "\" already exists");
-        }
-
         HNSWIndexOptions hnsw_index_opts;
 
         parse_index_options(

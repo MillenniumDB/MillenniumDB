@@ -34,8 +34,6 @@ public:
         }
     };
 
-    ~UpdateExecutor();
-
     void visit(OpDeleteData&) override;
     void visit(OpInsertData&) override;
     void visit(OpCreateTextIndex&) override;

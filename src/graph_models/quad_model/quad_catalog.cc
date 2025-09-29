@@ -294,42 +294,8 @@ uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const
     }
 }
 
-// uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type)
-// {
-//     auto new_edge_id = ++max_edge;
-
-//     type2total_count[type]++;
-//     if (from == to) {
-//         type2equal_from_to_count[type]++;
-//         equal_from_to_count++;
-//         if (from == type) {
-//             type2equal_from_to_type_count[type]++;
-//             equal_from_to_type_count++;
-//         }
-//     }
-//     if (from == type) {
-//         type2equal_from_type_count[type]++;
-//         equal_from_type_count++;
-//     }
-//     if (to == type) {
-//         type2equal_to_type_count[type]++;
-//         equal_to_type_count++;
-//     }
-
-//     has_changes = true;
-//     return new_edge_id;
-// }
-
-// void QuadCatalog::insert_property(uint64_t key)
-// {
-//     has_changes = true;
-//     properties_count++;
-//     key2total_count[key]++;
-// }
-
-// void QuadCatalog::insert_label(uint64_t label)
-// {
-//     has_changes = true;
-//     label_count++;
-//     label2total_count[label]++;
-// }
+bool QuadCatalog::index_name_exists(const std::string& index_name)
+{
+    return text_index_manager.get_text_index(index_name) != nullptr
+        || hnsw_index_manager.get_hnsw_index(index_name) != nullptr;
+}

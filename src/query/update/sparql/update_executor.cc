@@ -15,11 +15,6 @@
 
 using namespace SPARQL;
 
-UpdateExecutor::~UpdateExecutor()
-{
-    // TODO: force string file WAL flush?
-}
-
 constexpr uint64_t CLEAR_TMP_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
 constexpr uint64_t CLEAR_TAG_MASK = ~(ObjectId::MASK_LITERAL_TAG);
 
@@ -567,7 +562,7 @@ void UpdateExecutor::visit(OpCreateHNSWIndex& op_create_hnsw_index)
 {
     try {
         auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;
-        auto&& [inserted_elements] = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::RDF>(
+        auto inserted_elements = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::RDF>(
             op_create_hnsw_index.index_name,
             op_create_hnsw_index.predicate,
             op_create_hnsw_index.dimension,
