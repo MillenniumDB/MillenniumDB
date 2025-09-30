@@ -521,7 +521,7 @@ void OnDiskImport::save_node_list()
 
     // if there is a list in the stack, then this list is nested and we do not store the property yet
     if (!lists_stack.empty()) {
-        current_state = EXPECT_NODE_LIST_COMMA;
+        current_state = EXPECT_NODE_LIST_ELEMENT;
         lists_stack.top().push_back(ObjectId(list_id));
         return;
     }
@@ -548,7 +548,7 @@ void OnDiskImport::save_edge_list()
 
     // if there is a list in the stack, then this list is nested and we do not store the property yet
     if (!lists_stack.empty()) {
-        current_state = EXPECT_EDGE_LIST_COMMA;
+        current_state = EXPECT_EDGE_LIST_ELEMENT;
         lists_stack.top().push_back(ObjectId(list_id));
         return;
     }
