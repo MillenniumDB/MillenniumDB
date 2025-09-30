@@ -3,7 +3,7 @@
 #include "system/buffer_manager.h"
 #include "system/file_manager.h"
 
-namespace TextSearch {
+using namespace TextSearch;
 
 constexpr uint64_t int_floor(float f)
 {
@@ -133,4 +133,3 @@ void Table::remove(uint64_t table_pointer)
     tombstones_stack.push(table_pointer);
 }
 
-} // namespace TextSearch

@@ -20,6 +20,7 @@ certain worker.
 
 #include <map>
 #include <mutex>
+#include <queue>
 #include <vector>
 
 #include <boost/unordered/unordered_flat_map.hpp>

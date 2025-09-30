@@ -60,8 +60,8 @@ uint64_t UpdateExecutor::execute()
 
     catalog.deleted_edges += update_context->deleted_edges;
 
-    assert(total_labels = ctx.new_labels - ctx.deleted_labels);
-    assert(total_properties = ctx.new_properties - ctx.deleted_properties);
+    assert(total_labels == ctx.new_labels - ctx.deleted_labels);
+    assert(total_properties == ctx.new_properties - ctx.deleted_properties);
 
     catalog.nodes_count += ctx.new_nodes - ctx.deleted_nodes;
     catalog.label_count += total_labels;
