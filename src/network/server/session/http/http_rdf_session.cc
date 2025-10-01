@@ -265,7 +265,7 @@ void HttpRdfSession::execute_readonly_query_plan(
         throw e;
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
         throw e;
     }
 }
@@ -341,7 +341,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         return;
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "Query Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"

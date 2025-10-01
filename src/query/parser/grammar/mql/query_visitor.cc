@@ -180,6 +180,7 @@ Any QueryVisitor::visitUpdateStatement(MQL_Parser::UpdateStatementContext* ctx)
     // curent_op is not null when root is a simpleQuery
     // curent_op is null when root is a updateStatement
     if (current_op != nullptr) {
+        visitChildren(ctx);
         return 0;
     }
 

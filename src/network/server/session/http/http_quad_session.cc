@@ -203,7 +203,7 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
         os << "HTTP/1.1 408 Request Timeout\r\n";
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "Query Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
@@ -278,6 +278,6 @@ void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os,
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
     }
 }

@@ -103,8 +103,8 @@ void StreamingRequestHandler::handle_readonly_run()
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
     } catch (const QueryExecutionException& e) {
-        const auto msg = std::string("Query Execution Exception: ") + e.what();
-        logger(Category::Error) << msg;
+        const auto msg = e.what();
+        logger(Category::Error) << e.what();
         response_writer->write_error(msg);
     } catch (const std::exception& e) {
         const auto msg = std::string("Exception: ") + e.what();
@@ -183,7 +183,7 @@ void StreamingRequestHandler::handle_update_run()
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
     } catch (const QueryExecutionException& e) {
-        const auto msg = std::string("Query Execution Exception: ") + e.what();
+        const auto msg = e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
     } catch (const std::exception& e) {

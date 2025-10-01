@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 
 #include "query/exceptions.h"
 #include "query/executor/binding.h"
@@ -23,6 +24,12 @@ public:
 
     static constexpr uint64_t CLEAR_TMP_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
 
+    virtual void print(std::ostream& os, int indent) const = 0;
+
+    // to check used vars are declared
+    virtual std::set<VarId> get_vars() const = 0;
+
+protected:
     ObjectId transform_if_tmp(ObjectId oid)
     {
         if (oid.is_tmp()) {
@@ -45,8 +52,6 @@ public:
 
         return oid;
     }
-
-    virtual void print(std::ostream& os, int indent) const = 0;
 };
 
 class InsertNode : public UpdateAction {
@@ -76,6 +81,15 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "InsertNode(" << node << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (node.is_var()) {
+            res.insert(node.get_var());
+        }
+        return res;
     }
 };
 
@@ -115,6 +129,15 @@ public:
     {
         os << std::string(indent, ' ') << "InsertLabel(" << node << "," << label << ")";
     }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (node.is_var()) {
+            res.insert(node.get_var());
+        }
+        return res;
+    }
 };
 
 class SetLabelOrType : public UpdateAction {
@@ -151,6 +174,15 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "SetLabelOrType(" << obj << "," << label << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (obj.is_var()) {
+            res.insert(obj.get_var());
+        }
+        return res;
     }
 };
 
@@ -189,6 +221,18 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << "," << val << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (obj.is_var()) {
+            res.insert(obj.get_var());
+        }
+        if (val.is_var()) {
+            res.insert(val.get_var());
+        }
+        return res;
     }
 };
 
@@ -229,6 +273,16 @@ public:
         printer.print(*binding_expr);
         os << ")";
     }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (obj.is_var()) {
+            res.insert(obj.get_var());
+        }
+        // TODO: value?
+        return res;
+    }
 };
 
 class DeleteProperty : public UpdateAction {
@@ -257,6 +311,15 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "DeleteProperty(" << obj << "," << key << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (obj.is_var()) {
+            res.insert(obj.get_var());
+        }
+        return res;
     }
 };
 
@@ -287,6 +350,15 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "DeleteLabel(" << node << "," << label << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (node.is_var()) {
+            res.insert(node.get_var());
+        }
+        return res;
     }
 };
 
@@ -328,6 +400,13 @@ public:
         os << std::string(indent, ' ') << "InsertEdge(" << from << "," << to << "," << type << "," << edge
            << ")";
     }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        // TODO: pensar
+        return res;
+    }
 };
 
 class DeleteObject : public UpdateAction {
@@ -356,6 +435,15 @@ public:
     {
         os << std::string(indent, ' ') << "DeleteObject(" << obj
            << ", DETACH: " << (detach ? "true" : "false") << ")";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        if (obj.is_var()) {
+            res.insert(obj.get_var());
+        }
+        return res;
     }
 };
 
@@ -388,6 +476,12 @@ public:
         os << std::string(indent, ' ');
         os << "OpCreateTextIndex(index_name: " << index_name << ", property: " << property
            << ", normalize_type: " << normalize_type << ", tokenize_type: " << tokenize_type << ")\n";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        return res;
     }
 };
 
@@ -427,6 +521,12 @@ public:
         os << "OpCreateHNSWIndex(index_name: " << index_name << ", property: " << property
            << ", dimension: " << dimension << ", num_edges: " << max_edges
            << ", num_candidates: " << max_candidates << ", metric_type: " << metric_type << ")\n";
+    }
+
+    std::set<VarId> get_vars() const override
+    {
+        std::set<VarId> res;
+        return res;
     }
 };
 

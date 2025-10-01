@@ -75,16 +75,50 @@ uint64_t UpdateExecutor::execute()
     return 0;
 }
 
-void UpdateExecutor::analyze(std::ostream& os, bool, int) const
+void UpdateExecutor::analyze(std::ostream& os, bool print_stats, int) const
 {
-    os << "{\"new_nodes\": " << update_context->new_nodes;
-    os << ", \"new_edges\": " << update_context->new_edges;
-    os << ", \"new_labels\": " << update_context->new_labels;
-    os << ", \"new_properties\": " << update_context->new_properties;
-    os << ", \"deleted_nodes\": " << update_context->deleted_nodes;
-    os << ", \"deleted_edges\": " << update_context->deleted_edges;
-    os << ", \"deleted_labels\": " << update_context->deleted_labels;
-    os << ", \"deleted_properties\": " << update_context->deleted_properties;
-    os << ", \"overwritten_properties\": " << update_context->overwritten_properties;
+    if (!print_stats) {
+        return;
+    }
+
+    char s[2] = "\0";
+    os << "{";
+
+    if (update_context->new_nodes) {
+        os << s << "\"new_nodes\": " << update_context->new_nodes;
+        s[0] = ',';
+    }
+    if (update_context->new_edges) {
+        os << s << "\"new_edges\": " << update_context->new_edges;
+        s[0] = ',';
+    }
+    if (update_context->new_labels) {
+        os << s << "\"new_labels\": " << update_context->new_labels;
+        s[0] = ',';
+    }
+    if (update_context->new_properties) {
+        os << s << "\"new_properties\": " << update_context->new_properties;
+        s[0] = ',';
+    }
+    if (update_context->deleted_nodes) {
+        os << s << "\"deleted_nodes\": " << update_context->deleted_nodes;
+        s[0] = ',';
+    }
+    if (update_context->deleted_edges) {
+        os << s << "\"deleted_edges\": " << update_context->deleted_edges;
+        s[0] = ',';
+    }
+    if (update_context->deleted_labels) {
+        os << s << "\"deleted_labels\": " << update_context->deleted_labels;
+        s[0] = ',';
+    }
+    if (update_context->deleted_properties) {
+        os << s << "\"deleted_properties\": " << update_context->deleted_properties;
+        s[0] = ',';
+    }
+    if (update_context->overwritten_properties) {
+        os << s << "\"overwritten_properties\": " << update_context->overwritten_properties;
+        s[0] = ',';
+    }
     os << "}";
 }

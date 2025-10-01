@@ -67,24 +67,16 @@ void CheckVarNames::visit(OpReturn& op_return)
 void CheckVarNames::visit(OpUpdate& op_update)
 {
     op_update.op->accept_visitor(*this);
-    
-    // TODO:
-    // for (const auto& [expr, var] : op_return.projection) {
-    //     CheckVarNamesExpr visitor(declared_vars, unjoinable_vars, alias_vars);
-    //     expr->accept_visitor(visitor);
 
-    //     auto expr_vars = expr->get_all_vars();
-
-    //     if (expr_vars.find(var) == expr_vars.end()) {
-    //         // alias
-    //         if (declared_vars.contains(var) || alias_vars.contains(var)) {
-    //             throw QuerySemanticException(
-    //                 "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
-    //             );
-    //         }
-    //         alias_vars.insert(var);
-    //     }
-    // }
+    for (auto& update_action : op_update.update_actions) {
+        for (auto var : update_action->get_vars()) {
+            if (!declared_vars.contains(var)) {
+                throw QuerySemanticException(
+                    "Variable \"" + get_query_ctx().get_var_name(var) + "\" not declared"
+                );
+            }
+        }
+    }
 }
 
 void CheckVarNames::visit(OpOrderBy& op_order_by)
