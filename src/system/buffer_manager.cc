@@ -478,6 +478,9 @@ void BufferManager::terminate(const VersionScope& version_scope)
             string_manager.rollback(version_scope.string_manager_original_end);
             tensor_manager.rollback(version_scope.tensor_manager_original_end);
             for (Page* page : current_modifications) {
+                if (auto prev_page = page->prev_version) {
+                    prev_page->next_version = nullptr;
+                }
                 page->reset();
             }
         }

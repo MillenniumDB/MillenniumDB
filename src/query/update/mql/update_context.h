@@ -239,14 +239,14 @@ public:
     void delete_object(uint64_t obj, bool detach)
     {
         bool interruption = false;
-        Record<4> min_range = { obj, 0, 0, 0 };
-        Record<4> max_range = { obj, UINT64_MAX, UINT64_MAX, UINT64_MAX };
 
-        auto it1 = quad_model.from_to_type_edge->get_range(&interruption, min_range, max_range);
-        auto it2 = quad_model.to_type_from_edge->get_range(&interruption, min_range, max_range);
-        auto it3 = quad_model.type_from_to_edge->get_range(&interruption, min_range, max_range);
-
+        const Record<4> min_range = { obj, 0, 0, 0 };
+        const Record<4> max_range = { obj, UINT64_MAX, UINT64_MAX, UINT64_MAX };
         if (!detach) {
+
+            auto it1 = quad_model.from_to_type_edge->get_range(&interruption, min_range, max_range);
+            auto it2 = quad_model.to_type_from_edge->get_range(&interruption, min_range, max_range);
+            auto it3 = quad_model.type_from_to_edge->get_range(&interruption, min_range, max_range);
             if (it1.next() != nullptr || it2.next() != nullptr || it3.next() != nullptr) {
                 throw QueryException(
                     "Trying to delete object with existing connections (use DETACH DELETE if intended)"
@@ -255,8 +255,6 @@ public:
         }
 
         if (ObjectId(obj).get_type() == ObjectId::MASK_EDGE) {
-            Record<4> min_range = { obj, 0, 0, 0 };
-            Record<4> max_range = { obj, UINT64_MAX, UINT64_MAX, UINT64_MAX };
             auto iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
 
             if (auto existing_record = iter.next()) {
@@ -303,12 +301,15 @@ public:
         // save here to delete later, because delete while iterating is a bad idea
         std::set<uint64_t> edges_to_delete;
 
+        auto it1 = quad_model.from_to_type_edge->get_range(&interruption, min_range, max_range);
         for (auto record = it1.next(); record != nullptr; record = it1.next()) {
             edges_to_delete.insert((*record)[3]);
         }
+        auto it2 = quad_model.to_type_from_edge->get_range(&interruption, min_range, max_range);
         for (auto record = it2.next(); record != nullptr; record = it2.next()) {
             edges_to_delete.insert((*record)[3]);
         }
+        auto it3 = quad_model.type_from_to_edge->get_range(&interruption, min_range, max_range);
         for (auto record = it3.next(); record != nullptr; record = it3.next()) {
             edges_to_delete.insert((*record)[3]);
         }

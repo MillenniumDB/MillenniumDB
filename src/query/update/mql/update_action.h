@@ -80,7 +80,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "InsertNode(" << node << ")";
+        os << std::string(indent, ' ') << "InsertNode(" << node << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -127,7 +127,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "InsertLabel(" << node << "," << label << ")";
+        os << std::string(indent, ' ') << "InsertLabel(" << node << "," << label << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -173,7 +173,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "SetLabelOrType(" << obj << "," << label << ")";
+        os << std::string(indent, ' ') << "SetLabelOrType(" << obj << "," << label << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -220,7 +220,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << "," << val << ")";
+        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << "," << val << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -271,7 +271,7 @@ public:
         os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ",";
         ExprPrinter printer(os);
         value->accept_visitor(printer);
-        os << ")";
+        os << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -312,7 +312,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "DeleteProperty(" << obj << "," << key << ")";
+        os << std::string(indent, ' ') << "DeleteProperty(" << obj << "," << key << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -351,7 +351,7 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "DeleteLabel(" << node << "," << label << ")";
+        os << std::string(indent, ' ') << "DeleteLabel(" << node << "," << label << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
@@ -388,11 +388,11 @@ public:
         }
 
         auto edge_id = ctx.get_new_edge_id().id;
-        binding[edge] = ObjectId(edge_id);
+        binding.add(edge, ObjectId(edge_id));
 
         auto from_id = transform_if_tmp(from_).id;
         auto to_id = transform_if_tmp(to_).id;
-        auto type_id = transform_if_tmp(to_).id;
+        auto type_id = transform_if_tmp(type).id;
 
         ctx.insert_edge(from_id, to_id, type_id, edge_id);
     }
@@ -400,13 +400,18 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "InsertEdge(" << from << "," << to << "," << type << "," << edge
-           << ")";
+           << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
-        // TODO: pensar
+        if (from.is_var()) {
+            res.insert(from.get_var());
+        }
+        if (to.is_var()) {
+            res.insert(to.get_var());
+        }
         return res;
     }
 };
@@ -436,7 +441,7 @@ public:
     void print(std::ostream& os, int indent) const override
     {
         os << std::string(indent, ' ') << "DeleteObject(" << obj
-           << ", DETACH: " << (detach ? "true" : "false") << ")";
+           << ", DETACH: " << (detach ? "true" : "false") << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override

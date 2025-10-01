@@ -70,7 +70,7 @@ void CheckVarNames::visit(OpUpdate& op_update)
 
     for (auto& update_action : op_update.update_actions) {
         for (auto var : update_action->get_input_vars()) {
-            if (!declared_vars.contains(var)) {
+            if (!get_query_ctx().is_internal(var) && !declared_vars.contains(var)) {
                 throw QuerySemanticException(
                     "Variable \"" + get_query_ctx().get_var_name(var) + "\" not declared"
                 );
