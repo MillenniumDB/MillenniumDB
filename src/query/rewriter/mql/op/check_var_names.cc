@@ -364,6 +364,15 @@ void CheckVarNamesExpr::visit(ExprType& expr)
     }
 }
 
+void CheckVarNamesExpr::visit(ExprProperties& expr)
+{
+    if (!declared_vars.contains(expr.var)) {
+        throw QuerySemanticException(
+            "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is not declared"
+        );
+    }
+}
+
 void CheckVarNamesExpr::visit(ExprAggAvg& expr)
 {
     expr.expr->accept_visitor(*this);

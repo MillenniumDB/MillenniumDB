@@ -44,6 +44,7 @@ public:
     void visit(ExprStr&) override;
     void visit(ExprLabels&) override;
     void visit(ExprType&) override;
+    void visit(ExprProperties&) override;
 
     void visit(MQL::ExprAggAvg&) override;
     void visit(MQL::ExprAggCountAll&) override;

@@ -248,6 +248,11 @@ void ExprPrinter::visit(MQL::ExprType& expr)
     os << "TYPE(" << expr.var << ")";
 }
 
+void ExprPrinter::visit(MQL::ExprProperties& expr)
+{
+    os << "PROPERTIES(" << expr.var << ")";
+}
+
 void ExprPrinter::visit(MQL::ExprAggAvg& expr)
 {
     os << "AVG(";

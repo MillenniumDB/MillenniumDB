@@ -51,6 +51,7 @@ TEST_SUITES: list[str] = [
     "property_types_queries",
     "regex",
     "labels",
+    "properties",
 ]
 
 # Tests with the following query files fill be ignored

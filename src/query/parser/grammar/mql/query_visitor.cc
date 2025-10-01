@@ -1723,6 +1723,15 @@ Any QueryVisitor::visitType(MQL_Parser::TypeContext* ctx)
     return 0;
 }
 
+Any QueryVisitor::visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext* ctx)
+{
+    std::string var_name = ctx->VARIABLE()->getText();
+    var_name.erase(0, 1); // remove leading '?'
+    VarId var_id = get_query_ctx().get_or_create_var(var_name);
+    current_expr = std::make_unique<ExprProperties>(var_id);
+    return 0;
+}
+
 template<typename IndexOptions, typename OptionHandlerFunc>
 void QueryVisitor::parse_index_options(
     MQL_Parser::CreateIndexOptionsContext* ctx,

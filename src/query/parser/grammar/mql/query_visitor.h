@@ -298,6 +298,7 @@ public:
     virtual std::any visitStr(MQL_Parser::StrContext* ctx) override;
     virtual std::any visitLabels(MQL_Parser::LabelsContext* ctx) override;
     virtual std::any visitType(MQL_Parser::TypeContext* ctx) override;
+    virtual std::any visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext* ctx) override;
 
     virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx) override;
 
