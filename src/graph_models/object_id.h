@@ -119,7 +119,10 @@ public:
     static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
 
     static constexpr uint64_t MASK_LIST                    = 0xC0'00000000000000UL; // 0b1100'00'00
+    static constexpr uint64_t MASK_LIST_EXTERN             = 0xC1'00000000000000UL; // 0b1100'00'01
+    static constexpr uint64_t MASK_LIST_TMP                = 0xC2'00000000000000UL; // 0b1100'00'10
     static constexpr uint64_t MASK_DICTIONARY              = 0xD0'00000000000000UL; // 0b1101'00'00
+    static constexpr uint64_t MASK_DICTIONARY_EXTERN       = 0xD1'00000000000000UL; // 0b1101'00'01
     static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xD2'00000000000000UL; // 0b1101'00'10
 
     // GQL types
