@@ -69,7 +69,7 @@ inline std::string token_to_string(Token token)
     case COMMA:
         return "COMMA";
     }
-    return "token_to_string not defined";
+    return "Token is not valid";
 }
 
 }} // namespace Import::GQL

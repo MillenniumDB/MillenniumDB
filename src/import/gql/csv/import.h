@@ -11,14 +11,14 @@
 #include "graph_models/common/conversions.h"
 #include "graph_models/gql/gql_catalog.h"
 #include "import/disk_vector.h"
+#include "import/external_helper.h"
 #include "import/gql/csv/lexer/state.h"
 #include "import/gql/csv/lexer/token.h"
 #include "import/gql/csv/lexer/tokenizer.h"
-#include "import/external_helper.h"
 #include "misc/istream.h"
 
 namespace Import { namespace GQL { namespace CSV {
-enum CSVType {
+enum class CSVType {
     UNDEFINED,
     ID,
     START_ID,
@@ -28,7 +28,8 @@ enum CSVType {
     INT,
     DECIMAL,
     DATE,
-    DATETIME
+    DATETIME,
+    LIST
 };
 
 struct CSVColumn {
@@ -107,6 +108,7 @@ private:
     int current_state;
 
     std::string label_splitter;
+    const std::string list_splitter = ";";
 
     bool anonymous_nodes = true;
     bool global_ids = true;
@@ -160,6 +162,10 @@ private:
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 
     int* state_transitions;
+
+    char* list_buffer;
+
+    uint64_t get_str_id(char* str, uint64_t size);
 
     void try_save_node_property(uint64_t node, uint64_t key, uint64_t value);
     void try_save_edge_property(uint64_t node, uint64_t key, uint64_t value);
