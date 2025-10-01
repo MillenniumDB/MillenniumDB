@@ -386,7 +386,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *KEY();
     antlr4::tree::TerminalNode *SINGLE_EQ();
-    ValueContext *value();
+    ConditionalOrExprContext *conditionalOrExpr();
     FixedObjContext *fixedObj();
     antlr4::tree::TerminalNode *VARIABLE();
     InsertPropertiesContext *insertProperties();

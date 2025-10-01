@@ -233,9 +233,9 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
         key_name.erase(0, 1); // remove leading '.'
         auto key_id = QuadObjectId::get_string(key_name);
 
-        visitValue(ctx->value());
-
-        update_info.update_actions.push_back(std::make_unique<InsertProperty>(obj, key_id, current_value_oid)
+        ctx->conditionalOrExpr()->accept(this);
+        update_info.update_actions.push_back(
+            std::make_unique<InsertPropertyExpr>(obj, key_id, std::move(current_expr))
         );
     } else if (auto insert_properties = ctx->insertProperties()) {
         saved_property_obj = obj;

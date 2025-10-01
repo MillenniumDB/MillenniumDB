@@ -47,6 +47,20 @@ public:
         return res;
     }
 
+    std::set<VarId> get_input_vars() const override
+    {
+        std::set<VarId> res;
+        auto expr1_vars = expr1->get_input_vars();
+        auto expr2_vars = expr2->get_input_vars();
+        res.insert(expr1_vars.begin(), expr1_vars.end());
+        res.insert(expr2_vars.begin(), expr2_vars.end());
+        if (expr3 != nullptr) {
+            auto expr3_vars = expr3->get_input_vars();
+            res.insert(expr3_vars.begin(), expr3_vars.end());
+        }
+        return res;
+    }
+
     bool has_aggregation() const override
     {
         return expr1->has_aggregation() || expr2->has_aggregation() || (expr3 && expr3->has_aggregation());

@@ -251,7 +251,7 @@ void mql_parserParserInitialize() {
   	289,1,0,0,0,292,295,1,0,0,0,293,291,1,0,0,0,293,294,1,0,0,0,294,19,1,
   	0,0,0,295,293,1,0,0,0,296,299,3,102,51,0,297,299,5,82,0,0,298,296,1,0,
   	0,0,298,297,1,0,0,0,299,300,1,0,0,0,300,301,5,79,0,0,301,302,5,94,0,0,
-  	302,318,3,124,62,0,303,306,3,102,51,0,304,306,5,82,0,0,305,303,1,0,0,
+  	302,318,3,126,63,0,303,306,3,102,51,0,304,306,5,82,0,0,305,303,1,0,0,
   	0,305,304,1,0,0,0,306,307,1,0,0,0,307,318,3,12,6,0,308,311,3,102,51,0,
   	309,311,5,82,0,0,310,308,1,0,0,0,310,309,1,0,0,0,311,313,1,0,0,0,312,
   	314,5,80,0,0,313,312,1,0,0,0,314,315,1,0,0,0,315,313,1,0,0,0,315,316,
@@ -1831,8 +1831,8 @@ tree::TerminalNode* MQL_Parser::SetAtomContext::SINGLE_EQ() {
   return getToken(MQL_Parser::SINGLE_EQ, 0);
 }
 
-MQL_Parser::ValueContext* MQL_Parser::SetAtomContext::value() {
-  return getRuleContext<MQL_Parser::ValueContext>(0);
+MQL_Parser::ConditionalOrExprContext* MQL_Parser::SetAtomContext::conditionalOrExpr() {
+  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
 }
 
 MQL_Parser::FixedObjContext* MQL_Parser::SetAtomContext::fixedObj() {
@@ -1980,7 +1980,7 @@ MQL_Parser::SetAtomContext* MQL_Parser::setAtom() {
       setState(301);
       match(MQL_Parser::SINGLE_EQ);
       setState(302);
-      value();
+      conditionalOrExpr();
       break;
     }
 

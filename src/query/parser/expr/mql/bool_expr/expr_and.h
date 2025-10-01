@@ -11,9 +11,11 @@ public:
     std::vector<std::unique_ptr<Expr>> and_list;
 
     ExprAnd(std::vector<std::unique_ptr<Expr>>&& and_list) :
-        and_list (std::move(and_list)) { }
+        and_list(std::move(and_list))
+    { }
 
-    virtual std::unique_ptr<Expr> clone() const override {
+    virtual std::unique_ptr<Expr> clone() const override
+    {
         std::vector<std::unique_ptr<Expr>> and_list_clone;
         and_list_clone.reserve(and_list.size());
         for (auto& child_expr : and_list) {
@@ -22,11 +24,13 @@ public:
         return std::make_unique<ExprAnd>(std::move(and_list_clone));
     }
 
-    void accept_visitor(ExprVisitor& visitor) override {
+    void accept_visitor(ExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    bool has_aggregation() const override {
+    bool has_aggregation() const override
+    {
         for (auto& expr : and_list) {
             if (expr->has_aggregation())
                 return true;
@@ -34,10 +38,22 @@ public:
         return false;
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         std::set<VarId> res;
-        for (auto& expr: and_list) {
+        for (auto& expr : and_list) {
             for (auto& var : expr->get_all_vars()) {
+                res.insert(var);
+            }
+        }
+        return res;
+    }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        std::set<VarId> res;
+        for (auto& expr : and_list) {
+            for (auto& var : expr->get_input_vars()) {
                 res.insert(var);
             }
         }

@@ -26,6 +26,11 @@ public:
         return {};
     }
 
+    std::set<VarId> get_input_vars() const override
+    {
+        return {};
+    }
+
     bool has_aggregation() const override
     {
         return true;

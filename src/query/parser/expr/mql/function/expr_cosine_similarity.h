@@ -32,6 +32,14 @@ public:
         return res;
     }
 
+    std::set<VarId> get_input_vars() const override
+    {
+        std::set<VarId> res = expr1->get_input_vars();
+        const auto expr2_vars = expr2->get_input_vars();
+        res.insert(expr2_vars.begin(), expr2_vars.end());
+        return res;
+    }
+
     bool has_aggregation() const override
     {
         return expr1->has_aggregation() || expr2->has_aggregation();

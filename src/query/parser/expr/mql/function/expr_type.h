@@ -24,7 +24,12 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        return {var};
+        return { var };
+    }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        return { var };
     }
 
     bool has_aggregation() const override

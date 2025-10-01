@@ -46,7 +46,7 @@ deleteStatement:
 
 setStatement: K_SET setAtom (',' setAtom)*;
 
-setAtom: (fixedObj | VARIABLE) KEY '=' value
+setAtom: (fixedObj | VARIABLE) KEY '=' conditionalOrExpr
 	| (fixedObj | VARIABLE) insertProperties
 	| (fixedObj | VARIABLE) (TYPE)+;
 

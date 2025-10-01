@@ -6,9 +6,9 @@
 #include "query/exceptions.h"
 #include "query/executor/binding.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
+#include "query/parser/expr/mql/expr_printer.h"
 #include "query/update/mql/update_context.h"
 #include "system/string_manager.h"
 #include "system/tensor_manager.h"
@@ -27,7 +27,7 @@ public:
     virtual void print(std::ostream& os, int indent) const = 0;
 
     // to check used vars are declared
-    virtual std::set<VarId> get_vars() const = 0;
+    virtual std::set<VarId> get_input_vars() const = 0;
 
 protected:
     ObjectId transform_if_tmp(ObjectId oid)
@@ -83,7 +83,7 @@ public:
         os << std::string(indent, ' ') << "InsertNode(" << node << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (node.is_var()) {
@@ -130,7 +130,7 @@ public:
         os << std::string(indent, ' ') << "InsertLabel(" << node << "," << label << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (node.is_var()) {
@@ -176,7 +176,7 @@ public:
         os << std::string(indent, ' ') << "SetLabelOrType(" << obj << "," << label << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (obj.is_var()) {
@@ -223,7 +223,7 @@ public:
         os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << "," << val << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (obj.is_var()) {
@@ -268,19 +268,21 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        BindingExprPrinter printer(os, indent, false);
         os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ",";
-        printer.print(*binding_expr);
+        ExprPrinter printer(os);
+        value->accept_visitor(printer);
         os << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (obj.is_var()) {
             res.insert(obj.get_var());
         }
-        // TODO: value?
+        for (auto& v : value->get_input_vars()) {
+            res.insert(v);
+        }
         return res;
     }
 };
@@ -313,7 +315,7 @@ public:
         os << std::string(indent, ' ') << "DeleteProperty(" << obj << "," << key << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (obj.is_var()) {
@@ -352,7 +354,7 @@ public:
         os << std::string(indent, ' ') << "DeleteLabel(" << node << "," << label << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (node.is_var()) {
@@ -401,7 +403,7 @@ public:
            << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         // TODO: pensar
@@ -437,7 +439,7 @@ public:
            << ", DETACH: " << (detach ? "true" : "false") << ")";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         if (obj.is_var()) {
@@ -478,7 +480,7 @@ public:
            << ", normalize_type: " << normalize_type << ", tokenize_type: " << tokenize_type << ")\n";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         return res;
@@ -523,7 +525,7 @@ public:
            << ", num_candidates: " << max_candidates << ", metric_type: " << metric_type << ")\n";
     }
 
-    std::set<VarId> get_vars() const override
+    std::set<VarId> get_input_vars() const override
     {
         std::set<VarId> res;
         return res;

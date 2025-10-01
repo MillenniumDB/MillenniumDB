@@ -9,20 +9,32 @@ public:
     ObjectId value;
 
     ExprConstant(ObjectId value) :
-        value (value) { }
+        value(value)
+    { }
 
-    virtual std::unique_ptr<Expr> clone() const override {
+    virtual std::unique_ptr<Expr> clone() const override
+    {
         return std::make_unique<ExprConstant>(value);
     }
 
-    void accept_visitor(ExprVisitor& visitor) override {
+    void accept_visitor(ExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    bool has_aggregation() const override { return false; }
+    bool has_aggregation() const override
+    {
+        return false;
+    }
 
-    std::set<VarId> get_all_vars() const override {
-        return { };
+    std::set<VarId> get_all_vars() const override
+    {
+        return {};
+    }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        return {};
     }
 };
 } // namespace MQL
