@@ -13,7 +13,6 @@
 #include "query/optimizer/quad_model/executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/query_context.h"
-#include "update/mql/update_executor.h"
 
 using namespace boost;
 using namespace MDBServer;
@@ -27,10 +26,10 @@ HttpQuadSession::HttpQuadSession(
     http::request<http::string_body>&& request,
     std::chrono::seconds query_timeout
 ) :
-    server { server },
-    stream { std::move(stream) },
-    request { std::move(request) },
-    query_timeout { query_timeout }
+    server(server),
+    stream(std::move(stream)),
+    request(std::move(request)),
+    query_timeout(query_timeout)
 { }
 
 HttpQuadSession::~HttpQuadSession()
@@ -91,25 +90,23 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
         return;
     }
 
-    // After parsing the query we don't want to have a connection timeout
     obj->stream.expires_never();
 
     logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
 
-    obj->execute_query(query, response_ostream, response_type);
-}
-
-std::unique_ptr<Op> HttpQuadSession::create_logical_plan(const std::string& query)
-{
-    const auto start_parser = std::chrono::system_clock::now();
-
-    auto logical_plan = QueryParser::get_query_plan(query);
-    parser_duration = std::chrono::system_clock::now() - start_parser;
-    return logical_plan;
+    try {
+        obj->execute_query(query, response_ostream, response_type);
+    } catch (const ConnectionException& e) {
+        logger(Category::Error) << "Connection Exception: " << e.what();
+    } catch (const std::exception& e) {
+        logger(Category::Error) << "Unexpected Exception: " << e.what();
+    } catch (...) {
+        logger(Category::Error) << "Unknown exception";
+    }
 }
 
 std::unique_ptr<QueryExecutor>
-    HttpQuadSession::create_readonly_physical_plan(Op& logical_plan, ReturnType return_type)
+    HttpQuadSession::create_query_executor(Op& logical_plan, ReturnType return_type)
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
@@ -122,25 +119,16 @@ std::unique_ptr<QueryExecutor>
 
 void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, ReturnType response_type)
 {
-    // Declared here because the destruction need to be after calling execute_query_plan
-    auto read_only_version_scope = buffer_manager.init_version_readonly();
-
-    {
-        std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
-        get_query_ctx().prepare(*read_only_version_scope, query_timeout);
-    }
-    logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
-                           << get_query_ctx().cancellation_token;
-
-    std::unique_ptr<QueryExecutor> physical_plan;
     try {
-        auto logical_plan = create_logical_plan(query);
+        const auto start_parser = std::chrono::system_clock::now();
+        QueryParser parser(query);
+        parser_duration = std::chrono::system_clock::now() - start_parser;
 
-        if (!logical_plan->read_only()) {
-            execute_update(*logical_plan, *read_only_version_scope, os);
-            return;
+        if (parser.is_update()) {
+            run_write_query(parser, os);
+        } else {
+            run_read_query(parser, os, response_type);
         }
-        physical_plan = create_readonly_physical_plan(*logical_plan, response_type);
     } catch (const QueryParsingException& e) {
         logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
                                 << e.what();
@@ -148,41 +136,100 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
-        return;
+           << e.what();
     } catch (const QueryException& e) {
         logger(Category::Error) << "Query Exception: " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
+           << e.what();
     } catch (const LogicException& e) {
         logger(Category::Error) << "Logic Exception: " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
-    }
-
-    if (physical_plan == nullptr) {
-        return;
-    }
-
-    try {
-        execute_readonly_query_plan(*physical_plan, os, response_type);
-    } catch (const ConnectionException& e) {
-        logger(Category::Error) << "Connection Exception: " << e.what();
+           << e.what();
     }
 }
 
-void HttpQuadSession::execute_readonly_query_plan(
-    QueryExecutor& physical_plan,
-    std::ostream& os,
-    ReturnType return_type
-)
+void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os)
 {
+    std::lock_guard<std::mutex> lock(server.update_execution_mutex);
+
+    auto version_scope = buffer_manager.init_version_editable();
+    {
+        std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
+        get_query_ctx().prepare(*version_scope, query_timeout);
+    }
+
+    logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
+                           << get_query_ctx().cancellation_token;
+
+    const auto start_parser = std::chrono::system_clock::now();
+    auto logical_plan = parser.get_query_plan();
+    parser_duration += std::chrono::system_clock::now() - start_parser;
+
+    auto executor = create_query_executor(*logical_plan, MQL::ReturnType::TSV);
+
+    const auto execution_start = std::chrono::system_clock::now();
+    try {
+        logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
+            executor->analyze(os, false);
+            os << '\n';
+        });
+
+        executor->execute(os);
+        version_scope->commited = true;
+        execution_duration = std::chrono::system_clock::now() - execution_start;
+
+        logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
+            executor->analyze(os, true);
+            os << '\n';
+        });
+
+        os << "HTTP/1.1 204 No Content\r\n\r\n";
+        logger(Category::Info) << "Parser duration:    " << parser_duration.count() << "ms\n"
+                               << "Execution duration: " << execution_duration.count() << "ms";
+    } catch (const InterruptedException& e) {
+        execution_duration = std::chrono::system_clock::now() - execution_start;
+
+        logger(
+            Category::Info
+        ) << "Timeout thrown after "
+          << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
+
+        os << "HTTP/1.1 408 Request Timeout\r\n";
+    } catch (const QueryExecutionException& e) {
+        execution_duration = std::chrono::system_clock::now() - execution_start;
+        logger(Category::Error) << e.what();
+
+        os << "HTTP/1.1 500 Internal Server Error\r\n"
+              "Content-Type: text/plain\r\n"
+              "\r\n"
+           << e.what();
+    }
+}
+
+void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os, ReturnType return_type)
+{
+    auto version_scope = buffer_manager.init_version_readonly();
+
+    {
+        std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
+        get_query_ctx().prepare(*version_scope, query_timeout);
+    }
+
+    logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
+                           << get_query_ctx().cancellation_token;
+
+    const auto start_parser = std::chrono::system_clock::now();
+    auto logical_plan = parser.get_query_plan();
+    parser_duration += std::chrono::system_clock::now() - start_parser;
+
+    auto executor = create_query_executor(*logical_plan, return_type);
+
     const auto execution_start = std::chrono::system_clock::now();
     try {
         os << "HTTP/1.1 200 OK\r\n"
@@ -206,16 +253,16 @@ void HttpQuadSession::execute_readonly_query_plan(
               "Access-Control-Allow-Methods: GET, POST\r\n"
               "\r\n";
 
-        logger.log(Category::PhysicalPlan, [&physical_plan](std::ostream& os) {
-            physical_plan.analyze(os, false);
+        logger.log(Category::PhysicalPlan, [&executor](std::ostream& os) {
+            executor->analyze(os, false);
             os << '\n';
         });
 
-        const auto result_count = physical_plan.execute(os);
+        const auto result_count = executor->execute(os);
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
-        logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
-            physical_plan.analyze(os, true);
+        logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
+            executor->analyze(os, true);
             os << '\n';
         });
 
@@ -225,65 +272,12 @@ void HttpQuadSession::execute_readonly_query_plan(
                                << "Execution duration: " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info
+        logger(
+            Category::Info
         ) << "Timeout thrown after "
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
-    } catch (const std::exception& e) {
-        logger(Category::Error) << "Unexpected Exception: " << e.what();
-    } catch (...) {
-        logger(Category::Error) << "Unknown exception";
+        logger(Category::Error) << e.what();
     }
-}
-
-void HttpQuadSession::execute_update(
-    Op& logical_plan,
-    BufferManager::VersionScope& version_scope,
-    std::ostream& os
-)
-{
-    // Mutex to allow only one write query at a time
-    std::lock_guard<std::mutex> lock(server.update_execution_mutex);
-
-    buffer_manager.upgrade_to_editable(version_scope);
-
-    const auto execution_start = std::chrono::system_clock::now();
-
-    try {
-        UpdateExecutor update_executor;
-        update_executor.execute(logical_plan);
-        execution_duration = std::chrono::system_clock::now() - execution_start;
-
-        logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
-            update_executor.print_stats(os);
-        });
-    } catch (const ConnectionException& e) {
-        logger(Category::Error) << "Connection Exception: " << e.what();
-        return;
-    } catch (const InterruptedException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info
-        ) << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(parser_duration + execution_duration)
-                 .count()
-          << " ms";
-
-        os << "HTTP/1.1 408 Request Timeout\r\n";
-        return;
-    } catch (const QueryExecutionException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "Query Execution Exception: " << e.what();
-
-        os << "HTTP/1.1 500 Internal Server Error\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(e.what());
-        return;
-    }
-
-    os << "HTTP/1.1 204 No Content\r\n\r\n";
-    logger(Category::Info) << "Parser duration: " << parser_duration.count() << "ms\n"
-                           << "Execution duration:" << execution_duration.count() << "ms";
 }

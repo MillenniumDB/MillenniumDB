@@ -4,7 +4,6 @@
 #include <array>
 #include <bitset>
 #include <cassert>
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -16,7 +15,7 @@
 #include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 namespace Import {
 template<std::size_t N>
@@ -35,7 +34,7 @@ class DiskVector {
 public:
     DiskVector(const std::string& filename) :
         filename(filename),
-        buffer_size(VPage::SIZE * N * sizeof(uint64_t)),
+        buffer_size(Page::SIZE * N * sizeof(uint64_t)),
         buffer(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size)))
     {
         file.open(filename, std::ios::out | std::ios::app);
@@ -45,7 +44,7 @@ public:
         file.close();
         file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
 
-        compression_buffer = new char[VPage::SIZE * 2];
+        compression_buffer = new char[Page::SIZE * 2];
     }
 
     ~DiskVector()
@@ -80,9 +79,9 @@ public:
         // free append buffer
         MDB_ALIGNED_FREE(buffer);
         current_permutation = original_permutation;
-        // buffer_size must be divisible by (VPage::SIZE*N*sizeof(uint64_t)
-        auto max_blocks_per_run = max_buffer_size / (VPage::SIZE * N * sizeof(uint64_t));
-        auto new_buffer_size = max_blocks_per_run * (VPage::SIZE * N * sizeof(uint64_t));
+        // buffer_size must be divisible by (Page::SIZE*N*sizeof(uint64_t)
+        auto max_blocks_per_run = max_buffer_size / (Page::SIZE * N * sizeof(uint64_t));
+        auto new_buffer_size = max_blocks_per_run * (Page::SIZE * N * sizeof(uint64_t));
         this->buffer_size = new_buffer_size;
         buffer = new_buffer;
     }
@@ -109,7 +108,7 @@ public:
             N * sizeof(uint64_t)
         );
         buffer_append_current_pos++;
-        if (buffer_append_current_pos == VPage::SIZE) {
+        if (buffer_append_current_pos == Page::SIZE) {
             file.write(buffer, buffer_size);
             buffer_append_current_pos = 0;
         }
@@ -125,7 +124,7 @@ public:
         file.seekg(0, file.beg);
         iter_current_tuple = 0;
         // set iter_buffer_offset so its 0 when next_tuple() is called the first time
-        iter_buffer_offset = VPage::SIZE - 1;
+        iter_buffer_offset = Page::SIZE - 1;
     }
 
     bool has_next_tuple()
@@ -135,13 +134,13 @@ public:
 
     std::array<uint64_t, N>& next_tuple()
     {
-        // max tuples in buffer is VPage::SIZE
-        iter_buffer_offset = (iter_buffer_offset + 1) % VPage::SIZE;
+        // max tuples in buffer is Page::SIZE
+        iter_buffer_offset = (iter_buffer_offset + 1) % Page::SIZE;
         iter_current_tuple++;
 
         if (iter_buffer_offset == 0) {
             // leer del disco a buffer
-            file.read(buffer, VPage::SIZE * N * sizeof(uint64_t));
+            file.read(buffer, Page::SIZE * N * sizeof(uint64_t));
             file.clear();
         }
         auto ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer) + iter_buffer_offset;
@@ -204,7 +203,7 @@ private:
                         }
                     }
 
-                    if (get_page_size(bitset_tmp, leaf_tuples + 1) > VPage::SIZE) {
+                    if (get_page_size(bitset_tmp, leaf_tuples + 1) > Page::SIZE) {
                         break;
                     }
 
@@ -242,12 +241,12 @@ private:
         // A run is a set of ordered tuples (ordered when method reorder_cols was called)
         // A run is divided in blocks. Tuples from disk are read 1 block at a time
         // buffer_size was chosen to be a multiple of block_size
-        constexpr uint64_t block_size = VPage::SIZE * N * sizeof(uint64_t);
+        constexpr uint64_t block_size = Page::SIZE * N * sizeof(uint64_t);
 
         const uint64_t total_runs = division_round_up(file_length, buffer_size);
         const uint64_t total_blocks = division_round_up(file_length, block_size);
 
-        const uint64_t max_tuples_per_block = VPage::SIZE;
+        const uint64_t max_tuples_per_block = Page::SIZE;
         const uint64_t max_blocks_per_run = buffer_size / block_size;
 
         const uint64_t tuples_in_last_block = (total_tuples % max_tuples_per_block == 0)
@@ -358,7 +357,7 @@ private:
                 output_block_curr++;
             }
 
-            if (get_page_size(bitset_tmp, output_block_curr) > VPage::SIZE) {
+            if (get_page_size(bitset_tmp, output_block_curr) > Page::SIZE) {
                 // skip first leaf
                 if (leaf_current_block > 0) {
                     dir_writer.bulk_insert(output_block, 0, leaf_current_block);
@@ -543,9 +542,7 @@ private:
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[1]
-                       && new_permutation[1] == current_permutation[0]
-                       && new_permutation[2] == current_permutation[2])
+            } else if (new_permutation[0] == current_permutation[1] && new_permutation[1] == current_permutation[0] && new_permutation[2] == current_permutation[2])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -554,9 +551,7 @@ private:
                     (*key_ptr)[0] = (*key_ptr)[1];
                     (*key_ptr)[1] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[2]
-                       && new_permutation[1] == current_permutation[1]
-                       && new_permutation[2] == current_permutation[0])
+            } else if (new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[1] && new_permutation[2] == current_permutation[0])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -565,9 +560,7 @@ private:
                     (*key_ptr)[0] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[2]
-                       && new_permutation[1] == current_permutation[0]
-                       && new_permutation[2] == current_permutation[1])
+            } else if (new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[0] && new_permutation[2] == current_permutation[1])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -595,10 +588,7 @@ private:
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[0]
-                       && new_permutation[1] == current_permutation[2]
-                       && new_permutation[2] == current_permutation[1]
-                       && new_permutation[3] == current_permutation[3])
+            } else if (new_permutation[0] == current_permutation[0] && new_permutation[1] == current_permutation[2] && new_permutation[2] == current_permutation[1] && new_permutation[3] == current_permutation[3])
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)

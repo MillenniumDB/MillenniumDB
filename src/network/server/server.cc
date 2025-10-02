@@ -321,8 +321,16 @@ void Server::signal_shutdown_server(int)
 void Server::execute_timeouts()
 {
     while (!shutdown_server) {
-        const auto now = std::chrono::system_clock::now();
+        auto start = std::chrono::system_clock::now();
+
+        while (std::chrono::system_clock::now() - start < std::chrono::milliseconds(1'000)) {
+            if (!buffer_manager.try_flush_page()) {
+                break;
+            }
+        }
+
         {
+            auto now = std::chrono::system_clock::now();
             const std::lock_guard<std::mutex> lock(thread_info_vec_mutex);
             for (auto& query_ctx : query_contexts) {
                 // Only execute timeout for read-only queries

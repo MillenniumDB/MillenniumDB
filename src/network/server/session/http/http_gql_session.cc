@@ -230,7 +230,7 @@ void HttpGQLSession::execute_readonly_query_plan(
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
     } catch (const std::exception& e) {
         logger(Category::Error) << "Unexpected Exception: " << e.what();
     } catch (...) {

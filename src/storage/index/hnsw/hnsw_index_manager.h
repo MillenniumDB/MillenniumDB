@@ -43,7 +43,7 @@ public:
 
     // Create a new hnsw index with the given name and predicate
     template<Catalog::ModelID model_id>
-    std::tuple<uint_fast32_t> create_hnsw_index(
+    uint_fast32_t create_hnsw_index(
         const std::string& name,
         const std::string& predicate,
         uint64_t dimension,
@@ -52,7 +52,7 @@ public:
         MetricType metric_type
     );
 
-    boost::unordered_flat_map<std::string, HNSWIndexMetadata> get_name2metadata() const
+    const boost::unordered_flat_map<std::string, HNSWIndexMetadata>& get_name2metadata() const
     {
         return name2metadata;
     }
@@ -62,7 +62,7 @@ public:
         return has_changes_;
     }
 
-    boost::unordered_flat_map<std::string, std::vector<std::string>> get_predicate2names() const
+    const boost::unordered_flat_map<std::string, std::vector<std::string>>& get_predicate2names() const
     {
         return predicate2names;
     }

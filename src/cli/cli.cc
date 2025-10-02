@@ -1668,8 +1668,8 @@ void CLI::ProcessSPARQLQuery(std::ostream& os, const std::string& query) {
         auto version_scope = buffer_manager.init_version_readonly();
         get_query_ctx().prepare(*version_scope, timeout);
 
-        std::unique_ptr<SPARQL::Op> logical_plan;
-        logical_plan = SPARQL::QueryParser::get_query_plan(query);
+        SPARQL::QueryParser parser(query);
+        std::unique_ptr<SPARQL::Op> logical_plan = parser.get_query_plan();
 
         auto query_optimizer = SPARQL::ExecutorConstructor(SPARQL::ResponseType::TSV);
         logical_plan->accept_visitor(query_optimizer);
@@ -1738,7 +1738,9 @@ void CLI::ProcessMQLQuery(std::ostream& os, const std::string& query) {
         get_query_ctx().prepare(*version_scope, timeout);
 
         std::unique_ptr<MQL::Op> logical_plan;
-        logical_plan = MQL::QueryParser::get_query_plan(query);
+
+        MQL::QueryParser parser(query);
+        logical_plan = parser.get_query_plan();
 
         auto query_optimizer = MQL::ExecutorConstructor(MQL::ReturnType::TSV);
         logical_plan->accept_visitor(query_optimizer);

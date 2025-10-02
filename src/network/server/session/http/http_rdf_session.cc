@@ -14,8 +14,8 @@
 #include "query/parser/sparql_query_parser.h"
 #include "query/parser/sparql_update_parser.h"
 #include "query/query_context.h"
+#include "query/update/sparql/update_executor.h"
 #include "system/buffer_manager.h"
-#include "update/sparql/update_executor.h"
 
 using namespace SPARQL;
 using namespace boost;
@@ -172,7 +172,8 @@ void HttpRdfSession::execute_readonly_query(
 std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
-    auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+    SPARQL::QueryParser parser(query);
+    auto logical_plan = parser.get_query_plan();
     parser_duration = std::chrono::system_clock::now() - start_parser;
     return logical_plan;
 }
@@ -264,7 +265,7 @@ void HttpRdfSession::execute_readonly_query_plan(
         throw e;
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "\nQuery Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
         throw e;
     }
 }
@@ -318,6 +319,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         for (auto& update : current_logical_plan->updates) {
             update->accept_visitor(update_executor);
         }
+        version_scope->commited = true;
         execution_duration = std::chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
@@ -339,7 +341,7 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
         return;
     } catch (const QueryExecutionException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Error) << "Query Execution Exception: " << e.what();
+        logger(Category::Error) << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"

@@ -2,7 +2,6 @@
 
 #include <cstring>
 
-#include "storage/index/bplus_tree/bplus_tree.h"
 #include "system/buffer_manager.h"
 #include "query/query_context.h"
 
@@ -283,7 +282,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         }
     }
 
-    if (get_page_size(new_bitset, (*value_count) + 1) < VPage::SIZE) {
+    if (get_page_size(new_bitset, (*value_count) + 1) < Page::SIZE) {
         // If the bitsets are equal, then the new record is added
         if (new_bitset == redundant_bitset) {
             shift_right_records(index, *value_count - 1);
@@ -401,7 +400,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
                 bitset_tmp.set(j, 0);
             }
         }
-        if (get_page_size(bitset_tmp, i + 1) > VPage::SIZE) {
+        if (get_page_size(bitset_tmp, i + 1) > Page::SIZE) {
             n_records_left = i;
             break;
         }
@@ -418,7 +417,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
                 bitset_tmp.set(j, 0);
             }
         }
-        if (get_page_size(bitset_tmp, i + 1) > VPage::SIZE) {
+        if (get_page_size(bitset_tmp, i + 1) > Page::SIZE) {
             n_records_right = i;
             break;
         }
@@ -427,7 +426,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 
     // Case 1: the leaf does not require a double split
     if (n_records_left + n_records_right >= *value_count + 1) {
-        auto& right_page = buffer_manager.append_vpage(leaf_file_id);
+        auto& right_page = buffer_manager.append_page(leaf_file_id);
         auto right_leaf = BPlusTreeLeaf<N>(&right_page);
 
         *right_leaf.next_leaf = *next_leaf;
@@ -471,10 +470,10 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 
     // Case 2: the leaf requires a double split
     else {
-        auto& middle_page = buffer_manager.append_vpage(leaf_file_id);
+        auto& middle_page = buffer_manager.append_page(leaf_file_id);
         auto middle_leaf = BPlusTreeLeaf<N>(&middle_page);
 
-        auto& right_page = buffer_manager.append_vpage(leaf_file_id);
+        auto& right_page = buffer_manager.append_page(leaf_file_id);
         auto right_leaf = BPlusTreeLeaf<N>(&right_page);
 
         *right_leaf.next_leaf = *next_leaf;

@@ -37,26 +37,34 @@ namespace SPARQL {
 
 class QueryParser {
 public:
-    static std::unique_ptr<Op> get_query_plan(const std::string& query)
-    {
-        antlr4::ANTLRInputStream input(query);
-        SparqlQueryLexer lexer(&input);
-        antlr4::CommonTokenStream tokens(&lexer);
-        SparqlParser parser(&tokens);
+    antlr4::ANTLRInputStream input;
+    SparqlQueryLexer lexer;
+    antlr4::CommonTokenStream tokens;
+    SparqlParser parser;
+    antlr4::MyErrorListener error_listener;
 
+    SparqlParser::QueryContext* root;
+
+    QueryParser(const std::string& query) :
+        input(query),
+        lexer(&input),
+        tokens(&lexer),
+        parser(&tokens)
+    {
         parser.getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(
             antlr4::atn::PredictionMode::SLL
         );
 
-        antlr4::MyErrorListener error_listener;
         parser.removeErrorListeners();
         parser.addErrorListener(&error_listener);
+        root = parser.query();
+    }
 
-        SparqlParser::QueryContext* tree = parser.query();
-
+    std::unique_ptr<Op> get_query_plan()
+    {
         QueryVisitor::GlobalInfo global_info;
         QueryVisitor visitor(global_info);
-        visitor.visitQuery(tree);
+        visitor.visitQuery(root);
 
         auto res = rewrite(std::move(visitor.current_op));
 

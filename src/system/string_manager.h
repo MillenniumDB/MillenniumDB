@@ -88,6 +88,11 @@ public:
         return lhs_size - rhs_size;
     }
 
+    uint64_t get_end() const;
+
+    // receives the original file size and truncates
+    void rollback(uint64_t original_end);
+
 private:
     struct Frame {
         uint64_t block_id;

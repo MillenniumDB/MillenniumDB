@@ -19,19 +19,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext *ctx) override {
+  virtual std::any visitUpdateStatement(MQL_Parser::UpdateStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitPrimitiveStatementList(MQL_Parser::PrimitiveStatementListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *ctx) override {
+  virtual std::any visitInsertStatement(MQL_Parser::InsertStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -39,15 +31,55 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext *ctx) override {
+  virtual std::any visitInsertNode(MQL_Parser::InsertNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsertPlainNodeInside(MQL_Parser::InsertPlainNodeInsideContext *ctx) override {
+  virtual std::any visitInsertEdge(MQL_Parser::InsertEdgeContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *ctx) override {
+  virtual std::any visitInsertProperties(MQL_Parser::InsertPropertiesContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertProperty1(MQL_Parser::InsertProperty1Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertProperty2(MQL_Parser::InsertProperty2Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitInsertProperty3(MQL_Parser::InsertProperty3Context *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitDeleteStatement(MQL_Parser::DeleteStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitSetAtom(MQL_Parser::SetAtomContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRemoveStatement(MQL_Parser::RemoveStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRemoveAtom(MQL_Parser::RemoveAtomContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -80,10 +112,6 @@ public:
   }
 
   virtual std::any visitLetStatement(MQL_Parser::LetStatementContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitLetDefinitionList(MQL_Parser::LetDefinitionListContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -231,11 +259,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFixedNode(MQL_Parser::FixedNodeContext *ctx) override {
+  virtual std::any visitFixedObj(MQL_Parser::FixedObjContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext *ctx) override {
+  virtual std::any visitVarNode(MQL_Parser::VarNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -244,10 +272,6 @@ public:
   }
 
   virtual std::any visitEdgeInside(MQL_Parser::EdgeInsideContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitVarNode(MQL_Parser::VarNodeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -335,7 +359,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext *ctx) override {
+  virtual std::any visitExprFixedObj(MQL_Parser::ExprFixedObjContext *ctx) override {
     return visitChildren(ctx);
   }
 

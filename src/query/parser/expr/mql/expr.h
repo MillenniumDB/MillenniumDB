@@ -17,6 +17,9 @@ public:
 
     virtual std::set<VarId> get_all_vars() const = 0;
 
+    // returns vars needed to evaluate this expression
+    virtual std::set<VarId> get_input_vars() const = 0;
+
     virtual bool has_aggregation() const = 0;
 };
 } // namespace MQL

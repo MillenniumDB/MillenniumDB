@@ -8,22 +8,32 @@ public:
     std::unique_ptr<Expr> expr;
 
     ExprUnaryPlus(std::unique_ptr<Expr> expr) :
-        expr (std::move(expr)) { }
+        expr(std::move(expr))
+    { }
 
-    virtual std::unique_ptr<Expr> clone() const override {
+    virtual std::unique_ptr<Expr> clone() const override
+    {
         return std::make_unique<ExprUnaryPlus>(expr->clone());
     }
 
-    void accept_visitor(ExprVisitor& visitor) override {
+    void accept_visitor(ExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 
-    bool has_aggregation() const override {
+    bool has_aggregation() const override
+    {
         return expr->has_aggregation();
     }
 
-    std::set<VarId> get_all_vars() const override {
+    std::set<VarId> get_all_vars() const override
+    {
         return expr->get_all_vars();
+    }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        return expr->get_input_vars();
     }
 };
 } // namespace MQL

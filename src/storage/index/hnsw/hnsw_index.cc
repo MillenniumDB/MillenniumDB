@@ -40,7 +40,7 @@ std::unique_ptr<HNSWIndex> HNSWIndex::create(
     params.M = max_neighbors;
     params.ef_construction = n_candidates_insertion;
 
-    return std::unique_ptr<HNSWIndex>(new HNSWIndex(params, metric_func));
+    return std::make_unique<HNSWIndex>(params, metric_func);
 }
 
 std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, MetricFuncType metric_func)
@@ -52,7 +52,7 @@ std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, M
     std::fstream ifs(absolute_data_file_path, std::ios::in | std::ios::binary);
 
     // load params
-    HNSWIndex::HNSWIndexParams params {};
+    HNSWIndex::HNSWIndexParams params;
     ifs.read(reinterpret_cast<char*>(&params), sizeof(HNSWIndex::HNSWIndexParams));
     if (!ifs.good()) {
         throw std::runtime_error("Could not read index file");
@@ -117,13 +117,13 @@ std::unique_ptr<HNSWIndex> HNSWIndex::load(const std::string& hnsw_index_name, M
     }
     boost::from_block_range(tombstone_blocks.begin(), tombstone_blocks.end(), tombstone_bitset);
 
-    return std::unique_ptr<HNSWIndex>(new HNSWIndex(
+    return std::make_unique<HNSWIndex>(
         params,
         metric_func,
         std::move(node_storage),
         std::move(node_neighbors),
         std::move(tombstone_bitset)
-    ));
+    );
 }
 
 HNSWHeap HNSWIndex::query(
@@ -228,7 +228,7 @@ HNSWHeap HNSWIndex::resume_query(
     );
 }
 
-std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicate)
+uint_fast32_t HNSWIndex::index_predicate(const std::string& predicate)
 {
     const auto subject_var = get_query_ctx().get_internal_var();
     const auto predicate_val = SPARQL::Conversions::pack_iri(predicate);
@@ -245,7 +245,7 @@ std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicat
     node_storage.reserve(num_expected_insertions);
     node_neighbors_at_layer.reserve(num_expected_insertions);
 
-    uint_fast32_t total_inserted_elements { 0 };
+    uint_fast32_t total_inserted_elements = 0;
     while (triple_plan_iter->next()) {
         const auto object_oid = binding[object_var];
         const auto subject_oid = binding[subject_var];
@@ -255,10 +255,10 @@ std::tuple<uint_fast32_t> HNSWIndex::index_predicate(const std::string& predicat
         }
     }
 
-    return { total_inserted_elements };
+    return total_inserted_elements;
 }
 
-std::tuple<uint_fast32_t> HNSWIndex::index_property(const std::string& key)
+uint_fast32_t HNSWIndex::index_property(const std::string& key)
 {
     const auto object_var = get_query_ctx().get_internal_var();
     const auto key_val = QuadObjectId::get_string(key);
@@ -290,7 +290,7 @@ std::tuple<uint_fast32_t> HNSWIndex::index_property(const std::string& key)
         }
     }
 
-    return { total_inserted_elements };
+    return total_inserted_elements;
 }
 
 template<bool CheckTombstones>

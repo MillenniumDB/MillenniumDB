@@ -14,84 +14,30 @@ namespace fs = std::filesystem;
 
 namespace TextSearch {
 
-std::unique_ptr<TextIndex> TextIndex::create(
+TextIndex::TextIndex(
+    bool create_new,
     const std::string& text_index_name,
     NORMALIZE_TYPE normalize_type,
     TOKENIZE_TYPE tokenize_type,
     TextIndexManager& text_search_index_manager
-)
+) :
+    text_search_index_manager(text_search_index_manager)
 {
-    const auto relative_index_path = fs::path(TextIndexManager::TEXT_SEARCH_DIR)
-                                   / text_index_name;
-    const auto absolute_index_path = file_manager.get_file_path(relative_index_path);
+    const auto relative_index_path = fs::path(TextIndexManager::TEXT_SEARCH_DIR) / text_index_name;
+    if (create_new) {
+        const auto absolute_index_path = file_manager.get_file_path(relative_index_path);
 
-    if (!fs::create_directories(absolute_index_path)) {
-        throw std::runtime_error("Could not create directories: " + absolute_index_path);
+        if (!fs::create_directories(absolute_index_path)) {
+            throw std::runtime_error("Could not create directories: " + absolute_index_path);
+        }
     }
 
-    auto trie = Trie::create(relative_index_path / TRIE_FILENAME);
-    auto table = Table::create(relative_index_path / TABLE_FILENAME, 2);
-
-    file_manager.init_file(std::string(relative_index_path / BPT_NAME) + ".dir");
-    file_manager.init_file(std::string(relative_index_path / BPT_NAME) + ".leaf");
-    auto bpt = std::make_unique<BPlusTree<2>>(relative_index_path / BPT_NAME);
-
-    auto* normalize_func = get_normalize_func(normalize_type);
-    auto* tokenize_func = get_tokenize_func(tokenize_type);
-
-    return std::unique_ptr<TextIndex>(new TextIndex(
-        std::move(trie),
-        std::move(bpt),
-        std::move(table),
-        normalize_func,
-        tokenize_func,
-        text_search_index_manager
-    ));
+    trie = std::make_unique<Trie>(relative_index_path / TRIE_FILENAME);
+    bpt = std::make_unique<BPlusTree<2>>(relative_index_path / BPT_NAME);
+    table = std::make_unique<Table>(relative_index_path / TABLE_FILENAME, 2);
+    normalize_func = get_normalize_func(normalize_type);
+    tokenize_func = get_tokenize_func(tokenize_type);
 }
-
-std::unique_ptr<TextIndex> TextIndex::load(
-    const std::string& text_index_name,
-    NORMALIZE_TYPE normalize_type,
-    TOKENIZE_TYPE tokenize_type,
-    TextIndexManager& text_search_index_manager
-)
-{
-    const auto relative_index_path = fs::path(TextIndexManager::TEXT_SEARCH_DIR)
-                                   / text_index_name;
-
-    // Check that all necessary files exists
-    auto trie = Trie::load(relative_index_path / TRIE_FILENAME);
-    auto bpt = std::make_unique<BPlusTree<2>>(relative_index_path / BPT_NAME);
-    auto table = Table::load(relative_index_path / TABLE_FILENAME);
-
-    auto* normalize_func = get_normalize_func(normalize_type);
-    auto* tokenize_func = get_tokenize_func(tokenize_type);
-
-    return std::unique_ptr<TextIndex>(new TextIndex(
-        std::move(trie),
-        std::move(bpt),
-        std::move(table),
-        normalize_func,
-        tokenize_func,
-        text_search_index_manager
-    ));
-}
-
-TextIndex::TextIndex(
-    std::unique_ptr<Trie> trie_,
-    std::unique_ptr<BPlusTree<2>> bpt_,
-    std::unique_ptr<Table> table_,
-    NormalizeFuncType* normalize_func_,
-    TokenizeFuncType* tokenize_func_,
-    TextIndexManager& text_search_index_manager_
-) :
-    trie { std::move(trie_) },
-    bpt { std::move(bpt_) },
-    table { std::move(table_) },
-    normalize_func { normalize_func_ },
-    tokenize_func { tokenize_func_ },
-    text_search_index_manager { text_search_index_manager_ }
-{ }
 
 std::tuple<uint_fast32_t, uint_fast32_t, ObjectId> TextIndex::index_predicate(const std::string& predicate)
 {
@@ -161,9 +107,12 @@ void TextIndex::print_trie(std::ostream& os, std::vector<std::string>&& text_lis
     trie->print_trie(os, std::move(text_list));
 }
 
-template std::unique_ptr<TextSearchIter> TextIndex::search<SearchType::MATCH, false>(const std::string&) const;
+template std::unique_ptr<TextSearchIter>
+    TextIndex::search<SearchType::MATCH, false>(const std::string&) const;
 template std::unique_ptr<TextSearchIter> TextIndex::search<SearchType::MATCH, true>(const std::string&) const;
-template std::unique_ptr<TextSearchIter> TextIndex::search<SearchType::PREFIX, false>(const std::string&) const;
-template std::unique_ptr<TextSearchIter> TextIndex::search<SearchType::PREFIX, true>(const std::string&) const;
+template std::unique_ptr<TextSearchIter>
+    TextIndex::search<SearchType::PREFIX, false>(const std::string&) const;
+template std::unique_ptr<TextSearchIter>
+    TextIndex::search<SearchType::PREFIX, true>(const std::string&) const;
 
 } // namespace TextSearch

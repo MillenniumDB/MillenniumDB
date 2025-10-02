@@ -12,6 +12,7 @@
 #include "query/executor/query_executor/mql/show_streaming_executor.h"
 #include "query/optimizer/quad_model/binding_iter_constructor.h"
 #include "query/parser/op/mql/ops.h"
+#include "query/update/mql/update_executor.h"
 #include "system/path_manager.h"
 
 using namespace MQL;
@@ -122,6 +123,20 @@ void StreamingExecutorConstructor::visit(OpReturn& op_return)
     executor = std::make_unique<MQL::ReturnStreamingExecutor>(
         std::move(visitor.tmp),
         std::move(projection_vars)
+    );
+}
+
+void StreamingExecutorConstructor::visit(OpUpdate& op_update)
+{
+    BindingIterConstructor visitor;
+    op_update.accept_visitor(visitor);
+
+    path_manager.begin(std::move(visitor.begin_at_left));
+
+    executor = std::make_unique<MQL::UpdateExecutor>(
+        std::move(visitor.tmp),
+        std::move(op_update.update_ctx),
+        std::move(op_update.update_actions)
     );
 }
 

@@ -58,7 +58,7 @@ public:
     std::string encode_dictionary_array(const DictionaryArray& dictionary) const;
     std::string encode_dictionary_literal(const DictionaryLiteral& dictionary) const;
 
-    virtual std::string encode_dictionary_key(const ObjectId& oid) const
+    virtual std::string encode_dictionary_key(const ObjectId&) const
     {
         return encode_null();
     }
@@ -137,7 +137,7 @@ public:
         const auto enc = encode_int64(value);
         response_ostream.write(enc.c_str(), enc.size());
     }
-    void write_string(const std::string& value, Protocol::DataType data_type)
+    void write_string(const std::string& value, Protocol::DataType data_type = Protocol::DataType::STRING)
     {
         const auto enc = encode_string(value, data_type);
         response_ostream.write(enc.c_str(), enc.size());

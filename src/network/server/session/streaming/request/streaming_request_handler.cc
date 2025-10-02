@@ -37,13 +37,12 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     }
 }
 
-void StreamingRequestHandler::handle_run(const std::string& query)
+void StreamingRequestHandler::handle_readonly_run()
 {
-    auto readonly_version_scope = buffer_manager.init_version_readonly();
-
+    auto version_scope = buffer_manager.init_version_readonly();
     {
         std::lock_guard<std::mutex> lock(session.get_thread_info_vec_mutex());
-        get_query_ctx().prepare(*readonly_version_scope, session.get_timeout());
+        get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
@@ -51,84 +50,162 @@ void StreamingRequestHandler::handle_run(const std::string& query)
 
     try {
         auto parser_start = std::chrono::system_clock::now();
-        auto current_logical_plan = create_logical_plan(query);
-        parser_duration_ms = get_duration(parser_start);
-
-        if (is_update(current_logical_plan)) {
-            execute_update(current_logical_plan, *readonly_version_scope);
-            return;
-        }
+        create_logical_plan();
+        auto parser_duration = get_duration(parser_start);
 
         auto optimizer_start = std::chrono::system_clock::now();
-        auto current_physical_plan = create_readonly_physical_plan(current_logical_plan);
-        optimizer_duration_ms = get_duration(optimizer_start);
+        auto executor = create_streaming_executor();
+        auto optimizer_duration = get_duration(optimizer_start);
 
         logger.log(Category::PhysicalPlan, [&](std::ostream& os) {
-            current_physical_plan->analyze(os, false);
+            executor->analyze(os, false);
             os << '\n';
         });
 
         // Send the variables
-        const auto projection_vars = current_physical_plan->get_projection_vars();
         response_writer->write_variables(
-            projection_vars,
+            executor->projection_vars,
             get_query_ctx().thread_info.worker_index,
             get_query_ctx().cancellation_token
         );
         response_writer->flush();
 
-        // Stream all the records
         auto execution_start = std::chrono::system_clock::now();
-        const uint64_t result_count = current_physical_plan->execute(*response_writer);
-        execution_duration_ms = get_duration(execution_start);
+        auto result_count = executor->execute(*response_writer);
+        auto execution_duration = get_duration(execution_start);
 
         logger.log(Category::ExecutionStats, [&](std::ostream& os) {
-            current_physical_plan->analyze(os, true);
+            executor->analyze(os, true);
             os << '\n';
         });
 
         logger(Category::Info) << "Results:            " << result_count << "\n"
-                                  "Parser duration:    " << parser_duration_ms.count() << " ms\n"
-                                  "Optimizer duration: " << optimizer_duration_ms.count() << " ms\n"
-                                  "Execution duration: " << execution_duration_ms.count() << " ms";
+                               << "Parser duration:    " << parser_duration.count() << " ms\n"
+                               << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
+                               << "Execution duration: " << execution_duration.count() << " ms";
 
         response_writer->write_records_success(
             result_count,
-            parser_duration_ms.count(),
-            optimizer_duration_ms.count(),
-            execution_duration_ms.count()
+            parser_duration.count(),
+            optimizer_duration.count(),
+            execution_duration.count()
         );
-        response_writer->flush();
     } catch (const QueryException& e) {
         const auto msg = std::string("Query Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const LogicException& e) {
         const auto msg = std::string("Logic Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const InterruptedException& e) {
         const auto msg = std::string("Interrupt Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const QueryExecutionException& e) {
-        const auto msg = std::string("Query Execution Exception: ") + e.what();
-        logger(Category::Error) << msg;
+        const auto msg = e.what();
+        logger(Category::Error) << e.what();
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (const std::exception& e) {
         const auto msg = std::string("Exception: ") + e.what();
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
-        response_writer->flush();
     } catch (...) {
         const auto msg = std::string("Unknown exception");
         logger(Category::Error) << msg;
         response_writer->write_error(msg);
+    }
+    response_writer->flush();
+}
+
+void StreamingRequestHandler::handle_update_run()
+{
+    // Mutex to allow only one write query at a time
+    std::lock_guard<std::mutex> lock(session.server.update_execution_mutex);
+
+    auto version_scope = buffer_manager.init_version_editable();
+    {
+        std::lock_guard<std::mutex> lock(session.get_thread_info_vec_mutex());
+        get_query_ctx().prepare(*version_scope, session.get_timeout());
+    }
+
+    try {
+        auto parser_start = std::chrono::system_clock::now();
+        create_logical_plan();
+        auto parser_duration = get_duration(parser_start);
+
+        auto optimizer_start = std::chrono::system_clock::now();
+        auto executor = create_streaming_executor();
+        auto optimizer_duration = get_duration(optimizer_start);
+
+        logger.log(Category::PhysicalPlan, [&](std::ostream& os) {
+            executor->analyze(os, false);
+            os << '\n';
+        });
+
+        // Send the variables
+        response_writer->write_variables(
+            executor->projection_vars,
+            get_query_ctx().thread_info.worker_index,
+            get_query_ctx().cancellation_token
+        );
         response_writer->flush();
+
+        auto execution_start = std::chrono::system_clock::now();
+        executor->execute(*response_writer);
+        version_scope->commited = true;
+        auto execution_duration = get_duration(execution_start);
+
+        logger.log(Category::ExecutionStats, [&](std::ostream& os) {
+            executor->analyze(os, true);
+            os << '\n';
+        });
+
+        logger(Category::Info) << "Parser duration:    " << parser_duration.count() << " ms\n"
+                               << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
+                               << "Execution duration: " << execution_duration.count() << " ms";
+
+        response_writer->write_update_success(
+            parser_duration.count(),
+            optimizer_duration.count(),
+            execution_duration.count()
+        );
+    } catch (const QueryException& e) {
+        const auto msg = std::string("Query Exception: ") + e.what();
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    } catch (const LogicException& e) {
+        const auto msg = std::string("Logic Exception: ") + e.what();
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    } catch (const InterruptedException& e) {
+        const auto msg = std::string("Interrupt Exception: ") + e.what();
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    } catch (const QueryExecutionException& e) {
+        const auto msg = e.what();
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    } catch (const std::exception& e) {
+        const auto msg = std::string("Exception: ") + e.what();
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    } catch (...) {
+        const auto msg = std::string("Unknown exception");
+        logger(Category::Error) << msg;
+        response_writer->write_error(msg);
+    }
+    response_writer->flush();
+}
+
+void StreamingRequestHandler::handle_run(const std::string& query)
+{
+    initial_parse(query);
+
+    if (is_update()) {
+        handle_update_run();
+    } else {
+        handle_readonly_run();
     }
 }
 
@@ -152,15 +229,4 @@ void StreamingRequestHandler::handle_cancel()
     }
 
     response_writer->flush();
-}
-
-bool StreamingRequestHandler::is_update(const OpUptr& uptr) {
-    if (std::holds_alternative<std::unique_ptr<GQL::Op>>(uptr)) {
-        return false;
-    } else if (std::holds_alternative<std::unique_ptr<MQL::Op>>(uptr)) {
-        return !std::get<std::unique_ptr<MQL::Op>>(uptr)->read_only();
-    } else if (std::holds_alternative<std::unique_ptr<SPARQL::Op>>(uptr)) {
-        return false;
-    }
-    return false;
 }

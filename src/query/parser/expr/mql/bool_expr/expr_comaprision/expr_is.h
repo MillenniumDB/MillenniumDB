@@ -50,6 +50,11 @@ public:
         return expr->get_all_vars();
     }
 
+    std::set<VarId> get_input_vars() const override
+    {
+        return expr->get_input_vars();
+    }
+
     static TypeName parse_type(const std::string& str)
     {
         if (str == "null") {

@@ -121,7 +121,7 @@ HNSWIndex* HNSWIndexManager::get_hnsw_index(const std::string& name)
 }
 
 template <Catalog::ModelID model_id>
-std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index(
+uint_fast32_t HNSWIndexManager::create_hnsw_index(
     const std::string& name,
     const std::string& predicate,
     uint64_t dimension,
@@ -134,7 +134,7 @@ std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index(
         const auto metric_func = metric_type2metric_func(metric_type);
         auto hnsw_index = HNSWIndex::create(name, dimension, max_edges, num_candidates, metric_func);
 
-        std::tuple<uint_fast32_t> result;
+        uint_fast32_t result;
         if constexpr (model_id == Catalog::ModelID::QUAD) {
             result = hnsw_index->index_property(predicate);
         } else if constexpr (model_id == Catalog::ModelID::RDF) {
@@ -146,8 +146,6 @@ std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index(
             );
         }
 
-        auto&& [total_inserted_elements] = result;
-
         // write the index to disk
         write_to_disk(name, hnsw_index.get());
         hnsw_index->has_changes = false;
@@ -157,7 +155,7 @@ std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index(
         name2metadata[name] = { metric_type, predicate };
         predicate2names[predicate].emplace_back(name);
         has_changes_ = true;
-        return { total_inserted_elements };
+        return result;
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to create HNSW index \"" + name + "\": " + e.what());
     } catch (...) {
@@ -165,9 +163,9 @@ std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index(
     }
 }
 
-template std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index<
+template uint_fast32_t HNSWIndexManager::create_hnsw_index<
     Catalog::ModelID::QUAD>(const std::string&, const std::string&, uint64_t, uint64_t, uint64_t, MetricType);
-template std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index<
+template uint_fast32_t HNSWIndexManager::create_hnsw_index<
     Catalog::ModelID::RDF>(const std::string&, const std::string&, uint64_t, uint64_t, uint64_t, MetricType);
-template std::tuple<uint_fast32_t> HNSWIndexManager::create_hnsw_index<
+template uint_fast32_t HNSWIndexManager::create_hnsw_index<
     Catalog::ModelID::GQL>(const std::string&, const std::string&, uint64_t, uint64_t, uint64_t, MetricType);

@@ -9,9 +9,11 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
     Catalog(filename)
 {
     if (is_empty()) {
-        nodes_count = 0;
+        max_anon = 0;
+        max_edge = 0;
+        deleted_edges = 0;
 
-        edge_count = 0;
+        nodes_count = 0;
         label_count = 0;
         properties_count = 0;
 
@@ -28,12 +30,11 @@ QuadCatalog::QuadCatalog(const std::string& filename) :
             throw LogicException("Undefined catalog recovery");
         }
 
+        max_anon = read_uint64();
+        max_edge = read_uint64();
+        deleted_edges = read_uint64();
+
         nodes_count = read_uint64();
-
-        [[maybe_unused]]
-        auto unused = read_uint64(); // because old layout
-
-        edge_count = read_uint64();
         label_count = read_uint64();
         properties_count = read_uint64();
 
@@ -131,10 +132,11 @@ void QuadCatalog::save()
 {
     start_write(MODEL_ID, MAJOR_VERSION, MINOR_VERSION);
 
-    write_uint64(nodes_count);
-    write_uint64(0); // because old
+    write_uint64(max_anon);
+    write_uint64(max_edge);
+    write_uint64(deleted_edges);
 
-    write_uint64(edge_count);
+    write_uint64(nodes_count);
     write_uint64(label_count);
     write_uint64(properties_count);
 
@@ -185,7 +187,7 @@ void QuadCatalog::save()
         write_uint64(v);
     }
 
-    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
+    const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
     write_uint64(text_index_name2metadata.size());
     for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
@@ -195,7 +197,7 @@ void QuadCatalog::save()
         write_string(metadata.predicate);
     }
 
-    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
     write_uint64(hnsw_index_name2metadata.size());
     for (const auto& [name, metadata] : hnsw_index_name2metadata) {
         write_string(name);
@@ -209,7 +211,7 @@ void QuadCatalog::print(std::ostream& os)
     os << "-------------------------------------\n";
     os << "Catalog:\n";
     os << "  nodes count:              " << nodes_count << "\n";
-    os << "  edges count:              " << edge_count << "\n";
+    os << "  edges count:              " << edge_count() << "\n";
 
     os << "  label count:              " << label_count << "\n";
     os << "  properties count:         " << properties_count << "\n";
@@ -223,7 +225,7 @@ void QuadCatalog::print(std::ostream& os)
     os << "  equal_from_type_count:    " << equal_from_type_count << "\n";
     os << "  equal_from_to_type_count: " << equal_from_to_type_count << "\n";
 
-    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
+    const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
     if (!text_index_name2metadata.empty()) {
         os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : text_index_name2metadata) {
@@ -231,7 +233,7 @@ void QuadCatalog::print(std::ostream& os)
         }
     }
 
-    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
     if (!hnsw_index_name2metadata.empty()) {
         os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : hnsw_index_name2metadata) {
@@ -292,42 +294,8 @@ uint64_t QuadCatalog::equal_to_type_with_type(uint64_t type_id) const
     }
 }
 
-uint64_t QuadCatalog::insert_new_edge(uint64_t from, uint64_t to, uint64_t type)
+bool QuadCatalog::index_name_exists(const std::string& index_name)
 {
-    auto new_edge_id = ++edge_count;
-
-    type2total_count[type]++;
-    if (from == to) {
-        type2equal_from_to_count[type]++;
-        equal_from_to_count++;
-        if (from == type) {
-            type2equal_from_to_type_count[type]++;
-            equal_from_to_type_count++;
-        }
-    }
-    if (from == type) {
-        type2equal_from_type_count[type]++;
-        equal_from_type_count++;
-    }
-    if (to == type) {
-        type2equal_to_type_count[type]++;
-        equal_to_type_count++;
-    }
-
-    has_changes = true;
-    return new_edge_id;
-}
-
-void QuadCatalog::insert_property(uint64_t key)
-{
-    has_changes = true;
-    properties_count++;
-    key2total_count[key]++;
-}
-
-void QuadCatalog::insert_label(uint64_t label)
-{
-    has_changes = true;
-    label_count++;
-    label2total_count[label]++;
+    return text_index_manager.get_text_index(index_name) != nullptr
+        || hnsw_index_manager.get_hnsw_index(index_name) != nullptr;
 }

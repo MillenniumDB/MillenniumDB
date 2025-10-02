@@ -1,5 +1,7 @@
 #include "rdf.h"
 
+#include <unordered_set>
+
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/optimizer/rdf_model/plan/triple_plan.h"

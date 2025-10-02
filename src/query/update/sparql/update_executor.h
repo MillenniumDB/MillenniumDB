@@ -10,8 +10,8 @@
 #include "query/parser/op/sparql/update/op_create_text_index.h"
 #include "query/parser/op/sparql/update/op_delete_data.h"
 #include "query/parser/op/sparql/update/op_insert_data.h"
-#include "storage/index/hnsw/hnsw_index_update_data.h"
-#include "storage/index/text_search/text_index_update_data.h"
+#include "query/update/hnsw_index_update_stats.h"
+#include "query/update/text_index_update_stats.h"
 
 namespace SPARQL {
 
@@ -33,8 +33,6 @@ public:
             return os;
         }
     };
-
-    ~UpdateExecutor();
 
     void visit(OpDeleteData&) override;
     void visit(OpInsertData&) override;
@@ -79,8 +77,8 @@ private:
 
     GraphUpdateData graph_update_data;
 
-    boost::unordered_map<std::string, TextIndexUpdateData> name2text_search_index_update_data;
-    boost::unordered_map<std::string, HNSWIndexUpdateData> name2hnsw_index_update_data;
+    boost::unordered_map<std::string, TextIndexUpdateStats> name2text_search_index_update_data;
+    boost::unordered_map<std::string, HNSWIndexUpdateStats> name2hnsw_index_update_data;
 
     // returns true if oid was transformed
     bool transform_if_tmp(ObjectId& oid);
@@ -97,8 +95,8 @@ private:
     // returns true if oid was transformed
     bool try_transform_extern(ObjectId& oid, std::vector<std::string>& catalog_list, char split);
 
-    void insert_text_search_index_update_data(TextIndexUpdateData&& text_search_index_update_data);
+    void insert_text_search_index_update_data(TextIndexUpdateStats&& text_search_index_update_data);
 
-    void insert_hnsw_index_update_data(HNSWIndexUpdateData&& hnsw_index_update_data);
+    void insert_hnsw_index_update_data(HNSWIndexUpdateStats&& hnsw_index_update_data);
 };
 } // namespace SPARQL

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <map>
-
 #include "query/executor/binding_iter.h"
 #include "query/executor/query_executor/mql/return_type.h"
 #include "query/executor/query_executor/query_executor.h"

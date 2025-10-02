@@ -10,18 +10,18 @@ namespace MQL {
  */
 class DescribeStreamingExecutor : public StreamingQueryExecutor {
 public:
-    DescribeStreamingExecutor(std::unique_ptr<BindingIter> node_label_iter,
-                              std::unique_ptr<BindingIter> key_value_iter,
-                              std::unique_ptr<BindingIter> from_to_type_edge_iter,
-                              std::unique_ptr<BindingIter> to_type_from_edge_iter,
-                              uint64_t                     labels_limit,
-                              uint64_t                     properties_limit,
-                              uint64_t                     outgoing_limit,
-                              uint64_t                     incoming_limit,
-                              std::vector<VarId>&&         virtual_vars,
-                              ObjectId                     object_id);
-
-    const std::vector<VarId>& get_projection_vars() const override;
+    DescribeStreamingExecutor(
+        std::unique_ptr<BindingIter> node_label_iter,
+        std::unique_ptr<BindingIter> key_value_iter,
+        std::unique_ptr<BindingIter> from_to_type_edge_iter,
+        std::unique_ptr<BindingIter> to_type_from_edge_iter,
+        uint64_t labels_limit,
+        uint64_t properties_limit,
+        uint64_t outgoing_limit,
+        uint64_t incoming_limit,
+        std::vector<VarId>&& virtual_vars,
+        ObjectId object_id
+    );
 
     uint64_t execute(MDBServer::StreamingResponseWriter& response_writer) override;
 
@@ -43,7 +43,5 @@ private:
 
     // The ObjectId of the describe query
     ObjectId object_id;
-
-    std::vector<VarId> projection_vars;
 };
 } // namespace MQL

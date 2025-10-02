@@ -31,7 +31,6 @@ void print_server_help()
             "\n    --tensors-static <bytes>           size for static tensors-static-buffer"
             "\n    --private-buffer <bytes>           size for the private-buffer"
             "\n    --versioned-buffer <bytes>         size for the versioned-buffer"
-            "\n    --unversioned-buffer <bytes>       size for the unversioned-buffer"
             "\n";
 }
 
@@ -91,7 +90,6 @@ void print_cli_help()
             "\n    --strings-static <bytes>           size for static strings-static-buffer"
             "\n    --private-buffer <bytes>           size for the private-buffer"
             "\n    --versioned-buffer <bytes>         size for the versioned-buffer"
-            "\n    --unversioned-buffer <bytes>       size for the unversioned-buffer"
             "\n";
 }
 
@@ -203,7 +201,6 @@ int main(int argc, char* argv[])
             config.strings_dynamic_buffer,
             config.versioned_pages_buffer,
             config.private_pages_buffer,
-            config.unversioned_pages_buffer,
             config.tensors_static_buffer,
             config.tensors_dynamic_buffer,
             1

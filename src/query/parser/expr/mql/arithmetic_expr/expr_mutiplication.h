@@ -35,5 +35,13 @@ public:
         res.insert(rhs_vars.begin(), rhs_vars.end());
         return res;
     }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        std::set<VarId> res = lhs->get_input_vars();
+        auto rhs_vars = rhs->get_input_vars();
+        res.insert(rhs_vars.begin(), rhs_vars.end());
+        return res;
+    }
 };
 } // namespace MQL

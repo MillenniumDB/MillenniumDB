@@ -3,7 +3,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include <cassert>
 #include <cstring>
 #include <type_traits>
 
@@ -37,11 +36,11 @@ void FileManager::init(const std::string& db_folder)
     new (&file_manager) FileManager(db_folder); // placement new
 }
 
-void FileManager::flush(VPage& page) const
+void FileManager::flush(Page& page) const
 {
     auto fd = page.page_id.file_id.id;
-    lseek(fd, page.page_id.page_number * VPage::SIZE, SEEK_SET);
-    auto write_res = write(fd, page.get_bytes(), VPage::SIZE);
+    lseek(fd, page.page_id.page_number * Page::SIZE, SEEK_SET);
+    auto write_res = write(fd, page.get_bytes(), Page::SIZE);
     if (write_res == -1) {
         throw std::runtime_error("Could not write into file when flushing page");
     }
@@ -57,17 +56,6 @@ void FileManager::flush(int fd, PPage& page) const
     page.dirty = false;
 }
 
-void FileManager::flush(UPage& page) const
-{
-    auto fd = page.page_id.file_id.id;
-    lseek(fd, page.page_id.page_number * UPage::SIZE, SEEK_SET);
-    auto write_res = write(fd, page.get_bytes(), UPage::SIZE);
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into str hash file when flushing page");
-    }
-    page.dirty = false;
-}
-
 void FileManager::read_tmp_page(int fd, uint64_t page_number, char* bytes) const
 {
     // reading existing file page
@@ -77,41 +65,39 @@ void FileManager::read_tmp_page(int fd, uint64_t page_number, char* bytes) const
     }
 }
 
-void FileManager::read_existing_page(PageId page_id, char* bytes) const
+void FileManager::read_page(PageId page_id, char* bytes) const
 {
-    static_assert((VPage::SIZE == UPage::SIZE), "read_existing_page used for VPage and UPage");
-
     auto fd = page_id.file_id.id;
 
-#ifndef NDEBUG
-    struct stat buf;
-    fstat(fd, &buf);
-    uint64_t file_size = buf.st_size;
-    assert(page_id.page_number < file_size / VPage::SIZE);
-#endif
+    auto read_res = pread(fd, bytes, Page::SIZE, page_id.page_number * Page::SIZE);
+    if (read_res != Page::SIZE) {
+        if (fid2pages.find(fd) == fid2pages.end()) {
+            memset(bytes, 0, Page::SIZE);
+            return;
+        }
 
-    auto read_res = pread(fd, bytes, VPage::SIZE, page_id.page_number * VPage::SIZE);
-    if (read_res == -1) {
-        throw std::runtime_error("Could not read file page");
+        for (auto&& [filename, file_id] : filename2file_id) {
+            if (page_id.file_id == file_id) {
+                auto msg = "Could not read file " + filename + " at page "
+                         + std::to_string(page_id.page_number);
+                throw std::runtime_error(msg);
+            }
+        }
+        throw std::runtime_error("unrecognized file id");
     }
 }
 
-uint32_t FileManager::append_page(FileId file_id, char* bytes) const
+uint32_t FileManager::count_pages(FileId file_id) const
 {
-    static_assert((VPage::SIZE == UPage::SIZE), "append_page used for both VPage and UPage");
+    auto it = fid2pages.find(file_id);
+    return it == fid2pages.end() ? 0 : it->second;
+}
 
-    auto fd = file_id.id;
-    auto page_number = lseek(fd, 0, SEEK_END) / VPage::SIZE;
-
-    // fill the new page with zeros
-    memset(bytes, 0, VPage::SIZE);
-    auto write_res = write(fd, bytes, VPage::SIZE);
-
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into file");
+void FileManager::update_appends(const std::map<FileId, unsigned>& appended_pages)
+{
+    for (auto&& [k, v] : appended_pages) {
+        fid2pages[k] += v;
     }
-
-    return page_number;
 }
 
 FileId FileManager::get_file_id(const string& filename)
@@ -128,28 +114,10 @@ FileId FileManager::get_file_id(const string& filename)
         }
         const auto res = FileId(fd);
         filename2file_id.insert({ filename, res });
+
+        uint32_t page_count = lseek(fd, 0, SEEK_END) / Page::SIZE;
+        fid2pages.insert({ res, page_count });
+
         return res;
     }
-}
-
-void FileManager::init_file(const string& filename) const
-{
-    const auto file_path = get_file_path(filename);
-
-    auto fd = open(file_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-    if (fd == -1) {
-        throw std::runtime_error("Could not open file " + file_path);
-    }
-
-    // fill the new page with zeros
-    char* buf = new char[VPage::SIZE];
-    memset(buf, 0, VPage::SIZE);
-    auto write_res = write(fd, buf, VPage::SIZE);
-    delete[] buf;
-
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into file");
-    }
-
-    close(fd);
 }

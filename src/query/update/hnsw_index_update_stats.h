@@ -4,19 +4,16 @@
 #include <ostream>
 #include <string>
 
-/**
- * Helper struct for logging hnsw index updates
- */
-
-struct HNSWIndexUpdateData {
+// Helper struct for logging hnsw index updates
+struct HNSWIndexUpdateStats {
     std::string index_name;
 
-    bool created { false };
+    bool created = false;
 
-    uint_fast32_t inserted_elements { 0 };
-    uint_fast32_t removed_elements { 0 };
+    uint_fast32_t inserted_elements = 0;
+    uint_fast32_t removed_elements = 0;
 
-    friend std::ostream& operator<<(std::ostream& os, const HNSWIndexUpdateData& data)
+    friend std::ostream& operator<<(std::ostream& os, const HNSWIndexUpdateStats& data)
     {
         os << "{\"name\": \"" << data.index_name << "\"";
         os << ", \"created\": " << (data.created ? "true" : "false");

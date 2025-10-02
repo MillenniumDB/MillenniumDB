@@ -105,7 +105,7 @@ void RdfCatalog::save()
 
     write_map(predicate2total_count);
 
-    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
+    const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
     write_uint64(text_index_name2metadata.size());
     for (const auto& [name, metadata] : text_index_name2metadata) {
         write_string(name);
@@ -115,7 +115,7 @@ void RdfCatalog::save()
         write_string(metadata.predicate);
     }
 
-    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
     write_uint64(hnsw_index_name2metadata.size());
     for (const auto& [name, metadata] : hnsw_index_name2metadata) {
         write_string(name);
@@ -153,7 +153,7 @@ void RdfCatalog::print(std::ostream& os)
         break;
     }
 
-    const auto text_index_name2metadata = text_index_manager.get_name2metadata();
+    const auto& text_index_name2metadata = text_index_manager.get_name2metadata();
     if (!text_index_name2metadata.empty()) {
         os << "  Text Indexes (" << text_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : text_index_name2metadata) {
@@ -161,7 +161,7 @@ void RdfCatalog::print(std::ostream& os)
         }
     }
 
-    const auto hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
+    const auto& hnsw_index_name2metadata = hnsw_index_manager.get_name2metadata();
     if (!hnsw_index_name2metadata.empty()) {
         os << "  HNSW Indexes (" << hnsw_index_name2metadata.size() << "):\n";
         for (const auto& [name, metadata] : hnsw_index_name2metadata) {

@@ -6,6 +6,8 @@
 #include "misc/transliterator.h"
 #include "misc/unicode_escape.h"
 #include "query/parser/op/sparql/ops.h"
+#include "query/update/sparql/hnsw_index_options.h"
+#include "query/update/sparql/text_index_options.h"
 #include "storage/index/hnsw/hnsw_metric.h"
 
 using namespace SPARQL;

@@ -2,69 +2,68 @@
 
 #include <unistd.h>
 
-#include "misc/logger.h"
+#include "system/buffer_manager.h"
 
 template<typename T>
-void DiskIntStack<T>::create(FileId file_id)
-{
-    const T stack_size(0);
-    const auto write_res = pwrite(file_id.id, &stack_size, sizeof(T), 0);
-    if (write_res == -1) {
-        throw std::runtime_error("Could not write into DiskIntStack file");
-    }
-}
-
-template<typename T>
-DiskIntStack<T>::DiskIntStack(FileId file_id_) :
-    file_id { file_id_ }
-{
-    T stack_size;
-    const auto read_res = pread(file_id.id, &stack_size, sizeof(T), 0);
-    if (read_res == -1) {
-        throw std::runtime_error("Could not read from DiskIntStack file");
-    }
-
-    if (stack_size > 0) {
-        stack.resize(stack_size);
-        const auto read_res2 = pread(file_id.id, &stack[0], sizeof(T) * stack_size, sizeof(T));
-        if (read_res2 == -1) {
-            throw std::runtime_error("Could not read from DiskIntStack file");
-        }
-    }
-}
-
-template<typename T>
-DiskIntStack<T>::~DiskIntStack()
-{
-    if (modified) {
-        const auto stack_size = stack.size();
-        auto write_res = pwrite(file_id.id, &stack_size, sizeof(T), 0);
-        if (write_res == -1) {
-            logger(Category::Error) << "Could not write into DiskIntStack header";
-        }
-
-        write_res = pwrite(file_id.id, &stack[0], sizeof(T) * stack.size(), sizeof(T));
-        if (write_res == -1) {
-            logger(Category::Error) << "Could not write into DiskIntStack stack";
-        }
-    }
-}
+DiskIntStack<T>::DiskIntStack(FileId file_id) :
+    file_id(file_id)
+{ }
 
 template<typename T>
 void DiskIntStack<T>::push(T value)
 {
-    stack.emplace_back(value);
-    modified = true;
+    auto& first_page = buffer_manager.get_page_editable(file_id, 0);
+
+    auto* stack_size = reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    *stack_size = *stack_size + 1;
+
+    auto write_total_offset = *stack_size * sizeof(T);
+    auto write_page_number = write_total_offset / Page::SIZE;
+    auto offset_in_page = write_total_offset % Page::SIZE;
+
+    auto& last_page = buffer_manager.get_page_editable(file_id, write_page_number);
+
+    auto* write_ptr = reinterpret_cast<T*>(last_page.get_bytes() + offset_in_page);
+    *write_ptr = value;
+
+    buffer_manager.unpin(first_page);
+    buffer_manager.unpin(last_page);
 }
 
 template<typename T>
-T DiskIntStack<T>::pop()
+std::optional<T> DiskIntStack<T>::try_pop()
 {
-    const auto value = stack.back();
-    stack.pop_back();
-    modified = true;
-    return value;
+    auto& first_page = buffer_manager.get_page_editable(file_id, 0);
+    auto* stack_size = reinterpret_cast<uint64_t*>(first_page.get_bytes());
+
+    if (*stack_size == 0) {
+        return {};
+    }
+
+    *stack_size = *stack_size - 1;
+
+    auto write_total_offset = *stack_size * sizeof(T);
+    auto write_page_number = write_total_offset / Page::SIZE;
+    auto offset_in_page = write_total_offset % Page::SIZE;
+
+    auto& last_page = buffer_manager.get_page_editable(file_id, write_page_number);
+
+    auto res = *reinterpret_cast<T*>(last_page.get_bytes() + offset_in_page);
+
+    buffer_manager.unpin(first_page);
+    buffer_manager.unpin(last_page);
+
+    return std::optional<T>(res);
 }
+
+// template<typename T>
+// uint64_t DiskIntStack<T>::size() const noexcept
+// {
+//     auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
+//     auto res = *reinterpret_cast<uint64_t*>(first_page.get_bytes());
+//     buffer_manager.unpin(first_page);
+//     return res;
+// }
 
 template class DiskIntStack<uint32_t>;
 template class DiskIntStack<uint64_t>;

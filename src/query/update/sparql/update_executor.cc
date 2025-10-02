@@ -15,11 +15,6 @@
 
 using namespace SPARQL;
 
-UpdateExecutor::~UpdateExecutor()
-{
-    // TODO: force string file WAL flush?
-}
-
 constexpr uint64_t CLEAR_TMP_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
 constexpr uint64_t CLEAR_TAG_MASK = ~(ObjectId::MASK_LITERAL_TAG);
 
@@ -352,7 +347,7 @@ void UpdateExecutor::visit(OpInsertData& op_insert_data)
         auto* text_search_index_ptr = rdf_model.catalog.text_index_manager.get_text_index(name);
         assert(text_search_index_ptr != nullptr && "Text index not found");
 
-        TextIndexUpdateData tsi_update {};
+        TextIndexUpdateStats tsi_update;
         tsi_update.index_name = name;
 
         for (const auto& [S, O] : inserts) {
@@ -370,7 +365,7 @@ void UpdateExecutor::visit(OpInsertData& op_insert_data)
         auto* hnsw_index_ptr = rdf_model.catalog.hnsw_index_manager.get_hnsw_index(name);
         assert(hnsw_index_ptr != nullptr && "HNSW index not found");
 
-        HNSWIndexUpdateData hi_update {};
+        HNSWIndexUpdateStats hi_update;
         hi_update.index_name = name;
 
         for (const auto& [S, O] : inserts) {
@@ -508,7 +503,7 @@ void UpdateExecutor::visit(OpDeleteData& op_delete_data)
         auto* text_search_index_ptr = rdf_model.catalog.text_index_manager.get_text_index(name);
         assert(text_search_index_ptr != nullptr && "Text index not found");
 
-        TextIndexUpdateData hi_update {};
+        TextIndexUpdateStats hi_update;
         hi_update.index_name = name;
 
         for (const auto& [S, O] : deletes) {
@@ -526,7 +521,7 @@ void UpdateExecutor::visit(OpDeleteData& op_delete_data)
         auto* hnsw_index_ptr = rdf_model.catalog.hnsw_index_manager.get_hnsw_index(name);
         assert(hnsw_index_ptr != nullptr && "HNSW index not found");
 
-        HNSWIndexUpdateData hi_update {};
+        HNSWIndexUpdateStats hi_update;
         hi_update.index_name = name;
 
         for (const auto& [S, O] : deletes) {
@@ -551,7 +546,7 @@ void UpdateExecutor::visit(OpCreateTextIndex& op_create_text_index)
             op_create_text_index.tokenize_type
         );
 
-        TextIndexUpdateData tsi_update {};
+        TextIndexUpdateStats tsi_update;
         tsi_update.index_name = op_create_text_index.index_name;
         tsi_update.created = true;
         tsi_update.inserted_elements = inserted_elements;
@@ -567,7 +562,7 @@ void UpdateExecutor::visit(OpCreateHNSWIndex& op_create_hnsw_index)
 {
     try {
         auto& hnsw_index_manager = rdf_model.catalog.hnsw_index_manager;
-        auto&& [inserted_elements] = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::RDF>(
+        auto inserted_elements = hnsw_index_manager.create_hnsw_index<Catalog::ModelID::RDF>(
             op_create_hnsw_index.index_name,
             op_create_hnsw_index.predicate,
             op_create_hnsw_index.dimension,
@@ -576,7 +571,7 @@ void UpdateExecutor::visit(OpCreateHNSWIndex& op_create_hnsw_index)
             op_create_hnsw_index.metric_type
         );
 
-        HNSWIndexUpdateData hnsw_update {};
+        HNSWIndexUpdateStats hnsw_update;
         hnsw_update.index_name = op_create_hnsw_index.index_name;
         hnsw_update.created = true;
         hnsw_update.inserted_elements = inserted_elements;
@@ -619,7 +614,7 @@ void UpdateExecutor::print_stats(std::ostream& os)
     }
 }
 
-void UpdateExecutor::insert_text_search_index_update_data(TextIndexUpdateData&& data)
+void UpdateExecutor::insert_text_search_index_update_data(TextIndexUpdateStats&& data)
 {
     auto it = name2text_search_index_update_data.find(data.index_name);
     if (it == name2text_search_index_update_data.end()) {
@@ -632,7 +627,7 @@ void UpdateExecutor::insert_text_search_index_update_data(TextIndexUpdateData&& 
     }
 }
 
-void UpdateExecutor::insert_hnsw_index_update_data(HNSWIndexUpdateData&& data)
+void UpdateExecutor::insert_hnsw_index_update_data(HNSWIndexUpdateStats&& data)
 {
     auto it = name2hnsw_index_update_data.find(data.index_name);
     if (it == name2hnsw_index_update_data.end()) {

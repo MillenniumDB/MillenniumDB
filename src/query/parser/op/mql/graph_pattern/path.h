@@ -4,12 +4,11 @@
 #include <string>
 
 #include "query/id.h"
-#include "query/parser/op/mql/op.h"
 #include "query/parser/paths/regular_path_expr.h"
 
 namespace MQL {
 
-class OpPath : public Op {
+class Path {
 public:
     enum class Direction {
         LEFT_TO_RIGHT,
@@ -27,7 +26,7 @@ public:
 
     std::unique_ptr<RegularPathExpr> path;
 
-    OpPath(
+    Path(
         VarId var,
         Id from,
         Id to,
@@ -45,7 +44,7 @@ public:
         path(std::move(path))
     { }
 
-    OpPath(const OpPath& other) :
+    Path(const Path& other) :
         var(other.var),
         from(other.from),
         to(other.to),
@@ -55,17 +54,7 @@ public:
         path(other.path->clone())
     { }
 
-    virtual std::unique_ptr<Op> clone() const override
-    {
-        return std::make_unique<OpPath>(*this);
-    }
-
-    void accept_visitor(OpVisitor& visitor) override
-    {
-        visitor.visit(*this);
-    }
-
-    bool operator<(const OpPath& other) const
+    bool operator<(const Path& other) const
     {
         if (var < other.var) {
             return true;
@@ -96,25 +85,11 @@ public:
         return false;
     }
 
-    std::set<VarId> get_all_vars() const override
+    std::ostream& print(std::ostream& os, int indent = 0) const
     {
-        std::set<VarId> res;
-        if (from.is_var()) {
-            res.insert(from.get_var());
-        }
-        if (to.is_var()) {
-            res.insert(to.get_var());
-        }
-        res.insert(var);
-        return res;
-    }
-
-    std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
-    {
-        os << std::string(indent, ' ') << "OpPath(" << Paths::get_semantic_str(semantic) << ", "
-           << get_query_ctx().get_var_name(var) << ", " << from << ", " << to << ", " << path->to_string()
-           << ")\n";
-        return os;
+        return os << std::string(indent, ' ') << "Path(" << Paths::get_semantic_str(semantic) << ", "
+                  << var << ", " << from << ", " << to << ", "
+                  << path->to_string() << ")\n";
     }
 };
 } // namespace MQL

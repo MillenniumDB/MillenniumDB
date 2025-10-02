@@ -6,8 +6,12 @@
 
 using namespace MQL;
 
-void CheckVarNames::insert_joinable_var(VarId var)
+void CheckVarNames::try_insert_joinable_var(Id id)
 {
+    if (!id.is_var())
+        return;
+
+    VarId var = id.get_var();
     if (unjoinable_vars.contains(var)) {
         throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(var) + "\" is unjoinable");
     }
@@ -15,8 +19,12 @@ void CheckVarNames::insert_joinable_var(VarId var)
     declared_vars.emplace(var);
 }
 
-void CheckVarNames::insert_unjoinable_var(VarId var)
+void CheckVarNames::try_insert_unjoinable_var(Id id)
 {
+    if (!id.is_var())
+        return;
+
+    VarId var = id.get_var();
     if (!declared_vars.insert(var).second) {
         throw QuerySemanticException("Variable \"" + get_query_ctx().get_var_name(var) + "\" is unjoinable");
     }
@@ -56,6 +64,21 @@ void CheckVarNames::visit(OpReturn& op_return)
     }
 }
 
+void CheckVarNames::visit(OpUpdate& op_update)
+{
+    op_update.op->accept_visitor(*this);
+
+    for (auto& update_action : op_update.update_actions) {
+        for (auto var : update_action->get_input_vars()) {
+            if (!get_query_ctx().is_internal(var) && !declared_vars.contains(var)) {
+                throw QuerySemanticException(
+                    "Variable \"" + get_query_ctx().get_var_name(var) + "\" not declared"
+                );
+            }
+        }
+    }
+}
+
 void CheckVarNames::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);
@@ -69,37 +92,28 @@ void CheckVarNames::visit(OpOrderBy& op_order_by)
 void CheckVarNames::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
     for (const auto& label : op_basic_graph_pattern.labels) {
-        for (const auto& var : label.get_all_vars()) {
-            insert_joinable_var(var);
-        }
+        try_insert_joinable_var(label.node);
     }
 
     for (const auto& property : op_basic_graph_pattern.properties) {
-        for (const auto& var : property.get_all_vars()) {
-            insert_joinable_var(var);
-        }
+        try_insert_joinable_var(property.obj);
     }
 
     for (const auto& edge : op_basic_graph_pattern.edges) {
-        for (const auto& var : edge.get_all_vars()) {
-            insert_joinable_var(var);
-        }
+        try_insert_joinable_var(edge.from);
+        try_insert_joinable_var(edge.to);
+        try_insert_joinable_var(edge.type);
+        try_insert_joinable_var(edge.edge);
     }
 
     for (const auto& disjoint_var : op_basic_graph_pattern.disjoint_vars) {
-        for (const auto& var : disjoint_var.get_all_vars()) {
-            insert_joinable_var(var);
-        }
+        try_insert_joinable_var(disjoint_var.var);
     }
 
     for (const auto& path : op_basic_graph_pattern.paths) {
-        if (path.from.is_var()) {
-            insert_joinable_var(path.from.get_var());
-        }
-        if (path.to.is_var()) {
-            insert_joinable_var(path.to.get_var());
-        }
-        insert_unjoinable_var(path.var);
+        try_insert_joinable_var(path.from);
+        try_insert_joinable_var(path.to);
+        try_insert_unjoinable_var(path.var);
     }
 }
 
@@ -116,7 +130,7 @@ void CheckVarNames::visit(OpCall& op_call)
                 "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
             );
         }
-        insert_joinable_var(var);
+        try_insert_joinable_var(var);
     }
 }
 
@@ -131,7 +145,7 @@ void CheckVarNames::visit(OpLet& op_let)
                 "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
             );
         }
-        insert_joinable_var(var);
+        try_insert_joinable_var(var);
     }
 }
 

@@ -1,23 +1,18 @@
-/*
- * FileManager maintains a list (`opened_files`) with all files that are opened,
- * and another list (`filenames`) with the string of their names.
- * The FileId its just the index, so both lists must have the same size
- * and objects at the same index are related to each other.
- *
- * All the other classes that need to work with files should use the FileManager to obtain a reference to a
- * fstream.
- *
- * This can be done with temporary or permanent files, using 'get_tmp_file_id' or 'get_file_id', in the first case, the
- * file_manager will ask for a pages in the private buffer of the specific thread, in the second case the file_manager
- * will ask for pages to the shared or public buffer.
- *
- * `file_manager` is a global object and is available when this file is included. Before using it, somebody
- * needs to call the method FileManager::init(), usually is the responsibility of the model (e.g. RelationalModel)
- * to call it.
- *
- * The instance `file_manager` cannot be destroyed before the BufferManager flushes its dirty pages on exit
- * because BufferManager needs to access the file paths from FileManager.
- */
+/******************************************************************************
+FileManager is used to work with files that are managed by the BufferManager.
+
+This can be done with temporary or permanent files, using 'get_tmp_file_id' or
+'get_file_id', in the first case, the file manager will ask for pages in the
+private buffer of the specific thread, in the second case the file_manager
+will ask for pages to the shared buffer.
+
+We have a global object `file_manager` that is available when this header is
+included. To use the file manager, a `System` object needs to be alive.
+
+The instance `file_manager` cannot be destroyed before the `buffer_manager`
+flushes its dirty pages on exit because the buffer manager needs to access the
+file paths from the file manager.
+******************************************************************************/
 
 #pragma once
 
@@ -25,19 +20,17 @@
 #include <string>
 
 #ifdef _MSC_VER
-	#include <io.h>
-	#define lseek _lseek
+#include <io.h>
+#define lseek _lseek
 #else
-    #include <unistd.h>
+#include <unistd.h>
 #endif
 
 #include "storage/page/private_page.h"
-#include "storage/page/unversioned_page.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 class FileManager {
-friend class Page; // to allow calling file_manager.flush
-friend class BufferManager; // to allow calling file_manager.read_existing_page
+    friend class BufferManager; // to allow calling read_page and update_appends
 public:
     ~FileManager() = default;
 
@@ -47,42 +40,10 @@ public:
     // Get an id for the corresponding file, creating it if it's necessary
     FileId get_file_id(const std::string& filename);
 
-    // count how many pages a file have
-    uint_fast32_t count_pages(FileId file_id) const {
-        static_assert(VPage::SIZE == PPage::SIZE && VPage::SIZE == UPage::SIZE);
-        // We don't need mutex here as long as db is readonly
-        return lseek(file_id.id, 0, SEEK_END) / VPage::SIZE;
-    }
-
-    inline const std::string get_file_path(const std::string& filename) const noexcept {
+    inline const std::string get_file_path(const std::string& filename) const noexcept
+    {
         return db_folder + "/" + filename;
     }
-
-    // Returns whether the filename is valid before attempting to create a file
-    // Only alphanumeric characters, and ' ', '_', '-' are allowed
-    inline bool is_filename_valid(const std::string& filename) const noexcept
-    {
-        if (filename.empty()) {
-            // Empty filename
-            return false;
-        }
-
-        if (filename == "." || filename == "..") {
-            // Reserved filenames
-            return false;
-        }
-
-        for (const auto ch : filename ) {
-            if (!isalnum(static_cast<unsigned char>(ch)) && ch != '_' && ch != '-' && ch != ' ') {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Create a file and initialize it with a zeroed page
-    void init_file(const std::string& file_name) const;
 
 private:
     // folder where all the used files will be
@@ -90,14 +51,14 @@ private:
 
     std::map<std::string, FileId> filename2file_id;
 
+    // FileId -> PageCount (on disk)
+    std::map<FileId, uint32_t> fid2pages;
+
     // private constructor, other classes must use the global object `file_manager`
     FileManager(const std::string& db_folder);
 
     // page back to disk
-    void flush(VPage& page) const;
-
-    // page back to disk
-    void flush(UPage& page) const;
+    void flush(Page& page) const;
 
     // page back to disk
     void flush(int fd, PPage& page) const;
@@ -106,10 +67,13 @@ private:
     void read_tmp_page(int fd, uint64_t page_id, char* bytes) const;
 
     // read a page from disk into memory pointed by `bytes`.
-    void read_existing_page(PageId page_id, char* bytes) const;
+    void read_page(PageId page_id, char* bytes) const;
 
-    // returns the page_number of the page appended
-    uint32_t append_page(FileId page_id, char* bytes) const;
+    // used after committing a write transaction, to update fid2pages
+    void update_appends(const std::map<FileId, unsigned>& appended_pages);
+
+    // count how many pages a file has
+    uint32_t count_pages(FileId file_id) const;
 };
 
 extern FileManager& file_manager; // global object

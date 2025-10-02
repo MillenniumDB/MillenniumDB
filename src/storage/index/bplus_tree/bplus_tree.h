@@ -48,8 +48,8 @@ private:
 template <std::size_t N> class BPlusTree {
 public:
     // (MDB_PAGE_SIZE - SIZE_OF(value_count) - SIZE_OF(next_leaf)) / (SIZE_OF(UINT64) * N)
-    static constexpr auto leaf_max_records = (VPage::SIZE - 2*sizeof(int32_t) ) / (sizeof(uint64_t)*N);
-    static constexpr auto dir_max_records  = (VPage::SIZE - 2*sizeof(int32_t) ) / (sizeof(uint64_t)*N + sizeof(int32_t));
+    static constexpr auto leaf_max_records = (Page::SIZE - 2*sizeof(int32_t) ) / (sizeof(uint64_t)*N);
+    static constexpr auto dir_max_records  = (Page::SIZE - 2*sizeof(int32_t) ) / (sizeof(uint64_t)*N + sizeof(int32_t));
 
     BPlusTree(const std::string& name);
 

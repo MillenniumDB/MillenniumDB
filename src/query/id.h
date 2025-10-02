@@ -118,3 +118,5 @@ private:
     IdUnion value;
     IdType type;
 };
+
+std::ostream& operator<<(std::ostream& os, Id id);

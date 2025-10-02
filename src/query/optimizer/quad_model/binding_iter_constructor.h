@@ -53,7 +53,7 @@ public:
     // Properties info in queries with operators (==, !=, >, <, >=, <=)
     // (?x {value == 4})
     // var_without_propertyId, keyId
-    std::vector<PropertyOperatorConstraint> properties_operators;
+    // std::vector<PropertyOperatorConstraint> properties_operators;
 
     // For path_manager to print in the correct direction
     std::vector<bool> begin_at_left;
@@ -84,6 +84,8 @@ public:
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSequence&) override;
+    void visit(OpUnitTable&) override;
+    void visit(OpUpdate&) override;
 
     void visit(OpDescribe&) override
     {
@@ -95,22 +97,10 @@ public:
         throw LogicException("OpShow must be processed outside");
     }
 
-    /* These are processed inside OpBasicGraphPattern */
-    void visit(OpEdge&) override { }
-    void visit(OpDisjointTerm&) override { }
-    void visit(OpDisjointVar&) override { }
-    void visit(OpLabel&) override { }
-    void visit(OpPath&) override { }
-    void visit(OpProperty&) override { }
-
-    /* There are impossible to have in a read only query*/
-    void visit(OpInsert&) override { }
-    void visit(OpUpdate&) override { }
-    void visit(OpCreateHNSWIndex&) override { }
-    void visit(OpCreateTextIndex&) override { }
-
 private:
     bool term_exists(ObjectId) const;
+
+    void make_solution_modifiers();
 
     std::unique_ptr<BindingIter> get_pending_properties(std::unique_ptr<BindingIter> binding_iter);
 };
