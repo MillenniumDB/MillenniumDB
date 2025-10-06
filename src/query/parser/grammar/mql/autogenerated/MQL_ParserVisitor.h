@@ -75,6 +75,8 @@ public:
 
     virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext *context) = 0;
 
+    virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext *context) = 0;
+
     virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *context) = 0;
 
     virtual std::any visitReturnList(MQL_Parser::ReturnListContext *context) = 0;

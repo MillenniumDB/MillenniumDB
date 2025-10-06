@@ -127,6 +127,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *ctx) override {
     return visitChildren(ctx);
   }

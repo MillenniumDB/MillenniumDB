@@ -55,9 +55,8 @@ removeStatement: K_REMOVE removeAtom (',' removeAtom)*;
 removeAtom: (fixedObj | VARIABLE) KEY
 	| (fixedObj | VARIABLE) (TYPE)+;
 
-// TODO: introduce having?
 simpleQuery:
-	primitiveStatement+ groupByStatement? orderByStatement? (
+	primitiveStatement+ groupByStatement? havingStatement? orderByStatement? (
 		returnStatement
 		| updateStatement+
 	);
@@ -92,6 +91,8 @@ letDefinition: VARIABLE '=' conditionalOrExpr;
 whereStatement: K_WHERE conditionalOrExpr;
 
 groupByStatement: K_GROUP K_BY groupByItem (',' groupByItem)*;
+
+havingStatement: K_HAVING conditionalOrExpr;
 
 orderByStatement: K_ORDER K_BY orderByItem (',' orderByItem)*;
 
@@ -314,6 +315,7 @@ keyword:
 	| K_EDIT_DISTANCE
 	| K_EUCLIDEAN_DISTANCE
 	| K_FROM
+	| K_HAVING
 	| K_INCOMING
 	| K_INDEX
 	| K_INSERT

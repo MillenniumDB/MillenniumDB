@@ -136,6 +136,8 @@ public:
     virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext* ctx) override;
     virtual std::any visitGroupByItem(MQL_Parser::GroupByItemContext* ctx) override;
 
+    virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext* ctx) override;
+
     virtual std::any visitGraphPattern(MQL_Parser::GraphPatternContext* ctx) override;
     virtual std::any visitBasicPattern(MQL_Parser::BasicPatternContext* ctx) override;
     virtual std::any visitLinearPattern(MQL_Parser::LinearPatternContext* ctx) override;
