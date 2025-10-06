@@ -27,6 +27,7 @@ private:
     std::vector<VarId> projection_vars;
 
     static void print(std::ostream& os, std::ostream& escaped_os, ObjectId oid);
+    static void print_handle_escape(std::ostream& os, std::ostream& escaped_os, ObjectId oid);
 
     static void print_path_node(std::ostream& os, ObjectId node_id);
     static void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);

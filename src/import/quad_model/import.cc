@@ -29,17 +29,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     current_state = State::LINE_BEGIN;
     current_line = 1;
     while (auto token = lexer.get_token()) {
-        std::cout << "from:    " << current_state << "\n";
-        std::cout << "token_:  " << token << "\n";
-        std::cout << "token:   ";
-
-        if (current_state == 1 && token == 17 ) {
-            std::cout << "here" << std::endl;
-        }
-
-        std::cout.write(lexer.str, lexer.str_len);
         get_transition(token);
-        std::cout << "\nreached: " << current_state << "\n" << std::endl;
     }
     // After EOF simulate and endline
     get_transition(Token::ENDLINE);

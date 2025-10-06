@@ -44,6 +44,6 @@ enum State {
     EXPECT_NODE_LIST_ELEMENT = 12,
     EXPECT_EDGE_LIST_ELEMENT = 13,
 
-    TOTAL_STATES = 16
+    TOTAL_STATES = 14
 };
 }} // namespace Import::GQL
