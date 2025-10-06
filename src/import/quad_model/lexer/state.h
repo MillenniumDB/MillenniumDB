@@ -45,6 +45,9 @@ enum State {
     // A key property and the ':' were read in an edge line, we expect the value
     EXPECT_EDGE_PROP_VALUE = 13,
 
-    TOTAL_STATES = 14
+    EXPECT_NODE_LIST_ELEMENT = 14,
+    EXPECT_EDGE_LIST_ELEMENT = 15,
+
+    TOTAL_STATES = 16
 };
 }} // namespace Import::QuadModel

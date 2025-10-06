@@ -12,12 +12,13 @@
 #include "graph_models/quad_model/quad_catalog.h"
 #include "import/disk_vector.h"
 #include "import/exceptions.h"
+#include "import/external_helper.h"
 #include "import/quad_model/lexer/state.h"
 #include "import/quad_model/lexer/token.h"
 #include "import/quad_model/lexer/tokenizer.h"
-#include "import/external_helper.h"
 #include "misc/istream.h"
 #include "misc/unicode_escape.h"
+#include "storage/index/lists/list_encoder.h"
 
 namespace Import { namespace QuadModel {
 class OnDiskImport {
@@ -43,11 +44,13 @@ public:
     {
         state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
         create_automata();
+        list_buffer = new char[StringManager::MAX_STRING_SIZE];
     }
 
     ~OnDiskImport()
     {
         delete[] (state_transitions);
+        delete[] list_buffer;
     }
 
     void start_import(MDBIstream& in);
@@ -60,6 +63,13 @@ private:
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     MQLTokenizer lexer;
     int current_line;
+    int current_state;
+
+    // we use a stack to represent nested lists
+    std::stack<std::vector<ObjectId>> lists_stack;
+
+    // buffer used to encode lists
+    char* list_buffer;
 
     uint64_t parsing_errors = 0;
 
@@ -552,6 +562,100 @@ private:
         try_save_property(edge_id);
     }
 
+    void init_list()
+    {
+        lists_stack.emplace();
+    }
+
+    void add_list_value_false()
+    {
+        ObjectId value = Common::Conversions::pack_bool(false);
+        lists_stack.top().push_back(value);
+    }
+
+    void add_list_value_true()
+    {
+        ObjectId value = Common::Conversions::pack_bool(true);
+        lists_stack.top().push_back(value);
+    }
+
+    void add_list_value_integer()
+    {
+        int64_t integer = try_parse_int(lexer.str);
+        lists_stack.top().push_back(ObjectId(integer));
+    }
+
+    void add_list_value_float()
+    {
+        int64_t value = try_parse_float(lexer.str);
+        lists_stack.top().push_back(ObjectId(value));
+    }
+
+    void add_list_value_string()
+    {
+        normalize_string_literal();
+
+        uint64_t str_id;
+        if (lexer.str_len < 8) {
+            str_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        } else {
+            str_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
+                   | ObjectId::MASK_STRING;
+        }
+
+        lists_stack.top().push_back(ObjectId(str_id));
+    }
+
+    void save_node_list()
+    {
+        std::vector<ObjectId> current_list = lists_stack.top();
+        uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+        lists_stack.pop();
+
+        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                         | ObjectId::MASK_LIST;
+
+        // if there is a list in the stack, then this list is nested and we do not store the property yet
+        if (!lists_stack.empty()) {
+            current_state = EXPECT_NODE_LIST_ELEMENT;
+            lists_stack.top().push_back(ObjectId(list_id));
+            return;
+        }
+
+        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+            || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        {
+            pending_properties->push_back({ id1, key_id, list_id });
+        } else {
+            properties.push_back({ id1, key_id, list_id });
+        }
+    }
+
+    void save_edge_list()
+    {
+        std::vector<ObjectId> current_list = lists_stack.top();
+        uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+        lists_stack.pop();
+
+        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                         | ObjectId::MASK_LIST;
+
+        // if there is a list in the stack, then this list is nested and we do not store the property yet
+        if (!lists_stack.empty()) {
+            current_state = EXPECT_EDGE_LIST_ELEMENT;
+            lists_stack.top().push_back(ObjectId(list_id));
+            return;
+        }
+
+        if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+            || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        {
+            pending_properties->push_back({ edge_id, key_id, list_id });
+        } else {
+            properties.push_back({ edge_id, key_id, list_id });
+        }
+    }
+
     void finish_wrong_line()
     {
         current_line++;
@@ -637,7 +741,7 @@ private:
         state_transitions[State::TOTAL_STATES * state + token] = value;
     }
 
-    int get_transition(int state, int token)
+    void get_transition(int token)
     {
         // try {
         //     state_funcs[State::TOTAL_STATES*state + token]();
@@ -649,8 +753,9 @@ private:
         //     std::cout << e.what() << "\n";
         //     return State::WRONG_LINE;
         // }
-        state_funcs[State::TOTAL_STATES * state + token]();
-        return state_transitions[State::TOTAL_STATES * state + token];
+        int next_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        state_funcs[State::TOTAL_STATES * current_state + token]();
+        current_state = next_state;
     }
 
     // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place

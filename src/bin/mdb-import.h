@@ -30,8 +30,9 @@ struct ImportConfig {
     std::vector<std::string> paths;
     std::string prefixes_file;
     ImportFileFormat format = ImportFileFormat::UNASSIGNED;
-    uint64_t strings_buffer_size = 2ULL * 1024 * 1024 * 1024;
-    uint64_t tensors_buffer_size = 2ULL * 1024 * 1024 * 1024;
+    // uint64_t strings_buffer_size = 2ULL * 1024 * 1024 * 1024;
+    uint64_t strings_buffer_size = 2ULL * 1024 * 1024 * 128;
+    uint64_t tensors_buffer_size = 2ULL * 1024 * 1024 * 128;
     size_t btree_permutations = 4;
 };
 

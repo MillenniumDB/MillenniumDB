@@ -96,6 +96,9 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             decimal      = [-+]?([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)?;
             whitespace   = [ \r\t]+;
             endline      = [\n];
+            l_bracket    = '[';
+            r_bracket    = ']';
+            comma        = ',';
 
             colon        { return Import::QuadModel::Token::COLON; }
             l_arrow      { return Import::QuadModel::Token::L_ARROW; }
@@ -108,6 +111,9 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             integer      { return Import::QuadModel::Token::INTEGER; }
             decimal      { return Import::QuadModel::Token::FLOAT; }
             whitespace   { return Import::QuadModel::Token::WHITESPACE; }
+            l_bracket    { return Import::QuadModel::Token::L_BRACKET; }
+            r_bracket    { return Import::QuadModel::Token::R_BRACKET; }
+            comma        { return Import::QuadModel::Token::COMMA; }
             endline      { return Import::QuadModel::Token::ENDLINE; }
             *            { return Import::QuadModel::Token::UNRECOGNIZED; }
         */

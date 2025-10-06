@@ -10,6 +10,7 @@
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
+#include "storage/index/lists/list_encoder.h"
 
 namespace MQL { namespace Conversions {
 using namespace Common::Conversions;
@@ -126,10 +127,23 @@ inline ObjectId pack_list(const std::vector<ObjectId>& list)
 
 inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
 {
-    auto& lists = tmp_manager.get_tmp_list();
-    assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
+    switch (list_id.get_type()) {
+    case ObjectId::MASK_LIST:
+    case ObjectId::MASK_LIST_TMP: {
+        auto& lists = tmp_manager.get_tmp_list();
+        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
+        lists.get(out, list_id.id & LIST_OFFSET_MASK);
+        break;
+    }
+    case ObjectId::MASK_LIST_EXTERN: {
+        char* buffer = get_query_ctx().get_buffer1();
 
-    lists.get(out, list_id.id & LIST_OFFSET_MASK);
+        auto external_id = list_id.get_value();
+        string_manager.print_to_buffer(buffer, external_id);
+        out = ListEncoder::decode(buffer);
+        break;
+    }
+    }
 }
 
 inline std::vector<ObjectId> unpack_list(ObjectId list_id)

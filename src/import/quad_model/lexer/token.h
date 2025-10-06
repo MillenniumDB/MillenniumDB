@@ -17,10 +17,13 @@ enum Token {
     ANON = 10,
     INTEGER = 11,
     FLOAT = 12,
-    WHITESPACE = 13,
-    ENDLINE = 14,
-    UNRECOGNIZED = 15,
-    TOTAL_TOKENS = 16
+    L_BRACKET = 13,
+    R_BRACKET = 14,
+    COMMA = 15,
+    WHITESPACE = 16,
+    ENDLINE = 17,
+    UNRECOGNIZED = 18,
+    TOTAL_TOKENS = 19
 };
 
 }} // namespace Import::QuadModel
