@@ -34,17 +34,22 @@ std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
     get_non_redundant_exprs(std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>& exprs)
 {
     std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>> res;
+    std::set<VarId> assigned_ids;
 
-    for (auto&& [var, e] : exprs) {
-        auto casted_expr_var = dynamic_cast<BindingExprVar*>(e.get());
+    for (auto&& [var, expr] : exprs) {
+        auto casted_expr_var = dynamic_cast<BindingExprVar*>(expr.get());
         if (casted_expr_var) {
             if (casted_expr_var->var == var) {
                 // avoid redundant assignation
                 continue;
             }
         }
+        if (assigned_ids.find(var) != assigned_ids.end()) {
+            continue;
+        }
 
-        res.emplace_back(var, std::move(e));
+        assigned_ids.insert(var);
+        res.emplace_back(var, std::move(expr));
     }
     exprs.clear();
     return res;
@@ -233,7 +238,6 @@ void BindingIterConstructor::visit(OpWhere& op_where)
 {
     properties_types_queries.clear();
     ExprPropertyTypes expr_property_types(this);
-    // visitor collect final types bitmaps of properties in propId_and_bitmap dict
     op_where.expr->accept_visitor(expr_property_types);
     for (auto& p_type : properties_types_queries) {
         auto key = p_type.var_with_property.id;
@@ -265,6 +269,12 @@ void BindingIterConstructor::visit(OpWhere& op_where)
         exprs.push_back(std::move(binding_expr));
         tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
+}
+
+void BindingIterConstructor::visit(OpHaving& op_having)
+{
+    op_having.op->accept_visitor(*this);
+    this->op_having = &op_having;
 }
 
 void BindingIterConstructor::visit(OpOptional& op_optional)
@@ -335,6 +345,33 @@ void BindingIterConstructor::visit(OpOrderBy& op_order_by)
 
 void BindingIterConstructor::make_solution_modifiers()
 {
+    VarId having_var(0);
+    if (op_having) {
+        Expr* expr = op_having->expr.get();
+        if (auto casted = dynamic_cast<ExprVar*>(expr); casted != nullptr) {
+            auto var = casted->var;
+            group_saved_vars.insert(var);
+        } else if (auto casted = dynamic_cast<ExprVarProperty*>(expr); casted != nullptr) {
+            auto var = casted->var_with_property;
+            group_saved_vars.insert(var);
+
+            used_properties.emplace(
+                ExprVarProperty(casted->var_without_property, casted->key, casted->var_with_property),
+                false
+            );
+        } else {
+            std::stringstream ss;
+            ss << '.';
+            ExprPrinter expr_printer(ss);
+            expr->accept_visitor(expr_printer);
+            having_var = get_query_ctx().get_or_create_var(ss.str());
+
+            ExprToBindingExpr expr_to_binding_expr(this, {}, true);
+            expr->accept_visitor(expr_to_binding_expr);
+
+            projection_order_exprs.emplace_back(having_var, std::move(expr_to_binding_expr.tmp));
+        }
+    }
     if (op_order_by) {
         for (uint_fast32_t i = 0; i < op_order_by->items.size(); i++) {
             Expr* expr = op_order_by->items[i].get();
@@ -354,7 +391,11 @@ void BindingIterConstructor::make_solution_modifiers()
                     false
                 );
             } else {
-                auto var = get_query_ctx().get_internal_var();
+                std::stringstream ss;
+                ss << '.';
+                ExprPrinter expr_printer(ss);
+                expr->accept_visitor(expr_printer);
+                auto var = get_query_ctx().get_or_create_var(ss.str());
 
                 order_by_vars.emplace_back(var);
                 order_by_saved_vars.insert(var);
@@ -392,6 +433,14 @@ void BindingIterConstructor::make_solution_modifiers()
     auto non_redundant_expr_eval = get_non_redundant_exprs(projection_order_exprs);
     if (non_redundant_expr_eval.size() > 0) {
         tmp = std::make_unique<ExprEvaluator>(std::move(tmp), std::move(non_redundant_expr_eval));
+    }
+
+    if (op_having) {
+        std::vector<std::unique_ptr<BindingExpr>> exprs;
+        exprs.push_back(
+            std::make_unique<BindingExprVar>(having_var)
+        );
+        tmp = std::make_unique<Filter>(&Conversions::to_boolean, std::move(tmp), std::move(exprs));
     }
 
     if (op_order_by) {

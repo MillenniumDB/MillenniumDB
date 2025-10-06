@@ -81,7 +81,7 @@ public:
         }
         os << ")";
         os << "\n";
-        return op->print_to_ostream(os, indent);
+        return op->print_to_ostream(os, indent + 2);
     }
 };
 } // namespace MQL

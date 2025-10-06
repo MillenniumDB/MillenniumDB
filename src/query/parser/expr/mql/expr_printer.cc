@@ -6,12 +6,12 @@ using namespace MQL;
 
 void ExprPrinter::visit(ExprVar& expr)
 {
-    os << '?' << get_query_ctx().get_var_name(expr.var);
+    os << expr.var;
 }
 
 void ExprPrinter::visit(ExprVarProperty& expr)
 {
-    os << '?' << get_query_ctx().get_var_name(expr.var_with_property);
+    os << expr.var_with_property;
 }
 
 void ExprPrinter::visit(ExprConstant& expr)

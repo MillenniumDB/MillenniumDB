@@ -1,4 +1,4 @@
-x,MAX(e.int)
+x,MAX(?e.int)
 N1,1
 N2,3
 N3,6

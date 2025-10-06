@@ -21,5 +21,10 @@ public:
     virtual std::set<VarId> get_input_vars() const = 0;
 
     virtual bool has_aggregation() const = 0;
+
+    virtual std::optional<VarId> get_var() const
+    {
+        return {};
+    }
 };
 } // namespace MQL

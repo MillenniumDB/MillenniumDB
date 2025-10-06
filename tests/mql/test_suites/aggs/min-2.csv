@@ -1,4 +1,4 @@
-x,MIN(e.int)
+x,MIN(?e.int)
 N1,1
 N2,2
 N3,4

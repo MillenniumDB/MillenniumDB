@@ -837,64 +837,13 @@ public:
   class  ReturnItemContext : public antlr4::ParserRuleContext {
   public:
     ReturnItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-   
-    ReturnItemContext() = default;
-    void copyFrom(ReturnItemContext *context);
-    using antlr4::ParserRuleContext::copyFrom;
-
     virtual size_t getRuleIndex() const override;
-
-   
-  };
-
-  class  ReturnItemExprContext : public ReturnItemContext {
-  public:
-    ReturnItemExprContext(ReturnItemContext *ctx);
-
     ConditionalOrExprContext *conditionalOrExpr();
     AliasContext *alias();
 
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemVarContext : public ReturnItemContext {
-  public:
-    ReturnItemVarContext(ReturnItemContext *ctx);
-
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *KEY();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemAggContext : public ReturnItemContext {
-  public:
-    ReturnItemAggContext(ReturnItemContext *ctx);
-
-    AggregateFuncContext *aggregateFunc();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *KEY();
-    AliasContext *alias();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemCountContext : public ReturnItemContext {
-  public:
-    ReturnItemCountContext(ReturnItemContext *ctx);
-
-    antlr4::tree::TerminalNode *K_COUNT();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *STAR();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    AliasContext *alias();
-    antlr4::tree::TerminalNode *KEY();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
   };
 
   ReturnItemContext* returnItem();
@@ -932,68 +881,14 @@ public:
   class  OrderByItemContext : public antlr4::ParserRuleContext {
   public:
     OrderByItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-   
-    OrderByItemContext() = default;
-    void copyFrom(OrderByItemContext *context);
-    using antlr4::ParserRuleContext::copyFrom;
-
     virtual size_t getRuleIndex() const override;
-
-   
-  };
-
-  class  OrderByItemCountContext : public OrderByItemContext {
-  public:
-    OrderByItemCountContext(OrderByItemContext *ctx);
-
-    antlr4::tree::TerminalNode *K_COUNT();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemExprContext : public OrderByItemContext {
-  public:
-    OrderByItemExprContext(OrderByItemContext *ctx);
-
     ConditionalOrExprContext *conditionalOrExpr();
     antlr4::tree::TerminalNode *K_ASC();
     antlr4::tree::TerminalNode *K_DESC();
 
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemVarContext : public OrderByItemContext {
-  public:
-    OrderByItemVarContext(OrderByItemContext *ctx);
-
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemAggContext : public OrderByItemContext {
-  public:
-    OrderByItemAggContext(OrderByItemContext *ctx);
-
-    AggregateFuncContext *aggregateFunc();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
   };
 
   OrderByItemContext* orderByItem();
@@ -1558,7 +1453,7 @@ public:
     antlr4::Token *s102 = nullptr;
     std::vector<antlr4::Token *> op;
     antlr4::Token *s103 = nullptr;
-    antlr4::Token *_tset1605 = nullptr;
+    antlr4::Token *_tset1475 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<MultiplicativeExprContext *> multiplicativeExpr();
@@ -1581,7 +1476,7 @@ public:
     std::vector<antlr4::Token *> op;
     antlr4::Token *s96 = nullptr;
     antlr4::Token *s100 = nullptr;
-    antlr4::Token *_tset1628 = nullptr;
+    antlr4::Token *_tset1498 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExprContext *> unaryExpr();
@@ -1657,11 +1552,39 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  ExprAggContext : public AtomicExprContext {
+  public:
+    ExprAggContext(AtomicExprContext *ctx);
+
+    AggregateFuncContext *aggregateFunc();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *R_PAR();
+    antlr4::tree::TerminalNode *KEY();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  ExprVarContext : public AtomicExprContext {
   public:
     ExprVarContext(AtomicExprContext *ctx);
 
     antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *KEY();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprCountContext : public AtomicExprContext {
+  public:
+    ExprCountContext(AtomicExprContext *ctx);
+
+    antlr4::tree::TerminalNode *K_COUNT();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *R_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *STAR();
+    antlr4::tree::TerminalNode *K_DISTINCT();
     antlr4::tree::TerminalNode *KEY();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

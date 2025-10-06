@@ -22,6 +22,7 @@ public:
     void visit(OpBasicGraphPattern&) override { }
     void visit(OpCall&) override { }
     void visit(OpGroupBy&) override { }
+    void visit(OpHaving&) override { }
     void visit(OpLet&) override { }
     void visit(OpOptional&) override { }
     void visit(OpOrderBy&) override { }

@@ -9,6 +9,7 @@ class OpShow;
 class OpBasicGraphPattern;
 class OpCall;
 class OpGroupBy;
+class OpHaving;
 class OpLet;
 class OpOptional;
 class OpOrderBy;
@@ -28,6 +29,7 @@ public:
     virtual void visit(OpBasicGraphPattern&) = 0;
     virtual void visit(OpCall&) = 0;
     virtual void visit(OpGroupBy&) = 0;
+    virtual void visit(OpHaving&) = 0;
     virtual void visit(OpLet&) = 0;
     virtual void visit(OpOptional&) = 0;
     virtual void visit(OpOrderBy&) = 0;

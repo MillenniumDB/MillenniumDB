@@ -67,6 +67,7 @@ public:
 
     OpGroupBy* op_group_by = nullptr;
     OpOrderBy* op_order_by = nullptr;
+    OpHaving* op_having = nullptr;
 
     // We add the fixed properties to the first BGP visited, this attribute avoid adding it multiple times
     // in different BGPs
@@ -80,6 +81,7 @@ public:
     void visit(OpLet&) override;
     void visit(OpOptional&) override;
     void visit(OpWhere&) override;
+    void visit(OpHaving&) override;
     void visit(OpGroupBy&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;

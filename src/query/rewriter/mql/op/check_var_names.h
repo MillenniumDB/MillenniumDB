@@ -32,6 +32,7 @@ public:
     void visit(OpCall&) override;
     void visit(OpLet&) override;
     void visit(OpGroupBy&) override;
+    void visit(OpHaving&) override;
     void visit(OpOptional&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;

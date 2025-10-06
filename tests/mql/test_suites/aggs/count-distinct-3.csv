@@ -1,2 +1,2 @@
-x,COUNT(DISTINCT y)
+x,COUNT(DISTINCT ?y)
 X,4

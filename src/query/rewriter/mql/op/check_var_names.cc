@@ -171,6 +171,13 @@ void CheckVarNames::visit(OpWhere& op_where)
     op_where.expr->accept_visitor(expr_visitor);
 }
 
+void CheckVarNames::visit(OpHaving& op_having)
+{
+    op_having.op->accept_visitor(*this);
+    CheckVarNamesExpr expr_visitor(declared_vars, unjoinable_vars, alias_vars);
+    op_having.expr->accept_visitor(expr_visitor);
+}
+
 /*************************** ExprVisitor ***************************/
 void CheckVarNamesExpr::visit(ExprVar& expr)
 {

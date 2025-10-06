@@ -1,4 +1,4 @@
-x,SUM(e.int)
+x,SUM(?e.int)
 N1,1
 N2,5
 N3,15

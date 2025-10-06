@@ -35,5 +35,10 @@ public:
     {
         return { var };
     }
+
+    std::optional<VarId> get_var() const override
+    {
+        return var;
+    }
 };
 } // namespace MQL
