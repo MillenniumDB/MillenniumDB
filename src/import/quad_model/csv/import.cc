@@ -7,6 +7,7 @@
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
+#include "storage/index/lists/list_encoder.h"
 
 using namespace Import::QuadModel::CSV;
 
@@ -30,13 +31,16 @@ OnDiskImport::OnDiskImport(
     equal_from_to_type(db_folder + "tmp_equal_from_to_type")
 {
     state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
+    list_buffer = new char[StringManager::MAX_STRING_SIZE];
     create_automata();
     label_splitter = list_separator;
+    list_splitter = list_separator;
 }
 
 OnDiskImport::~OnDiskImport()
 {
     delete[] state_transitions;
+    delete[] list_buffer;
 }
 
 void OnDiskImport::start_import(
@@ -365,6 +369,16 @@ void OnDiskImport::start_import(
     print_duration("Total Import", import_start);
 }
 
+uint64_t OnDiskImport::get_str_id(char* str, uint64_t str_size)
+{
+    if (str_size < 8) {
+        return Inliner::inline_string(str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+    } else {
+        return external_helper->get_or_create_external_string_id(str, str_size)
+             | ObjectId::MASK_STRING_SIMPLE;
+    }
+}
+
 void OnDiskImport::print_error()
 {
     parsing_errors++;
@@ -559,18 +573,14 @@ void OnDiskImport::save_header_column()
             new_column_type = CSVType::DATE;
         else if (split_new_col[1] == "DATETIME")
             new_column_type = CSVType::DATETIME;
+        else if (split_new_col[1] == "LIST")
+            new_column_type = CSVType::LIST;
 
         else
             new_column_type = CSVType::UNDEFINED;
     }
-    uint64_t new_column_key_id;
     std::string& col = split_new_col[0];
-    if (col.size() < 8)
-        new_column_key_id = Inliner::inline_string(col.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-    else {
-        new_column_key_id = external_helper->get_or_create_external_string_id(col.data(), col.size())
-                          | ObjectId::MASK_STRING_SIMPLE;
-    }
+    uint64_t new_column_key_id = get_str_id(col.data(), col.size());
 
     columns.emplace_back(new_column_type, col, new_column_key_id);
 }
@@ -733,27 +743,14 @@ void OnDiskImport::process_node_line()
         case CSVType::LABEL: {
             std::vector<std::string> labels_vector = split(col.value_str, label_splitter);
             for (auto label : labels_vector) {
-                uint64_t label_id;
-                if (col.value_size < 8) {
-                    label_id = Inliner::inline_string(label.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-                } else {
-                    label_id = external_helper->get_or_create_external_string_id(label.data(), label.size())
-                             | ObjectId::MASK_STRING_SIMPLE;
-                }
-
+                uint64_t label_id = get_str_id(label.data(), label.size());
                 try_save_label(node_id, label_id);
             }
             break;
         }
         case CSVType::STR: {
-            uint64_t value_id;
             normalize_string_literal(col);
-
-            if (col.value_size < 8)
-                value_id = Inliner::inline_string(col.value_str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-            else
-                value_id = external_helper->get_or_create_external_string_id(col.value_str, col.value_size)
-                         | ObjectId::MASK_STRING_SIMPLE;
+            uint64_t value_id = get_str_id(col.value_str, col.value_size);
 
             try_save_property(node_id, col.key_id, value_id);
             break;
@@ -788,6 +785,29 @@ void OnDiskImport::process_node_line()
                 break;
             }
             try_save_property(node_id, col.key_id, value_id);
+            break;
+        }
+        case CSVType::LIST: {
+            std::vector<std::string> str_list = split(col.value_str, list_splitter);
+            std::vector<ObjectId> oid_list;
+
+            for (auto& elem : str_list) {
+                if (elem.size() == 0) {
+                    continue;
+                }
+                uint64_t value_id = get_str_id(elem.data(), elem.size());
+                oid_list.push_back(ObjectId(value_id));
+            }
+
+            uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
+            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                             | ObjectId::MASK_LIST;
+
+            if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+                pending_properties->push_back({ node_id, col.key_id, list_id });
+            } else {
+                properties.push_back({ node_id, col.key_id, list_id });
+            }
             break;
         }
 
@@ -903,14 +923,8 @@ void OnDiskImport::save_edge_line()
             break;
         }
         case CSVType::STR: {
-            uint64_t value_id;
             normalize_string_literal(col);
-
-            if (col.value_size < 8)
-                value_id = Inliner::inline_string(col.value_str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-            else
-                value_id = external_helper->get_or_create_external_string_id(col.value_str, col.value_size)
-                         | ObjectId::MASK_STRING_SIMPLE;
+            uint64_t value_id = get_str_id(col.value_str, col.value_size);
 
             try_save_property(edge_id, col.key_id, value_id);
             break;
@@ -945,6 +959,29 @@ void OnDiskImport::save_edge_line()
                 break;
             }
             try_save_property(edge_id, col.key_id, value_id);
+            break;
+        }
+        case CSVType::LIST: {
+            std::vector<std::string> str_list = split(col.value_str, list_splitter);
+            std::vector<ObjectId> oid_list;
+
+            for (auto& elem : str_list) {
+                if (elem.size() == 0) {
+                    continue;
+                }
+                uint64_t value_id = get_str_id(elem.data(), elem.size());
+                oid_list.push_back(ObjectId(value_id));
+            }
+
+            uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
+            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                             | ObjectId::MASK_LIST;
+
+            if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
+                pending_properties->push_back({ edge_id, col.key_id, list_id });
+            } else {
+                properties.push_back({ edge_id, col.key_id, list_id });
+            }
             break;
         }
 

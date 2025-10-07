@@ -24,8 +24,8 @@ struct CSVImportConfig {
     std::vector<std::string> node_paths;
     std::vector<std::string> edge_paths;
     CSVImportFormat format;
-    uint64_t strings_buffer_size = 2ULL * 1024 * 1024 * 1024;
-    uint64_t tensors_buffer_size = 2ULL * 1024 * 1024 * 1024;
+    uint64_t strings_buffer_size = 2ULL * 1024 * 1024 * 128;
+    uint64_t tensors_buffer_size = 2ULL * 1024 * 1024 * 128;
     char list_separator = ';';
 };
 

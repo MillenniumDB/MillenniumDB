@@ -15,7 +15,8 @@ enum CSVType {
     INT,
     DECIMAL,
     DATE,
-    DATETIME
+    DATETIME,
+    LIST
 };
 
 struct CSVColumn {

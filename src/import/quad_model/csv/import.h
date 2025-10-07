@@ -59,6 +59,8 @@ private:
 
     std::string label_splitter;
 
+    std::string list_splitter;
+
     bool anonymous_nodes = true;
     bool global_ids = true;
 
@@ -102,6 +104,10 @@ private:
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 
     int* state_transitions;
+
+    char* list_buffer;
+
+    uint64_t get_str_id(char* str, uint64_t str_size);
 
     void save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& files);
     void parse_node_files(std::vector<std::unique_ptr<MDBIstreamFile>>& in_nodes);
