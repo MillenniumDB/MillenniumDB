@@ -70,5 +70,10 @@ public:
     {
         return var_with_property;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << var_with_property;
+    }
 };
 } // namespace MQL

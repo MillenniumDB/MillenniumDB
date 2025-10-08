@@ -8,7 +8,6 @@
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/update/mql/update_context.h"
 #include "system/string_manager.h"
 #include "system/tensor_manager.h"
@@ -268,10 +267,8 @@ public:
 
     void print(std::ostream& os, int indent) const override
     {
-        os << std::string(indent, ' ') << "InsertProperty(" << obj << "," << key << ",";
-        ExprPrinter printer(os);
-        value->accept_visitor(printer);
-        os << ")\n";
+        os << std::string(indent, ' ');
+        os << "InsertProperty(" << obj << "," << key << "," << *value << ")\n";
     }
 
     std::set<VarId> get_input_vars() const override

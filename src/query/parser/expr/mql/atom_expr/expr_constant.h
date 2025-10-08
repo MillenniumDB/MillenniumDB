@@ -36,5 +36,10 @@ public:
     {
         return {};
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << value;
+    }
 };
 } // namespace MQL

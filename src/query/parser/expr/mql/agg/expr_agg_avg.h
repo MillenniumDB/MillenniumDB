@@ -36,5 +36,10 @@ public:
     {
         return true;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "AVG(" << *expr << ')';
+    }
 };
 } // namespace MQL

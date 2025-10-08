@@ -361,9 +361,7 @@ void BindingIterConstructor::make_solution_modifiers()
             );
         } else {
             std::stringstream ss;
-            ss << '.';
-            ExprPrinter expr_printer(ss);
-            expr->accept_visitor(expr_printer);
+            ss << '.' << *expr;
             having_var = get_query_ctx().get_or_create_var(ss.str());
 
             ExprToBindingExpr expr_to_binding_expr(this, {}, true);
@@ -392,9 +390,7 @@ void BindingIterConstructor::make_solution_modifiers()
                 );
             } else {
                 std::stringstream ss;
-                ss << '.';
-                ExprPrinter expr_printer(ss);
-                expr->accept_visitor(expr_printer);
+                ss << '.' << *expr;
                 auto var = get_query_ctx().get_or_create_var(ss.str());
 
                 order_by_vars.emplace_back(var);

@@ -47,5 +47,10 @@ public:
         }
         return res;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(' << *lhs << '>' << *rhs << ')';
+    }
 };
 } // namespace MQL

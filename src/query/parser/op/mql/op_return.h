@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -68,9 +67,7 @@ public:
             }
             first = false;
 
-            ExprPrinter printer(os);
-            expr->accept_visitor(printer);
-            os << " AS " << var; // TODO: ?x AS ?x is weird
+            os << *expr << " AS " << var; // TODO: ?x AS ?x is weird
         }
 
         if (limit != DEFAULT_LIMIT) {

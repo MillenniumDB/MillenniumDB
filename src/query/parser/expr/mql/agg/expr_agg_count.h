@@ -37,5 +37,14 @@ public:
     {
         return true;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "COUNT(";
+        if (distinct) {
+            os << "DISTINCT ";
+        }
+        os << *expr << ')';
+    }
 };
 } // namespace MQL

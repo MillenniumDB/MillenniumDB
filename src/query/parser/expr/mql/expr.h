@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <optional>
+#include <ostream>
 #include <set>
 
 #include "query/parser/expr/mql/expr_visitor.h"
@@ -22,9 +24,19 @@ public:
 
     virtual bool has_aggregation() const = 0;
 
+    virtual void print(std::ostream&) const = 0;
+
+    // Overriden by ExprVar and ExprVarProperty
     virtual std::optional<VarId> get_var() const
     {
         return {};
     }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Expr& e)
+{
+    e.print(os);
+    return os;
+}
+
 } // namespace MQL

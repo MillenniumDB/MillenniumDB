@@ -441,9 +441,7 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Expr* partent_expr,
         var = as_var.value();
     } else {
         std::stringstream ss;
-        ss << '.';
-        ExprPrinter expr_printer(ss);
-        partent_expr->accept_visitor(expr_printer);
+        ss << '.' << *partent_expr;
         var = get_query_ctx().get_or_create_var(ss.str());
     }
 

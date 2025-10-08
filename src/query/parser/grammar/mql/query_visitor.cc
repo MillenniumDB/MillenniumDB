@@ -685,9 +685,7 @@ Any QueryVisitor::visitReturnItem(MQL_Parser::ReturnItemContext* ctx)
         var = expr_var.value();
     } else {
         std::stringstream ss;
-        ss << '.';
-        ExprPrinter expr_printer(ss);
-        current_expr->accept_visitor(expr_printer);
+        ss << '.' << *current_expr;
         var = get_query_ctx().get_or_create_var(ss.str());
     }
 

@@ -44,5 +44,10 @@ public:
     {
         return expr1->has_aggregation() || expr2->has_aggregation();
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "MANHATTAN_DISTANCE(" << *expr1 << ',' << *expr2 << ')';
+    }
 };
 } // namespace MQL

@@ -59,5 +59,16 @@ public:
         }
         return res;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(';
+        os << *and_list[0];
+        for (size_t i = 1; i < and_list.size(); i++) {
+            os << " AND ";
+            os << *and_list[i];
+        }
+        os << ')';
+    }
 };
 } // namespace MQL
