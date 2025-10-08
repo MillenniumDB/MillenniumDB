@@ -760,9 +760,9 @@ private:
         //     std::cout << e.what() << "\n";
         //     return State::WRONG_LINE;
         // }
-        int next_state = state_transitions[State::TOTAL_STATES * current_state + token];
-        state_funcs[State::TOTAL_STATES * current_state + token]();
-        current_state = next_state;
+        auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
+        current_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        func();
     }
 
     // normalize str in place, the resulting size is written in str_len

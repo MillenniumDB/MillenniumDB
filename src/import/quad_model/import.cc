@@ -747,6 +747,13 @@ void OnDiskImport::create_automata()
     );
 
     set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::L_BRACKET,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::init_list, this)
+    );
+
+    set_transition(
         State::EXPECT_EDGE_LIST_ELEMENT,
         Token::L_BRACKET,
         State::EXPECT_EDGE_LIST_ELEMENT,
