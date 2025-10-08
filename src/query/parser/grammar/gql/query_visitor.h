@@ -155,7 +155,6 @@ public:
     std::any visitSubpathVariableDeclaration(GQLParser::SubpathVariableDeclarationContext* ctx) override;
 
     // Labels
-    std::any visitIsLabelExpression(GQLParser::IsLabelExpressionContext* ctx) override;
     std::any visitLabelExpression(GQLParser::LabelExpressionContext* ctx) override;
     std::any visitLabelTerm(GQLParser::LabelTermContext* ctx) override;
     std::any visitLabelFactor(GQLParser::LabelFactorContext* ctx) override;
