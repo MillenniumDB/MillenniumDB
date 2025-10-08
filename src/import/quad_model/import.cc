@@ -683,12 +683,12 @@ void OnDiskImport::create_automata()
         std::bind(&OnDiskImport::add_list_value_string, this)
     );
 
-    // set_transition(
-    //     State::EXPECT_NODE_LIST_ELEMENT,
-    //     Token::TYPED_STRING,
-    //     State::EXPECT_NODE_LIST_ELEMENT,
-    //     std::bind(&OnDiskImport::add_list_value_typed_string, this)
-    // );
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::TYPED_STRING,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_typed_string, this)
+    );
 
     set_transition(
         State::EXPECT_NODE_LIST_ELEMENT,
@@ -725,12 +725,12 @@ void OnDiskImport::create_automata()
         std::bind(&OnDiskImport::add_list_value_string, this)
     );
 
-    // set_transition(
-    //     State::EXPECT_EDGE_LIST_ELEMENT,
-    //     Token::TYPED_STRING,
-    //     State::EXPECT_EDGE_LIST_ELEMENT,
-    //     std::bind(&OnDiskImport::add_list_value_typed_string, this)
-    // );
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::TYPED_STRING,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_typed_string, this)
+    );
 
     set_transition(
         State::EXPECT_EDGE_LIST_ELEMENT,

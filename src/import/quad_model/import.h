@@ -144,7 +144,7 @@ private:
     void save_first_id_string()
     {
         ids_stack.clear();
-        normalize_string_literal();
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -337,7 +337,7 @@ private:
 
     void save_second_id_string()
     {
-        normalize_string_literal();
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -381,85 +381,88 @@ private:
 
     void add_node_prop_datatype()
     {
-        add_prop_datatype(id1);
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        try_save_property(id1);
     }
 
     void add_edge_prop_datatype()
     {
-        add_prop_datatype(edge_id);
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        try_save_property(edge_id);
     }
 
-    void add_prop_datatype(uint64_t obj_id)
+    // parse datatype and store it in value_id
+    void parse_prop_datatype(char* typed_str, uint64_t typed_str_len)
     {
         // we have something like: `datatype("string")`
         // parse datatype name
-        char* datatype_beg = lexer.str;
-        char* datatype_end = lexer.str;
+        char* datatype_beg = typed_str;
+        char* datatype_end = typed_str;
         while (isalpha(*datatype_end)) {
             datatype_end++;
         }
         *datatype_end = '\0';
 
-        char* str_value_end = lexer.str + (lexer.str_len - 1);
-        lexer.str = datatype_end + 1;
-        while (*lexer.str != '"') {
-            lexer.str++;
+        char* str_value_end = typed_str + (typed_str_len - 1);
+        typed_str = datatype_end + 1;
+        while (*typed_str != '"') {
+            typed_str++;
         }
 
         // it may have whitespaces `datatype("string"  )` so we iterate
         while (*str_value_end != '"') {
             str_value_end--;
         }
-        lexer.str_len = (str_value_end - lexer.str) + 1;
+        typed_str_len = (str_value_end - typed_str) + 1;
 
-        // we edited lexer.str_len and lexer.str to point correctly at the datatype (considering quotes)
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        // we edited typed_str_len and typed_str to point correctly at the datatype (considering quotes)
+        normalize_string_literal(typed_str, &typed_str_len);
 
         if (strcmp(datatype_beg, "dateTime") == 0) {
-            value_id = DateTime::from_dateTime(lexer.str);
+            value_id = DateTime::from_dateTime(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << " invalid dateTime: " << lexer.str << "\n";
+                std::cout << " invalid dateTime: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "date") == 0) {
-            value_id = DateTime::from_date(lexer.str);
+            value_id = DateTime::from_date(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid date: " << lexer.str << "\n";
+                std::cout << "invalid date: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "time") == 0) {
-            value_id = DateTime::from_time(lexer.str);
+            value_id = DateTime::from_time(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid time: " << lexer.str << "\n";
+                std::cout << "invalid time: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "dateTimeStamp") == 0) {
-            value_id = DateTime::from_dateTimeStamp(lexer.str);
+            value_id = DateTime::from_dateTimeStamp(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid dateTimeStamp: " << lexer.str << "\n";
+                std::cout << "invalid dateTimeStamp: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "tensorFloat") == 0) {
-            value_id = get_tensor_id<float>(lexer.str);
+            value_id = get_tensor_id<float>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorFloat: " << lexer.str << "\n";
+                std::cout << "invalid tensorFloat: " << typed_str << "\n";
             }
         } else if (strcmp(datatype_beg, "tensorDouble") == 0) {
-            value_id = get_tensor_id<double>(lexer.str);
+            value_id = get_tensor_id<double>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorDouble: " << lexer.str << "\n";
+                std::cout << "invalid tensorDouble: " << typed_str << "\n";
             }
         } else {
             parsing_errors++;
@@ -467,8 +470,6 @@ private:
             std::cout << "unknown datatype: " << datatype_beg << "\n";
             return;
         }
-
-        try_save_property(obj_id);
     }
 
     template<typename T>
@@ -488,7 +489,7 @@ private:
 
     void add_node_prop_string()
     {
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -526,7 +527,7 @@ private:
 
     void add_edge_prop_string()
     {
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -582,18 +583,18 @@ private:
     void add_list_value_integer()
     {
         int64_t integer = try_parse_int(lexer.str);
-        lists_stack.top().push_back(ObjectId(integer));
+        lists_stack.top().emplace_back(integer);
     }
 
     void add_list_value_float()
     {
         int64_t value = try_parse_float(lexer.str);
-        lists_stack.top().push_back(ObjectId(value));
+        lists_stack.top().emplace_back(value);
     }
 
     void add_list_value_string()
     {
-        normalize_string_literal();
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         uint64_t str_id;
         if (lexer.str_len < 8) {
@@ -603,7 +604,13 @@ private:
                    | ObjectId::MASK_STRING;
         }
 
-        lists_stack.top().push_back(ObjectId(str_id));
+        lists_stack.top().emplace_back(str_id);
+    }
+
+    void add_list_value_typed_string()
+    {
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        lists_stack.top().emplace_back(value_id);
     }
 
     void save_node_list()
@@ -618,7 +625,7 @@ private:
         // if there is a list in the stack, then this list is nested and we do not store the property yet
         if (!lists_stack.empty()) {
             current_state = EXPECT_NODE_LIST_ELEMENT;
-            lists_stack.top().push_back(ObjectId(list_id));
+            lists_stack.top().emplace_back(list_id);
             return;
         }
 
@@ -643,7 +650,7 @@ private:
         // if there is a list in the stack, then this list is nested and we do not store the property yet
         if (!lists_stack.empty()) {
             current_state = EXPECT_EDGE_LIST_ELEMENT;
-            lists_stack.top().push_back(ObjectId(list_id));
+            lists_stack.top().emplace_back(list_id);
             return;
         }
 
@@ -758,16 +765,16 @@ private:
         current_state = next_state;
     }
 
-    // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place
-    void normalize_string_literal()
+    // normalize str in place, the resulting size is written in str_len
+    void normalize_string_literal(char* str, uint64_t* str_len)
     {
-        char* write_ptr = lexer.str;
+        char* write_ptr = str;
         char* read_ptr = write_ptr + 1; // skip first character: '"'
 
-        lexer.str_len -= 2;
-        char* end = lexer.str + lexer.str_len + 1;
+        *str_len -= 2;
+        char* end = str + *str_len + 1;
 
-        UnicodeEscape::normalize_string(read_ptr, write_ptr, end, lexer.str_len);
+        UnicodeEscape::normalize_string(read_ptr, write_ptr, end, *str_len);
     }
 };
 }} // namespace Import::QuadModel
