@@ -52,6 +52,7 @@ TEST_SUITES: list[str] = [
     "regex",
     "labels",
     "properties",
+    "import-lists"
 ]
 
 # Tests with the following query files fill be ignored
