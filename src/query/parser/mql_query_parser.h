@@ -51,7 +51,7 @@ public:
 
         auto res = std::move(visitor.current_op);
 
-        // logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
+        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
 
         CheckVarNames check_var_names;
         res->accept_visitor(check_var_names);

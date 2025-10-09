@@ -37,8 +37,7 @@ std::vector<std::pair<VarId, std::unique_ptr<BindingExpr>>>
     std::set<VarId> assigned_ids;
 
     for (auto&& [var, expr] : exprs) {
-        auto casted_expr_var = dynamic_cast<BindingExprVar*>(expr.get());
-        if (casted_expr_var) {
+        if (auto casted_expr_var = dynamic_cast<BindingExprVar*>(expr.get())) {
             if (casted_expr_var->var == var) {
                 // avoid redundant assignation
                 continue;
@@ -469,13 +468,17 @@ void BindingIterConstructor::visit(OpReturn& op_return)
 
         Expr* expr = e.get();
         if (auto casted = dynamic_cast<ExprVar*>(expr); casted != nullptr) {
-            if (grouping && group_vars.find(var) == group_vars.end()) {
+            if (grouping && group_vars.find(casted->var) == group_vars.end()) {
                 throw QuerySemanticException(
                     "Invalid use of var \"" + get_query_ctx().get_var_name(var) + "\" in RETURN"
                 );
             }
+            if (casted->var != var) {
+                projection_order_exprs.emplace_back(var, std::make_unique<BindingExprVar>(casted->var));
+            }
+
         } else if (auto casted = dynamic_cast<ExprVarProperty*>(expr); casted != nullptr) {
-            if (grouping && group_vars.find(var) == group_vars.end()) {
+            if (grouping && group_vars.find(casted->var_with_property) == group_vars.end()) {
                 throw QuerySemanticException(
                     "Invalid use of var \"" + get_query_ctx().get_var_name(var) + "\" in RETURN"
                 );
@@ -484,6 +487,9 @@ void BindingIterConstructor::visit(OpReturn& op_return)
                 ExprVarProperty(casted->var_without_property, casted->key, casted->var_with_property),
                 false
             );
+            if (casted->var_with_property != var) {
+                projection_order_exprs.emplace_back(var, std::make_unique<BindingExprVar>(casted->var_with_property));
+            }
         } else {
             ExprToBindingExpr expr_to_binding_expr(this, var, true);
             expr->accept_visitor(expr_to_binding_expr);

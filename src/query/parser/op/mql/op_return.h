@@ -67,7 +67,14 @@ public:
             }
             first = false;
 
-            os << *expr << " AS " << var; // TODO: ?x AS ?x is weird
+            os << *expr;
+            if (auto v = expr->get_var(); v.has_value()) {
+                if (v.value() != var) {
+                    os << " AS " << var;
+                }
+            } else {
+                os << " AS " << var;
+            }
         }
 
         if (limit != DEFAULT_LIMIT) {

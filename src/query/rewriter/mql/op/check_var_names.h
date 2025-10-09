@@ -50,14 +50,14 @@ public:
     template<typename T>
     using SetType = boost::container::flat_set<T>;
 
-    SetType<VarId>& declared_vars;
-    SetType<VarId>& unjoinable_vars;
-    SetType<VarId>& alias_vars;
+    const SetType<VarId>& declared_vars;
+    const SetType<VarId>& unjoinable_vars;
+    const SetType<VarId>& alias_vars;
 
     CheckVarNamesExpr(
-        SetType<VarId>& declared_vars,
-        SetType<VarId>& unjoinable_vars,
-        SetType<VarId>& alias_vars
+        const SetType<VarId>& declared_vars,
+        const SetType<VarId>& unjoinable_vars,
+        const SetType<VarId>& alias_vars
     ) :
         declared_vars(declared_vars),
         unjoinable_vars(unjoinable_vars),
