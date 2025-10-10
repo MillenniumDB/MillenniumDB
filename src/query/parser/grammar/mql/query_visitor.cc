@@ -1505,7 +1505,7 @@ Any QueryVisitor::visitMultiplicativeExpr(MQL_Parser::MultiplicativeExprContext*
             );
         } else if (op == "/") {
             current_expr = std::make_unique<ExprDivision>(std::move(saved_lhs), std::move(current_expr));
-        } else if (op == "|") {
+        } else if (op == "%") {
             current_expr = std::make_unique<ExprModulo>(std::move(saved_lhs), std::move(current_expr));
         } else {
             throw std::invalid_argument(op + " not recognized as a valid MultiplicativeExpr operator");
