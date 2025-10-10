@@ -1915,6 +1915,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitGqlInExpression(GQLParser::GqlInExpressionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitGqlExistsExpression(GQLParser::GqlExistsExpressionContext *ctx) override {
     return visitChildren(ctx);
   }

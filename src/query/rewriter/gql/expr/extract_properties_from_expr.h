@@ -356,6 +356,11 @@ public:
         tmp = expr.clone();
     }
 
+    void visit(ExprIn& expr)
+    {
+        tmp = expr.clone();
+    }
+
     void visit(ExprAggCountAll& expr)
     {
         tmp = expr.clone();

@@ -7935,6 +7935,17 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  GqlInExpressionContext : public ExpressionPredicateContext {
+  public:
+    GqlInExpressionContext(ExpressionPredicateContext *ctx);
+
+    ExpressionAtomContext *expressionAtom();
+    antlr4::tree::TerminalNode *IN();
+    ListValueConstructorContext *listValueConstructor();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  GqlExistsExpressionContext : public ExpressionPredicateContext {
   public:
     GqlExistsExpressionContext(ExpressionPredicateContext *ctx);

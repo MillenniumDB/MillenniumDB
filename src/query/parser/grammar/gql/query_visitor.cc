@@ -1100,6 +1100,18 @@ std::any QueryVisitor::visitGqlComparisonExpression(GQLParser::GqlComparisonExpr
     return 0;
 }
 
+std::any QueryVisitor::visitGqlInExpression(GQLParser::GqlInExpressionContext* ctx)
+{
+    visit(ctx->expressionAtom());
+    auto left_expr = std::move(current_expr);
+
+    visit(ctx->listValueConstructor());
+    auto expr_term = dynamic_cast<ExprTerm*>(current_expr.get());
+
+    current_expr = std::make_unique<ExprIn>(std::move(left_expr), expr_term->term);
+    return 0;
+}
+
 std::any QueryVisitor::visitGqlLowArithmeticExpression(GQLParser::GqlLowArithmeticExpressionContext* ctx)
 {
     LOG_VISITOR
@@ -1842,6 +1854,23 @@ std::any QueryVisitor::visitBooleanLiteral(GQLParser::BooleanLiteralContext* ctx
     } else {
         current_expr = std::make_unique<ExprTerm>(ObjectId::get_null());
     }
+    return 0;
+}
+
+std::any QueryVisitor::visitListValueConstructor(GQLParser::ListValueConstructorContext* ctx)
+{
+    std::vector<ObjectId> list;
+
+    for (auto& expr : ctx->expression()) {
+        visit(expr);
+        if (current_expr != nullptr) {
+            if (auto expr_term = dynamic_cast<ExprTerm*>(current_expr.get())) {
+                list.push_back(expr_term->term);
+            }
+        }
+    }
+    ObjectId list_oid = Conversions::pack_list(list);
+    current_expr = std::make_unique<ExprTerm>(list_oid);
     return 0;
 }
 

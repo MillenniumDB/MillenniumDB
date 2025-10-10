@@ -384,6 +384,11 @@ public:
         visit_expr_with_expr<ExprTanh>(expr);
     }
 
+    void visit(GQL::ExprIn& expr) override
+    {
+        visit_expr_with_expr<ExprIn>(expr);
+    }
+
     void visit(GQL::ExprAggCount& expr) override
     {
         visit_expr_with_expr<ExprAggCount>(expr);

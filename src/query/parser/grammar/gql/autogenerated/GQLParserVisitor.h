@@ -969,6 +969,8 @@ public:
 
     virtual std::any visitGqlAllDifferentExpression(GQLParser::GqlAllDifferentExpressionContext *context) = 0;
 
+    virtual std::any visitGqlInExpression(GQLParser::GqlInExpressionContext *context) = 0;
+
     virtual std::any visitGqlExistsExpression(GQLParser::GqlExistsExpressionContext *context) = 0;
 
     virtual std::any visitGqlLetExpression(GQLParser::GqlLetExpressionContext *context) = 0;

@@ -133,6 +133,29 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
     case GQL_OID::GenericType::BOOL: {
         return static_cast<int64_t>(lhs_oid.id & 1) - static_cast<int64_t>(rhs_oid.id & 1);
     }
+    case GQL_OID::GenericType::LIST: {
+        std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs_oid);
+        std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs_oid);
+
+        if (lhs_list == rhs_list) {
+            return 0;
+        } else {
+            return static_cast<int64_t>(lhs_oid.id & ObjectId::VALUE_MASK)
+                 - static_cast<int64_t>(rhs_oid.id & ObjectId::VALUE_MASK);
+        }
+    }
+    case GQL_OID::GenericType::DICTIONARY: {
+        std::unique_ptr<Dictionary> lhs_dict = Common::Conversions::unpack_dictionary(lhs_oid);
+        std::unique_ptr<Dictionary> rhs_dict = Common::Conversions::unpack_dictionary(rhs_oid);
+        Dictionary& lhs(*lhs_dict);
+        Dictionary& rhs(*rhs_dict);
+        if (lhs == rhs) {
+            return 0;
+        } else {
+            return static_cast<int64_t>(lhs_oid.id & ObjectId::VALUE_MASK)
+                 - static_cast<int64_t>(rhs_oid.id & ObjectId::VALUE_MASK);
+        }
+    }
     default: {
         return static_cast<int64_t>(lhs_oid.id & ObjectId::VALUE_MASK)
              - static_cast<int64_t>(rhs_oid.id & ObjectId::VALUE_MASK);

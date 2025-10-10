@@ -62,6 +62,11 @@ public:
         check_group_var(expr.var);
     }
 
+    void visit(ExprIn& expr) override
+    {
+        expr.accept_visitor(*this);
+    }
+
     void check_group_var(VarId var_id)
     {
         if (!group_vars.count(var_id)) {

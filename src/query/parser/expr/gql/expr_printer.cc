@@ -455,14 +455,20 @@ void ExprPrinter::visit(ExprLabels& expr)
     os << "LABELS(" << expr.var << ")";
 }
 
-void ExprPrinter::visit(ExprAggCountAll&)
-{
-    os << "COUNT(*)";
-}
-
 void ExprPrinter::visit(ExprProperties& expr)
 {
     os << "PROPERTIES(" << expr.var << ")";
+}
+
+void ExprPrinter::visit(ExprIn& expr)
+{
+    expr.expr->accept_visitor(*this);
+    os << " IN " << expr.list_id << ")";
+}
+
+void ExprPrinter::visit(ExprAggCountAll&)
+{
+    os << "COUNT(*)";
 }
 
 void ExprPrinter::visit(ExprAggCount& expr)
