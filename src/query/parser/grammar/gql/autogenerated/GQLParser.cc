@@ -1803,8 +1803,8 @@ void gqlparserParserInitialize() {
   	3819,5,46,0,0,3818,3817,1,0,0,0,3818,3819,1,0,0,0,3819,3820,1,0,0,0,3820,
   	3821,5,241,0,0,3821,3834,3,184,92,0,3822,3823,5,157,0,0,3823,3824,3,304,
   	152,0,3824,3825,5,132,0,0,3825,3826,3,892,446,0,3826,3827,5,102,0,0,3827,
-  	3834,1,0,0,0,3828,3829,3,896,448,0,3829,3830,5,132,0,0,3830,3831,3,974,
-  	487,0,3831,3834,1,0,0,0,3832,3834,3,896,448,0,3833,3753,1,0,0,0,3833,
+  	3834,1,0,0,0,3828,3829,3,896,448,0,3829,3830,5,132,0,0,3830,3831,3,896,
+  	448,0,3831,3834,1,0,0,0,3832,3834,3,896,448,0,3833,3753,1,0,0,0,3833,
   	3774,1,0,0,0,3833,3777,1,0,0,0,3833,3780,1,0,0,0,3833,3783,1,0,0,0,3833,
   	3794,1,0,0,0,3833,3805,1,0,0,0,3833,3813,1,0,0,0,3833,3818,1,0,0,0,3833,
   	3822,1,0,0,0,3833,3828,1,0,0,0,3833,3832,1,0,0,0,3834,3851,1,0,0,0,3835,
@@ -39652,16 +39652,16 @@ std::any GQLParser::GqlAllDifferentExpressionContext::accept(tree::ParseTreeVisi
 }
 //----------------- GqlInExpressionContext ------------------------------------------------------------------
 
-GQLParser::ExpressionAtomContext* GQLParser::GqlInExpressionContext::expressionAtom() {
-  return getRuleContext<GQLParser::ExpressionAtomContext>(0);
-}
-
 tree::TerminalNode* GQLParser::GqlInExpressionContext::IN() {
   return getToken(GQLParser::IN, 0);
 }
 
-GQLParser::ListValueConstructorContext* GQLParser::GqlInExpressionContext::listValueConstructor() {
-  return getRuleContext<GQLParser::ListValueConstructorContext>(0);
+std::vector<GQLParser::ExpressionAtomContext *> GQLParser::GqlInExpressionContext::expressionAtom() {
+  return getRuleContexts<GQLParser::ExpressionAtomContext>();
+}
+
+GQLParser::ExpressionAtomContext* GQLParser::GqlInExpressionContext::expressionAtom(size_t i) {
+  return getRuleContext<GQLParser::ExpressionAtomContext>(i);
 }
 
 GQLParser::GqlInExpressionContext::GqlInExpressionContext(ExpressionPredicateContext *ctx) { copyFrom(ctx); }
@@ -40142,11 +40142,11 @@ GQLParser::ExpressionPredicateContext* GQLParser::expressionPredicate(int preced
       _ctx = _localctx;
       previousContext = _localctx;
       setState(3828);
-      expressionAtom(0);
+      antlrcpp::downCast<GqlInExpressionContext *>(_localctx)->lhs = expressionAtom(0);
       setState(3829);
       match(GQLParser::IN);
       setState(3830);
-      listValueConstructor();
+      antlrcpp::downCast<GqlInExpressionContext *>(_localctx)->rhs = expressionAtom(0);
       break;
     }
 

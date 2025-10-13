@@ -539,8 +539,13 @@ void ExprToBindingExpr::visit(ExprProperties& expr)
 
 void ExprToBindingExpr::visit(ExprIn& expr)
 {
-    expr.expr->accept_visitor(*this);
-    tmp = std::make_unique<BindingExprIn>(std::move(tmp), expr.list_id);
+    expr.lhs->accept_visitor(*this);
+    auto lhs_binding_expr = std::move(tmp);
+
+    expr.rhs->accept_visitor(*this);
+    auto rhs_binding_expr = std::move(tmp);
+
+    tmp = std::make_unique<BindingExprIn>(std::move(lhs_binding_expr), std::move(rhs_binding_expr));
 }
 
 void ExprToBindingExpr::visit(ExprAggCountAll& expr)

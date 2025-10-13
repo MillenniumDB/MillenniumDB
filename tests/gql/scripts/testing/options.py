@@ -55,6 +55,7 @@ TEST_SUITES: list[str] = [
     "datetime",
     "path_binding",
     "group_by",
+    "list_exprs",
 ]
 
 # Tests with the following query files fill be ignored

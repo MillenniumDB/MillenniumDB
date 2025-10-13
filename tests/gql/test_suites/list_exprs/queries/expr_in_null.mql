@@ -1,0 +1,2 @@
+LET x = 1
+RETURN x IN x AS result

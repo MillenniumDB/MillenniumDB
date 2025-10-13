@@ -6,12 +6,12 @@
 namespace GQL {
 class ExprIn : public Expr {
 public:
-    std::unique_ptr<Expr> expr;
-    ObjectId list_id;
+    std::unique_ptr<Expr> lhs;
+    std::unique_ptr<Expr> rhs;
 
-    ExprIn(std::unique_ptr<Expr> expr, ObjectId list_id) :
-        expr(std::move(expr)),
-        list_id(list_id)
+    ExprIn(std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs) :
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
     { }
 
     void accept_visitor(ExprVisitor& visitor) override
@@ -21,17 +21,19 @@ public:
 
     bool has_aggregation() const override
     {
-        return expr->has_aggregation();
+        return lhs->has_aggregation() || rhs->has_aggregation();
     }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprIn>(expr->clone(), list_id);
+        return std::make_unique<ExprIn>(lhs->clone(), rhs->clone());
     }
 
     std::set<VarId> get_all_vars() const override
     {
-        return expr->get_all_vars();
+        std::set<VarId> vars = lhs->get_all_vars();
+        vars.merge(rhs->get_all_vars());
+        return vars;
     }
 };
 } // namespace GQL

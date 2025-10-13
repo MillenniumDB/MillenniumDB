@@ -1,0 +1,2 @@
+MATCH (a:import)
+RETURN a, a.prop

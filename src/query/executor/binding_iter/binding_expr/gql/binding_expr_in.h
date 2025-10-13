@@ -7,19 +7,23 @@
 namespace GQL {
 class BindingExprIn : public BindingExpr {
 public:
-    std::unique_ptr<BindingExpr> expr;
-    ObjectId list_id;
+    std::unique_ptr<BindingExpr> lhs;
+    std::unique_ptr<BindingExpr> rhs;
 
-    BindingExprIn(std::unique_ptr<BindingExpr> expr, ObjectId list_id) :
-        expr(std::move(expr)),
-        list_id(list_id)
+    BindingExprIn(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
     { }
 
     ObjectId eval(const Binding& binding) override
     {
+        ObjectId list_id = rhs->eval(binding);
+        if (GQL_OID::get_type(list_id) != GQL_OID::Type::LIST) {
+            return ObjectId::get_null();
+        }
         std::vector<ObjectId> list = Conversions::unpack_list(list_id);
 
-        ObjectId elem = expr->eval(binding);
+        ObjectId elem = lhs->eval(binding);
 
         for (auto& oid : list) {
             if (GQL::Comparisons::compare_null_last(elem, oid) == 0) {
@@ -37,8 +41,10 @@ public:
     void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
         os << '(';
-        expr->print(os, ops);
-        os << " IN " << list_id << ')';
+        lhs->print(os, ops);
+        os << " IN ";
+        rhs->print(os, ops);
+        os << ')';
     }
 };
 } // namespace GQL

@@ -64,7 +64,8 @@ public:
 
     void visit(ExprIn& expr) override
     {
-        expr.accept_visitor(*this);
+        expr.lhs->accept_visitor(*this);
+        expr.rhs->accept_visitor(*this);
     }
 
     void check_group_var(VarId var_id)

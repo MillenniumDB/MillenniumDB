@@ -1102,13 +1102,13 @@ std::any QueryVisitor::visitGqlComparisonExpression(GQLParser::GqlComparisonExpr
 
 std::any QueryVisitor::visitGqlInExpression(GQLParser::GqlInExpressionContext* ctx)
 {
-    visit(ctx->expressionAtom());
-    auto left_expr = std::move(current_expr);
+    visit(ctx->lhs);
+    auto lhs_expr = std::move(current_expr);
 
-    visit(ctx->listValueConstructor());
-    auto expr_term = dynamic_cast<ExprTerm*>(current_expr.get());
+    visit(ctx->rhs);
+    auto rhs_expr = std::move(current_expr);
 
-    current_expr = std::make_unique<ExprIn>(std::move(left_expr), expr_term->term);
+    current_expr = std::make_unique<ExprIn>(std::move(lhs_expr), std::move(rhs_expr));
     return 0;
 }
 

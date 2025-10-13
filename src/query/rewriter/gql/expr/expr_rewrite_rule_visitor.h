@@ -386,7 +386,7 @@ public:
 
     void visit(GQL::ExprIn& expr) override
     {
-        visit_expr_with_expr<ExprIn>(expr);
+        visit_expr_with_lhs_and_rhs<ExprIn>(expr);
     }
 
     void visit(GQL::ExprAggCount& expr) override

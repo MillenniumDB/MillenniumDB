@@ -1,0 +1,3 @@
+LET elem = 4
+MATCH (a:expr_in)
+RETURN a, elem IN a.prop AS result

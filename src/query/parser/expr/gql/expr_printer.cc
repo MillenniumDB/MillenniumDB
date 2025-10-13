@@ -462,8 +462,9 @@ void ExprPrinter::visit(ExprProperties& expr)
 
 void ExprPrinter::visit(ExprIn& expr)
 {
-    expr.expr->accept_visitor(*this);
-    os << " IN " << expr.list_id << ")";
+    expr.lhs->accept_visitor(*this);
+    os << " IN ";
+    expr.rhs->accept_visitor(*this);
 }
 
 void ExprPrinter::visit(ExprAggCountAll&)
