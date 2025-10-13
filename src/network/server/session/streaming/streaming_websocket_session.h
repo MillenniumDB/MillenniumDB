@@ -11,7 +11,7 @@ namespace MDBServer {
 
 class Server;
 
-class StreamingWebSocketSession : public StreamingSession {
+class StreamingWebSocketSession : public StreamingSession, public std::enable_shared_from_this<StreamingWebSocketSession> {
     using websocket_stream_type = boost::beast::websocket::stream<boost::beast::tcp_stream>;
 
 public:
@@ -21,7 +21,7 @@ public:
 
     ~StreamingWebSocketSession();
 
-    static void run(std::unique_ptr<StreamingWebSocketSession>);
+    void run();
 
     void write(const uint8_t* bytes, std::size_t num_bytes) override;
 
@@ -40,6 +40,18 @@ private:
 
     boost::beast::flat_buffer request_buffer;
 
+    std::vector<uint8_t> decoded_chunks;
+
     std::unique_ptr<StreamingRequestHandler> request_handler;
+
+    void start_decode_chunk();
+
+    void decode_chunk(std::size_t chunk_size);
+
+    // helper function for reading at least n bytes from the ws stream
+    template <typename OnRead>
+    void async_read_nbytes(std::size_t n, OnRead&& on_read);
+
+    void close_with_error(const std::string& msg);
 };
 } // namespace MDBServer

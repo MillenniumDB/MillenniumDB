@@ -10,8 +10,7 @@ class StreamingRdfRequestReader : public StreamingRequestReader {
 public:
     ObjectId read_object() override
     {
-        // const auto type = static_cast<Protocol::DataType>(read_uint8());
-        const auto type = read_datatype(); // TODO:
+        const auto type = read_datatype();
         switch (type) {
         case Protocol::DataType::NULL_:
             return ObjectId::get_null();

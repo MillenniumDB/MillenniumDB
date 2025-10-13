@@ -73,7 +73,7 @@ void StreamingTCPSession::start_decode_chunk()
     );
 }
 
-void StreamingTCPSession::decode_chunk(uint16_t chunk_size)
+void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
 {
     if (decoded_chunks.size() + chunk_size > Protocol::MAX_REQUEST_BYTES) {
         // max request size reached
