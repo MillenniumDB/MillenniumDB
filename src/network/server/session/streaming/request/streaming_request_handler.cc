@@ -21,14 +21,17 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
             const auto query = request_reader->read_string();
             const auto parameters = request_reader->read_parameters();
 
-            auto log_stream = logger(Category::Info);
-            log_stream << "\nQuery received:\n" << trim_string(query) << "\n";
+            std::stringstream parameters_ss;
             if (!parameters.empty()) {
-                log_stream << "Parameters:\n";
+                parameters_ss << "Parameters:\n";
                 for (const auto& [var_name, object_id] : parameters) {
-                    log_stream << var_name << " -> " << object_id << "\n";
+                    parameters_ss << var_name << " -> " << object_id << "\n";
                 }
             }
+
+            logger(Category::Info) << "\nQuery received:\n"
+                                   << trim_string(query) << "\n"
+                                   << parameters_ss.str();
 
             handle_run(query, parameters);
         } catch (const std::exception& e) {
