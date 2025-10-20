@@ -232,6 +232,31 @@ void ReplaceParameters::visit(OpBind& op_bind)
 
 void ReplaceParameters::visit(OpShow&) { }
 
+void ReplaceParameters::visit(OpUpdate& op_update)
+{
+    for (auto& op : op_update.updates) {
+        op->accept_visitor(*this);
+    }
+}
+
+void ReplaceParameters::visit(OpInsertData& op_insert_data)
+{
+    for (auto& op_triple : op_insert_data.triples) {
+        replace_var_if_posible(op_triple.subject);
+        replace_var_if_posible(op_triple.predicate);
+        replace_var_if_posible(op_triple.object);
+    }
+}
+
+void ReplaceParameters::visit(OpDeleteData& op_delete_data)
+{
+    for (auto& op_triple : op_delete_data.triples) {
+        replace_var_if_posible(op_triple.subject);
+        replace_var_if_posible(op_triple.predicate);
+        replace_var_if_posible(op_triple.object);
+    }
+}
+
 void ReplaceParameters::visit(OpValues& op_values)
 {
     for (const auto& var : op_values.vars) {

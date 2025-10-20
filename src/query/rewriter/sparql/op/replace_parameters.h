@@ -50,10 +50,9 @@ public:
     void visit(OpPath&) override { }
     void visit(OpTriple&) override { }
 
-    // TODO: Update Ops should replace parameters too
-    void visit(OpUpdate&) override { }
-    void visit(OpInsertData&) override { }
-    void visit(OpDeleteData&) override { }
+    void visit(OpUpdate&) override;
+    void visit(OpInsertData&) override;
+    void visit(OpDeleteData&) override;
     void visit(OpCreateTextIndex&) override { }
     void visit(OpCreateHNSWIndex&) override { }
 
