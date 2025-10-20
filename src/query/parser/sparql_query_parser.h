@@ -12,6 +12,7 @@
 #include "query/rewriter/sparql/op/check_scoped_blank_nodes.h"
 #include "query/rewriter/sparql/op/check_var_names.h"
 #include "query/rewriter/sparql/op/check_well_designed.h"
+#include "query/rewriter/sparql/op/replace_parameters.h"
 #include "query/rewriter/sparql/op/replace_single_values.h"
 #include "query/rewriter/sparql/op/replace_unscoped_variables.h"
 #include "query/rewriter/sparql/op/rewrite_expr_subqueries.h"
@@ -58,6 +59,10 @@ public:
         global_info.set_query_parameters(query_parameters);
         QueryVisitor visitor(global_info);
         visitor.visitQuery(tree);
+
+        ReplaceParameters replace_parameters(global_info.query_parameters);
+        visitor.current_op->accept_visitor(replace_parameters);
+        logger(Category::LogicalPlan, 0) << "Replacing parameters:\n" << *visitor.current_op;
 
         auto res = rewrite(std::move(visitor.current_op));
 
