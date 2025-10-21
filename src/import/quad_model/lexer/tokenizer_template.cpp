@@ -90,6 +90,7 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             true         = "true";
             false        = "false";
             string       = ["] ([^"\\] | [\\][^])* ["];
+            anon         = [_][aA][0-9]+;
             typed_string = [a-zA-Z]+ [ \r\t]* [(] [ \r\t]* ["] ([^"\\] | [\\][^])* ["] [ \r\t]* [)];
             identifier   = [a-zA-Z][a-zA-Z0-9_]*;
             integer      = [-+]?[0-9]+;
@@ -106,6 +107,7 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             true         { return Import::QuadModel::Token::K_TRUE; }
             false        { return Import::QuadModel::Token::K_FALSE; }
             string       { return Import::QuadModel::Token::STRING; }
+            anon         { return Import::QuadModel::Token::ANON; }
             typed_string { return Import::QuadModel::Token::TYPED_STRING; }
             identifier   { return Import::QuadModel::Token::IDENTIFIER; }
             integer      { return Import::QuadModel::Token::INTEGER; }
