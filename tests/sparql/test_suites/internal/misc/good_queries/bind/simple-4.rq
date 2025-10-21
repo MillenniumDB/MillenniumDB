@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE{
+    BIND(12 - 1 AS ?x) .
+    ?s :t18 1 .
+}

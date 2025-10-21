@@ -47,16 +47,14 @@ void ReplaceSingleValues::visit(OpSequence& op_sequence)
 
 void ReplaceSingleValues::visit(OpBind& op_bind)
 {
-    auto casted = dynamic_cast<ExprTerm*>(op_bind.expr.get());
-    if (casted != nullptr) {
-        assigned_values[op_bind.var] = casted->term;
+    if (auto expr_term = dynamic_cast<ExprTerm*>(op_bind.expr.get())) {
+        assigned_values[op_bind.var] = expr_term->term;
+        if (dynamic_cast<OpUnitTable*>(op_bind.op.get()) != nullptr) {
+            delete_child = true;
+        }
     }
 
-    if (dynamic_cast<OpUnitTable*>(op_bind.op.get()) != nullptr) {
-        delete_child = true;
-    } else {
-        op_bind.op->accept_visitor(*this);
-    }
+    op_bind.op->accept_visitor(*this);
 }
 
 void ReplaceSingleValues::visit(OpValues& op_values)
