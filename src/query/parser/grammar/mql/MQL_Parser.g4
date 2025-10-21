@@ -61,9 +61,10 @@ simpleQuery:
 		| updateStatement+
 	);
 
-primitiveStatement: (
-		(matchStatement | callStatement) whereStatement?
-	)
+primitiveStatement:
+	matchStatement
+	| callStatement
+	| whereStatement
 	| letStatement;
 
 createIndexQuery:
