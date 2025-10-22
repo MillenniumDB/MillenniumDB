@@ -70,6 +70,7 @@ public:
 
     void visit_or_replace_parameter(std::unique_ptr<Expr>& expr);
 
+private:
     void visit(ExprVar&) override;
     void visit(ExprTerm&) override;
     void visit(ExprEqual&) override;
@@ -162,7 +163,6 @@ public:
     void visit(ExprSqrt&) override;
     void visit(ExprSum&) override;
 
-private:
     const std::map<VarId, ObjectId>& parameters;
 };
 
