@@ -19,6 +19,8 @@ void ReplaceParameters::visit(OpConstruct& op_construct)
 void ReplaceParameters::visit(OpDescribe& op_describe)
 
 {
+    op_describe.op->accept_visitor(*this);
+
     for (const auto& var : op_describe.vars) {
         if (parameters.find(var) != parameters.end()) {
             throw QuerySemanticException(
@@ -26,8 +28,6 @@ void ReplaceParameters::visit(OpDescribe& op_describe)
             );
         }
     }
-
-    op_describe.op->accept_visitor(*this);
 }
 
 void ReplaceParameters::visit(OpBasicGraphPattern& op_basic_graph_pattern)
@@ -122,6 +122,22 @@ void ReplaceParameters::visit(OpOptional& op_optional)
 void ReplaceParameters::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);
+
+    ReplaceParametersExpr visitor(parameters);
+    for (auto& item : op_order_by.items) {
+        if (std::holds_alternative<VarId>(item)) {
+            const auto var_id = std::get<VarId>(item);
+            if (parameters.find(var_id) != parameters.end()) {
+                throw QuerySemanticException(
+                    "ORDER BY variable alias ?" + get_query_ctx().get_var_name(var_id)
+                    + " cannot be a parameter"
+                );
+            }
+        } else {
+            auto& expr = std::get<std::unique_ptr<Expr>>(item);
+            visitor.visit_or_replace_parameter(expr);
+        }
+    }
 }
 
 void ReplaceParameters::visit(OpFrom& op_from)
@@ -177,15 +193,23 @@ void ReplaceParameters::visit(OpSelect& op_select)
 
     ReplaceParametersExpr visitor(parameters);
     for (size_t i = 0; i < op_select.vars.size(); i++) {
-        auto& var = op_select.vars[i];
+        const auto& var_id = op_select.vars[i];
         auto& expr = op_select.vars_exprs[i];
         if (expr) {
-            if (parameters.find(var) != parameters.end()) {
+            // var is an alias
+            if (parameters.find(var_id) != parameters.end()) {
                 throw QuerySemanticException(
-                    "SELECT alias variable ?" + get_query_ctx().get_var_name(var) + " cannot be a parameter"
+                    "SELECT alias variable ?" + get_query_ctx().get_var_name(var_id)
+                    + " cannot be a parameter"
                 );
             }
             visitor.visit_or_replace_parameter(expr);
+        } else {
+            // var is a projection
+            const auto it = parameters.find(var_id);
+            if (it != parameters.end()) {
+                expr = std::make_unique<ExprTerm>(it->second);
+            }
         }
     }
 }
@@ -218,13 +242,13 @@ void ReplaceParameters::visit(OpService& op_service)
 
 void ReplaceParameters::visit(OpBind& op_bind)
 {
+    op_bind.op->accept_visitor(*this);
+
     if (parameters.find(op_bind.var) != parameters.end()) {
         throw QueryException(
             "BIND alias variable ?" + get_query_ctx().get_var_name(op_bind.var) + " cannot be a parameter"
         );
     }
-
-    op_bind.op->accept_visitor(*this);
 
     ReplaceParametersExpr visitor(parameters);
     visitor.visit_or_replace_parameter(op_bind.expr);
