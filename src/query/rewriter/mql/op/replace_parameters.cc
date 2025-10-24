@@ -393,6 +393,26 @@ void ReplaceParametersExpr::visit(ExprNormalize& expr)
     visit_or_replace_parameter(expr.expr);
 }
 
+void ReplaceParametersExpr::visit(ExprStr& expr)
+{
+    visit_or_replace_parameter(expr.expr);
+}
+
+void ReplaceParametersExpr::visit(ExprLabels&)
+{
+    // TODO: expr.var;
+}
+
+void ReplaceParametersExpr::visit(ExprType&)
+{
+    // TODO: expr.var;
+}
+
+void ReplaceParametersExpr::visit(ExprProperties&)
+{
+    // TODO: expr.var;
+}
+
 void ReplaceParametersExpr::visit(ExprAggAvg& expr)
 {
     visit_or_replace_parameter(expr.expr);
