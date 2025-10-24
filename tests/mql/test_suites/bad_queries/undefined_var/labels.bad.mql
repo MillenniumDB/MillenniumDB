@@ -1,0 +1,2 @@
+MATCH (?x)
+RETURN LABELS(?y) AS ?labels

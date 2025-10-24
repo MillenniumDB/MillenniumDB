@@ -58,6 +58,12 @@ public:
     std::string encode_dictionary_array(const DictionaryArray& dictionary) const;
     std::string encode_dictionary_literal(const DictionaryLiteral& dictionary) const;
     std::string encode_edge(int64_t edge_id) const;
+
+    virtual std::string encode_dictionary_key(const ObjectId& oid) const
+    {
+        return encode_null();
+    }
+
     template<typename T>
     std::string encode_tensor(const tensor::Tensor<T>& tensor) const;
 

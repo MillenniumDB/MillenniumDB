@@ -68,6 +68,11 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
             lhs_value = Conversions::unpack_float(lhs);
             break;
         }
+        case ObjectId::MASK_DECIMAL: {
+            Decimal lhs_decimal = Common::Conversions::unpack_decimal(lhs);
+            lhs_value = lhs_decimal.to_double();
+            break;
+        }
         default:
             throw std::logic_error("Unmanaged NUMERIC type " + std::to_string(lhs_type));
         }
@@ -85,6 +90,11 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
         }
         case ObjectId::MASK_FLOAT: {
             rhs_value = Conversions::unpack_float(rhs);
+            break;
+        }
+        case ObjectId::MASK_DECIMAL: {
+            Decimal lhs_decimal = Common::Conversions::unpack_decimal(rhs);
+            rhs_value = lhs_decimal.to_double();
             break;
         }
         default:
@@ -122,6 +132,24 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
             throw LogicException("This should never happen");
         }
         }
+    }
+    case ObjectId::MASK_LIST: {
+        std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs);
+        std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs);
+        if (lhs_list == rhs_list) {
+            return 0;
+        }
+        return lhs_unmasked_id - rhs_unmasked_id;
+    }
+    case ObjectId::MASK_DICTIONARY: {
+        auto lhs_dict = Common::Conversions::unpack_dictionary(lhs);
+        auto rhs_dict = Common::Conversions::unpack_dictionary(rhs);
+        Dictionary& lhs_ref(*lhs_dict);
+        Dictionary& rhs_ref(*rhs_dict);
+        if (lhs_ref == rhs_ref) {
+            return 0;
+        }
+        return lhs_unmasked_id - rhs_unmasked_id;
     }
     default:
         throw std::logic_error(

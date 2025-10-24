@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "graph_models/quad_model/comparisons.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
 
@@ -13,11 +13,12 @@ public:
     std::unique_ptr<BindingExpr> rhs;
 
     BindingExprEquals(std::unique_ptr<BindingExpr> lhs, std::unique_ptr<BindingExpr> rhs) :
-        lhs (std::move(lhs)),
-        rhs (std::move(rhs)) { }
+        lhs(std::move(lhs)),
+        rhs(std::move(rhs))
+    { }
 
-
-    ObjectId eval(const Binding& binding) override {
+    ObjectId eval(const Binding& binding) override
+    {
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
@@ -25,10 +26,13 @@ public:
         if (lhs_oid == rhs_oid) {
             return ObjectId(ObjectId::BOOL_TRUE);
         }
-        return ObjectId(Comparisons::compare(lhs_oid, rhs_oid) == 0);
+
+        return Comparisons::compare(lhs_oid, rhs_oid) == 0 ? ObjectId(ObjectId::BOOL_TRUE)
+                                                           : ObjectId(ObjectId::BOOL_FALSE);
     }
 
-    void accept_visitor(BindingExprVisitor& visitor) override {
+    void accept_visitor(BindingExprVisitor& visitor) override
+    {
         visitor.visit(*this);
     }
 

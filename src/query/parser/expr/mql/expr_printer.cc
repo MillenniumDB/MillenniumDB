@@ -231,6 +231,28 @@ void ExprPrinter::visit(MQL::ExprNormalize& expr)
     os << ")";
 }
 
+void ExprPrinter::visit(MQL::ExprStr& expr)
+{
+    os << "STR(";
+    expr.expr->accept_visitor(*this);
+    os << ")";
+}
+
+void ExprPrinter::visit(MQL::ExprLabels& expr)
+{
+    os << "LABELS(" << expr.var << ")";
+}
+
+void ExprPrinter::visit(MQL::ExprType& expr)
+{
+    os << "TYPE(" << expr.var << ")";
+}
+
+void ExprPrinter::visit(MQL::ExprProperties& expr)
+{
+    os << "PROPERTIES(" << expr.var << ")";
+}
+
 void ExprPrinter::visit(MQL::ExprAggAvg& expr)
 {
     os << "AVG(";

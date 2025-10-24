@@ -443,4 +443,11 @@ inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
     out = encoder.decode(dict_ptr);
 }
 
+inline std::unique_ptr<Dictionary> unpack_dictionary(ObjectId oid)
+{
+    std::unique_ptr<Dictionary> out;
+    unpack_dictionary(oid, out);
+    return out;
+}
+
 }} // namespace Common::Conversions

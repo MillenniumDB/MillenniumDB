@@ -283,6 +283,13 @@ void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
     lists.get(out, list_id.id & LIST_OFFSET_MASK);
 }
 
+std::vector<ObjectId> Conversions::unpack_list(ObjectId list_id)
+{
+    std::vector<ObjectId> list;
+    unpack_list(list_id, list);
+    return list;
+}
+
 ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
 {
     ObjectId path_oid = pack_list(oid_list);
@@ -328,8 +335,7 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         break;
     }
     case GQL_OID::Type::LIST: {
-        std::vector<ObjectId> out;
-        Conversions::unpack_list(oid, out);
+        std::vector<ObjectId> out = Conversions::unpack_list(oid);
         os << "[";
         for (auto it = out.begin(); it != out.end(); ++it) {
             if (it != out.begin()) {

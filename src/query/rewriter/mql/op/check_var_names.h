@@ -19,9 +19,9 @@ private:
     template<typename T>
     using SetType = boost::container::flat_set<T>;
 
-    SetType<VarId> declared_vars;   // all declared variables
+    SetType<VarId> declared_vars; // all declared variables
     SetType<VarId> unjoinable_vars; // variables that must not be joined (e.g. path variable)
-    SetType<VarId> alias_vars;      // e.g. RETURN 1 + 1 AS ?alias
+    SetType<VarId> alias_vars; // e.g. RETURN 1 + 1 AS ?alias
 
     void insert_joinable_var(VarId var);
     void insert_unjoinable_var(VarId var);
@@ -101,6 +101,10 @@ public:
     void visit(ExprEuclideanDistance&) override;
     void visit(ExprEditDistance&) override;
     void visit(ExprNormalize&) override;
+    void visit(ExprStr&) override;
+    void visit(ExprLabels&) override;
+    void visit(ExprType&) override;
+    void visit(ExprProperties&) override;
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;

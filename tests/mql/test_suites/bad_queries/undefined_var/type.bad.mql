@@ -1,0 +1,2 @@
+MATCH (?x)
+RETURN TYPE(?y) AS ?type

@@ -432,9 +432,7 @@ std::string StreamingResponseWriter::encode_dictionary_object(const DictionaryOb
     res += encode_size(dictionary.keys.size());
 
     for (auto&& [key, value] : dictionary.keys) {
-        std::stringstream ss;
-        ss << key;
-        res += encode_string(ss.str(), Protocol::DataType::STRING);
+        res += encode_dictionary_key(key);
 
         if (auto literal = dynamic_cast<DictionaryLiteral*>(value.get())) {
             res += encode_dictionary_literal(*literal);

@@ -34,6 +34,7 @@ void unpack_path(ObjectId oid, std::vector<ObjectId>& out);
 
 ObjectId pack_list(const std::vector<ObjectId>& list);
 void unpack_list(ObjectId list_id, std::vector<ObjectId>& out);
+std::vector<ObjectId> unpack_list(ObjectId list_id);
 
 std::ostream& debug_print(std::ostream& os, ObjectId oid);
 

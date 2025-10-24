@@ -87,13 +87,10 @@ protected:
     void to_string(std::ostream& os) const override
     {
         os << "[";
-
-        auto it = values.begin();
-        (*it)->to_string(os);
-        it++;
-
-        for (; it != values.end(); ++it) {
-            os << ",";
+        for (auto it = values.begin(); it != values.end(); ++it) {
+            if (it != values.begin()) {
+                os << ",";
+            }
             (*it)->to_string(os);
         }
         os << "]";
@@ -103,8 +100,12 @@ protected:
     {
         *buffer = static_cast<char>(TYPE_ARRAY);
         buffer++;
-        uint64_t size = values.size();
-        uint64_t size_bytes = BytesEncoder::write_size(buffer, size);
+        if (values.empty()) {
+            *buffer++ = 0;
+            return buffer;
+        }
+
+        uint64_t size_bytes = BytesEncoder::write_size(buffer, values.size());
         buffer += size_bytes;
 
         for (auto& item : values) {
@@ -149,13 +150,11 @@ protected:
     {
         os << "{";
 
-        auto it = keys.begin();
-        os << it->first << ":";
-        it->second->to_string(os);
-        it++;
-
-        for (; it != keys.end(); ++it) {
-            os << "," << it->first << ":";
+        for (auto it = keys.begin(); it != keys.end(); ++it) {
+            if (it != keys.begin()) {
+                os << ",";
+            }
+            os << it->first << ":";
             it->second->to_string(os);
         }
         os << "}";
@@ -165,8 +164,12 @@ protected:
     {
         *buffer = static_cast<char>(TYPE_OBJECT);
         buffer++;
-        uint64_t size = keys.size();
-        uint64_t size_bytes = BytesEncoder::write_size(buffer, size);
+        if (keys.empty()) {
+            *buffer++ = 0;
+            return buffer;
+        }
+
+        uint64_t size_bytes = BytesEncoder::write_size(buffer, keys.size());
         buffer += size_bytes;
 
         for (auto&& [k, v] : keys) {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include <regex>
+#include <vector>
 
 #include <boost/unordered/unordered_flat_map.hpp>
 
@@ -51,14 +51,15 @@ private:
         uint64_t max_candidates;
 
         boost::unordered_flat_map<std::string, bool> opt2seen = {
-            {     "property", false},
-            {       "metric", false},
-            {    "dimension", false},
-            {     "maxEdges", false},
-            {"maxCandidates", false}
+            {      "property", false },
+            {        "metric", false },
+            {     "dimension", false },
+            {      "maxEdges", false },
+            { "maxCandidates", false }
         };
 
-        std::vector<std::string> valid_options() const {
+        std::vector<std::string> valid_options() const
+        {
             std::vector<std::string> keys;
             keys.reserve(opt2seen.size());
             for (const auto& [key, _] : opt2seen) {
@@ -79,8 +80,7 @@ private:
                 throw QueryException("Invalid property: \"" + property + "\"");
             }
 
-            if (metric != "cosineDistance" && metric != "manhattanDistance"
-                && metric != "euclideanDistance")
+            if (metric != "cosineDistance" && metric != "manhattanDistance" && metric != "euclideanDistance")
             {
                 throw QueryException(
                     "Invalid metric: \"" + metric
@@ -105,13 +105,13 @@ private:
 
     struct TextIndexOptions {
         std::string property;
-        std::string normalization { "nfkdCasefold"}; // optional
+        std::string normalization { "nfkdCasefold" }; // optional
         std::string tokenization { "wsSplitPunc" }; // optional
 
         boost::unordered_flat_map<std::string, bool> opt2seen = {
-            {     "property", false},
-            {"normalization", false},
-            { "tokenization", false}
+            {      "property", false },
+            { "normalization", false },
+            {  "tokenization", false }
         };
 
         void validate() const
@@ -211,7 +211,8 @@ private:
 
     std::vector<float> current_tensor;
 
-    static inline bool is_valid_property_key(const std::string& key) {
+    static inline bool is_valid_property_key(const std::string& key)
+    {
         static const std::regex pattern(R"([A-Za-z][A-Za-z0-9_]*)");
         return std::regex_match(key, pattern);
     }
@@ -219,7 +220,11 @@ private:
     // receives either a TextIndexOptions or a HNSWIndexOptions
     // Parses the CreateIndexOptionsContext and validate it with the given struct and OptionhandlerFunc
     template<typename IndexOptions, typename OptionHandlerFunc>
-    void parse_index_options(MQL_Parser::CreateIndexOptionsContext* ctx, IndexOptions& index_opts, OptionHandlerFunc option_handler_func);
+    void parse_index_options(
+        MQL_Parser::CreateIndexOptionsContext* ctx,
+        IndexOptions& index_opts,
+        OptionHandlerFunc option_handler_func
+    );
 
     // try to parse str as datatype and store it as current_value_oid
     // if datatype is not valid will throw an exception
@@ -285,7 +290,6 @@ public:
     virtual std::any visitPathAtomSimple(MQL_Parser::PathAtomSimpleContext* ctx) override;
     virtual std::any visitPathAtomAlternatives(MQL_Parser::PathAtomAlternativesContext* ctx) override;
 
-
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext* ctx) override;
     virtual std::any visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext* ctx) override;
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext* ctx) override;
@@ -306,6 +310,10 @@ public:
     virtual std::any visitEuclideanDistance(MQL_Parser::EuclideanDistanceContext* ctx) override;
     virtual std::any visitEditDistance(MQL_Parser::EditDistanceContext* ctx) override;
     virtual std::any visitNormalize(MQL_Parser::NormalizeContext* ctx) override;
+    virtual std::any visitStr(MQL_Parser::StrContext* ctx) override;
+    virtual std::any visitLabels(MQL_Parser::LabelsContext* ctx) override;
+    virtual std::any visitType(MQL_Parser::TypeContext* ctx) override;
+    virtual std::any visitPropertiesFunction(MQL_Parser::PropertiesFunctionContext* ctx) override;
 
     virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx) override;
 

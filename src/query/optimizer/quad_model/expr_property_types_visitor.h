@@ -38,6 +38,9 @@ public:
     virtual void visit(ExprLess&) override { }
     virtual void visit(ExprNotEquals&) override { }
     virtual void visit(ExprNot&) override { }
+    virtual void visit(ExprLabels&) override { }
+    virtual void visit(ExprType&) override { }
+    virtual void visit(ExprProperties&) override { }
 
     virtual void visit(ExprAggAvg&) override { }
     virtual void visit(ExprAggCountAll&) override { }
@@ -52,5 +55,6 @@ public:
     virtual void visit(ExprEuclideanDistance&) override { }
     virtual void visit(ExprEditDistance&) override { }
     virtual void visit(ExprNormalize&) override { }
+    virtual void visit(ExprStr&) override { }
 };
 } // namespace MQL

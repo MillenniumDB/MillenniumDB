@@ -128,10 +128,8 @@ public:
         }
 
         if (lhs_subtype == GQL_OID::GenericSubType::LIST && rhs_subtype == GQL_OID::GenericSubType::LIST) {
-            std::vector<ObjectId> lhs_list;
-            std::vector<ObjectId> rhs_list;
-            Conversions::unpack_list(lhs_oid, lhs_list);
-            Conversions::unpack_list(rhs_oid, rhs_list);
+            std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs_oid);
+            std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs_oid);
 
             return GQL::Conversions::pack_bool(lhs_list == rhs_list);
         }

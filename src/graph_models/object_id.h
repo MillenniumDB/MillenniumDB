@@ -118,19 +118,20 @@ public:
     static constexpr uint64_t MASK_TENSOR_DOUBLE_EXTERN    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
     static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
 
+    static constexpr uint64_t MASK_LIST                    = 0xC0'00000000000000UL; // 0b1100'00'00
+    static constexpr uint64_t MASK_DICTIONARY              = 0xD0'00000000000000UL; // 0b1101'00'00
+    static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xD2'00000000000000UL; // 0b1101'00'10
+
     // GQL types
-    static constexpr uint64_t MASK_NODE                    = 0xC0'00000000000000UL; // 0b1100'00'00
-    static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xD0'00000000000000UL; // 0b1101'00'00
-    static constexpr uint64_t MASK_UNDIRECTED_EDGE         = 0xD4'00000000000000UL; // 0b1101'01'00
-    static constexpr uint64_t MASK_NODE_LABEL              = 0xE0'00000000000000UL; // 0b1110'00'00
-    static constexpr uint64_t MASK_EDGE_LABEL              = 0xE4'00000000000000UL; // 0b1110'01'00
-    static constexpr uint64_t MASK_NODE_KEY                = 0xE8'00000000000000UL; // 0b1110'10'00
-    static constexpr uint64_t MASK_EDGE_KEY                = 0xEC'00000000000000UL; // 0b1110'11'00
-    static constexpr uint64_t MASK_LIST                    = 0xF0'00000000000000UL; // 0b1111'00'00
-    static constexpr uint64_t MASK_GQL_PATH                = 0xF4'00000000000000UL; // 0b1111'01'00
-    static constexpr uint64_t MASK_DIRECTION               = 0xF8'00000000000000UL; // 0b1111'10'00
-    static constexpr uint64_t MASK_DICTIONARY              = 0xFC'00000000000000UL; // 0b1111'11'00
-    static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xFE'00000000000000UL; // 0b1111'11'10
+    static constexpr uint64_t MASK_NODE                    = 0xD4'00000000000000UL; // 0b1101'01'00
+    static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xE0'00000000000000UL; // 0b1110'00'00
+    static constexpr uint64_t MASK_UNDIRECTED_EDGE         = 0xE4'00000000000000UL; // 0b1110'01'00
+    static constexpr uint64_t MASK_NODE_LABEL              = 0xE8'00000000000000UL; // 0b1110'10'00
+    static constexpr uint64_t MASK_EDGE_LABEL              = 0xEC'00000000000000UL; // 0b1110'11'00
+    static constexpr uint64_t MASK_NODE_KEY                = 0xF0'00000000000000UL; // 0b1111'00'00
+    static constexpr uint64_t MASK_EDGE_KEY                = 0xF4'00000000000000UL; // 0b1111'01'00
+    static constexpr uint64_t MASK_GQL_PATH                = 0xF8'00000000000000UL; // 0b1111'10'00
+    static constexpr uint64_t MASK_DIRECTION               = 0xFC'00000000000000UL; // 0b1111'11'00
 
     static constexpr uint64_t MASK_NOT_FOUND               = 0xFF'00000000000000UL; // 0b1111'11'11
 

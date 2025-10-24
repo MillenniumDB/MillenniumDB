@@ -11,10 +11,7 @@ namespace MQL {
 template<ReturnType>
 class ReturnExecutor : public QueryExecutor {
 public:
-    ReturnExecutor(
-        std::unique_ptr<BindingIter> iter,
-        std::vector<VarId>&& projection_vars
-    ) :
+    ReturnExecutor(std::unique_ptr<BindingIter> iter, std::vector<VarId>&& projection_vars) :
         iter(std::move(iter)),
         projection_vars(std::move(projection_vars))
     { }
@@ -35,5 +32,6 @@ private:
 
     static void print_path_node(std::ostream& os, ObjectId node_id);
     static void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
+    static void print_list(std::ostream& os, std::ostream& escaped_os, ObjectId list_id);
 };
 } // namespace MQL
