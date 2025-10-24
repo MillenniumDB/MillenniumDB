@@ -7,6 +7,7 @@
 #include "query/parser/grammar/mql/query_visitor.h"
 #include "query/parser/op/mql/op.h"
 #include "query/rewriter/mql/op/check_var_names.h"
+#include "query/rewriter/mql/op/replace_parameters.h"
 
 namespace MQL {
 
@@ -34,6 +35,12 @@ public:
         global_info.set_query_parameters(query_parameters);
         QueryVisitor visitor(global_info);
         visitor.visitRoot(tree);
+
+        if (!global_info.query_parameters.empty()) {
+            ReplaceParameters replace_parameters(global_info.query_parameters);
+            visitor.current_op->accept_visitor(replace_parameters);
+            logger(Category::LogicalPlan, 0) << "Replacing parameters:\n" << *visitor.current_op;
+        }
 
         auto res = std::move(visitor.current_op);
 

@@ -16,35 +16,8 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     const auto request_type = request_reader->read_request_type();
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
-        try {
-            request_reader->check_datatype(Protocol::DataType::STRING);
-            const auto query = request_reader->read_string();
-            const auto parameters = request_reader->read_parameters();
-
-            std::stringstream parameters_ss;
-            if (!parameters.empty()) {
-                parameters_ss << "Parameters:\n";
-                for (const auto& [var_name, object_id] : parameters) {
-                    parameters_ss << var_name << " -> " << object_id << "\n";
-                }
-            }
-
-            logger(Category::Info) << "\nQuery received:\n"
-                                   << trim_string(query) << "\n"
-                                   << parameters_ss.str();
-
-            handle_run(query, parameters);
-        } catch (const std::exception& e) {
-            const auto msg = std::string("Exception on request: ") + e.what();
-            logger(Category::Error) << msg;
-            response_writer->write_error(msg);
-            response_writer->flush();
-        } catch (...) {
-            const auto msg = std::string("Unknown exception on request");
-            logger(Category::Error) << msg;
-            response_writer->write_error(msg);
-            response_writer->flush();
-        }
+        logger(Category::Debug) << "Request received: QUERY";
+        handle_run();
         break;
     }
     case Protocol::RequestType::CATALOG: {
@@ -63,10 +36,7 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     }
 }
 
-void StreamingRequestHandler::handle_run(
-    const std::string& query,
-    const std::map<std::string, ObjectId>& parameters
-)
+void StreamingRequestHandler::handle_run()
 {
     auto readonly_version_scope = buffer_manager.init_version_readonly();
 
@@ -79,6 +49,20 @@ void StreamingRequestHandler::handle_run(
                            << get_query_ctx().cancellation_token;
 
     try {
+        // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+        request_reader->check_datatype(Protocol::DataType::STRING);
+        const auto query = request_reader->read_string();
+        const auto parameters = request_reader->read_parameters();
+
+        std::stringstream parameters_ss;
+        if (!parameters.empty()) {
+            parameters_ss << "Parameters:\n";
+            for (const auto& [var_name, object_id] : parameters) {
+                parameters_ss << var_name << " -> " << object_id << "\n";
+            }
+        }
+        logger(Category::Info) << "\nQuery:\n" << trim_string(query) << "\n" << parameters_ss.str();
+
         auto parser_start = std::chrono::system_clock::now();
         auto current_logical_plan = create_logical_plan(query, parameters);
         parser_duration_ms = get_duration(parser_start);
@@ -116,10 +100,16 @@ void StreamingRequestHandler::handle_run(
             os << '\n';
         });
 
-        logger(Category::Info) << "Results:            " << result_count << "\n"
-                                  "Parser duration:    " << parser_duration_ms.count() << " ms\n"
-                                  "Optimizer duration: " << optimizer_duration_ms.count() << " ms\n"
-                                  "Execution duration: " << execution_duration_ms.count() << " ms";
+        logger(Category::Info) << "Results:            " << result_count
+                               << "\n"
+                                  "Parser duration:    "
+                               << parser_duration_ms.count()
+                               << " ms\n"
+                                  "Optimizer duration: "
+                               << optimizer_duration_ms.count()
+                               << " ms\n"
+                                  "Execution duration: "
+                               << execution_duration_ms.count() << " ms";
 
         response_writer->write_records_success(
             result_count,
@@ -186,7 +176,8 @@ void StreamingRequestHandler::handle_cancel()
     response_writer->flush();
 }
 
-bool StreamingRequestHandler::is_update(const OpUptr& uptr) {
+bool StreamingRequestHandler::is_update(const OpUptr& uptr)
+{
     if (std::holds_alternative<std::unique_ptr<GQL::Op>>(uptr)) {
         return false;
     } else if (std::holds_alternative<std::unique_ptr<MQL::Op>>(uptr)) {

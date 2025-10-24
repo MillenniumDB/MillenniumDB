@@ -60,9 +60,11 @@ public:
         QueryVisitor visitor(global_info);
         visitor.visitQuery(tree);
 
-        ReplaceParameters replace_parameters(global_info.query_parameters);
-        visitor.current_op->accept_visitor(replace_parameters);
-        logger(Category::LogicalPlan, 0) << "Replacing parameters:\n" << *visitor.current_op;
+        if (!global_info.query_parameters.empty()) {
+            ReplaceParameters replace_parameters(global_info.query_parameters);
+            visitor.current_op->accept_visitor(replace_parameters);
+            // logger(Category::LogicalPlan, 0) << "Replacing parameters:\n" << *visitor.current_op;
+        }
 
         auto res = rewrite(std::move(visitor.current_op));
 

@@ -55,7 +55,7 @@ protected:
 
     // Build the logical and physical plan. On success store the result in current_physical_plan and transition to
     // STREAMING state.
-    void handle_run(const std::string& query, const std::map<std::string, ObjectId>& parameters);
+    void handle_run();
 
     // Send a catalog response to the client
     void handle_catalog();
