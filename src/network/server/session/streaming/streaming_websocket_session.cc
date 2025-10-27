@@ -58,7 +58,7 @@ void StreamingWebSocketSession::start_decode_chunk()
     // read initial chunk size
     async_read_nbytes(2, [self]() {
         // read chunk size
-        self->request_buffer.commit(2); // TODO: maybe is unnecessary to commit? idk
+        self->request_buffer.commit(2);
         const auto initial_chunk_size_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
         const uint16_t initial_chunk_size = (static_cast<uint16_t>(initial_chunk_size_bytes[0]) << 8)
                                           | initial_chunk_size_bytes[1];
@@ -105,7 +105,7 @@ void StreamingWebSocketSession::decode_chunk(std::size_t chunk_size)
 
     // read current chunk + next chunk size
     async_read_nbytes(chunk_size + 2, [self, chunk_size]() {
-        self->request_buffer.commit(chunk_size + 2); // TODO: is necessary?
+        self->request_buffer.commit(chunk_size + 2);
 
         // append decoded chunk
         const auto chunk_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
