@@ -50,6 +50,18 @@ public:
     // load an index from disk
     static std::unique_ptr<HNSWIndex> load(const std::string& hnsw_index_name, MetricFuncType metric_func);
 
+    // Create constructor
+    HNSWIndex(HNSWIndexParams params, MetricFuncType metric_func);
+
+    // Load constructor
+    HNSWIndex(
+        HNSWIndexParams params,
+        MetricFuncType metric_func,
+        std::vector<HNSWNode>&& node_storage,
+        std::vector<std::vector<HNSWEntryFlatMap>>&& node_neighbors_at_layer,
+        boost::dynamic_bitset<>&& node_tombstones
+    );
+
     // find the the top num_neighbors from a pool of num_candidates
     HNSWHeap query(
         const tensor::Tensor<float>& query_tensor,
@@ -77,10 +89,12 @@ public:
     );
 
     // index all { subject, object } pairs given a predicate (SPARQL)
-    std::tuple<uint_fast32_t> index_predicate(const std::string& predicate);
+    // returns total inserted elements
+    uint_fast32_t index_predicate(const std::string& predicate);
 
     // index all { object, value } pairs given a key (MQL)
-    std::tuple<uint_fast32_t> index_property(const std::string& key);
+    // returns total inserted elements
+    uint_fast32_t index_property(const std::string& key);
 
     // index a single entry
     template<bool CheckTombstones>
@@ -131,18 +145,6 @@ private:
 
     // deleted nodes
     boost::dynamic_bitset<> node_tombstones;
-
-    // Create constructor
-    explicit HNSWIndex(HNSWIndexParams params, MetricFuncType metric_func);
-
-    // Load constructor
-    explicit HNSWIndex(
-        HNSWIndexParams params,
-        MetricFuncType metric_func,
-        std::vector<HNSWNode>&& node_storage,
-        std::vector<std::vector<HNSWEntryFlatMap>>&& node_neighbors_at_layer,
-        boost::dynamic_bitset<>&& node_tombstones
-    );
 
     // initialize constants for the index
     inline void init_constants()

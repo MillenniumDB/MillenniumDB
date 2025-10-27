@@ -52,12 +52,12 @@ public:
         TOKENIZE_TYPE tokenization_type
     );
 
-    boost::unordered_flat_map<std::string, TextIndexMetadata> get_name2metadata() const
+    const boost::unordered_flat_map<std::string, TextIndexMetadata>& get_name2metadata() const
     {
         return name2metadata;
     }
 
-    boost::unordered_flat_map<std::string, std::vector<std::string>> get_predicate2names() const
+    const boost::unordered_flat_map<std::string, std::vector<std::string>>& get_predicate2names() const
     {
         return predicate2names;
     }
@@ -172,8 +172,10 @@ private:
 
     // Name to text index
     boost::unordered_flat_map<std::string, std::unique_ptr<TextIndex>> name2text_search_index;
+
     // Name to text index metadata (normalize, tokenize, predicate, etc...)
     boost::unordered_flat_map<std::string, TextIndexMetadata> name2metadata;
+
     // Predicate to text index name
     boost::unordered_flat_map<std::string, std::vector<std::string>> predicate2names;
 };

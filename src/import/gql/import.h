@@ -4,13 +4,14 @@
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <stack>
 
 #include "graph_models/gql/gql_catalog.h"
 #include "import/disk_vector.h"
+#include "import/external_helper.h"
 #include "import/gql/lexer/state.h"
 #include "import/gql/lexer/token.h"
 #include "import/gql/lexer/tokenizer.h"
-#include "import/external_helper.h"
 #include "misc/istream.h"
 
 namespace Import { namespace GQL {
@@ -45,6 +46,11 @@ private:
     int* state_transitions;
 
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
+
+    int current_state;
+
+    // we use a stack to represent nested lists
+    std::stack<std::vector<ObjectId>> lists_stack;
 
     GQLTokenizer lexer;
 
@@ -116,6 +122,8 @@ private:
 
     boost::unordered_flat_map<std::string, uint64_t> edge_keys_map;
 
+    char* list_buffer;
+
     void do_nothing() { }
 
     void save_direction(EdgeDir);
@@ -162,9 +170,19 @@ private:
 
     void add_edge_prop_false();
 
+    void init_list();
+    void add_list_value_false();
+    void add_list_value_true();
+    void add_list_value_integer();
+    void add_list_value_string();
+    void save_node_list();
+    void save_edge_list();
+
     void finish_line();
 
     void print_error();
+
+    uint64_t from_list(const std::string& str);
 
     void try_save_node_label(uint64_t node, uint64_t label);
     void try_save_node_property(uint64_t node, uint64_t key, uint64_t value);
@@ -179,7 +197,7 @@ private:
 
     void set_transition(int state, int token, int value, std::function<void()> func);
 
-    int get_transition(int state, int token);
+    void advance_automaton(int token);
 
     // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place
     void normalize_string_literal();

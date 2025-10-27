@@ -6,8 +6,7 @@ class StreamingQueryExecutor {
 public:
     virtual ~StreamingQueryExecutor() = default;
 
-    // Returns the projection variables
-    virtual const std::vector<VarId>& get_projection_vars() const = 0;
+    std::vector<VarId> projection_vars;
 
     // Write each result of the query to the given ResponseWriter. Returns the number of results written
     virtual uint64_t execute(MDBServer::StreamingResponseWriter& response_writer) = 0;

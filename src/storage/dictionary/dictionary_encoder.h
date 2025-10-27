@@ -59,7 +59,7 @@ private:
             char type = *buffer;
             buffer++;
 
-            uint64_t bytes_read;
+            uint64_t bytes_read = 0;
             switch (type) {
             case DictionaryItem::TYPE_LITERAL:
                 bytes_read = decode_literal(buffer);
@@ -100,7 +100,7 @@ private:
             char type = *buffer;
             buffer++;
 
-            uint64_t bytes_read;
+            uint64_t bytes_read = 0;
             switch (type) {
             case DictionaryItem::TYPE_LITERAL:
                 bytes_read = decode_literal(buffer);

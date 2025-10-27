@@ -28,13 +28,11 @@ void TextIndexManager::init(
     }
 }
 
-void TextIndexManager::load_text_index(
-    const std::string& name,
-    const TextIndexMetadata& metadata
-)
+void TextIndexManager::load_text_index(const std::string& name, const TextIndexMetadata& metadata)
 {
     try {
-        auto text_search_index = TextSearch::TextIndex::load(
+        auto text_search_index = std::make_unique<TextIndex>(
+            false,
             name,
             metadata.normalization_type,
             metadata.tokenization_type,
@@ -69,7 +67,8 @@ std::tuple<uint_fast32_t, uint_fast32_t> TextIndexManager::create_text_search_in
 )
 {
     try {
-        auto text_search_index = TextSearch::TextIndex::create(
+        auto text_search_index = std::make_unique<TextIndex>(
+            true,
             name,
             normalization_type,
             tokenization_type,

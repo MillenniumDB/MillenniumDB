@@ -31,5 +31,12 @@ public:
     {
         return expr->has_aggregation();
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "TYPE(";
+        expr->print(os);
+        os << ')';
+    }
 };
 } // namespace MQL

@@ -7,7 +7,7 @@
 
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 // forward declarations
 template <std::size_t N> class BPlusTreeDir;
@@ -37,7 +37,7 @@ public:
         page         (nullptr),
         leaf_file_id (FileId::UNASSIGNED) { }
 
-    BPlusTreeLeaf(VPage* page) noexcept :
+    BPlusTreeLeaf(Page* page) noexcept :
         value_count  ( reinterpret_cast<uint32_t*>(page->get_bytes())),
         next_leaf    ( reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t))),
         bitset_ptr   ((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t)),
@@ -86,7 +86,7 @@ public:
 
     void update_to_next_leaf();
 
-    inline VPage& get_page()          const { return *page; }
+    inline Page& get_page()          const { return *page; }
     inline uint32_t get_value_count() const { return *value_count; }
     inline bool has_next()            const { return *next_leaf != 0; }
 
@@ -135,7 +135,7 @@ private:
     // The bits set to true represent the byte position of the records that are redundant.
     std::bitset<N * 8> redundant_bitset;
 
-    VPage* page;
+    Page* page;
     FileId leaf_file_id;
 
     uint32_t get_page_size(std::bitset<N * 8> bitset, uint32_t n_records);

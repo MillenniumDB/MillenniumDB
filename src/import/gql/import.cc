@@ -4,7 +4,7 @@
 #include "graph_models/inliner.h"
 #include "import/import_helper.h"
 #include "misc/unicode_escape.h"
-#include "storage/index/random_access_table/edge_table_mem_import.h"
+#include "storage/index/lists/list_encoder.h"
 
 using namespace Import::GQL;
 
@@ -26,12 +26,14 @@ OnDiskImport::OnDiskImport(
     directed_equal_edges(db_folder + "/directed_equal_edges"),
     undirected_equal_edges(db_folder + "/undirected_equal_edges")
 {
+    list_buffer = new char[StringManager::MAX_STRING_SIZE];
     state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     create_automata();
 }
 
 OnDiskImport::~OnDiskImport()
 {
+    delete[] list_buffer;
     delete[] (state_transitions);
 }
 
@@ -431,7 +433,7 @@ void OnDiskImport::add_edge_label()
 void OnDiskImport::add_edge_prop_datatype()
 {
     get_datatype_value_id();
-    auto key_id = get_node_key_id();
+    auto key_id = get_edge_key_id();
     uint64_t value_id = get_datatype_value_id();
     edge_properties.push_back({ id1, key_id, value_id });
 }
@@ -477,6 +479,90 @@ void OnDiskImport::add_edge_prop_false()
     edge_properties.push_back({ edge_id, key_id, value_id });
 }
 
+void OnDiskImport::init_list()
+{
+    lists_stack.emplace();
+}
+
+void OnDiskImport::add_list_value_false()
+{
+    ObjectId value = Common::Conversions::pack_bool(false);
+    lists_stack.top().push_back(value);
+}
+
+void OnDiskImport::add_list_value_true()
+{
+    ObjectId value = Common::Conversions::pack_bool(true);
+    lists_stack.top().push_back(value);
+}
+
+void OnDiskImport::add_list_value_integer()
+{
+    int64_t integer = try_parse_int(lexer.str);
+    lists_stack.top().push_back(ObjectId(integer));
+}
+
+void OnDiskImport::add_list_value_string()
+{
+    normalize_string_literal();
+    uint64_t str_id = get_str_id();
+    lists_stack.top().push_back(ObjectId(str_id));
+}
+
+void OnDiskImport::save_node_list()
+{
+    std::vector<ObjectId> current_list = lists_stack.top();
+    uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+    lists_stack.pop();
+
+    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                     | ObjectId::MASK_LIST;
+
+    // if there is a list in the stack, then this list is nested and we do not store the property yet
+    if (!lists_stack.empty()) {
+        current_state = EXPECT_NODE_LIST_ELEMENT;
+        lists_stack.top().push_back(ObjectId(list_id));
+        return;
+    }
+
+    auto key_id = get_node_key_id();
+
+    if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_node_properties->push_back({ id1, key_id, list_id });
+    } else {
+        node_properties.push_back({ id1, key_id, list_id });
+    }
+}
+
+void OnDiskImport::save_edge_list()
+{
+    std::vector<ObjectId> current_list = lists_stack.top();
+    uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+    lists_stack.pop();
+
+    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                     | ObjectId::MASK_LIST;
+
+    // if there is a list in the stack, then this list is nested and we do not store the property yet
+    if (!lists_stack.empty()) {
+        current_state = EXPECT_EDGE_LIST_ELEMENT;
+        lists_stack.top().push_back(ObjectId(list_id));
+        return;
+    }
+
+    auto key_id = get_edge_key_id();
+
+    if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+        || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+    {
+        pending_edge_properties->push_back({ edge_id, key_id, list_id });
+    } else {
+        edge_properties.push_back({ edge_id, key_id, list_id });
+    }
+}
+
 void OnDiskImport::finish_line()
 {
     current_line++;
@@ -517,256 +603,6 @@ void OnDiskImport::try_save_edge_property(uint64_t edge_id, uint64_t key_id, uin
     }
 }
 
-void OnDiskImport::create_automata()
-{
-    // set all transitions as error at first, transitions that are defined later will stay as error.
-    for (int s = 0; s < State::TOTAL_STATES; s++) {
-        for (int t = 1; t < Token::TOTAL_TOKENS; t++) {
-            set_transition(s, t, State::WRONG_LINE, std::bind(&OnDiskImport::print_error, this));
-        }
-    }
-    // ignore whitespace token
-    for (int s = 0; s < State::TOTAL_STATES; s++) {
-        set_transition(s, Token::WHITESPACE, s, std::bind(&OnDiskImport::do_nothing, this));
-    }
-
-    // wrong line stays wrong (without giving more errors) until endline
-    for (int t = 0; t < Token::TOTAL_TOKENS; t++) {
-        set_transition(State::WRONG_LINE, t, State::WRONG_LINE, std::bind(&OnDiskImport::do_nothing, this));
-    }
-
-    // error clears after an endline
-    set_transition(
-        State::WRONG_LINE,
-        Token::ENDLINE,
-        State::LINE_BEGIN,
-        std::bind(&OnDiskImport::finish_line, this)
-    );
-
-    // ignore empty lines
-    set_transition(
-        State::LINE_BEGIN,
-        Token::ENDLINE,
-        State::LINE_BEGIN,
-        std::bind(&OnDiskImport::finish_line, this)
-    );
-
-    set_transition(
-        State::LINE_BEGIN,
-        Token::IDENTIFIER,
-        State::FIRST_ID,
-        std::bind(&OnDiskImport::save_first_id_identifier, this)
-    );
-    set_transition(
-        State::LINE_BEGIN,
-        Token::STRING,
-        State::FIRST_ID,
-        std::bind(&OnDiskImport::save_first_id_string, this)
-    );
-    set_transition(
-        State::LINE_BEGIN,
-        Token::INTEGER,
-        State::FIRST_ID,
-        std::bind(&OnDiskImport::save_first_id_int, this)
-    );
-
-    set_transition(
-        State::FIRST_ID,
-        Token::COLON,
-        State::EXPECT_NODE_LABEL,
-        std::bind(&OnDiskImport::do_nothing, this)
-    );
-    set_transition(
-        State::FIRST_ID,
-        Token::ENDLINE,
-        State::LINE_BEGIN,
-        std::bind(&OnDiskImport::finish_line, this)
-    );
-    set_transition(
-        State::FIRST_ID,
-        Token::IDENTIFIER,
-        State::EXPECT_NODE_PROP_COLON,
-        std::bind(&OnDiskImport::save_prop_key, this)
-    );
-    set_transition(
-        State::FIRST_ID,
-        Token::L_ARROW,
-        State::EXPECT_EDGE_SECOND,
-        std::bind(&OnDiskImport::save_direction, this, EdgeDir::LEFT)
-    );
-    set_transition(
-        State::FIRST_ID,
-        Token::R_ARROW,
-        State::EXPECT_EDGE_SECOND,
-        std::bind(&OnDiskImport::save_direction, this, EdgeDir::RIGHT)
-    );
-    set_transition(
-        State::FIRST_ID,
-        Token::UNDIRECTED,
-        State::EXPECT_EDGE_SECOND,
-        std::bind(&OnDiskImport::save_direction, this, EdgeDir::UNDIRECTED)
-    );
-
-    set_transition(
-        State::NODE_DEFINED,
-        Token::COLON,
-        State::EXPECT_NODE_LABEL,
-        std::bind(&OnDiskImport::do_nothing, this)
-    );
-    set_transition(
-        State::NODE_DEFINED,
-        Token::IDENTIFIER,
-        State::EXPECT_NODE_PROP_COLON,
-        std::bind(&OnDiskImport::save_prop_key, this)
-    );
-    set_transition(
-        State::NODE_DEFINED,
-        Token::ENDLINE,
-        State::LINE_BEGIN,
-        std::bind(&OnDiskImport::finish_line, this)
-    );
-
-    set_transition(
-        State::EXPECT_NODE_LABEL,
-        Token::IDENTIFIER,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_label, this)
-    );
-
-    set_transition(
-        State::EXPECT_NODE_PROP_COLON,
-        Token::COLON,
-        State::EXPECT_NODE_PROP_VALUE,
-        std::bind(&OnDiskImport::do_nothing, this)
-    );
-
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::TYPED_STRING,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_datatype, this)
-    );
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::STRING,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_string, this)
-    );
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::INTEGER,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_int, this)
-    );
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::FLOAT,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_float, this)
-    );
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::K_FALSE,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_false, this)
-    );
-    set_transition(
-        State::EXPECT_NODE_PROP_VALUE,
-        Token::K_TRUE,
-        State::NODE_DEFINED,
-        std::bind(&OnDiskImport::add_node_prop_true, this)
-    );
-
-    set_transition(
-        State::EXPECT_EDGE_SECOND,
-        Token::IDENTIFIER,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::save_second_id_identifier, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_SECOND,
-        Token::STRING,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::save_second_id_string, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_SECOND,
-        Token::INTEGER,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::save_second_id_int, this)
-    );
-
-    set_transition(
-        State::EDGE_DEFINED,
-        Token::COLON,
-        State::EXPECT_EDGE_LABEL,
-        std::bind(&OnDiskImport::do_nothing, this)
-    );
-    set_transition(
-        State::EDGE_DEFINED,
-        Token::ENDLINE,
-        State::LINE_BEGIN,
-        std::bind(&OnDiskImport::finish_line, this)
-    );
-    set_transition(
-        State::EDGE_DEFINED,
-        Token::IDENTIFIER,
-        State::EXPECT_EDGE_PROP_COLON,
-        std::bind(&OnDiskImport::save_prop_key, this)
-    );
-
-    set_transition(
-        State::EXPECT_EDGE_PROP_COLON,
-        Token::COLON,
-        State::EXPECT_EDGE_PROP_VALUE,
-        std::bind(&OnDiskImport::do_nothing, this)
-    );
-
-    set_transition(
-        State::EXPECT_EDGE_LABEL,
-        Token::IDENTIFIER,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_label, this)
-    );
-
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::TYPED_STRING,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_datatype, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::STRING,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_string, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::INTEGER,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_int, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::FLOAT,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_float, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::K_FALSE,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_false, this)
-    );
-    set_transition(
-        State::EXPECT_EDGE_PROP_VALUE,
-        Token::K_TRUE,
-        State::EDGE_DEFINED,
-        std::bind(&OnDiskImport::add_edge_prop_true, this)
-    );
-}
-
 void OnDiskImport::start_import(MDBIstream& in)
 {
     auto start = std::chrono::system_clock::now();
@@ -795,13 +631,13 @@ void OnDiskImport::start_import(MDBIstream& in)
 
     lexer.begin(in);
 
-    int current_state = State::LINE_BEGIN;
+    current_state = State::LINE_BEGIN;
     current_line = 1;
     while (auto token = lexer.get_token()) {
-        current_state = get_transition(current_state, token);
+        advance_automaton(token);
     }
     // After EOF simulate and endline
-    get_transition(current_state, Token::ENDLINE);
+    advance_automaton(Token::ENDLINE);
 
     std::cout << "-------------------------------------\n";
     if (parsing_errors != 0) {
@@ -1181,16 +1017,17 @@ void OnDiskImport::set_transition(int state, int token, int value, std::function
     state_transitions[State::TOTAL_STATES * state + token] = value;
 }
 
-int OnDiskImport::get_transition(int state, int token)
+void OnDiskImport::advance_automaton(int token)
 {
     try {
-        state_funcs[State::TOTAL_STATES * state + token]();
-        return state_transitions[State::TOTAL_STATES * state + token];
+        auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
+        current_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        func();
     } catch (std::exception& e) {
         parsing_errors++;
         std::cout << "ERROR on line " << current_line << "\n";
         std::cout << e.what() << "\n";
-        return State::WRONG_LINE;
+        current_state = State::WRONG_LINE;
     }
 }
 

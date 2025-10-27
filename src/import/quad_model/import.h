@@ -12,12 +12,13 @@
 #include "graph_models/quad_model/quad_catalog.h"
 #include "import/disk_vector.h"
 #include "import/exceptions.h"
+#include "import/external_helper.h"
 #include "import/quad_model/lexer/state.h"
 #include "import/quad_model/lexer/token.h"
 #include "import/quad_model/lexer/tokenizer.h"
-#include "import/external_helper.h"
 #include "misc/istream.h"
 #include "misc/unicode_escape.h"
+#include "storage/index/lists/list_encoder.h"
 
 namespace Import { namespace QuadModel {
 class OnDiskImport {
@@ -43,11 +44,13 @@ public:
     {
         state_transitions = new int[Token::TOTAL_TOKENS * State::TOTAL_STATES];
         create_automata();
+        list_buffer = new char[StringManager::MAX_STRING_SIZE];
     }
 
     ~OnDiskImport()
     {
         delete[] (state_transitions);
+        delete[] list_buffer;
     }
 
     void start_import(MDBIstream& in);
@@ -60,6 +63,13 @@ private:
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
     MQLTokenizer lexer;
     int current_line;
+    int current_state;
+
+    // we use a stack to represent nested lists
+    std::stack<std::vector<ObjectId>> lists_stack;
+
+    // buffer used to encode lists
+    char* list_buffer;
 
     uint64_t parsing_errors = 0;
 
@@ -71,6 +81,7 @@ private:
     uint64_t value_id;
     uint64_t label_id;
     uint64_t edge_count = 0;
+    uint64_t max_anon_seen = 0;
     std::vector<uint64_t> ids_stack;
 
     // true: right, false: left
@@ -122,14 +133,18 @@ private:
     void save_first_id_anon()
     {
         ids_stack.clear();
-        const uint64_t unmasked_id = std::stoull(lexer.str + 2);
+        // ignore first 2 characters: '_a'
+        uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id1 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        if (unmasked_id > max_anon_seen) {
+            max_anon_seen = unmasked_id;
+        }
     }
 
     void save_first_id_string()
     {
         ids_stack.clear();
-        normalize_string_literal();
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -312,14 +327,17 @@ private:
 
     void save_second_id_anon()
     {
-        // delete first 2 characters: '_a'
-        const uint64_t unmasked_id = std::stoull(lexer.str + 2);
+        // ignore first 2 characters: '_a'
+        uint64_t unmasked_id = std::stoull(lexer.str + 2);
         id2 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        if (unmasked_id > max_anon_seen) {
+            max_anon_seen = unmasked_id;
+        }
     }
 
     void save_second_id_string()
     {
-        normalize_string_literal();
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -363,85 +381,88 @@ private:
 
     void add_node_prop_datatype()
     {
-        add_prop_datatype(id1);
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        try_save_property(id1);
     }
 
     void add_edge_prop_datatype()
     {
-        add_prop_datatype(edge_id);
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        try_save_property(edge_id);
     }
 
-    void add_prop_datatype(uint64_t obj_id)
+    // parse datatype and store it in value_id
+    void parse_prop_datatype(char* typed_str, size_t typed_str_len)
     {
         // we have something like: `datatype("string")`
         // parse datatype name
-        char* datatype_beg = lexer.str;
-        char* datatype_end = lexer.str;
+        char* datatype_beg = typed_str;
+        char* datatype_end = typed_str;
         while (isalpha(*datatype_end)) {
             datatype_end++;
         }
         *datatype_end = '\0';
 
-        char* str_value_end = lexer.str + (lexer.str_len - 1);
-        lexer.str = datatype_end + 1;
-        while (*lexer.str != '"') {
-            lexer.str++;
+        char* str_value_end = typed_str + (typed_str_len - 1);
+        typed_str = datatype_end + 1;
+        while (*typed_str != '"') {
+            typed_str++;
         }
 
         // it may have whitespaces `datatype("string"  )` so we iterate
         while (*str_value_end != '"') {
             str_value_end--;
         }
-        lexer.str_len = (str_value_end - lexer.str) + 1;
+        typed_str_len = (str_value_end - typed_str) + 1;
 
-        // we edited lexer.str_len and lexer.str to point correctly at the datatype (considering quotes)
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        // we edited typed_str_len and typed_str to point correctly at the datatype (considering quotes)
+        normalize_string_literal(typed_str, &typed_str_len);
 
         if (strcmp(datatype_beg, "dateTime") == 0) {
-            value_id = DateTime::from_dateTime(lexer.str);
+            value_id = DateTime::from_dateTime(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << " invalid dateTime: " << lexer.str << "\n";
+                std::cout << " invalid dateTime: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "date") == 0) {
-            value_id = DateTime::from_date(lexer.str);
+            value_id = DateTime::from_date(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid date: " << lexer.str << "\n";
+                std::cout << "invalid date: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "time") == 0) {
-            value_id = DateTime::from_time(lexer.str);
+            value_id = DateTime::from_time(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid time: " << lexer.str << "\n";
+                std::cout << "invalid time: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "dateTimeStamp") == 0) {
-            value_id = DateTime::from_dateTimeStamp(lexer.str);
+            value_id = DateTime::from_dateTimeStamp(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid dateTimeStamp: " << lexer.str << "\n";
+                std::cout << "invalid dateTimeStamp: " << typed_str << "\n";
                 return;
             }
         } else if (strcmp(datatype_beg, "tensorFloat") == 0) {
-            value_id = get_tensor_id<float>(lexer.str);
+            value_id = get_tensor_id<float>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorFloat: " << lexer.str << "\n";
+                std::cout << "invalid tensorFloat: " << typed_str << "\n";
             }
         } else if (strcmp(datatype_beg, "tensorDouble") == 0) {
-            value_id = get_tensor_id<double>(lexer.str);
+            value_id = get_tensor_id<double>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
                 std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorDouble: " << lexer.str << "\n";
+                std::cout << "invalid tensorDouble: " << typed_str << "\n";
             }
         } else {
             parsing_errors++;
@@ -449,8 +470,6 @@ private:
             std::cout << "unknown datatype: " << datatype_beg << "\n";
             return;
         }
-
-        try_save_property(obj_id);
     }
 
     template<typename T>
@@ -470,7 +489,7 @@ private:
 
     void add_node_prop_string()
     {
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -508,7 +527,7 @@ private:
 
     void add_edge_prop_string()
     {
-        normalize_string_literal(); // edits lexer.str_len and lexer.str
+        normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
             value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
@@ -542,6 +561,106 @@ private:
     {
         value_id = ObjectId::MASK_BOOL | 0x00;
         try_save_property(edge_id);
+    }
+
+    void init_list()
+    {
+        lists_stack.emplace();
+    }
+
+    void add_list_value_false()
+    {
+        ObjectId value = Common::Conversions::pack_bool(false);
+        lists_stack.top().push_back(value);
+    }
+
+    void add_list_value_true()
+    {
+        ObjectId value = Common::Conversions::pack_bool(true);
+        lists_stack.top().push_back(value);
+    }
+
+    void add_list_value_integer()
+    {
+        int64_t integer = try_parse_int(lexer.str);
+        lists_stack.top().emplace_back(integer);
+    }
+
+    void add_list_value_float()
+    {
+        int64_t value = try_parse_float(lexer.str);
+        lists_stack.top().emplace_back(value);
+    }
+
+    void add_list_value_string()
+    {
+        normalize_string_literal(lexer.str, &lexer.str_len);
+
+        uint64_t str_id;
+        if (lexer.str_len < 8) {
+            str_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        } else {
+            str_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
+                   | ObjectId::MASK_STRING;
+        }
+
+        lists_stack.top().emplace_back(str_id);
+    }
+
+    void add_list_value_typed_string()
+    {
+        parse_prop_datatype(lexer.str, lexer.str_len);
+        lists_stack.top().emplace_back(value_id);
+    }
+
+    void save_node_list()
+    {
+        std::vector<ObjectId> current_list = lists_stack.top();
+        uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+        lists_stack.pop();
+
+        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                         | ObjectId::MASK_LIST;
+
+        // if there is a list in the stack, then this list is nested and we do not store the property yet
+        if (!lists_stack.empty()) {
+            current_state = EXPECT_NODE_LIST_ELEMENT;
+            lists_stack.top().emplace_back(list_id);
+            return;
+        }
+
+        if ((id1 & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+            || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        {
+            pending_properties->push_back({ id1, key_id, list_id });
+        } else {
+            properties.push_back({ id1, key_id, list_id });
+        }
+    }
+
+    void save_edge_list()
+    {
+        std::vector<ObjectId> current_list = lists_stack.top();
+        uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
+        lists_stack.pop();
+
+        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+                         | ObjectId::MASK_LIST;
+
+        // if there is a list in the stack, then this list is nested and we do not store the property yet
+        if (!lists_stack.empty()) {
+            current_state = EXPECT_EDGE_LIST_ELEMENT;
+            lists_stack.top().emplace_back(list_id);
+            return;
+        }
+
+        if ((edge_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP
+            || (list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP)
+        {
+            pending_properties->push_back({ edge_id, key_id, list_id });
+        } else {
+            properties.push_back({ edge_id, key_id, list_id });
+        }
     }
 
     void finish_wrong_line()
@@ -629,7 +748,7 @@ private:
         state_transitions[State::TOTAL_STATES * state + token] = value;
     }
 
-    int get_transition(int state, int token)
+    void get_transition(int token)
     {
         // try {
         //     state_funcs[State::TOTAL_STATES*state + token]();
@@ -641,20 +760,21 @@ private:
         //     std::cout << e.what() << "\n";
         //     return State::WRONG_LINE;
         // }
-        state_funcs[State::TOTAL_STATES * state + token]();
-        return state_transitions[State::TOTAL_STATES * state + token];
+        auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
+        current_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        func();
     }
 
-    // modifies contents of lexer.str and lexer.str_len. lexer.str points to the same place
-    void normalize_string_literal()
+    // normalize str in place, the resulting size is written in str_len
+    void normalize_string_literal(char* str, size_t* str_len)
     {
-        char* write_ptr = lexer.str;
+        char* write_ptr = str;
         char* read_ptr = write_ptr + 1; // skip first character: '"'
 
-        lexer.str_len -= 2;
-        char* end = lexer.str + lexer.str_len + 1;
+        *str_len -= 2;
+        char* end = str + *str_len + 1;
 
-        UnicodeEscape::normalize_string(read_ptr, write_ptr, end, lexer.str_len);
+        UnicodeEscape::normalize_string(read_ptr, write_ptr, end, *str_len);
     }
 };
 }} // namespace Import::QuadModel

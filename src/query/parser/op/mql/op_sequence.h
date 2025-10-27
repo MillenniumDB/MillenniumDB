@@ -40,8 +40,8 @@ public:
     {
         os << std::string(indent, ' ');
         os << "OpSequence()\n";
-        for (const auto& op_procedure : sequence) {
-            op_procedure->print_to_ostream(os, indent + 2);
+        for (const auto& op : sequence) {
+            op->print_to_ostream(os, indent + 2);
         }
         return os;
     }

@@ -21,21 +21,37 @@ public:
    */
     virtual std::any visitRoot(MQL_Parser::RootContext *context) = 0;
 
-    virtual std::any visitMatchQuery(MQL_Parser::MatchQueryContext *context) = 0;
+    virtual std::any visitUpdateStatement(MQL_Parser::UpdateStatementContext *context) = 0;
 
-    virtual std::any visitPrimitiveStatementList(MQL_Parser::PrimitiveStatementListContext *context) = 0;
-
-    virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *context) = 0;
-
-    virtual std::any visitInsertPatterns(MQL_Parser::InsertPatternsContext *context) = 0;
+    virtual std::any visitInsertStatement(MQL_Parser::InsertStatementContext *context) = 0;
 
     virtual std::any visitInsertLinearPattern(MQL_Parser::InsertLinearPatternContext *context) = 0;
 
-    virtual std::any visitInsertPlainNode(MQL_Parser::InsertPlainNodeContext *context) = 0;
+    virtual std::any visitInsertNode(MQL_Parser::InsertNodeContext *context) = 0;
 
-    virtual std::any visitInsertPlainNodeInside(MQL_Parser::InsertPlainNodeInsideContext *context) = 0;
+    virtual std::any visitInsertEdge(MQL_Parser::InsertEdgeContext *context) = 0;
 
-    virtual std::any visitInsertPlainEdge(MQL_Parser::InsertPlainEdgeContext *context) = 0;
+    virtual std::any visitInsertProperties(MQL_Parser::InsertPropertiesContext *context) = 0;
+
+    virtual std::any visitInsertProperty1(MQL_Parser::InsertProperty1Context *context) = 0;
+
+    virtual std::any visitInsertProperty2(MQL_Parser::InsertProperty2Context *context) = 0;
+
+    virtual std::any visitInsertProperty3(MQL_Parser::InsertProperty3Context *context) = 0;
+
+    virtual std::any visitDeleteStatement(MQL_Parser::DeleteStatementContext *context) = 0;
+
+    virtual std::any visitSetStatement(MQL_Parser::SetStatementContext *context) = 0;
+
+    virtual std::any visitSetAtom(MQL_Parser::SetAtomContext *context) = 0;
+
+    virtual std::any visitRemoveStatement(MQL_Parser::RemoveStatementContext *context) = 0;
+
+    virtual std::any visitRemoveAtom(MQL_Parser::RemoveAtomContext *context) = 0;
+
+    virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext *context) = 0;
+
+    virtual std::any visitPrimitiveStatement(MQL_Parser::PrimitiveStatementContext *context) = 0;
 
     virtual std::any visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext *context) = 0;
 
@@ -53,13 +69,13 @@ public:
 
     virtual std::any visitLetStatement(MQL_Parser::LetStatementContext *context) = 0;
 
-    virtual std::any visitLetDefinitionList(MQL_Parser::LetDefinitionListContext *context) = 0;
-
     virtual std::any visitLetDefinition(MQL_Parser::LetDefinitionContext *context) = 0;
 
     virtual std::any visitWhereStatement(MQL_Parser::WhereStatementContext *context) = 0;
 
     virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext *context) = 0;
+
+    virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext *context) = 0;
 
     virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *context) = 0;
 
@@ -81,25 +97,13 @@ public:
 
     virtual std::any visitOffsetClause(MQL_Parser::OffsetClauseContext *context) = 0;
 
-    virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *context) = 0;
-
-    virtual std::any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext *context) = 0;
-
-    virtual std::any visitReturnItemCount(MQL_Parser::ReturnItemCountContext *context) = 0;
-
-    virtual std::any visitReturnItemExpr(MQL_Parser::ReturnItemExprContext *context) = 0;
+    virtual std::any visitReturnItem(MQL_Parser::ReturnItemContext *context) = 0;
 
     virtual std::any visitAlias(MQL_Parser::AliasContext *context) = 0;
 
     virtual std::any visitAggregateFunc(MQL_Parser::AggregateFuncContext *context) = 0;
 
-    virtual std::any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext *context) = 0;
-
-    virtual std::any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext *context) = 0;
-
-    virtual std::any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext *context) = 0;
-
-    virtual std::any visitOrderByItemExpr(MQL_Parser::OrderByItemExprContext *context) = 0;
+    virtual std::any visitOrderByItem(MQL_Parser::OrderByItemContext *context) = 0;
 
     virtual std::any visitGroupByItem(MQL_Parser::GroupByItemContext *context) = 0;
 
@@ -127,15 +131,13 @@ public:
 
     virtual std::any visitNode(MQL_Parser::NodeContext *context) = 0;
 
-    virtual std::any visitFixedNode(MQL_Parser::FixedNodeContext *context) = 0;
+    virtual std::any visitFixedObj(MQL_Parser::FixedObjContext *context) = 0;
 
-    virtual std::any visitFixedNodeInside(MQL_Parser::FixedNodeInsideContext *context) = 0;
+    virtual std::any visitVarNode(MQL_Parser::VarNodeContext *context) = 0;
 
     virtual std::any visitEdge(MQL_Parser::EdgeContext *context) = 0;
 
     virtual std::any visitEdgeInside(MQL_Parser::EdgeInsideContext *context) = 0;
-
-    virtual std::any visitVarNode(MQL_Parser::VarNodeContext *context) = 0;
 
     virtual std::any visitProperties(MQL_Parser::PropertiesContext *context) = 0;
 
@@ -177,9 +179,13 @@ public:
 
     virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *context) = 0;
 
+    virtual std::any visitExprAgg(MQL_Parser::ExprAggContext *context) = 0;
+
+    virtual std::any visitExprCount(MQL_Parser::ExprCountContext *context) = 0;
+
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext *context) = 0;
 
-    virtual std::any visitExprFixedNodeInside(MQL_Parser::ExprFixedNodeInsideContext *context) = 0;
+    virtual std::any visitExprFixedObj(MQL_Parser::ExprFixedObjContext *context) = 0;
 
     virtual std::any visitExprParenthesis(MQL_Parser::ExprParenthesisContext *context) = 0;
 

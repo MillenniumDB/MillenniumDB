@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -63,17 +62,13 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        ExprPrinter printer(os);
-
         os << std::string(indent, ' ') << "OpOrderBy(";
         for (unsigned i = 0; i < items.size(); i++) {
             if (i != 0) {
                 os << ", ";
             }
 
-            items[i]->accept_visitor(printer);
-
-            os << (ascending_order[i] ? " ASC" : " DESC");
+            os << *items[i] << (ascending_order[i] ? " ASC" : " DESC");
         }
         os << ")\n";
         return op->print_to_ostream(os, indent);

@@ -7,20 +7,36 @@
 #include "system/buffer_manager.h"
 #include "system/tensor_manager.h"
 
-TensorsHashBucket::TensorsHashBucket(UPage& page) :
-    page { page },
-    key_count { reinterpret_cast<uint32_t*>(page.get_bytes()) },
-    local_depth { reinterpret_cast<uint32_t*>(page.get_bytes() + sizeof(uint32_t)) },
-    arr1 { reinterpret_cast<uint64_t*>(page.get_bytes() + 2 * sizeof(uint32_t)) },
-    arr2 { reinterpret_cast<uint32_t*>(
-        page.get_bytes() + 2 * sizeof(uint32_t) + sizeof(uint64_t) * TensorsHashBucket::MAX_KEYS
-    ) }
+TensorsHashBucket::TensorsHashBucket(Page& _page) :
+    page(&_page),
+    key_count(reinterpret_cast<uint32_t*>(_page.get_bytes())),
+    local_depth(reinterpret_cast<uint32_t*>(_page.get_bytes() + sizeof(uint32_t))),
+    arr1(reinterpret_cast<uint64_t*>(_page.get_bytes() + 2 * sizeof(uint32_t))),
+    arr2(reinterpret_cast<uint32_t*>(
+        _page.get_bytes() + 2 * sizeof(uint32_t) + sizeof(uint64_t) * MAX_KEYS
+    ))
 { }
 
 TensorsHashBucket::~TensorsHashBucket()
 {
-    buffer_manager.unpin(page);
+    buffer_manager.unpin(*page);
 }
+
+// void TensorsHashBucket::upgrade_page_to_editable()
+// {
+//     if (buffer_manager.need_edit_version(*page)) {
+//         auto new_page = &buffer_manager.get_page_editable(page->page_id.file_id, page->get_page_number());
+//         buffer_manager.unpin(*page);
+//         page = new_page;
+
+//         key_count = reinterpret_cast<uint32_t*>(page->get_bytes());
+//         local_depth = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
+//         arr1 = reinterpret_cast<uint64_t*>(page->get_bytes() + 2 * sizeof(uint32_t));
+//         arr2 = reinterpret_cast<uint32_t*>(
+//             page->get_bytes() + 2 * sizeof(uint32_t) + sizeof(uint64_t) * MAX_KEYS
+//         );
+//     }
+// }
 
 uint64_t TensorsHashBucket::get_id(const char* bytes, uint64_t size, uint64_t hash) const
 {
@@ -28,8 +44,8 @@ uint64_t TensorsHashBucket::get_id(const char* bytes, uint64_t size, uint64_t ha
     for (size_t i = 0; i < *key_count; ++i) {
         if ((arr1[i] & HASH_MASK) == hash_) {
             // check object
-            const uint64_t arr_1_bits = arr1[i] >> 52ULL;
-            const uint64_t id = (arr_1_bits << 32ULL) | static_cast<uint64_t>(arr2[i]);
+            uint64_t arr_1_bits = arr1[i] >> 52ULL;
+            uint64_t id = (arr_1_bits << 32ULL) | static_cast<uint64_t>(arr2[i]);
             if (tensor_manager.bytes_eq(bytes, size, id)) {
                 return id;
             }
@@ -50,7 +66,6 @@ void TensorsHashBucket::create_id(uint64_t new_id, uint64_t hash)
     arr2[*key_count] = static_cast<uint32_t>(new_id & 0xFF'FF'FF'FFUL);
 
     ++(*key_count);
-    page.make_dirty();
 }
 
 void TensorsHashBucket::redistribute(TensorsHashBucket& other, uint64_t mask, uint64_t other_suffix)
@@ -78,7 +93,4 @@ void TensorsHashBucket::redistribute(TensorsHashBucket& other, uint64_t mask, ui
     }
     *this->key_count = this_pos;
     *other.key_count = other_pos;
-
-    page.make_dirty();
-    // other.page should be already dirty
 }

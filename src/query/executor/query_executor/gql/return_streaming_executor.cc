@@ -4,15 +4,11 @@ using namespace GQL;
 
 ReturnStreamingExecutor::ReturnStreamingExecutor(
     std::unique_ptr<BindingIter> iter,
-    std::vector<VarId>&& projection_vars
+    std::vector<VarId>&& _projection_vars
 ) :
-    iter(std::move(iter)),
-    projection_vars(projection_vars)
-{ }
-
-const std::vector<VarId>& ReturnStreamingExecutor::get_projection_vars() const
+    iter(std::move(iter))
 {
-    return projection_vars;
+    projection_vars = std::move(_projection_vars);
 }
 
 uint64_t ReturnStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)

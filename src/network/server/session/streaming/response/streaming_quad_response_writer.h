@@ -126,7 +126,9 @@ public:
             Common::Conversions::unpack_dictionary(oid, dictionary);
             return encode_dictionary(*dictionary);
         }
-        case ObjectId::MASK_LIST: {
+        case ObjectId::MASK_LIST:
+        case ObjectId::MASK_LIST_EXTERN:
+        case ObjectId::MASK_LIST_TMP: {
             std::vector<ObjectId> list = MQL::Conversions::unpack_list(oid);
             return encode_list(oid);
         }

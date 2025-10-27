@@ -81,6 +81,6 @@ public:
 private:
 
     template<typename AggType, class ... Args>
-    void check_and_make_aggregate(Expr*, Args&&... args);
+    void check_and_make_aggregate(Expr* expr, Expr* partent_expr, Args&&... args);
 };
 } // namespace MQL

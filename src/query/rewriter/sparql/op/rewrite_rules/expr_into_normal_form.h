@@ -62,6 +62,16 @@ public:
                     break;
                 }
             }
+        } if (is_castable_to<OpBind>(unknown_op)) {
+            while (true) {
+                auto op_bind = dynamic_cast<OpBind*>(unknown_op.get());
+                expr_visitor.start_visit(op_bind->expr);
+                if (expr_visitor.reset_and_check_if_has_rewritten_a_rule()) {
+                    has_rewritten = true;
+                } else {
+                    break;
+                }
+            }
         } else if (is_castable_to<OpProcedure>(unknown_op)) {
             while (true) {
                 auto op_procedure = dynamic_cast<OpProcedure*>(unknown_op.get());

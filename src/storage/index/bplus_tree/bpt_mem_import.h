@@ -8,16 +8,16 @@
 #include <iostream>
 #include <vector>
 
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 template <std::size_t N>
 class BPTLeafWriter {
 public:
-    static constexpr auto max_records = (VPage::SIZE - 2*sizeof(int32_t)) / (sizeof(uint64_t)*N);
+    static constexpr auto max_records = (Page::SIZE - 2*sizeof(int32_t)) / (sizeof(uint64_t)*N);
 
     BPTLeafWriter(const std::string& filename) {
         file.open(filename, std::ios::out|std::ios::binary);
-        buffer = new char[VPage::SIZE];
+        buffer = new char[Page::SIZE];
     }
 
     ~BPTLeafWriter() {
@@ -29,18 +29,18 @@ public:
         auto value_count = reinterpret_cast<uint32_t*>(buffer);
         auto next_leaf   = reinterpret_cast<uint32_t*>(buffer + sizeof(uint32_t));
 
-        memset(buffer, 0, VPage::SIZE);
+        memset(buffer, 0, Page::SIZE);
         *value_count = size;
         *next_leaf = next_block;
         std::memcpy(buffer + 2 * sizeof(uint32_t),
                     bytes,
                     N + bitset.count() + size * (sizeof(uint64_t) * N - bitset.count()));
-        file.write(buffer, VPage::SIZE);
+        file.write(buffer, Page::SIZE);
     }
 
     void make_empty() {
-        memset(buffer, 0, VPage::SIZE);
-        file.write(buffer, VPage::SIZE);
+        memset(buffer, 0, Page::SIZE);
+        file.write(buffer, Page::SIZE);
     }
 
 private:
@@ -73,7 +73,7 @@ private:
     std::vector<char*> pages;
 
 public:
-    static constexpr auto max_records = (VPage::SIZE - 2*sizeof(int32_t) )
+    static constexpr auto max_records = (Page::SIZE - 2*sizeof(int32_t) )
                                          / (sizeof(uint64_t)*N + sizeof(int32_t));
 
     BPTDirWriter(const std::string& filename) {
@@ -81,14 +81,14 @@ public:
         if (file.fail()) {
             std::cout << "Error opening file " << filename << std::endl;
         }
-        auto root = new char[VPage::SIZE];
-        memset(root, 0, VPage::SIZE);
+        auto root = new char[Page::SIZE];
+        memset(root, 0, Page::SIZE);
         pages.push_back(root);
     }
 
     ~BPTDirWriter() {
         for (auto page : pages) {
-            file.write(page, VPage::SIZE);
+            file.write(page, Page::SIZE);
             delete[] page;
         }
         file.close();
@@ -143,8 +143,8 @@ public:
             else if (dir_page_number != 0) {
                 // create new dir page
                 int32_t new_page_number = pages.size();
-                auto new_page = new char[VPage::SIZE];
-                memset(new_page, 0, VPage::SIZE);
+                auto new_page = new char[Page::SIZE];
+                memset(new_page, 0, Page::SIZE);
                 pages.push_back(new_page);
 
                 auto new_dir_children = get_children(new_page_number);
@@ -158,17 +158,17 @@ public:
             else {
                 // create 2 new pages (new_lhs, new_rhs)
                 int32_t lhs_page_number = pages.size();
-                auto lhs_page = new char[VPage::SIZE];
-                memset(lhs_page, 0, VPage::SIZE);
+                auto lhs_page = new char[Page::SIZE];
+                memset(lhs_page, 0, Page::SIZE);
                 pages.push_back(lhs_page);
 
                 int32_t rhs_page_number = pages.size();
-                auto rhs_page = new char[VPage::SIZE];
-                memset(rhs_page, 0, VPage::SIZE);
+                auto rhs_page = new char[Page::SIZE];
+                memset(rhs_page, 0, Page::SIZE);
                 pages.push_back(rhs_page);
 
                 // new_lhs has everything previous
-                std::memcpy(lhs_page, pages[dir_page_number], VPage::SIZE);
+                std::memcpy(lhs_page, pages[dir_page_number], Page::SIZE);
 
                 // new_rhs has 0 keys and 1 record (the splitted record)
                 auto rhs_key_count = get_key_count(rhs_page_number);

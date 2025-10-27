@@ -26,17 +26,13 @@ void OnDiskImport::start_import(MDBIstream& in)
 
     lexer.begin(in);
 
-    int current_state = State::LINE_BEGIN;
+    current_state = State::LINE_BEGIN;
     current_line = 1;
     while (auto token = lexer.get_token()) {
-        // std::cout << "token: " << token << "\n";
-        // std::cout << "str_len: " << lexer.str_len << "\n";
-        // std::cout.write(lexer.str, lexer.str_len);
-        current_state = get_transition(current_state, token);
-        // std::cout << "\ncurrect_state: " << current_state << "\n";
+        get_transition(token);
     }
     // After EOF simulate and endline
-    get_transition(current_state, Token::ENDLINE);
+    get_transition(Token::ENDLINE);
 
     std::cout << "-------------------------------------\n";
     if (parsing_errors != 0) {
@@ -204,6 +200,7 @@ void OnDiskImport::start_import(MDBIstream& in)
         // declared_nodes.finish_appends() its called twice, no problem with that
         declared_nodes.finish_appends();
         catalog.nodes_count = nodes_set.size();
+        catalog.max_anon = max_anon_seen;
     }
     print_duration("Write table", start);
 
@@ -270,7 +267,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         edges.create_bpt(db_folder + "/edge_from_to_type", { C_EDGE, C_FROM, C_TO, C_TYPE }, no_stat);
 
-        catalog.edge_count = all_stat.all;
+        catalog.max_edge = all_stat.all;
         catalog.type2total_count = std::move(dict_count_stat.dict);
     }
 
@@ -649,5 +646,145 @@ void OnDiskImport::create_automata()
         Token::K_TRUE,
         State::EDGE_DEFINED,
         std::bind(&OnDiskImport::add_edge_prop_true, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_PROP_VALUE,
+        Token::L_BRACKET,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::init_list, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_PROP_VALUE,
+        Token::L_BRACKET,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::init_list, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::K_TRUE,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_true, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::K_FALSE,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_false, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::STRING,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_string, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::TYPED_STRING,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_typed_string, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::INTEGER,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_integer, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::FLOAT,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_float, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::K_TRUE,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_true, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::K_FALSE,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_false, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::STRING,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_string, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::TYPED_STRING,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_typed_string, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::INTEGER,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_integer, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::FLOAT,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::add_list_value_float, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::L_BRACKET,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::init_list, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::L_BRACKET,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::init_list, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::COMMA,
+        State::EXPECT_NODE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::do_nothing, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::COMMA,
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        std::bind(&OnDiskImport::do_nothing, this)
+    );
+
+    set_transition(
+        State::EXPECT_NODE_LIST_ELEMENT,
+        Token::R_BRACKET,
+        State::NODE_DEFINED,
+        std::bind(&OnDiskImport::save_node_list, this)
+    );
+
+    set_transition(
+        State::EXPECT_EDGE_LIST_ELEMENT,
+        Token::R_BRACKET,
+        State::EDGE_DEFINED,
+        std::bind(&OnDiskImport::save_edge_list, this)
     );
 }

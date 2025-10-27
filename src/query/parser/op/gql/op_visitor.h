@@ -1,7 +1,5 @@
 #pragma once
 
-#include "query/exceptions.h"
-
 namespace GQL {
 class OpGraphPattern;
 class OpBasicGraphPattern;

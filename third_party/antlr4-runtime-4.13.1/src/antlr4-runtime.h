@@ -7,162 +7,162 @@
 
 // This is the umbrella header for all ANTLR4 C++ runtime headers.
 
-#include "antlr4-common.h"
+#include "antlr4-common.h" // IWYU pragma: export
 
-#include "ANTLRErrorListener.h"
-#include "ANTLRErrorStrategy.h"
-#include "ANTLRFileStream.h"
-#include "ANTLRInputStream.h"
-#include "BailErrorStrategy.h"
-#include "BaseErrorListener.h"
-#include "BufferedTokenStream.h"
-#include "CharStream.h"
-#include "CommonToken.h"
-#include "CommonTokenFactory.h"
-#include "CommonTokenStream.h"
-#include "ConsoleErrorListener.h"
-#include "DefaultErrorStrategy.h"
-#include "DiagnosticErrorListener.h"
-#include "Exceptions.h"
-#include "FailedPredicateException.h"
-#include "InputMismatchException.h"
-#include "IntStream.h"
-#include "InterpreterRuleContext.h"
-#include "Lexer.h"
-#include "LexerInterpreter.h"
-#include "LexerNoViableAltException.h"
-#include "ListTokenSource.h"
-#include "NoViableAltException.h"
-#include "Parser.h"
-#include "ParserInterpreter.h"
-#include "ParserRuleContext.h"
-#include "ProxyErrorListener.h"
-#include "RecognitionException.h"
-#include "Recognizer.h"
-#include "RuleContext.h"
-#include "RuleContextWithAltNum.h"
-#include "RuntimeMetaData.h"
-#include "Token.h"
-#include "TokenFactory.h"
-#include "TokenSource.h"
-#include "TokenStream.h"
-#include "TokenStreamRewriter.h"
-#include "UnbufferedCharStream.h"
-#include "UnbufferedTokenStream.h"
-#include "Version.h"
-#include "Vocabulary.h"
-#include "Vocabulary.h"
-#include "WritableToken.h"
-#include "atn/ATN.h"
-#include "atn/ATNConfig.h"
-#include "atn/ATNConfigSet.h"
-#include "atn/ATNDeserializationOptions.h"
-#include "atn/ATNDeserializer.h"
-#include "atn/ATNSimulator.h"
-#include "atn/ATNState.h"
-#include "atn/ATNType.h"
-#include "atn/ActionTransition.h"
-#include "atn/AmbiguityInfo.h"
-#include "atn/ArrayPredictionContext.h"
-#include "atn/AtomTransition.h"
-#include "atn/BasicBlockStartState.h"
-#include "atn/BasicState.h"
-#include "atn/BlockEndState.h"
-#include "atn/BlockStartState.h"
-#include "atn/ContextSensitivityInfo.h"
-#include "atn/DecisionEventInfo.h"
-#include "atn/DecisionInfo.h"
-#include "atn/DecisionState.h"
-#include "atn/EpsilonTransition.h"
-#include "atn/ErrorInfo.h"
-#include "atn/LL1Analyzer.h"
-#include "atn/LexerATNConfig.h"
-#include "atn/LexerATNSimulator.h"
-#include "atn/LexerAction.h"
-#include "atn/LexerActionExecutor.h"
-#include "atn/LexerActionType.h"
-#include "atn/LexerChannelAction.h"
-#include "atn/LexerCustomAction.h"
-#include "atn/LexerIndexedCustomAction.h"
-#include "atn/LexerModeAction.h"
-#include "atn/LexerMoreAction.h"
-#include "atn/LexerPopModeAction.h"
-#include "atn/LexerPushModeAction.h"
-#include "atn/LexerSkipAction.h"
-#include "atn/LexerTypeAction.h"
-#include "atn/LookaheadEventInfo.h"
-#include "atn/LoopEndState.h"
-#include "atn/NotSetTransition.h"
-#include "atn/OrderedATNConfigSet.h"
-#include "atn/ParseInfo.h"
-#include "atn/ParserATNSimulator.h"
-#include "atn/ParserATNSimulatorOptions.h"
-#include "atn/PlusBlockStartState.h"
-#include "atn/PlusLoopbackState.h"
-#include "atn/PrecedencePredicateTransition.h"
-#include "atn/PredicateEvalInfo.h"
-#include "atn/PredicateTransition.h"
-#include "atn/PredictionContext.h"
-#include "atn/PredictionContextCache.h"
-#include "atn/PredictionContextMergeCache.h"
-#include "atn/PredictionContextMergeCacheOptions.h"
-#include "atn/PredictionMode.h"
-#include "atn/ProfilingATNSimulator.h"
-#include "atn/RangeTransition.h"
-#include "atn/RuleStartState.h"
-#include "atn/RuleStopState.h"
-#include "atn/RuleTransition.h"
-#include "atn/SemanticContext.h"
-#include "atn/SerializedATNView.h"
-#include "atn/SetTransition.h"
-#include "atn/SingletonPredictionContext.h"
-#include "atn/StarBlockStartState.h"
-#include "atn/StarLoopEntryState.h"
-#include "atn/StarLoopbackState.h"
-#include "atn/TokensStartState.h"
-#include "atn/Transition.h"
-#include "atn/WildcardTransition.h"
-#include "dfa/DFA.h"
-#include "dfa/DFASerializer.h"
-#include "dfa/DFAState.h"
-#include "dfa/LexerDFASerializer.h"
-#include "misc/InterpreterDataReader.h"
-#include "misc/Interval.h"
-#include "misc/IntervalSet.h"
-#include "misc/MurmurHash.h"
-#include "misc/Predicate.h"
-#include "support/Any.h"
-#include "support/Arrays.h"
-#include "support/BitSet.h"
-#include "support/Casts.h"
-#include "support/CPPUtils.h"
-#include "tree/AbstractParseTreeVisitor.h"
-#include "tree/ErrorNode.h"
-#include "tree/ErrorNodeImpl.h"
-#include "tree/ParseTree.h"
-#include "tree/ParseTreeListener.h"
-#include "tree/ParseTreeProperty.h"
-#include "tree/ParseTreeVisitor.h"
-#include "tree/ParseTreeWalker.h"
-#include "tree/TerminalNode.h"
-#include "tree/TerminalNodeImpl.h"
-#include "tree/Trees.h"
-#include "tree/pattern/Chunk.h"
-#include "tree/pattern/ParseTreeMatch.h"
-#include "tree/pattern/ParseTreePattern.h"
-#include "tree/pattern/ParseTreePatternMatcher.h"
-#include "tree/pattern/RuleTagToken.h"
-#include "tree/pattern/TagChunk.h"
-#include "tree/pattern/TextChunk.h"
-#include "tree/pattern/TokenTagToken.h"
-#include "tree/xpath/XPath.h"
-#include "tree/xpath/XPathElement.h"
-#include "tree/xpath/XPathLexer.h"
-#include "tree/xpath/XPathLexerErrorListener.h"
-#include "tree/xpath/XPathRuleAnywhereElement.h"
-#include "tree/xpath/XPathRuleElement.h"
-#include "tree/xpath/XPathTokenAnywhereElement.h"
-#include "tree/xpath/XPathTokenElement.h"
-#include "tree/xpath/XPathWildcardAnywhereElement.h"
-#include "tree/xpath/XPathWildcardElement.h"
-#include "internal/Synchronization.h"
+#include "ANTLRErrorListener.h" // IWYU pragma: export
+#include "ANTLRErrorStrategy.h" // IWYU pragma: export
+#include "ANTLRFileStream.h" // IWYU pragma: export
+#include "ANTLRInputStream.h" // IWYU pragma: export
+#include "BailErrorStrategy.h" // IWYU pragma: export
+#include "BaseErrorListener.h" // IWYU pragma: export
+#include "BufferedTokenStream.h" // IWYU pragma: export
+#include "CharStream.h" // IWYU pragma: export
+#include "CommonToken.h" // IWYU pragma: export
+#include "CommonTokenFactory.h" // IWYU pragma: export
+#include "CommonTokenStream.h" // IWYU pragma: export
+#include "ConsoleErrorListener.h" // IWYU pragma: export
+#include "DefaultErrorStrategy.h" // IWYU pragma: export
+#include "DiagnosticErrorListener.h" // IWYU pragma: export
+#include "Exceptions.h" // IWYU pragma: export
+#include "FailedPredicateException.h" // IWYU pragma: export
+#include "InputMismatchException.h" // IWYU pragma: export
+#include "IntStream.h" // IWYU pragma: export
+#include "InterpreterRuleContext.h" // IWYU pragma: export
+#include "Lexer.h" // IWYU pragma: export
+#include "LexerInterpreter.h" // IWYU pragma: export
+#include "LexerNoViableAltException.h" // IWYU pragma: export
+#include "ListTokenSource.h" // IWYU pragma: export
+#include "NoViableAltException.h" // IWYU pragma: export
+#include "Parser.h" // IWYU pragma: export
+#include "ParserInterpreter.h" // IWYU pragma: export
+#include "ParserRuleContext.h" // IWYU pragma: export
+#include "ProxyErrorListener.h" // IWYU pragma: export
+#include "RecognitionException.h" // IWYU pragma: export
+#include "Recognizer.h" // IWYU pragma: export
+#include "RuleContext.h" // IWYU pragma: export
+#include "RuleContextWithAltNum.h" // IWYU pragma: export
+#include "RuntimeMetaData.h" // IWYU pragma: export
+#include "Token.h" // IWYU pragma: export
+#include "TokenFactory.h" // IWYU pragma: export
+#include "TokenSource.h" // IWYU pragma: export
+#include "TokenStream.h" // IWYU pragma: export
+#include "TokenStreamRewriter.h" // IWYU pragma: export
+#include "UnbufferedCharStream.h" // IWYU pragma: export
+#include "UnbufferedTokenStream.h" // IWYU pragma: export
+#include "Version.h" // IWYU pragma: export
+#include "Vocabulary.h" // IWYU pragma: export
+#include "Vocabulary.h" // IWYU pragma: export
+#include "WritableToken.h" // IWYU pragma: export
+#include "atn/ATN.h" // IWYU pragma: export
+#include "atn/ATNConfig.h" // IWYU pragma: export
+#include "atn/ATNConfigSet.h" // IWYU pragma: export
+#include "atn/ATNDeserializationOptions.h" // IWYU pragma: export
+#include "atn/ATNDeserializer.h" // IWYU pragma: export
+#include "atn/ATNSimulator.h" // IWYU pragma: export
+#include "atn/ATNState.h" // IWYU pragma: export
+#include "atn/ATNType.h" // IWYU pragma: export
+#include "atn/ActionTransition.h" // IWYU pragma: export
+#include "atn/AmbiguityInfo.h" // IWYU pragma: export
+#include "atn/ArrayPredictionContext.h" // IWYU pragma: export
+#include "atn/AtomTransition.h" // IWYU pragma: export
+#include "atn/BasicBlockStartState.h" // IWYU pragma: export
+#include "atn/BasicState.h" // IWYU pragma: export
+#include "atn/BlockEndState.h" // IWYU pragma: export
+#include "atn/BlockStartState.h" // IWYU pragma: export
+#include "atn/ContextSensitivityInfo.h" // IWYU pragma: export
+#include "atn/DecisionEventInfo.h" // IWYU pragma: export
+#include "atn/DecisionInfo.h" // IWYU pragma: export
+#include "atn/DecisionState.h" // IWYU pragma: export
+#include "atn/EpsilonTransition.h" // IWYU pragma: export
+#include "atn/ErrorInfo.h" // IWYU pragma: export
+#include "atn/LL1Analyzer.h" // IWYU pragma: export
+#include "atn/LexerATNConfig.h" // IWYU pragma: export
+#include "atn/LexerATNSimulator.h" // IWYU pragma: export
+#include "atn/LexerAction.h" // IWYU pragma: export
+#include "atn/LexerActionExecutor.h" // IWYU pragma: export
+#include "atn/LexerActionType.h" // IWYU pragma: export
+#include "atn/LexerChannelAction.h" // IWYU pragma: export
+#include "atn/LexerCustomAction.h" // IWYU pragma: export
+#include "atn/LexerIndexedCustomAction.h" // IWYU pragma: export
+#include "atn/LexerModeAction.h" // IWYU pragma: export
+#include "atn/LexerMoreAction.h" // IWYU pragma: export
+#include "atn/LexerPopModeAction.h" // IWYU pragma: export
+#include "atn/LexerPushModeAction.h" // IWYU pragma: export
+#include "atn/LexerSkipAction.h" // IWYU pragma: export
+#include "atn/LexerTypeAction.h" // IWYU pragma: export
+#include "atn/LookaheadEventInfo.h" // IWYU pragma: export
+#include "atn/LoopEndState.h" // IWYU pragma: export
+#include "atn/NotSetTransition.h" // IWYU pragma: export
+#include "atn/OrderedATNConfigSet.h" // IWYU pragma: export
+#include "atn/ParseInfo.h" // IWYU pragma: export
+#include "atn/ParserATNSimulator.h" // IWYU pragma: export
+#include "atn/ParserATNSimulatorOptions.h" // IWYU pragma: export
+#include "atn/PlusBlockStartState.h" // IWYU pragma: export
+#include "atn/PlusLoopbackState.h" // IWYU pragma: export
+#include "atn/PrecedencePredicateTransition.h" // IWYU pragma: export
+#include "atn/PredicateEvalInfo.h" // IWYU pragma: export
+#include "atn/PredicateTransition.h" // IWYU pragma: export
+#include "atn/PredictionContext.h" // IWYU pragma: export
+#include "atn/PredictionContextCache.h" // IWYU pragma: export
+#include "atn/PredictionContextMergeCache.h" // IWYU pragma: export
+#include "atn/PredictionContextMergeCacheOptions.h" // IWYU pragma: export
+#include "atn/PredictionMode.h" // IWYU pragma: export
+#include "atn/ProfilingATNSimulator.h" // IWYU pragma: export
+#include "atn/RangeTransition.h" // IWYU pragma: export
+#include "atn/RuleStartState.h" // IWYU pragma: export
+#include "atn/RuleStopState.h" // IWYU pragma: export
+#include "atn/RuleTransition.h" // IWYU pragma: export
+#include "atn/SemanticContext.h" // IWYU pragma: export
+#include "atn/SerializedATNView.h" // IWYU pragma: export
+#include "atn/SetTransition.h" // IWYU pragma: export
+#include "atn/SingletonPredictionContext.h" // IWYU pragma: export
+#include "atn/StarBlockStartState.h" // IWYU pragma: export
+#include "atn/StarLoopEntryState.h" // IWYU pragma: export
+#include "atn/StarLoopbackState.h" // IWYU pragma: export
+#include "atn/TokensStartState.h" // IWYU pragma: export
+#include "atn/Transition.h" // IWYU pragma: export
+#include "atn/WildcardTransition.h" // IWYU pragma: export
+#include "dfa/DFA.h" // IWYU pragma: export
+#include "dfa/DFASerializer.h" // IWYU pragma: export
+#include "dfa/DFAState.h" // IWYU pragma: export
+#include "dfa/LexerDFASerializer.h" // IWYU pragma: export
+#include "misc/InterpreterDataReader.h" // IWYU pragma: export
+#include "misc/Interval.h" // IWYU pragma: export
+#include "misc/IntervalSet.h" // IWYU pragma: export
+#include "misc/MurmurHash.h" // IWYU pragma: export
+#include "misc/Predicate.h" // IWYU pragma: export
+#include "support/Any.h" // IWYU pragma: export
+#include "support/Arrays.h" // IWYU pragma: export
+#include "support/BitSet.h" // IWYU pragma: export
+#include "support/Casts.h" // IWYU pragma: export
+#include "support/CPPUtils.h" // IWYU pragma: export
+#include "tree/AbstractParseTreeVisitor.h" // IWYU pragma: export
+#include "tree/ErrorNode.h" // IWYU pragma: export
+#include "tree/ErrorNodeImpl.h" // IWYU pragma: export
+#include "tree/ParseTree.h" // IWYU pragma: export
+#include "tree/ParseTreeListener.h" // IWYU pragma: export
+#include "tree/ParseTreeProperty.h" // IWYU pragma: export
+#include "tree/ParseTreeVisitor.h" // IWYU pragma: export
+#include "tree/ParseTreeWalker.h" // IWYU pragma: export
+#include "tree/TerminalNode.h" // IWYU pragma: export
+#include "tree/TerminalNodeImpl.h" // IWYU pragma: export
+#include "tree/Trees.h" // IWYU pragma: export
+#include "tree/pattern/Chunk.h" // IWYU pragma: export
+#include "tree/pattern/ParseTreeMatch.h" // IWYU pragma: export
+#include "tree/pattern/ParseTreePattern.h" // IWYU pragma: export
+#include "tree/pattern/ParseTreePatternMatcher.h" // IWYU pragma: export
+#include "tree/pattern/RuleTagToken.h" // IWYU pragma: export
+#include "tree/pattern/TagChunk.h" // IWYU pragma: export
+#include "tree/pattern/TextChunk.h" // IWYU pragma: export
+#include "tree/pattern/TokenTagToken.h" // IWYU pragma: export
+#include "tree/xpath/XPath.h" // IWYU pragma: export
+#include "tree/xpath/XPathElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathLexer.h" // IWYU pragma: export
+#include "tree/xpath/XPathLexerErrorListener.h" // IWYU pragma: export
+#include "tree/xpath/XPathRuleAnywhereElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathRuleElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathTokenAnywhereElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathTokenElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathWildcardAnywhereElement.h" // IWYU pragma: export
+#include "tree/xpath/XPathWildcardElement.h" // IWYU pragma: export
+#include "internal/Synchronization.h" // IWYU pragma: export

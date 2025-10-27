@@ -1,20 +1,25 @@
 #include "table.h"
 
-#include <cmath>
-
 #include "system/buffer_manager.h"
 #include "system/file_manager.h"
 
-namespace TextSearch {
+using namespace TextSearch;
 
-std::unique_ptr<Table> Table::create(std::filesystem::path path, uint64_t column_count)
+constexpr uint64_t int_floor(float f)
+{
+    const uint64_t i = static_cast<uint64_t>(f);
+    return f < i ? i - 1 : i;
+}
+
+Table::Table(const std::filesystem::path& path, uint64_t column_count) :
+    file_id(file_manager.get_file_id(path)),
+    tombstones_stack(file_manager.get_file_id(path.parent_path() / Table::TOMBSTONES_FILENAME))
 {
     if (column_count < 1) {
         throw std::runtime_error("Trying to create table with 0 columns");
     }
-
-    const auto max_column_count = std::floor(
-        static_cast<double>(UPage::SIZE - sizeof(Table::Header)) / sizeof(uint64_t)
+    constexpr auto max_column_count = int_floor(
+        static_cast<double>(Page::SIZE - 2 * sizeof(uint64_t)) / sizeof(uint64_t)
     );
     if (column_count > max_column_count) {
         throw std::runtime_error(
@@ -23,116 +28,102 @@ std::unique_ptr<Table> Table::create(std::filesystem::path path, uint64_t column
         );
     }
 
-    const auto table_file_id = file_manager.get_file_id(path);
-    auto& first_page = buffer_manager.append_unversioned_page(table_file_id);
+    auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
+    const auto page_col_count = *reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    if (page_col_count == 0) {
+        // column count cannot be 0, so this page is new
+        auto& first_page_editable = buffer_manager.get_page_editable(file_id, 0);
 
-    Table::Header header {};
-    header.column_count = column_count;
-    header.end_page_ptr = sizeof(Table::Header);
-    memcpy(first_page.get_bytes(), &header, sizeof(Table::Header));
+        auto column_count_ptr = reinterpret_cast<uint64_t*>(first_page_editable.get_bytes());
+        auto end_table_ptr = column_count_ptr + 1;
 
-    const auto tombstones_file_id = file_manager.get_file_id(path.parent_path() / Table::TOMBSTONES_FILENAME);
-    Table::TombstoneStackType::create(tombstones_file_id);
+        *column_count_ptr = column_count;
+        *end_table_ptr = 2 * sizeof(uint64_t);
 
-    return std::unique_ptr<Table>(new Table(table_file_id, tombstones_file_id, first_page));
-}
-
-std::unique_ptr<Table> Table::load(std::filesystem::path path)
-{
-    const auto table_file_id = file_manager.get_file_id(path);
-    const auto tombstones_file_id = file_manager.get_file_id(path.parent_path() / Table::TOMBSTONES_FILENAME);
-    auto& first_page = buffer_manager.get_unversioned_page(table_file_id, 0);
-
-    return std::unique_ptr<Table>(new Table(table_file_id, tombstones_file_id, first_page));
-}
-
-Table::Table(FileId file_id_, FileId tombstones_file_id, UPage& first_page_) :
-    file_id { file_id_ },
-    first_page { first_page_ },
-    header { reinterpret_cast<Header*>(first_page.get_bytes()) },
-    current_insert_page { &buffer_manager.get_unversioned_page(file_id, header->end_page_ptr / UPage::SIZE) },
-    tombstones_stack { tombstones_file_id }
-{
-    assert(header->column_count > 0);
-    assert(header->column_count < std::floor(static_cast<double>(UPage::SIZE - sizeof(Table::Header))));
-}
-
-Table::~Table()
-{
+        buffer_manager.unpin(first_page_editable);
+    } else if (page_col_count != column_count) {
+        throw std::runtime_error(
+            "Trying to create table with " + std::to_string(column_count) + " columns, existing table has "
+            + std::to_string(max_column_count)
+        );
+    }
     buffer_manager.unpin(first_page);
-    buffer_manager.unpin(*current_insert_page);
 }
 
-uint64_t Table::insert(std::vector<uint64_t> values)
+std::vector<uint64_t> Table::get(uint64_t table_pointer)
 {
-    if (values.size() != header->column_count) {
+    auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
+    const auto column_count = *reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    buffer_manager.unpin(first_page);
+
+    const auto page_number = table_pointer / Page::SIZE;
+    const auto page_offset = table_pointer % Page::SIZE;
+    const auto row_size = column_count * sizeof(uint64_t);
+
+    std::vector<uint64_t> res(column_count);
+
+    auto& page = buffer_manager.get_page_readonly(file_id, page_number);
+    std::memcpy(res.data(), page.get_bytes() + page_offset, row_size);
+    buffer_manager.unpin(page);
+
+    return res;
+}
+
+uint64_t Table::insert(const std::vector<uint64_t>& values)
+{
+    auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
+    const auto column_count = *reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    buffer_manager.unpin(first_page);
+
+    if (values.size() != column_count) {
         throw std::logic_error(
             "Trying to insert tuple of size " + std::to_string(values.size())
-            + " into table with column count " + std::to_string(header->column_count)
+            + " into table with column count " + std::to_string(column_count)
         );
     }
 
-    if (!tombstones_stack.empty()) {
+    std::optional<uint64_t> available_tombstone = tombstones_stack.try_pop();
+    if (available_tombstone.has_value()) {
         // A tombstone is available and the values to insert must fit int the available space
-        const auto page_pointer = tombstones_stack.pop();
-        const auto page_number = page_pointer / UPage::SIZE;
-        const auto page_offset = page_pointer % UPage::SIZE;
+        const auto page_pointer = available_tombstone.value();
+        const auto page_number = page_pointer / Page::SIZE;
+        const auto page_offset = page_pointer % Page::SIZE;
 
-        if (current_insert_page->get_page_number() != page_number) {
-            // Another page is currently loaded
-            buffer_manager.unpin(*current_insert_page);
-            current_insert_page = &buffer_manager.get_or_append_unversioned_page(file_id, page_number);
-        }
+        auto& insert_page = buffer_manager.get_page_editable(file_id, page_number);
 
-        std::memcpy(
-            current_insert_page->get_bytes() + page_offset,
-            values.data(),
-            values.size() * sizeof(uint64_t)
-        );
+        std::memcpy(insert_page.get_bytes() + page_offset, values.data(), values.size() * sizeof(uint64_t));
 
-        current_insert_page->make_dirty();
+        buffer_manager.unpin(insert_page);
         return page_pointer;
     }
 
-    auto page_number = header->end_page_ptr / UPage::SIZE;
-    auto page_offset = header->end_page_ptr % UPage::SIZE;
+    // this time first page is editable
+    auto& first_page_editable = buffer_manager.get_page_editable(file_id, 0);
+
+    auto column_count_ptr = reinterpret_cast<uint64_t*>(first_page_editable.get_bytes());
+
+    auto page_number = *column_count_ptr / Page::SIZE;
+    auto page_offset = *column_count_ptr % Page::SIZE;
 
     const auto row_size = values.size() * sizeof(uint64_t);
 
-    if (row_size + page_offset > UPage::SIZE) {
+    if (row_size + page_offset > Page::SIZE) {
         // Not enough space left at the end of page
-        ++page_number;
+        page_number++;
         page_offset = 0;
-        header->end_page_ptr = page_number * UPage::SIZE;
+        *column_count_ptr = page_number * Page::SIZE;
     }
 
-    if (current_insert_page->get_page_number() != page_number) {
-        // Another page is currently loaded
-        buffer_manager.unpin(*current_insert_page);
-        current_insert_page = &buffer_manager.get_or_append_unversioned_page(file_id, page_number);
-    }
+    auto& insert_page = buffer_manager.get_page_editable(file_id, page_number);
+    std::memcpy(insert_page.get_bytes() + page_offset, values.data(), row_size);
 
-    std::memcpy(current_insert_page->get_bytes() + page_offset, values.data(), row_size);
+    auto res = *column_count_ptr;
+    *column_count_ptr += row_size;
 
-    header->end_page_ptr += row_size;
-    current_insert_page->make_dirty();
-    first_page.make_dirty();
+    buffer_manager.unpin(first_page_editable);
+    buffer_manager.unpin(insert_page);
 
-    return header->end_page_ptr - row_size;
-}
-
-std::vector<uint64_t> Table::get(uint64_t page_pointer)
-{
-    const auto page_number = page_pointer / UPage::SIZE;
-    const auto page_offset = page_pointer % UPage::SIZE;
-    const auto row_size = header->column_count * sizeof(uint64_t);
-
-    auto& page = buffer_manager.get_unversioned_page(file_id, page_number);
-    std::vector<uint64_t> result(header->column_count);
-    std::memcpy(result.data(), page.get_bytes() + page_offset, row_size);
-    buffer_manager.unpin(page);
-
-    return result;
+    return res;
 }
 
 void Table::remove(uint64_t table_pointer)
@@ -142,4 +133,3 @@ void Table::remove(uint64_t table_pointer)
     tombstones_stack.push(table_pointer);
 }
 
-} // namespace TextSearch

@@ -1,6 +1,5 @@
 #include "bplus_tree_dir.h"
 
-#include <cassert>
 #include <cstring>
 #include <utility>
 
@@ -159,8 +158,8 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
             }
 
             int_fast32_t middle_index = ((*key_count)+1)/2;
-            auto& new_lhs_page = buffer_manager.append_vpage(dir_file_id);
-            auto& new_rhs_page = buffer_manager.append_vpage(dir_file_id);
+            auto& new_lhs_page = buffer_manager.append_page(dir_file_id);
+            auto& new_rhs_page = buffer_manager.append_page(dir_file_id);
 
             BPlusTreeDir<N> new_lhs_dir(leaf_file_id, &new_lhs_page);
             BPlusTreeDir<N> new_rhs_dir(leaf_file_id, &new_rhs_page);
@@ -277,7 +276,7 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
 
             int_fast32_t middle_index = ((*key_count)+1)/2;
 
-            auto& new_page = buffer_manager.append_vpage(dir_file_id);
+            auto& new_page = buffer_manager.append_page(dir_file_id);
             auto new_dir = BPlusTreeDir<N>(leaf_file_id, &new_page);
 
             // write records from (middle_index+1) to ((*key_count)-1) and the last record saved before

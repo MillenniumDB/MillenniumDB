@@ -11,9 +11,9 @@
 #include "misc/logger.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_update_parser.h"
+#include "query/update/mql/update_executor.h"
+#include "query/update/sparql/update_executor.h"
 #include "system/system.h"
-#include "update/mql/update_executor.h"
-#include "update/sparql/update_executor.h"
 
 using namespace MdbBin;
 using DurationMS = std::chrono::duration<float, std::milli>;
@@ -71,7 +71,6 @@ int main(int argc, const char* argv[])
         config.strings_dynamic_buffer,
         config.versioned_pages_buffer,
         config.private_pages_buffer,
-        config.unversioned_pages_buffer,
         config.tensors_static_buffer,
         config.tensors_dynamic_buffer,
         config.workers
@@ -101,6 +100,7 @@ int main(int argc, const char* argv[])
                 auto execution_start = std::chrono::system_clock::now();
                 MQL::UpdateExecutor update_executor;
                 update_executor.execute(*logical_plan);
+                version_scope->commited = true;
                 auto execution_duration = std::chrono::system_clock::now() - execution_start;
 
                 logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
@@ -148,6 +148,7 @@ int main(int argc, const char* argv[])
                 for (auto& update : logical_plan->updates) {
                     update->accept_visitor(update_executor);
                 }
+                version_scope->commited = true;
 
                 logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
                     os << "Update Stats\n";

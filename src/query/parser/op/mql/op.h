@@ -25,11 +25,6 @@ public:
 
     virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const = 0;
 
-    virtual bool read_only() const
-    {
-        return true;
-    }
-
     friend std::ostream& operator<<(std::ostream& os, const Op& op)
     {
         return op.print_to_ostream(os);

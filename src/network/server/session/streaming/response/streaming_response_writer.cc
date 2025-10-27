@@ -19,23 +19,23 @@ void StreamingResponseWriter::write_variables(
 )
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::VARIABLES));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_map_header(2UL);
-    write_string("variables", Protocol::DataType::STRING);
+    write_string("variables");
     write_list_header(projection_vars.size());
     for (const auto& var_id : projection_vars) {
         const auto var_name = get_query_ctx().get_var_name(var_id);
-        write_string(var_name, Protocol::DataType::STRING);
+        write_string(var_name);
     }
-    write_string("queryPreamble", Protocol::DataType::STRING);
+    write_string("queryPreamble");
     write_map_header(2UL);
-    write_string("workerIndex", Protocol::DataType::STRING);
+    write_string("workerIndex");
     write_uint32(worker_idx);
-    write_string("cancellationToken", Protocol::DataType::STRING);
-    write_string(cancellation_token, Protocol::DataType::STRING);
+    write_string("cancellationToken");
+    write_string(cancellation_token);
 
     seal();
 }
@@ -48,20 +48,20 @@ void StreamingResponseWriter::write_records_success(
 )
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_map_header(5UL);
-    write_string("update", Protocol::DataType::STRING);
+    write_string("update");
     write_bool(false);
-    write_string("resultCount", Protocol::DataType::STRING);
+    write_string("resultCount");
     write_uint64(result_count);
-    write_string("parserDurationMs", Protocol::DataType::STRING);
+    write_string("parserDurationMs");
     write_double(parser_duration_ms);
-    write_string("optimizerDurationMs", Protocol::DataType::STRING);
+    write_string("optimizerDurationMs");
     write_double(optimizer_duration_ms);
-    write_string("executionDurationMs", Protocol::DataType::STRING);
+    write_string("executionDurationMs");
     write_double(execution_duration_ms);
 
     seal();
@@ -74,19 +74,19 @@ void StreamingResponseWriter::write_update_success(
 )
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_map_header(4UL);
 
-    write_string("update", Protocol::DataType::STRING);
+    write_string("update");
     write_bool(true);
-    write_string("parserDurationMs", Protocol::DataType::STRING);
+    write_string("parserDurationMs");
     write_double(parser_duration_ms);
-    write_string("optimizerDurationMs", Protocol::DataType::STRING);
+    write_string("optimizerDurationMs");
     write_double(optimizer_duration_ms);
-    write_string("executionDurationMs", Protocol::DataType::STRING);
+    write_string("executionDurationMs");
     write_double(execution_duration_ms);
 
     // TODO: Send update data
@@ -97,18 +97,18 @@ void StreamingResponseWriter::write_update_success(
 void StreamingResponseWriter::write_catalog_success()
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_map_header(3UL);
-    write_string("modelId", Protocol::DataType::STRING);
+    write_string("modelId");
     write_uint64(get_model_id());
-    write_string("version", Protocol::DataType::STRING);
+    write_string("version");
     write_uint64(get_catalog_version());
 
     // TODO: Pass useful additional metadata about the catalog and/or database
-    write_string("metadata", Protocol::DataType::STRING);
+    write_string("metadata");
     write_null();
 
     seal();
@@ -117,10 +117,10 @@ void StreamingResponseWriter::write_catalog_success()
 void StreamingResponseWriter::write_cancel_success()
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_null();
 
     seal();
@@ -129,10 +129,10 @@ void StreamingResponseWriter::write_cancel_success()
 void StreamingResponseWriter::write_record(const std::vector<VarId>& projection_vars, const Binding& binding)
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::RECORD));
 
-    write_string("payload", Protocol::DataType::STRING);
+    write_string("payload");
     write_list_header(projection_vars.size());
     for (const auto& var : projection_vars) {
         write_object_id(binding[var]);
@@ -144,11 +144,11 @@ void StreamingResponseWriter::write_record(const std::vector<VarId>& projection_
 void StreamingResponseWriter::write_error(const std::string& message)
 {
     write_map_header(2UL);
-    write_string("type", Protocol::DataType::STRING);
+    write_string("type");
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::ERROR));
 
-    write_string("payload", Protocol::DataType::STRING);
-    write_string(message, Protocol::DataType::STRING);
+    write_string("payload");
+    write_string(message);
 
     seal();
 }

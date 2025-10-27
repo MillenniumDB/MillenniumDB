@@ -1,6 +1,5 @@
 #include "expr_to_binding_expr.h"
 
-
 #include "query/optimizer/quad_model/binding_iter_constructor.h"
 #include "query/optimizer/quad_model/expr_property_types_visitor.h"
 #include "query/parser/expr/mql/exprs.h"
@@ -48,7 +47,7 @@ void ExprPropertyTypes::visit(ExprAnd& expr)
                     auto key = pair.first;
                     auto it = new_propId.find(key);
 
-                    if (it != new_propId.end()) { // ya existe
+                    if (it != new_propId.end()) { // already exists
                         it->second &= pair.second;
                     } else {
                         new_propId.insert({ key, pair.second });

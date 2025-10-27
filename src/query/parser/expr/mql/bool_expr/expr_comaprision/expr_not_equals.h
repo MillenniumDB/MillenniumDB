@@ -36,5 +36,19 @@ public:
         }
         return res;
     }
+
+    std::set<VarId> get_input_vars() const override
+    {
+        std::set<VarId> res = lhs->get_input_vars();
+        for (auto& var : rhs->get_input_vars()) {
+            res.insert(var);
+        }
+        return res;
+    }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(' << *lhs << "!=" << *rhs << ')';
+    }
 };
 } // namespace MQL

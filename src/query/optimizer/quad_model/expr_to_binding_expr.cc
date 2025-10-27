@@ -277,7 +277,7 @@ void ExprToBindingExpr::visit(ExprOr& expr)
 
 void ExprToBindingExpr::visit(MQL::ExprAggAvg& expr)
 {
-    check_and_make_aggregate<AggAvg>(expr.expr.get());
+    check_and_make_aggregate<AggAvg>(expr.expr.get(), &expr);
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggCountAll& expr)
@@ -285,39 +285,39 @@ void ExprToBindingExpr::visit(MQL::ExprAggCountAll& expr)
     if (expr.distinct) {
         const auto non_internal_vars_set = get_query_ctx().get_non_internal_vars();
         std::vector<VarId> non_internal_vars_vec(non_internal_vars_set.begin(), non_internal_vars_set.end());
-        check_and_make_aggregate<AggCountAllDistinct>(nullptr, std::move(non_internal_vars_vec));
+        check_and_make_aggregate<AggCountAllDistinct>(nullptr, &expr, std::move(non_internal_vars_vec));
 
         auto all_vars = get_query_ctx().get_all_vars();
         for (const auto& var : all_vars) {
             bic->group_saved_vars.insert(var);
         }
     } else {
-        check_and_make_aggregate<AggCountAll>(nullptr);
+        check_and_make_aggregate<AggCountAll>(nullptr, &expr);
     }
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggCount& expr)
 {
     if (expr.distinct) {
-        check_and_make_aggregate<AggCountDistinct>(expr.expr.get());
+        check_and_make_aggregate<AggCountDistinct>(expr.expr.get(), &expr);
     } else {
-        check_and_make_aggregate<AggCount>(expr.expr.get());
+        check_and_make_aggregate<AggCount>(expr.expr.get(), &expr);
     }
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggMax& expr)
 {
-    check_and_make_aggregate<AggMax>(expr.expr.get());
+    check_and_make_aggregate<AggMax>(expr.expr.get(), &expr);
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggMin& expr)
 {
-    check_and_make_aggregate<AggMin>(expr.expr.get());
+    check_and_make_aggregate<AggMin>(expr.expr.get(), &expr);
 }
 
 void ExprToBindingExpr::visit(MQL::ExprAggSum& expr)
 {
-    check_and_make_aggregate<AggSum>(expr.expr.get());
+    check_and_make_aggregate<AggSum>(expr.expr.get(), &expr);
 }
 
 void ExprToBindingExpr::visit(ExprRegex& expr)
@@ -428,7 +428,7 @@ void ExprToBindingExpr::visit(ExprProperties& expr)
 }
 
 template<typename AggType, class... Args>
-void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
+void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Expr* partent_expr, Args&&... args)
 {
     if (!after_group) {
         throw QuerySemanticException("Aggregation where it is not allowed");
@@ -442,11 +442,13 @@ void ExprToBindingExpr::check_and_make_aggregate(Expr* expr, Args&&... args)
         throw QuerySemanticException("Nested aggregations are not allowed");
     }
 
-    VarId var { 0 };
+    VarId var(0);
     if (as_var.has_value()) {
         var = as_var.value();
     } else {
-        var = get_query_ctx().get_internal_var();
+        std::stringstream ss;
+        ss << '.' << *partent_expr;
+        var = get_query_ctx().get_or_create_var(ss.str());
     }
 
     inside_aggregation = true;

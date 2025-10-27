@@ -90,12 +90,16 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             true         = "true";
             false        = "false";
             string       = ["] ([^"\\] | [\\][^])* ["];
+            anon         = [_][aA][0-9]+;
             typed_string = [a-zA-Z]+ [ \r\t]* [(] [ \r\t]* ["] ([^"\\] | [\\][^])* ["] [ \r\t]* [)];
-            identifier   = [a-zA-z][a-zA-Z0-9_]*;
+            identifier   = [a-zA-Z][a-zA-Z0-9_]*;
             integer      = [-+]?[0-9]+;
             decimal      = [-+]?([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)?;
             whitespace   = [ \r\t]+;
             endline      = [\n];
+            l_bracket    = '[';
+            r_bracket    = ']';
+            comma        = ',';
 
             colon        { return Import::QuadModel::Token::COLON; }
             l_arrow      { return Import::QuadModel::Token::L_ARROW; }
@@ -103,11 +107,15 @@ Import::QuadModel::Token MQLTokenizer::_get_token()
             true         { return Import::QuadModel::Token::K_TRUE; }
             false        { return Import::QuadModel::Token::K_FALSE; }
             string       { return Import::QuadModel::Token::STRING; }
+            anon         { return Import::QuadModel::Token::ANON; }
             typed_string { return Import::QuadModel::Token::TYPED_STRING; }
             identifier   { return Import::QuadModel::Token::IDENTIFIER; }
             integer      { return Import::QuadModel::Token::INTEGER; }
             decimal      { return Import::QuadModel::Token::FLOAT; }
             whitespace   { return Import::QuadModel::Token::WHITESPACE; }
+            l_bracket    { return Import::QuadModel::Token::L_BRACKET; }
+            r_bracket    { return Import::QuadModel::Token::R_BRACKET; }
+            comma        { return Import::QuadModel::Token::COMMA; }
             endline      { return Import::QuadModel::Token::ENDLINE; }
             *            { return Import::QuadModel::Token::UNRECOGNIZED; }
         */

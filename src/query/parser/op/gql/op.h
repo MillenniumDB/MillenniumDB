@@ -26,11 +26,6 @@ public:
 
     virtual std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const = 0;
 
-    virtual bool read_only() const
-    {
-        return true;
-    }
-
     virtual std::map<VarId, GQL::VarType> get_var_types() const
     {
         return {};

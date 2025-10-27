@@ -198,6 +198,7 @@ uint64_t StringManager::get_bytes_id(const char* bytes, uint64_t size)
 }
 
 // IMPORTANT: supposing only one thread will call this method at a time
+// TODO: handle possible rollbacks when creating a new string
 uint64_t StringManager::get_or_create(const char* str, uint64_t str_len)
 {
     {
@@ -318,6 +319,9 @@ uint64_t StringManager::get_new_id_and_seek(uint64_t str_len, uint64_t bytes_for
     return new_id;
 }
 
+// TODO: now is not used but in the future must take care with rollbacks when new deleted
+// spaces were used (and the string changed). Deletes should be available only for next
+// version or performed once we know the transaction won't rollback
 void StringManager::delete_str(uint64_t id)
 {
     char* ptr;
@@ -335,8 +339,6 @@ void StringManager::delete_str(uint64_t id)
 
     Record<2> free_elem = { bytes_for_len + len, id };
     free_space_bpt->insert(free_elem);
-
-    *ptr = 0;
 }
 
 StringManager::Frame& StringManager::get_frame_available()
@@ -403,12 +405,22 @@ void StringManager::init_free_space()
     fstat(leaf_file_id.id, &buf);
     uint64_t file_size = buf.st_size;
     if (file_size == 0) {
-        auto buffer = new char[VPage::SIZE];
-        memset(buffer, 0, VPage::SIZE);
-        write(leaf_file_id.id, buffer, VPage::SIZE);
-        write(dir_file_id.id, buffer, VPage::SIZE);
+        auto buffer = new char[Page::SIZE];
+        memset(buffer, 0, Page::SIZE);
+        write(leaf_file_id.id, buffer, Page::SIZE);
+        write(dir_file_id.id, buffer, Page::SIZE);
         delete[] buffer;
     }
 
     free_space_bpt = std::make_unique<BPlusTree<2>>(FREE_SPACE_BPT_NAME);
+}
+
+uint64_t StringManager::get_end() const
+{
+    return lseek(str_file_id.id, 0, SEEK_END);
+}
+
+void StringManager::rollback(uint64_t original_end)
+{
+    ftruncate(str_file_id.id, original_end);
 }

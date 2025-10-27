@@ -1,4 +1,4 @@
-x,COUNT(x)
+x,COUNT(?x)
 N1,1
 N2,2
 N3,3

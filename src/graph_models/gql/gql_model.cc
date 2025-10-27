@@ -5,7 +5,6 @@
 #include "graph_models/gql/conversions.h"
 #include "query/query_context.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
-#include "storage/index/random_access_table/random_access_table.h"
 
 // memory for the object
 static typename std::aligned_storage<sizeof(GQLModel), alignof(GQLModel)>::type gql_model_buf;

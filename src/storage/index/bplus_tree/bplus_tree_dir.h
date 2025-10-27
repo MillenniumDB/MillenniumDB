@@ -7,7 +7,7 @@
 #include "storage/index/bplus_tree/bplus_tree_leaf.h"
 #include "storage/index/bplus_tree/bplus_tree_split.h"
 #include "storage/index/record.h"
-#include "storage/page/versioned_page.h"
+#include "storage/page/page.h"
 
 template <std::size_t N> class BPlusTree;
 
@@ -16,7 +16,7 @@ class BPlusTreeDir {
 friend class BPlusTree<N>;
 
 public:
-    BPlusTreeDir(FileId leaf_file_id, VPage* page) :
+    BPlusTreeDir(FileId leaf_file_id, Page* page) :
         keys         (reinterpret_cast<uint64_t*>(page->get_bytes())),
         key_count    (reinterpret_cast<uint32_t*>(page->get_bytes()
                         + (sizeof(uint64_t) * BPlusTree<N>::dir_max_records * N))),
@@ -56,7 +56,7 @@ private:
     uint32_t* key_count;
     int32_t*  children;
 
-    VPage* page;
+    Page* page;
     const FileId dir_file_id;
     const FileId leaf_file_id;
 

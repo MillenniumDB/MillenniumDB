@@ -14,14 +14,25 @@ using namespace MQL;
 template<ReturnType ret>
 void ReturnExecutor<ret>::print(std::ostream& os, ObjectId oid)
 {
-    if constexpr (ret == ReturnType::CSV) {
-        CSVOstreamEscape csv_ostream_escape(os);
-        std::ostream escaped_os(&csv_ostream_escape);
+    print(os, os, oid);
+}
+
+template<ReturnType ret>
+void ReturnExecutor<ret>::print_handle_escape(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
+{
+    const auto mask = oid.id & ObjectId::TYPE_MASK;
+    switch (mask) {
+    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_EXTERN:
+    case ObjectId::MASK_DICTIONARY_TMP:
+    case ObjectId::MASK_LIST:
+    case ObjectId::MASK_LIST_EXTERN:
+    case ObjectId::MASK_LIST_TMP:
+        os << '"';
         print(os, escaped_os, oid);
-    }
-    if constexpr (ret == ReturnType::TSV) {
-        TSVOstreamEscape tsv_ostream_escape(os);
-        std::ostream escaped_os(&tsv_ostream_escape);
+        os << '"';
+        break;
+    default:
         print(os, escaped_os, oid);
     }
 }
@@ -172,18 +183,16 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "tensorDouble(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectId::MASK_LIST: {
-        os << '"';
+    case ObjectId::MASK_LIST:
+    case ObjectId::MASK_LIST_EXTERN:
+    case ObjectId::MASK_LIST_TMP: {
         print_list(os, escaped_os, oid);
-        os << '"';
         break;
     }
     case ObjectId::MASK_DICTIONARY:
     case ObjectId::MASK_DICTIONARY_TMP: {
         std::unique_ptr<Dictionary> dict = Common::Conversions::unpack_dictionary(oid);
-        os << '"';
         dict->to_string(escaped_os);
-        os << '"';
         break;
     }
     default:
@@ -239,7 +248,7 @@ uint64_t ReturnExecutor<ret>::execute(std::ostream& os)
 
         if (it != projection_vars.cend()) {
             auto value = binding[*it];
-            print(os, *escaped_os, value);
+            print_handle_escape(os, *escaped_os, value);
             ++it;
         }
         while (it != projection_vars.cend()) {
@@ -249,7 +258,7 @@ uint64_t ReturnExecutor<ret>::execute(std::ostream& os)
             } else {
                 os << '\t';
             }
-            print(os, *escaped_os, value);
+            print_handle_escape(os, *escaped_os, value);
             ++it;
         }
         os << "\n";

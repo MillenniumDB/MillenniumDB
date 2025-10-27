@@ -2,6 +2,7 @@
 
 #include "macros/aligned_alloc.h"
 #include "misc/fatal_error.h"
+#include "storage/index/lists/list_encoder.h"
 
 using namespace Import;
 
@@ -87,6 +88,21 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
             pending_buffer
         );
         return get_or_create_external_tensor_id(pending_buffer, num_bytes) | mask;
+    }
+
+    // handle lists
+    const uint64_t type_mask = id & ObjectId::TYPE_MASK;
+
+    if (type_mask == ObjectId::MASK_LIST_TMP) {
+        strings_external_data.old_pending_fs->seekg(id & ObjectId::MASK_EXTERNAL_ID);
+        const auto str_len = BytesEncoder::read_bytes(*strings_external_data.old_pending_fs, pending_buffer);
+        std::vector<ObjectId> list = ListEncoder::decode(pending_buffer);
+
+        for (uint64_t i = 0; i < list.size(); ++i) {
+            list[i] = ObjectId(resolve_id(list[i].id));
+        }
+        ListEncoder::encode(list, pending_buffer);
+        return get_or_create_external_string_id(pending_buffer, str_len) | ObjectId::MASK_LIST;
     }
 
     const auto pos = id & ObjectId::MASK_EXTERNAL_ID;

@@ -19,8 +19,11 @@ enum Token {
     FLOAT = 12,
     WHITESPACE = 13,
     ENDLINE = 14,
-    UNRECOGNIZED = 15,
-    TOTAL_TOKENS = 16
+    L_BRACKET = 15,
+    R_BRACKET = 16,
+    COMMA = 17,
+    UNRECOGNIZED = 18,
+    TOTAL_TOKENS = 19
 };
 
 }} // namespace Import::QuadModel

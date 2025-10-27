@@ -1,4 +1,4 @@
-x,AVG(x.int)
+x,AVG(?x.int)
 N1,1
 N2,2
 N3,30

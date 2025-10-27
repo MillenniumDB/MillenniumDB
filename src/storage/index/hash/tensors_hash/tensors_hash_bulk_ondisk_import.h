@@ -11,8 +11,7 @@
 #include "macros/count_zeros.h"
 #include "storage/index/hash/tensors_hash/tensors_hash.h"
 #include "storage/index/hash/tensors_hash/tensors_hash_bucket.h"
-#include "storage/page/unversioned_page.h"
-#include "system/file_manager.h"
+#include "storage/page/page.h"
 #include "third_party/hashes/hash_function_wrapper.h"
 
 class TensorsHashBulkOnDiskImport {
@@ -24,12 +23,12 @@ class TensorsHashBulkOnDiskImport {
         uint32_t* const arr2; // 32 least significant bits of ID
 
         Bucket(char* page) :
-            key_count { reinterpret_cast<uint32_t*>(page) },
-            local_depth { reinterpret_cast<uint32_t*>(page + sizeof(uint32_t)) },
-            arr1 { reinterpret_cast<uint64_t*>(page + 2 * sizeof(uint32_t)) },
-            arr2 { reinterpret_cast<uint32_t*>(
+            key_count(reinterpret_cast<uint32_t*>(page)),
+            local_depth(reinterpret_cast<uint32_t*>(page + sizeof(uint32_t))),
+            arr1(reinterpret_cast<uint64_t*>(page + 2 * sizeof(uint32_t))),
+            arr2(reinterpret_cast<uint32_t*>(
                 page + 2 * sizeof(uint32_t) + sizeof(uint64_t) * TensorsHashBucket::MAX_KEYS
-            ) }
+            ))
         { }
 
         void create_id(uint64_t new_id, uint64_t hash, bool* const need_split)
@@ -79,11 +78,11 @@ class TensorsHashBulkOnDiskImport {
     };
 
 public:
-    TensorsHashBulkOnDiskImport(char* buffer, uint64_t buffer_capacity) :
-        buffer { buffer }
+    TensorsHashBulkOnDiskImport(const std::string& filename, char* buffer, uint64_t buffer_capacity) :
+        buffer(buffer)
     {
-        const auto dir_path = file_manager.get_file_path(TensorsHash::DIR_FILENAME);
-        const auto buckets_path = file_manager.get_file_path(TensorsHash::BUCKETS_FILENAME);
+        auto dir_path = filename + ".dir";
+        auto buckets_path = filename + ".dat";
         dir_fd = open(dir_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
         if (dir_fd == -1) {
             throw std::runtime_error("Could not open file " + dir_path);
@@ -99,7 +98,7 @@ public:
         }
 
         const uint64_t buffer_bits = 64ULL - (MDB_COUNT_LEADING_ZEROS_64(buffer_capacity) + 1);
-        const uint64_t buffer_num_elements = (1ULL << buffer_bits) / UPage::SIZE;
+        const uint64_t buffer_num_elements = (1ULL << buffer_bits) / Page::SIZE;
         buffer_bitmask = buffer_num_elements - 1;
 
         buffer_page_number = new uint64_t[buffer_num_elements];
@@ -108,7 +107,7 @@ public:
         const auto dir_size = get_dir_size();
         dir = new uint32_t[dir_size];
 
-        // if TensorsHash::MIN_GLOBAL_DEPTH = 8, import buffer is 2GB (2^31) and UPage::SIZE = 4KB (2^12)
+        // if TensorsHash::MIN_GLOBAL_DEPTH = 8, import buffer is 2GB (2^31) and Page::SIZE = 4KB (2^12)
         // dir_size is 2^8 and buffer_number_of_elements is 2^(31-12) => 2^19
         if (buffer_num_elements < dir_size) {
             throw std::invalid_argument("Need a bigger buffer to create the initial TensorsHash directory");
@@ -116,19 +115,19 @@ public:
 
         for (std::size_t i = 0; i < dir_size; ++i) {
             buffer_page_number[i] = i;
-            auto page = buffer + (UPage::SIZE * i);
+            auto page = buffer + (Page::SIZE * i);
             Bucket bucket(page);
             *bucket.key_count = 0;
             *bucket.local_depth = TensorsHash::MIN_GLOBAL_DEPTH;
             dir[i] = i;
         }
         total_pages = dir_size;
-        check_io(ftruncate(buckets_fd, dir_size * UPage::SIZE));
+        check_io(ftruncate(buckets_fd, dir_size * Page::SIZE));
         for (uint64_t i = dir_size; i < buffer_num_elements; ++i) {
             // assign page to unassigned
             buffer_page_number[i] = UINT64_MAX;
         }
-        split_buffer = new char[UPage::SIZE];
+        split_buffer = new char[Page::SIZE];
     }
 
     ~TensorsHashBulkOnDiskImport()
@@ -139,6 +138,12 @@ public:
 
         const std::size_t dir_size = 1 << global_depth;
         check_io(write(dir_fd, reinterpret_cast<const char*>(dir), sizeof(uint32_t) * dir_size));
+
+        auto written = 2 * sizeof(uint32_t) + (sizeof(uint32_t) * dir_size);
+        auto desired_size = (written / Page::SIZE + (written % Page::SIZE != 0)) * Page::SIZE;
+
+        check_io(ftruncate(dir_fd, desired_size));
+
         delete[] (dir);
         close(dir_fd);
 
@@ -147,9 +152,9 @@ public:
         for (uint64_t i = 0; i <= buffer_bitmask; ++i) {
             auto page_number = buffer_page_number[i];
             if (page_number != UINT64_MAX) {
-                check_io(pwrite(buckets_fd, current_page, UPage::SIZE, page_number * UPage::SIZE));
+                check_io(pwrite(buckets_fd, current_page, Page::SIZE, page_number * Page::SIZE));
             }
-            current_page += UPage::SIZE;
+            current_page += Page::SIZE;
         }
         close(buckets_fd);
         delete[] split_buffer;
@@ -206,7 +211,7 @@ public:
                 );
 
                 lseek(buckets_fd, 0, SEEK_END);
-                check_io(write(buckets_fd, split_buffer, UPage::SIZE));
+                check_io(write(buckets_fd, split_buffer, Page::SIZE));
             } else {
                 return;
             }
@@ -269,21 +274,21 @@ private:
         const auto buffer_idx = page_number & buffer_bitmask;
 
         const auto old_page_number = buffer_page_number[buffer_idx];
-        auto page = buffer + (UPage::SIZE * buffer_idx);
+        auto page = buffer + (Page::SIZE * buffer_idx);
         if (old_page_number == page_number) {
             // cache hit
             return page;
         } else if (old_page_number == UINT64_MAX) {
             // load new page from disk
-            check_io(pread(buckets_fd, page, UPage::SIZE, page_number * UPage::SIZE));
+            check_io(pread(buckets_fd, page, Page::SIZE, page_number * Page::SIZE));
 
             buffer_page_number[buffer_idx] = page_number;
             return page;
         } else {
             // flush old page to disk
-            check_io(pwrite(buckets_fd, page, UPage::SIZE, old_page_number * UPage::SIZE));
+            check_io(pwrite(buckets_fd, page, Page::SIZE, old_page_number * Page::SIZE));
             // load new page from disk
-            check_io(pread(buckets_fd, page, UPage::SIZE, page_number * UPage::SIZE));
+            check_io(pread(buckets_fd, page, Page::SIZE, page_number * Page::SIZE));
 
             buffer_page_number[buffer_idx] = page_number;
             return page;

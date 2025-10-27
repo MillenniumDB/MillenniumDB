@@ -23,22 +23,16 @@ public:
 
     static constexpr char TABLE_FILENAME[] = "table.dat";
 
-    // Initialize a new text index
-    static std::unique_ptr<TextIndex> create(
+    TextIndex(
+        bool create_new,
         const std::string& text_index_name,
         NORMALIZE_TYPE normalization_type,
         TOKENIZE_TYPE tokenization_type,
         TextIndexManager& text_search_index_manager
     );
 
-    // Load an existing text index
-    static std::unique_ptr<TextIndex>
-        load(const std::string& text_index_name, NORMALIZE_TYPE normalization_type, TOKENIZE_TYPE tokenization_type, TextIndexManager& text_search_index_manager);
-
     TextIndex(const TextIndex&) = delete;
     TextIndex& operator=(const TextIndex&) = delete;
-    // TextSearchIndex(TextSearchIndex&&) = delete;
-    // TextSearchIndex& operator=(TextSearchIndex&&) = delete;
 
     ~TextIndex() = default;
 
@@ -56,16 +50,6 @@ public:
 
     template<SearchType type, bool allow_errors>
     std::unique_ptr<TextSearchIter> search(const std::string& query) const;
-
-    // private:
-    explicit TextIndex(
-        std::unique_ptr<Trie> trie,
-        std::unique_ptr<BPlusTree<2>> bpt,
-        std::unique_ptr<Table> table,
-        NormalizeFuncType* normalize_func,
-        TokenizeFuncType* tokenize_func,
-        TextIndexManager& text_search_index_manager
-    );
 
     std::string get_string(uint64_t table_pointer) const;
 

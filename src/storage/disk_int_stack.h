@@ -1,48 +1,33 @@
 #pragma once
 
+#include <optional>
 #include <type_traits>
-#include <vector>
 
 #include "storage/file_id.h"
 
 /**
- * On disk integral stack. As we support one update at a time and this
- * structure is update-only, we do not need to versionate it. It is
- * assumed that the stack size will be small enough to fit in memory
- *
- * File structure:
- * - T num_elements
- * - T stack[num_elements]
+On disk integral stack.
+The first 8 bytes of the file have the size of the stack
+then we have the array of integers
  */
 template<typename T>
 class DiskIntStack {
     static_assert(std::is_integral<T>::value, "T must be an integral type");
 
 public:
-    static void create(FileId file_id);
-
-    explicit DiskIntStack(FileId file_id);
-
-    ~DiskIntStack();
+    DiskIntStack(FileId file_id);
 
     void push(T value);
 
-    T pop();
+    std::optional<T> try_pop();
 
-    inline bool empty() const noexcept
-    {
-        return stack.empty();
-    }
+    // uint64_t size() const noexcept;
 
-    inline std::size_t size() const noexcept
-    {
-        return stack.size();
-    }
+    // bool empty() const noexcept
+    // {
+    //     return size() == 0;
+    // }
 
 private:
     FileId file_id;
-
-    bool modified { false };
-
-    std::vector<T> stack;
 };

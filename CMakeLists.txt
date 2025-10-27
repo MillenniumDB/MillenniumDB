@@ -107,12 +107,12 @@ set(PROFILE_TARGETS
 )
 set(TEST_TARGETS
     compare_datetime
-    text_index_normalize_tokenize
     iri_prefixes-test
     regular_path_expr_to_rpq_dfa
     scsu-test
-    variable_set
     tensor_operations
+    text_index_normalize_tokenize
+    variable_set
 )
 # Build targets
 foreach(target ${BUILD_TARGETS})

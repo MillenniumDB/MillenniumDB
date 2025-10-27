@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -47,17 +46,15 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        ExprPrinter printer(os);
-
         os << std::string(indent, ' ') << "OpLet(";
 
         os << get_query_ctx().get_var_name(var_expr[0].first) << "=";
-        var_expr[0].second->accept_visitor(printer);
+        os << *var_expr[0].second;
 
         for (size_t i = 1; i < var_expr.size(); i++) {
             os << ", ";
             os << get_query_ctx().get_var_name(var_expr[i].first) << "=";
-            var_expr[i].second->accept_visitor(printer);
+            os << *var_expr[i].second;
         }
 
         return os << ")\n";

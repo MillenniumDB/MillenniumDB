@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace Import { namespace GQL { namespace CSV {
 
 // IMPORTANT: must assign consecutive numbers for the automata to work properly
@@ -15,5 +17,29 @@ enum Token {
     UNRECOGNIZED = 7,
     TOTAL_TOKENS = 8
 };
+
+inline std::string token_to_string(Token token)
+{
+    switch (token) {
+    case END_OF_FILE:
+        return "END_OF_FILE";
+    case SEP_COLUMN:
+        return "SEP_COLUMN";
+    case STRING:
+        return "STRING";
+    case UNQUOTED_STRING:
+        return "UNQUOTED_STRING";
+    case INTEGER:
+        return "INTEGER";
+    case FLOAT:
+        return "FLOAT";
+    case ENDLINE:
+        return "ENDLINE";
+    case UNRECOGNIZED:
+        return "UNRECOGNIZED";
+    default:
+        return "Token is not valid";
+    }
+}
 
 }}} // namespace Import::GQL::CSV

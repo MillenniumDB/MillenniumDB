@@ -6,26 +6,29 @@
 
 using namespace MQL;
 
-DescribeStreamingExecutor::DescribeStreamingExecutor(std::unique_ptr<BindingIter> node_label_iter_,
-                                                     std::unique_ptr<BindingIter> key_value_iter_,
-                                                     std::unique_ptr<BindingIter> from_to_type_edge_iter_,
-                                                     std::unique_ptr<BindingIter> to_type_from_edge_iter_,
-                                                     uint64_t                     labels_limit_,
-                                                     uint64_t                     properties_limit_,
-                                                     uint64_t                     outgoing_limit_,
-                                                     uint64_t                     incoming_limit_,
-                                                     std::vector<VarId>&&         virtual_vars_,
-                                                     ObjectId                     object_id_) :
-    node_label_iter { std::move(node_label_iter_) },
-    key_value_iter { std::move(key_value_iter_) },
-    from_to_type_edge_iter { std::move(from_to_type_edge_iter_) },
-    to_type_from_edge_iter { std::move(to_type_from_edge_iter_) },
-    labels_limit { labels_limit_ },
-    properties_limit { properties_limit_ },
-    outgoing_limit { outgoing_limit_ },
-    incoming_limit { incoming_limit_ },
-    virtual_vars { std::move(virtual_vars_) },
-    object_id { object_id_ } {
+DescribeStreamingExecutor::DescribeStreamingExecutor(
+    std::unique_ptr<BindingIter> node_label_iter_,
+    std::unique_ptr<BindingIter> key_value_iter_,
+    std::unique_ptr<BindingIter> from_to_type_edge_iter_,
+    std::unique_ptr<BindingIter> to_type_from_edge_iter_,
+    uint64_t labels_limit_,
+    uint64_t properties_limit_,
+    uint64_t outgoing_limit_,
+    uint64_t incoming_limit_,
+    std::vector<VarId>&& virtual_vars_,
+    ObjectId object_id_
+) :
+    node_label_iter (std::move(node_label_iter_)),
+    key_value_iter (std::move(key_value_iter_)),
+    from_to_type_edge_iter (std::move(from_to_type_edge_iter_)),
+    to_type_from_edge_iter (std::move(to_type_from_edge_iter_)),
+    labels_limit (labels_limit_),
+    properties_limit (properties_limit_),
+    outgoing_limit (outgoing_limit_),
+    incoming_limit (incoming_limit_),
+    virtual_vars (std::move(virtual_vars_)),
+    object_id (object_id_)
+{
     // The projection vars are somewhat internal vars too, they are only used for the get_projections_vars method
     projection_vars.push_back(get_query_ctx().get_or_create_var("object"));
 
@@ -43,13 +46,8 @@ DescribeStreamingExecutor::DescribeStreamingExecutor(std::unique_ptr<BindingIter
     }
 }
 
-
-const std::vector<VarId>& DescribeStreamingExecutor::get_projection_vars() const {
-    return projection_vars;
-}
-
-
-uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer) {
+uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& response_writer)
+{
     // The binding just needs to be big enough to hold all the internal vars
     Binding binding { get_query_ctx().get_var_size() };
 
@@ -58,9 +56,11 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
     from_to_type_edge_iter->begin(binding);
     to_type_from_edge_iter->begin(binding);
 
-    auto node_iter = quad_model.nodes->get_range(&get_query_ctx().thread_info.interruption_requested,
-                                                 { object_id.id },
-                                                 { object_id.id });
+    auto node_iter = quad_model.nodes->get_range(
+        &get_query_ctx().thread_info.interruption_requested,
+        { object_id.id },
+        { object_id.id }
+    );
 
     const auto node_exists = node_iter.next() != nullptr;
     if (!node_exists) {
@@ -68,10 +68,10 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
     }
 
     response_writer.write_map_header(2UL);
-    response_writer.write_string("type", MDBServer::Protocol::DataType::STRING);
+    response_writer.write_string("type");
     response_writer.write_uint8(static_cast<uint8_t>(MDBServer::Protocol::ResponseType::RECORD));
 
-    response_writer.write_string("payload", MDBServer::Protocol::DataType::STRING);
+    response_writer.write_string("payload");
     response_writer.write_list_header(projection_vars.size());
 
     // Object
@@ -114,20 +114,21 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
 
         while (outgoing_limit > 0 && from_to_type_edge_iter->next()) {
             from_to_type_edge.push_back(
-              { object_id, binding[virtual_vars[0]], binding[virtual_vars[1]], binding[virtual_vars[2]] });
+                { object_id, binding[virtual_vars[0]], binding[virtual_vars[1]], binding[virtual_vars[2]] }
+            );
             --outgoing_limit;
         }
 
         response_writer.write_list_header(from_to_type_edge.size());
         for (const auto& [from, to, type, edge] : from_to_type_edge) {
             response_writer.write_map_header(4);
-            response_writer.write_string("from", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("from");
             response_writer.write_object_id(from);
-            response_writer.write_string("to", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("to");
             response_writer.write_object_id(to);
-            response_writer.write_string("type", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("type");
             response_writer.write_object_id(type);
-            response_writer.write_string("edge", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("edge");
             response_writer.write_object_id(edge);
         }
     }
@@ -138,30 +139,30 @@ uint64_t DescribeStreamingExecutor::execute(MDBServer::StreamingResponseWriter& 
 
         while (incoming_limit > 0 && to_type_from_edge_iter->next()) {
             to_type_from_edge.push_back(
-              { object_id, binding[virtual_vars[0]], binding[virtual_vars[1]], binding[virtual_vars[2]] });
+                { object_id, binding[virtual_vars[0]], binding[virtual_vars[1]], binding[virtual_vars[2]] }
+            );
             --incoming_limit;
         }
 
         response_writer.write_list_header(to_type_from_edge.size());
         for (const auto& [to, type, from, edge] : to_type_from_edge) {
             response_writer.write_map_header(4);
-            response_writer.write_string("from", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("from");
             response_writer.write_object_id(from);
-            response_writer.write_string("to", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("to");
             response_writer.write_object_id(to);
-            response_writer.write_string("type", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("type");
             response_writer.write_object_id(type);
-            response_writer.write_string("edge", MDBServer::Protocol::DataType::STRING);
+            response_writer.write_string("edge");
             response_writer.write_object_id(edge);
         }
     }
 
     response_writer.seal();
-
     return 1;
 }
 
-
-void DescribeStreamingExecutor::analyze(std::ostream& os, bool /*print_stats*/, int indent) const {
+void DescribeStreamingExecutor::analyze(std::ostream& os, bool /*print_stats*/, int indent) const
+{
     os << std::string(indent, ' ') << "DescribeStreamingExecutor()\n";
 }

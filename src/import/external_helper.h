@@ -242,7 +242,7 @@ public:
         }
 
         {
-            TensorsHashBulkOnDiskImport tensors_hash(buffer, buffer_size);
+            TensorsHashBulkOnDiskImport tensors_hash(db_folder + "/tensor_hash", buffer, buffer_size);
             tensors_external_data.build_disk_hash(tensors_hash, pending_buffer);
         }
     }

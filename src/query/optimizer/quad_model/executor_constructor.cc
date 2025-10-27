@@ -2,7 +2,6 @@
 
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
-#include "system/path_manager.h"
 #include "query/executor/binding_iter/scan_ranges/scan_range.h"
 #include "query/executor/binding_iter/scan_ranges/term.h"
 #include "query/executor/binding_iter/scan_ranges/unassigned_var.h"
@@ -10,10 +9,13 @@
 #include "query/executor/query_executor/mql/return_executor.h"
 #include "query/executor/query_executor/mql/show_executor.h"
 #include "query/optimizer/quad_model/binding_iter_constructor.h"
+#include "query/update/mql/update_executor.h"
+#include "system/path_manager.h"
 
 using namespace MQL;
 
-void ExecutorConstructor::visit(OpDescribe& op_describe) {
+void ExecutorConstructor::visit(OpDescribe& op_describe)
+{
     std::unique_ptr<BindingIter> labels;
     std::unique_ptr<BindingIter> properties;
     std::unique_ptr<BindingIter> outgoing_connections;
@@ -33,10 +35,7 @@ void ExecutorConstructor::visit(OpDescribe& op_describe) {
         std::array<std::unique_ptr<ScanRange>, 2> ranges;
         ranges[0] = std::make_unique<Term>(object_id);
         ranges[1] = std::make_unique<UnassignedVar>(label_var);
-        labels = std::make_unique<IndexScan<2>>(
-            *quad_model.node_label,
-            std::move(ranges)
-        );
+        labels = std::make_unique<IndexScan<2>>(*quad_model.node_label, std::move(ranges));
     }
 
     {
@@ -44,10 +43,7 @@ void ExecutorConstructor::visit(OpDescribe& op_describe) {
         ranges[0] = std::make_unique<Term>(object_id);
         ranges[1] = std::make_unique<UnassignedVar>(key_var);
         ranges[2] = std::make_unique<UnassignedVar>(value_var);
-        properties = std::make_unique<IndexScan<3>>(
-            *quad_model.object_key_value,
-            std::move(ranges)
-        );
+        properties = std::make_unique<IndexScan<3>>(*quad_model.object_key_value, std::move(ranges));
     }
 
     {
@@ -86,8 +82,8 @@ void ExecutorConstructor::visit(OpDescribe& op_describe) {
     );
 }
 
-
-void ExecutorConstructor::visit(OpReturn& op_return) {
+void ExecutorConstructor::visit(OpReturn& op_return)
+{
     BindingIterConstructor visitor;
     op_return.accept_visitor(visitor);
 
@@ -99,13 +95,30 @@ void ExecutorConstructor::visit(OpReturn& op_return) {
 
     path_manager.begin(std::move(visitor.begin_at_left));
 
-    if (ret == MQL::ReturnType::CSV) {
-        executor = std::make_unique<MQL::ReturnExecutor<MQL::ReturnType::CSV>>(std::move(visitor.tmp),
-                                                                               std::move(projection_vars));
+    if (ret == ReturnType::CSV) {
+        executor = std::make_unique<ReturnExecutor<ReturnType::CSV>>(
+            std::move(visitor.tmp),
+            std::move(projection_vars)
+        );
     } else {
-        executor = std::make_unique<MQL::ReturnExecutor<MQL::ReturnType::TSV>>(std::move(visitor.tmp),
-                                                                               std::move(projection_vars));
+        executor = std::make_unique<ReturnExecutor<ReturnType::TSV>>(
+            std::move(visitor.tmp),
+            std::move(projection_vars)
+        );
     }
+}
+
+void ExecutorConstructor::visit(OpUpdate& op_update)
+{
+    BindingIterConstructor visitor;
+    op_update.accept_visitor(visitor);
+
+    path_manager.begin(std::move(visitor.begin_at_left));
+    executor = std::make_unique<UpdateExecutor>(
+        std::move(visitor.tmp),
+        std::move(op_update.update_ctx),
+        std::move(op_update.update_actions)
+    );
 }
 
 void ExecutorConstructor::visit(OpShow& op_show)

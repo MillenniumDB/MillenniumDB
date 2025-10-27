@@ -1,11 +1,13 @@
 #include "buffer_manager.h"
 
+#include <cassert>
 #include <type_traits>
 
 #include "macros/aligned_alloc.h"
 #include "misc/fatal_error.h"
 #include "query/query_context.h"
 #include "system/file_manager.h"
+#include "system/tensor_manager.h"
 
 // memory for the object
 static typename std::aligned_storage<sizeof(BufferManager), alignof(BufferManager)>::type buffer_manager_buf;
@@ -16,20 +18,16 @@ BufferManager& buffer_manager = reinterpret_cast<BufferManager&>(buffer_manager_
 BufferManager::BufferManager(
     uint64_t vpage_buffer_pool_size,
     uint64_t ppage_buffer_pool_size_per_worker,
-    uint64_t upage_buffer_pool_size,
     uint64_t workers
 ) :
-    vp_pool(new VPage[vpage_buffer_pool_size]),
-    vp_data(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(vpage_buffer_pool_size * VPage::SIZE))),
+    vp_pool(new Page[vpage_buffer_pool_size]),
+    vp_data(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(vpage_buffer_pool_size * Page::SIZE))),
     vp_pool_size(vpage_buffer_pool_size),
     pp_pool(new PPage[ppage_buffer_pool_size_per_worker * workers]),
     pp_data(
         reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(ppage_buffer_pool_size_per_worker * workers * PPage::SIZE))
     ),
-    pp_pool_size(ppage_buffer_pool_size_per_worker),
-    up_pool(new UPage[upage_buffer_pool_size]),
-    up_data(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(upage_buffer_pool_size * UPage::SIZE))),
-    up_pool_size(upage_buffer_pool_size)
+    pp_pool_size(ppage_buffer_pool_size_per_worker)
 {
     if (vp_data == nullptr || vp_pool == nullptr) {
         FATAL_ERROR("Could not allocate versioned page buffers, try using a smaller size");
@@ -39,16 +37,8 @@ BufferManager::BufferManager(
         FATAL_ERROR("Could not allocate private page buffers, try using a smaller size");
     }
 
-    if (up_data == nullptr || up_pool == nullptr) {
-        FATAL_ERROR("Could not allocate unversioned page buffers, try using a smaller size");
-    }
-
     for (uint64_t i = 0; i < vp_pool_size; i++) {
-        vp_pool[i].set_bytes(&vp_data[i * VPage::SIZE]);
-    }
-
-    for (uint64_t i = 0; i < up_pool_size; i++) {
-        up_pool[i].set_bytes(&up_data[i * UPage::SIZE]);
+        vp_pool[i].set_bytes(&vp_data[i * Page::SIZE]);
     }
 
     for (uint64_t i = 0; i < pp_pool_size * workers; i++) {
@@ -60,60 +50,45 @@ BufferManager::BufferManager(
     tmp_info.resize(workers);
 
     vp_map.reserve(vpage_buffer_pool_size);
-    up_map.reserve(upage_buffer_pool_size);
 }
 
 BufferManager::~BufferManager()
 {
-    flush();
+    while (!pending_writes.empty()) {
+        auto page = pending_writes.front();
+
+        assert(page->pins == 0);
+        assert(page->dirty);
+        if (page->next_version == nullptr) {
+            file_manager.flush(*page);
+        }
+        // page->dirty = false;
+
+        pending_writes.pop();
+    }
+
     delete[] (vp_pool);
-    delete[] (up_pool);
     delete[] (pp_pool);
     MDB_ALIGNED_FREE(vp_data);
-    MDB_ALIGNED_FREE(up_data);
     MDB_ALIGNED_FREE(pp_data);
 }
 
 void BufferManager::init(
     uint64_t versioned_page_buffer_size_in_bytes,
     uint64_t private_page_buffer_pool_size_per_worker_in_bytes,
-    uint64_t unversioned_page_buffer_size_in_bytes,
     uint64_t workers
 )
 {
     // placement new
     new (&buffer_manager) BufferManager(
-        versioned_page_buffer_size_in_bytes / VPage::SIZE,
+        versioned_page_buffer_size_in_bytes / Page::SIZE,
         private_page_buffer_pool_size_per_worker_in_bytes / PPage::SIZE,
-        unversioned_page_buffer_size_in_bytes / UPage::SIZE,
         workers
     );
 }
 
-void BufferManager::flush()
-{
-    // flush() is always called at destruction.
-    assert(vp_pool != nullptr);
-    for (uint64_t i = 0; i < vp_pool_size; i++) {
-        VPage& page = vp_pool[i];
-        assert(page.pins == 0);
-        if (page.dirty && page.next_version == nullptr) {
-            file_manager.flush(page);
-        }
-    }
-
-    assert(up_pool != nullptr);
-    for (uint64_t i = 0; i < up_pool_size; i++) {
-        UPage& page = up_pool[i];
-        assert(page.pins == 0);
-        if (page.dirty) {
-            file_manager.flush(page);
-        }
-    }
-}
-
 // We assume this executes on one thread at a time, controlled by vp_mutex
-VPage& BufferManager::get_vpage_available()
+Page& BufferManager::get_vpage_available()
 {
     while (true) {
         vp_clock++;
@@ -121,7 +96,7 @@ VPage& BufferManager::get_vpage_available()
 
         auto& page = vp_pool[vp_clock];
 
-        if (page.pins != 0) {
+        if (page.pins != 0 && page.dirty) {
             continue;
         }
         if (page.second_chance) {
@@ -132,11 +107,6 @@ VPage& BufferManager::get_vpage_available()
             if (page.page_id.file_id.id != FileId::UNASSIGNED) {
                 vp_map.erase(page.page_id);
             }
-            if (page.dirty) {
-                // TODO: reduce counter of version writing pending for page version
-                // (we know this is the last version and there is no previous version)
-                file_manager.flush(page);
-            }
             return page;
         }
 
@@ -146,17 +116,12 @@ VPage& BufferManager::get_vpage_available()
         running_version_count_mutex.unlock();
 
         if (version_not_being_used) {
-            if (page.dirty) {
-                // TODO: reduce counter of version writing pending for page version
-                // (we know this is the last version and there is no previous version)
-            }
-
             if (page.prev_version != nullptr) {
                 page.prev_version->next_version = page.next_version;
-            } else { // page is the first in the linked list
-                // we know page.next_version != nullptr
-                // if it is the first version and there are more versions we need to
-                // edit vp_map to point to the new oldest version
+            } else {
+                // page is the first in the linked list
+                // and we know page.next_version != nullptr (otherwise we would have returned earlier)
+                // if there are more versions we need to edit vp_map to point to the new oldest version
                 if (page.page_id.file_id.id != FileId::UNASSIGNED) {
                     auto it2 = vp_map.find(page.page_id);
                     assert(it2 != vp_map.end());
@@ -167,27 +132,6 @@ VPage& BufferManager::get_vpage_available()
 
             if (page.next_version != nullptr) {
                 page.next_version->prev_version = page.prev_version;
-                page.dirty = false;
-            } else { // page is the last in the linked list
-                // flush when dirty and there is no next version
-                if (page.dirty) {
-                    file_manager.flush(page);
-
-                    // we know page.prev_version != nullptr
-                    VPage* p = page.prev_version;
-                    // all previous dirty vp_map are no longer dirty because a newer version
-                    // was written to disk, and we only have one update at a time, so previous versions
-                    // must have ended
-                    do {
-                        if (p->dirty) {
-                            p->dirty = false;
-                            // TODO: reduce counter of version writing pending for page p version
-                            // (we know this is the last version and there is no previous version)
-                        }
-
-                        p = p->prev_version;
-                    } while (p != nullptr);
-                }
             }
 
             return page;
@@ -216,7 +160,7 @@ PPage& BufferManager::get_ppage_available(uint_fast32_t thread_pos) noexcept
 }
 
 // use query_context result_version if it exists, otherwise use start_version
-VPage& BufferManager::get_page_readonly(FileId file_id, uint64_t page_number) noexcept
+Page& BufferManager::get_page_readonly(FileId file_id, uint64_t page_number) noexcept
 {
     const PageId page_id(file_id, page_number);
 
@@ -235,13 +179,13 @@ VPage& BufferManager::get_page_readonly(FileId file_id, uint64_t page_number) no
         page.next_version = nullptr;
         vp_map.insert({ page_id, &page });
 
-        file_manager.read_existing_page(page_id, page.bytes);
+        file_manager.read_page(page_id, page.bytes);
         vp_mutex.unlock();
 
         return page;
     } else {
         // page is the buffer, search the corresponding version
-        VPage* page = it->second;
+        Page* page = it->second;
 
         while (page->next_version != nullptr && page->next_version->version_number <= result_version) {
             page = page->next_version;
@@ -256,14 +200,14 @@ VPage& BufferManager::get_page_readonly(FileId file_id, uint64_t page_number) no
     }
 }
 
-bool BufferManager::need_edit_version(const VPage& page)
+bool BufferManager::need_edit_version(const Page& page)
 {
     uint64_t result_version = get_query_ctx().result_version;
     return page.version_number != result_version;
 }
 
 // use query_context result_version (creating it if not exists)
-VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) noexcept
+Page& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) noexcept
 {
     const PageId page_id(file_id, page_number);
 
@@ -290,17 +234,17 @@ VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) no
 
         vp_map.insert({ page_id, &old_page });
 
-        file_manager.read_existing_page(page_id, old_page.bytes);
-        std::memcpy(new_page.bytes, old_page.bytes, VPage::SIZE);
+        file_manager.read_page(page_id, old_page.bytes);
+        std::memcpy(new_page.bytes, old_page.bytes, Page::SIZE);
 
-        current_modifications.push_back(page_id);
+        current_modifications.push_back(&new_page);
 
         return new_page;
     } else {
         // page is in the buffer, search the corresponding version
-        VPage* vpage_head = it->second;
+        Page* vpage_head = it->second;
 
-        VPage* vpage_tail = vpage_head;
+        Page* vpage_tail = vpage_head;
         while (vpage_tail->next_version != nullptr) {
             vpage_tail = vpage_tail->next_version;
         }
@@ -325,9 +269,9 @@ VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) no
             new_page.next_version = nullptr;
             new_page.dirty = true;
 
-            current_modifications.push_back(page_id);
+            current_modifications.push_back(&new_page);
 
-            std::memcpy(new_page.bytes, vpage_tail->bytes, VPage::SIZE);
+            std::memcpy(new_page.bytes, vpage_tail->bytes, Page::SIZE);
             return new_page;
         } else {
             // vpage_tail is already pinned
@@ -337,7 +281,7 @@ VPage& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) no
     }
 }
 
-VPage& BufferManager::append_vpage(FileId file_id)
+Page& BufferManager::append_page(FileId file_id)
 {
     uint64_t result_version = get_query_ctx().result_version;
 
@@ -345,7 +289,9 @@ VPage& BufferManager::append_vpage(FileId file_id)
 
     auto& new_page = get_vpage_available(); // need to have vp_mutex locked
 
-    auto page_number = file_manager.append_page(file_id, new_page.bytes);
+    auto page_number = file_manager.count_pages(file_id) + appended_pages[file_id.id];
+    appended_pages[file_id.id]++;
+
     PageId page_id(file_id, page_number);
     new_page.reassign(page_id);
 
@@ -357,132 +303,8 @@ VPage& BufferManager::append_vpage(FileId file_id)
 
     vp_map.insert({ page_id, &new_page });
 
-    current_modifications.push_back(page_id);
+    current_modifications.push_back(&new_page);
     return new_page;
-}
-
-// We assume this executes on one thread at a time, controlled by up_mutex
-UPage& BufferManager::get_upage_available()
-{
-    while (true) {
-        up_clock++;
-        up_clock = up_clock < up_pool_size ? up_clock : 0;
-
-        auto& page = up_pool[up_clock];
-
-        if (page.pins != 0) {
-            continue;
-        }
-        if (page.second_chance) {
-            page.second_chance = false;
-            continue;
-        }
-        return page;
-    }
-}
-
-UPage& BufferManager::get_unversioned_page(FileId file_id, uint64_t page_number) noexcept
-{
-    const PageId page_id(file_id, page_number);
-
-    up_mutex.lock();
-    auto it = up_map.find(page_id);
-
-    if (it == up_map.end()) {
-        auto& page = get_upage_available();
-
-        if (page.page_id.file_id.id != FileId::UNASSIGNED) {
-            up_map.erase(page.page_id);
-        }
-
-        if (page.dirty) {
-            file_manager.flush(page);
-        }
-
-        page.reassign(page_id);
-        up_map.insert({ page_id, &page });
-
-        file_manager.read_existing_page(page_id, page.bytes);
-        up_mutex.unlock();
-
-        return page;
-    } else {
-        UPage* page = it->second;
-        page->pin();
-        up_mutex.unlock();
-
-        return *page;
-    }
-}
-
-UPage& BufferManager::append_unversioned_page(FileId file_id) noexcept
-{
-    up_mutex.lock();
-
-    auto& new_page = get_upage_available();
-    auto page_number = file_manager.append_page(file_id, new_page.bytes);
-    PageId page_id(file_id, page_number);
-    new_page.reassign(page_id);
-    new_page.dirty = true;
-
-    up_map.insert({ page_id, &new_page });
-    up_mutex.unlock();
-
-    return new_page;
-}
-
-UPage& BufferManager::get_or_append_unversioned_page(FileId file_id, uint64_t page_number) noexcept
-{
-    // Cant just call get/append_unversioned_page because we need to lock the page count
-    up_mutex.lock();
-
-    const auto num_pages = file_manager.count_pages(file_id);
-
-    if (page_number < num_pages) {
-        // Get existing page
-        const PageId page_id(file_id, page_number);
-
-        auto it = up_map.find(page_id);
-        if (it == up_map.end()) {
-            auto& page = get_upage_available();
-
-            if (page.page_id.file_id.id != FileId::UNASSIGNED) {
-                up_map.erase(page.page_id);
-            }
-
-            if (page.dirty) {
-                file_manager.flush(page);
-            }
-
-            page.reassign(page_id);
-            up_map.insert({ page_id, &page });
-
-            file_manager.read_existing_page(page_id, page.bytes);
-            up_mutex.unlock();
-
-            return page;
-        } else {
-            UPage* page = it->second;
-            page->pin();
-            up_mutex.unlock();
-
-            return *page;
-        }
-    } else {
-        // Append new page
-        auto& new_page = get_upage_available();
-        const auto new_page_number = file_manager.append_page(file_id, new_page.bytes);
-        assert(new_page_number == page_number && "appended page is not next to the last one");
-
-        PageId page_id(file_id, new_page_number);
-        new_page.reassign(page_id);
-        new_page.dirty = true;
-
-        up_map.insert({ page_id, &new_page });
-        up_mutex.unlock();
-
-        return new_page;
-    }
 }
 
 PPage& BufferManager::get_ppage(TmpFileId tmp_file_id, uint64_t page_number) /*noexcept*/
@@ -573,6 +395,13 @@ void BufferManager::remove_tmp(TmpFileId tmp_file_id)
     }
 }
 
+BufferManager::VersionScope::VersionScope(uint64_t start_version, bool is_editable) :
+    start_version(start_version),
+    string_manager_original_end(string_manager.get_end()),
+    tensor_manager_original_end(tensor_manager.get_end()),
+    is_editable(is_editable)
+{ }
+
 BufferManager::VersionScope::~VersionScope()
 {
     tmp_manager.reset_tmp_list();
@@ -600,19 +429,6 @@ std::unique_ptr<BufferManager::VersionScope> BufferManager::init_version_editabl
     return std::make_unique<BufferManager::VersionScope>(ver, true);
 }
 
-void BufferManager::upgrade_to_editable(VersionScope& version_scope)
-{
-    if (version_scope.is_editable) {
-        return;
-    }
-
-    version_scope.is_editable = true;
-    get_query_ctx().result_version += 1;
-
-    std::lock_guard<std::mutex> lck(running_version_count_mutex);
-    running_version_count[version_scope.start_version + 1]++;
-}
-
 bool BufferManager::version_not_being_used(uint64_t version_number)
 {
     running_version_count_mutex.lock();
@@ -622,7 +438,7 @@ bool BufferManager::version_not_being_used(uint64_t version_number)
     return version_not_used;
 }
 
-bool BufferManager::is_editable(VPage& page) const
+bool BufferManager::is_editable(Page& page) const
 {
     const uint64_t start_version = get_query_ctx().start_version;
     const uint64_t result_version = get_query_ctx().result_version;
@@ -652,9 +468,43 @@ void BufferManager::terminate(const VersionScope& version_scope)
 
         last_stable_version++;
 
-        // TODO: write to log
-        // for (auto& page_id : current_modifications) {
-        // }
+        if (version_scope.commited) {
+            std::lock_guard<std::mutex> pending_write_mutex_lck(pending_write_mutex);
+            for (Page* page : current_modifications) {
+                pending_writes.push(page);
+            }
+            file_manager.update_appends(appended_pages);
+        } else {
+            string_manager.rollback(version_scope.string_manager_original_end);
+            tensor_manager.rollback(version_scope.tensor_manager_original_end);
+            for (Page* page : current_modifications) {
+                if (auto prev_page = page->prev_version) {
+                    prev_page->next_version = nullptr;
+                }
+                page->reset();
+            }
+        }
+        appended_pages.clear();
         current_modifications.clear();
     }
+}
+
+bool BufferManager::try_flush_page()
+{
+    std::lock_guard<std::mutex> pending_write_mutex_lck(pending_write_mutex);
+    if (pending_writes.empty()) {
+        return false;
+    }
+
+    auto page = pending_writes.front();
+
+    assert(page->pins == 0);
+    assert(page->dirty);
+    if (page->next_version == nullptr) {
+        file_manager.flush(*page);
+    }
+    page->dirty = false;
+
+    pending_writes.pop();
+    return true;
 }

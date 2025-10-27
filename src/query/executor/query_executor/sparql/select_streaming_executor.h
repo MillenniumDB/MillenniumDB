@@ -11,15 +11,11 @@ class SelectStreamingExecutor : public StreamingQueryExecutor {
 public:
     SelectStreamingExecutor(std::unique_ptr<BindingIter> iter, std::vector<VarId>&& projection_vars);
 
-    const std::vector<VarId>& get_projection_vars() const override;
-
     uint64_t execute(MDBServer::StreamingResponseWriter& response_writer) override;
 
     void analyze(std::ostream&, bool print_stats = false, int indent = 0) const override;
 
 private:
     std::unique_ptr<BindingIter> iter;
-
-    std::vector<VarId> projection_vars;
 };
 } // namespace SPARQL
