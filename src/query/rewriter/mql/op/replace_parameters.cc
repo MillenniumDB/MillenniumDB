@@ -398,19 +398,19 @@ void ReplaceParametersExpr::visit(ExprStr& expr)
     visit_or_replace_parameter(expr.expr);
 }
 
-void ReplaceParametersExpr::visit(ExprLabels&)
+void ReplaceParametersExpr::visit(ExprLabels& expr)
 {
-    // TODO: expr.var;
+    visit_or_replace_parameter(expr.expr);
 }
 
-void ReplaceParametersExpr::visit(ExprType&)
+void ReplaceParametersExpr::visit(ExprType& expr)
 {
-    // TODO: expr.var;
+    visit_or_replace_parameter(expr.expr);
 }
 
-void ReplaceParametersExpr::visit(ExprProperties&)
+void ReplaceParametersExpr::visit(ExprProperties& expr)
 {
-    // TODO: expr.var;
+    visit_or_replace_parameter(expr.expr);
 }
 
 void ReplaceParametersExpr::visit(ExprAggAvg& expr)

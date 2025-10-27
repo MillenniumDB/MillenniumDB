@@ -403,17 +403,18 @@ void mql_parserParserInitialize() {
   	860,145,1,0,0,0,861,862,5,43,0,0,862,863,5,100,0,0,863,864,3,118,59,0,
   	864,865,5,101,0,0,865,147,1,0,0,0,866,867,5,59,0,0,867,868,5,100,0,0,
   	868,869,3,118,59,0,869,870,5,101,0,0,870,149,1,0,0,0,871,872,5,35,0,0,
-  	872,873,5,100,0,0,873,874,5,79,0,0,874,875,5,101,0,0,875,151,1,0,0,0,
-  	876,877,5,51,0,0,877,878,5,100,0,0,878,879,5,79,0,0,879,880,5,101,0,0,
-  	880,153,1,0,0,0,881,882,5,61,0,0,882,883,5,100,0,0,883,884,5,79,0,0,884,
-  	885,5,101,0,0,885,155,1,0,0,0,886,887,7,12,0,0,887,157,1,0,0,0,888,889,
-  	7,13,0,0,889,159,1,0,0,0,890,891,7,14,0,0,891,161,1,0,0,0,109,167,173,
-  	176,179,186,191,199,208,213,218,222,233,241,246,261,264,272,279,285,293,
-  	306,323,333,338,345,349,353,357,359,365,369,378,381,385,392,397,401,403,
-  	413,419,423,428,432,435,439,444,453,456,462,466,471,475,479,483,485,489,
-  	495,508,514,520,526,529,538,541,548,555,563,567,571,574,580,582,592,596,
-  	599,604,607,609,613,623,628,635,638,642,645,648,654,659,663,673,683,694,
-  	700,707,714,719,732,739,747,753,758,762,769,777,787,791,800,813,822
+  	872,873,5,100,0,0,873,874,3,118,59,0,874,875,5,101,0,0,875,151,1,0,0,
+  	0,876,877,5,51,0,0,877,878,5,100,0,0,878,879,3,118,59,0,879,880,5,101,
+  	0,0,880,153,1,0,0,0,881,882,5,61,0,0,882,883,5,100,0,0,883,884,3,118,
+  	59,0,884,885,5,101,0,0,885,155,1,0,0,0,886,887,7,12,0,0,887,157,1,0,0,
+  	0,888,889,7,13,0,0,889,159,1,0,0,0,890,891,7,14,0,0,891,161,1,0,0,0,109,
+  	167,173,176,179,186,191,199,208,213,218,222,233,241,246,261,264,272,279,
+  	285,293,306,323,333,338,345,349,353,357,359,365,369,378,381,385,392,397,
+  	401,403,413,419,423,428,432,435,439,444,453,456,462,466,471,475,479,483,
+  	485,489,495,508,514,520,526,529,538,541,548,555,563,567,571,574,580,582,
+  	592,596,599,604,607,609,613,623,628,635,638,642,645,648,654,659,663,673,
+  	683,694,700,707,714,719,732,739,747,753,758,762,769,777,787,791,800,813,
+  	822
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -7937,8 +7938,8 @@ tree::TerminalNode* MQL_Parser::LabelsContext::L_PAR() {
   return getToken(MQL_Parser::L_PAR, 0);
 }
 
-tree::TerminalNode* MQL_Parser::LabelsContext::VARIABLE() {
-  return getToken(MQL_Parser::VARIABLE, 0);
+MQL_Parser::ConditionalOrExprContext* MQL_Parser::LabelsContext::conditionalOrExpr() {
+  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
 }
 
 tree::TerminalNode* MQL_Parser::LabelsContext::R_PAR() {
@@ -7976,7 +7977,7 @@ MQL_Parser::LabelsContext* MQL_Parser::labels() {
     setState(872);
     match(MQL_Parser::L_PAR);
     setState(873);
-    match(MQL_Parser::VARIABLE);
+    conditionalOrExpr();
     setState(874);
     match(MQL_Parser::R_PAR);
    
@@ -8004,8 +8005,8 @@ tree::TerminalNode* MQL_Parser::PropertiesFunctionContext::L_PAR() {
   return getToken(MQL_Parser::L_PAR, 0);
 }
 
-tree::TerminalNode* MQL_Parser::PropertiesFunctionContext::VARIABLE() {
-  return getToken(MQL_Parser::VARIABLE, 0);
+MQL_Parser::ConditionalOrExprContext* MQL_Parser::PropertiesFunctionContext::conditionalOrExpr() {
+  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
 }
 
 tree::TerminalNode* MQL_Parser::PropertiesFunctionContext::R_PAR() {
@@ -8043,7 +8044,7 @@ MQL_Parser::PropertiesFunctionContext* MQL_Parser::propertiesFunction() {
     setState(877);
     match(MQL_Parser::L_PAR);
     setState(878);
-    match(MQL_Parser::VARIABLE);
+    conditionalOrExpr();
     setState(879);
     match(MQL_Parser::R_PAR);
    
@@ -8071,8 +8072,8 @@ tree::TerminalNode* MQL_Parser::TypeContext::L_PAR() {
   return getToken(MQL_Parser::L_PAR, 0);
 }
 
-tree::TerminalNode* MQL_Parser::TypeContext::VARIABLE() {
-  return getToken(MQL_Parser::VARIABLE, 0);
+MQL_Parser::ConditionalOrExprContext* MQL_Parser::TypeContext::conditionalOrExpr() {
+  return getRuleContext<MQL_Parser::ConditionalOrExprContext>(0);
 }
 
 tree::TerminalNode* MQL_Parser::TypeContext::R_PAR() {
@@ -8110,7 +8111,7 @@ MQL_Parser::TypeContext* MQL_Parser::type() {
     setState(882);
     match(MQL_Parser::L_PAR);
     setState(883);
-    match(MQL_Parser::VARIABLE);
+    conditionalOrExpr();
     setState(884);
     match(MQL_Parser::R_PAR);
    

@@ -283,11 +283,11 @@ normalize: K_NORMALIZE '(' conditionalOrExpr ')';
 
 str: K_STR '(' conditionalOrExpr ')';
 
-labels: K_LABELS '(' VARIABLE ')';
+labels: K_LABELS '(' conditionalOrExpr ')';
 
-propertiesFunction: K_PROPERTIES '(' VARIABLE ')';
+propertiesFunction: K_PROPERTIES '(' conditionalOrExpr ')';
 
-type: K_TYPE '(' VARIABLE ')';
+type: K_TYPE '(' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 

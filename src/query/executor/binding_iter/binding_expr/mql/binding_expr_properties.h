@@ -7,22 +7,24 @@
 namespace MQL {
 class BindingExprProperties : public BindingExpr {
 public:
-    VarId var;
+    std::unique_ptr<BindingExpr> expr;
 
-    BindingExprProperties(VarId var) :
-        var(var)
+    BindingExprProperties(std::unique_ptr<BindingExpr> expr_) :
+        expr(std::move(expr_))
     { }
 
     ObjectId eval(const Binding& binding) override
     {
-        ObjectId object_id = binding[var];
+        const ObjectId oid = expr->eval(binding);
+
+        const auto gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
+        if ((gen_t != ObjectId::MASK_NAMED_NODE) && (gen_t != ObjectId::MASK_EDGE)) {
+            return ObjectId::get_null();
+        }
 
         bool interruption = false;
-        BptIter<3> it = quad_model.object_key_value->get_range(
-            &interruption,
-            { object_id.id, 0, 0 },
-            { object_id.id, UINT64_MAX, UINT64_MAX }
-        );
+        BptIter<3> it = quad_model.object_key_value
+                            ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
 
         auto record = it.next();
         std::map<ObjectId, std::unique_ptr<DictionaryItem>> properties_map;
@@ -35,8 +37,8 @@ public:
             record = it.next();
         }
 
-        auto dict = std::make_unique<Dictionary>(std::move(properties_map));
-        ObjectId dict_oid = Conversions::pack_dictionary(dict);
+        const auto dict = std::make_unique<Dictionary>(std::move(properties_map));
+        const ObjectId dict_oid = Conversions::pack_dictionary(dict);
         return dict_oid;
     }
 
@@ -45,9 +47,11 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>&) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
-        os << "PROPERTIES(" << var << ')';
+        os << "PROPERTIES(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace MQL

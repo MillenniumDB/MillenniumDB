@@ -408,17 +408,23 @@ void ExprToBindingExpr::visit(ExprStr& expr)
 
 void ExprToBindingExpr::visit(ExprLabels& expr)
 {
-    tmp = std::make_unique<BindingExprLabels>(expr.var);
+    expr.expr->accept_visitor(*this);
+
+    tmp = std::make_unique<BindingExprLabels>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprType& expr)
 {
-    tmp = std::make_unique<BindingExprType>(expr.var);
+    expr.expr->accept_visitor(*this);
+
+    tmp = std::make_unique<BindingExprType>(std::move(tmp));
 }
 
 void ExprToBindingExpr::visit(ExprProperties& expr)
 {
-    tmp = std::make_unique<BindingExprProperties>(expr.var);
+    expr.expr->accept_visitor(*this);
+
+    tmp = std::make_unique<BindingExprProperties>(std::move(tmp));
 }
 
 template<typename AggType, class... Args>
