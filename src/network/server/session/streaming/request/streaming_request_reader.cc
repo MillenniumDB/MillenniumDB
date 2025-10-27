@@ -81,10 +81,11 @@ float StreamingRequestReader::read_float()
 
 uint_fast32_t StreamingRequestReader::read_size() {
     check_remaining_bytes(4);
-    uint32_t value = request_bytes[current_pos++] << 24;
-    value = request_bytes[current_pos++] << 16;
-    value = request_bytes[current_pos++] << 8;
-    value = request_bytes[current_pos++];
+    uint32_t value { 0 };
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]);
     return value;
 }
 

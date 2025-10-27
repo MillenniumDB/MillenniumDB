@@ -125,8 +125,9 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
 
             // append decoded chunk
             const auto chunk_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
-            self->decoded_chunks.resize(self->decoded_chunks.size() + chunk_size);
-            std::memcpy(self->decoded_chunks.data(), chunk_bytes, chunk_size);
+            const auto old_size = self->decoded_chunks.size();
+            self->decoded_chunks.resize(old_size + chunk_size);
+            std::memcpy(self->decoded_chunks.data() + old_size, chunk_bytes, chunk_size);
 
             // read next size
             const auto next_chunk_size_bytes = chunk_bytes + chunk_size;
