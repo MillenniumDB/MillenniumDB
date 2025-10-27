@@ -8,6 +8,7 @@
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
+#include "query/update/mql/update_action_visitor.h"
 #include "query/update/mql/update_context.h"
 #include "system/string_manager.h"
 #include "system/tensor_manager.h"
@@ -27,6 +28,8 @@ public:
 
     // to check used vars are declared
     virtual std::set<VarId> get_input_vars() const = 0;
+
+    virtual void accept_visitor(UpdateActionVisitor&) = 0;
 
 protected:
     ObjectId transform_if_tmp(ObjectId oid)
@@ -90,6 +93,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class InsertLabel : public UpdateAction {
@@ -137,6 +144,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class SetLabelOrType : public UpdateAction {
@@ -182,6 +193,10 @@ public:
             res.insert(obj.get_var());
         }
         return res;
+    }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 
@@ -233,6 +248,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class InsertPropertyExpr : public UpdateAction {
@@ -282,6 +301,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class DeleteProperty : public UpdateAction {
@@ -319,6 +342,10 @@ public:
             res.insert(obj.get_var());
         }
         return res;
+    }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 
@@ -358,6 +385,10 @@ public:
             res.insert(node.get_var());
         }
         return res;
+    }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 
@@ -411,6 +442,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class DeleteObject : public UpdateAction {
@@ -449,6 +484,10 @@ public:
         }
         return res;
     }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
+    }
 };
 
 class CreateTextIndex : public UpdateAction {
@@ -486,6 +525,10 @@ public:
     {
         std::set<VarId> res;
         return res;
+    }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 
@@ -531,6 +574,10 @@ public:
     {
         std::set<VarId> res;
         return res;
+    }
+
+    void accept_visitor(UpdateActionVisitor& visitor) override {
+        visitor.visit(*this);
     }
 };
 

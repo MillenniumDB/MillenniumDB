@@ -16,11 +16,7 @@ void ReplaceParameters::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
     std::set<Property> new_properties;
     for (const auto& property : op_basic_graph_pattern.properties) {
-        new_properties.emplace(
-            var_to_parameter(property.obj),
-            property.key,
-            property.value
-        );
+        new_properties.emplace(var_to_parameter(property.obj), property.key, property.value);
     }
     op_basic_graph_pattern.properties = std::move(new_properties);
 
@@ -111,6 +107,14 @@ void ReplaceParameters::visit(OpGroupBy& op_group_by)
     }
 }
 
+void ReplaceParameters::visit(OpHaving& op_having)
+{
+    op_having.op->accept_visitor(*this);
+
+    ReplaceParametersExpr visitor(parameters);
+    visitor.visit_or_replace_parameter(op_having.expr);
+}
+
 void ReplaceParameters::visit(OpOptional& op_optional)
 {
     op_optional.op->accept_visitor(*this);
@@ -157,6 +161,16 @@ void ReplaceParameters::visit(OpSequence& op_sequence)
 {
     for (auto& op : op_sequence.sequence) {
         op->accept_visitor(*this);
+    }
+}
+
+void ReplaceParameters::visit(OpUpdate& op_update)
+{
+    op_update.op->accept_visitor(*this);
+
+    ReplaceParametersUpdateAction visitor(parameters);
+    for (auto& update_action : op_update.update_actions) {
+        update_action->accept_visitor(visitor);
     }
 }
 
@@ -407,4 +421,68 @@ void ReplaceParametersExpr::visit(ExprAggMin& expr)
 void ReplaceParametersExpr::visit(ExprAggSum& expr)
 {
     visit_or_replace_parameter(expr.expr);
+}
+
+Id ReplaceParametersUpdateAction::var_to_parameter(const Id& id)
+{
+    if (!id.is_var()) {
+        return id;
+    }
+
+    const auto it = parameters.find(id.get_var());
+    if (it != parameters.end()) {
+        return it->second;
+    }
+
+    return id;
+}
+
+void ReplaceParametersUpdateAction::visit(InsertNode& insert_node)
+{
+    insert_node.node = var_to_parameter(insert_node.node);
+}
+
+void ReplaceParametersUpdateAction::visit(InsertLabel& insert_label)
+{
+    insert_label.node = var_to_parameter(insert_label.node);
+}
+
+void ReplaceParametersUpdateAction::visit(SetLabelOrType& set_label_or_type)
+{
+    set_label_or_type.obj = var_to_parameter(set_label_or_type.obj);
+}
+
+void ReplaceParametersUpdateAction::visit(InsertProperty& insert_property)
+{
+    insert_property.obj = var_to_parameter(insert_property.obj);
+    insert_property.val = var_to_parameter(insert_property.val);
+}
+
+void ReplaceParametersUpdateAction::visit(InsertPropertyExpr& insert_property_expr)
+{
+    insert_property_expr.obj = var_to_parameter(insert_property_expr.obj);
+
+    ReplaceParametersExpr visitor(parameters);
+    visitor.visit_or_replace_parameter(insert_property_expr.value);
+}
+
+void ReplaceParametersUpdateAction::visit(DeleteProperty& delete_property)
+{
+    delete_property.obj = var_to_parameter(delete_property.obj);
+}
+
+void ReplaceParametersUpdateAction::visit(DeleteLabel& delete_label)
+{
+    delete_label.node = var_to_parameter(delete_label.node);
+}
+
+void ReplaceParametersUpdateAction::visit(InsertEdge& insert_edge)
+{
+    insert_edge.from = var_to_parameter(insert_edge.from);
+    insert_edge.to = var_to_parameter(insert_edge.to);
+}
+
+void ReplaceParametersUpdateAction::visit(DeleteObject& delete_object)
+{
+    delete_object.obj = var_to_parameter(delete_object.obj);
 }

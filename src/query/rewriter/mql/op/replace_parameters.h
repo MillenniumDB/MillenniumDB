@@ -10,6 +10,7 @@
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/expr/mql/expr_visitor.h"
 #include "query/parser/op/mql/op_visitor.h"
+#include "query/update/mql/update_action_visitor.h"
 #include "query/var_id.h"
 
 namespace MQL {
@@ -24,12 +25,12 @@ public:
     void visit(OpCall&) override;
     void visit(OpLet&) override;
     void visit(OpGroupBy&) override;
-    void visit(OpHaving&) override {}; // TODO:
+    void visit(OpHaving&) override;
     void visit(OpOptional&) override;
     void visit(OpOrderBy&) override;
     void visit(OpReturn&) override;
     void visit(OpSequence&) override;
-    void visit(OpUpdate&) override { } // TODO:
+    void visit(OpUpdate&) override;
     void visit(OpWhere&) override;
 
     void visit(OpUnitTable&) override { }
@@ -89,6 +90,30 @@ private:
     void visit(ExprAggMax&) override;
     void visit(ExprAggMin&) override;
     void visit(ExprAggSum&) override;
+
+    const std::map<VarId, ObjectId>& parameters;
+};
+
+class ReplaceParametersUpdateAction : public UpdateActionVisitor {
+public:
+    ReplaceParametersUpdateAction(const std::map<VarId, ObjectId>& parameters_) :
+        parameters { parameters_ }
+    { }
+
+    Id var_to_parameter(const Id& id);
+
+private:
+    void visit(InsertNode&) override;
+    void visit(InsertLabel&) override;
+    void visit(SetLabelOrType&) override;
+    void visit(InsertProperty&) override;
+    void visit(InsertPropertyExpr&) override;
+    void visit(DeleteProperty&) override;
+    void visit(DeleteLabel&) override;
+    void visit(InsertEdge&) override;
+    void visit(DeleteObject&) override;
+    void visit(CreateTextIndex&) override { }
+    void visit(CreateHNSWIndex&) override { }
 
     const std::map<VarId, ObjectId>& parameters;
 };
