@@ -61,17 +61,20 @@ public:
         root = parser.query();
     }
 
-    std::unique_ptr<Op> get_query_plan()
+    std::unique_ptr<Op> get_query_plan(const std::map<std::string, ObjectId>& input_parameters)
     {
         QueryVisitor::GlobalInfo global_info;
-        global_info.set_query_parameters(query_parameters);
         QueryVisitor visitor(global_info);
         visitor.visitQuery(root);
 
-        if (!global_info.query_parameters.empty()) {
-            ReplaceParameters replace_parameters(global_info.query_parameters);
+        if (!input_parameters.empty()) {
+            std::map<VarId, ObjectId> query_parameters;
+            for (const auto& [var_name, object_id] : input_parameters) {
+                query_parameters.emplace(get_query_ctx().get_or_create_var(var_name), object_id);
+            }
+
+            ReplaceParameters replace_parameters(query_parameters);
             visitor.current_op->accept_visitor(replace_parameters);
-            // logger(Category::LogicalPlan, 0) << "Replacing parameters:\n" << *visitor.current_op;
         }
 
         auto res = rewrite(std::move(visitor.current_op));

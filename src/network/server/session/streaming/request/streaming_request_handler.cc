@@ -17,7 +17,11 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     switch (request_type) {
     case Protocol::RequestType::QUERY: {
         logger(Category::Debug) << "Request received: QUERY";
-        handle_run();
+        // TODO: try/catch
+        request_reader->check_datatype(Protocol::DataType::STRING);
+        const auto query = request_reader->read_string();
+        logger(Category::Info) << "\nQuery:\n" << trim_string(query) << "\n";
+        handle_run(query);
         break;
     }
     case Protocol::RequestType::CATALOG: {
@@ -49,21 +53,18 @@ void StreamingRequestHandler::handle_readonly_run()
 
     try {
         // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
-        request_reader->check_datatype(Protocol::DataType::STRING);
-        const auto query = request_reader->read_string();
-        const auto parameters = request_reader->read_parameters();
-
+        const auto input_parameters = request_reader->read_parameters();
         std::stringstream parameters_ss;
-        if (!parameters.empty()) {
+        if (!input_parameters.empty()) {
             parameters_ss << "Parameters:\n";
-            for (const auto& [var_name, object_id] : parameters) {
+            for (const auto& [var_name, object_id] : input_parameters) {
                 parameters_ss << var_name << " -> " << object_id << "\n";
             }
         }
-        logger(Category::Info) << "\nQuery:\n" << trim_string(query) << "\n" << parameters_ss.str();
+        logger(Category::Info) << parameters_ss.str();
 
         auto parser_start = std::chrono::system_clock::now();
-        create_logical_plan();
+        create_logical_plan(input_parameters);
         auto parser_duration = get_duration(parser_start);
 
         auto optimizer_start = std::chrono::system_clock::now();
@@ -142,9 +143,21 @@ void StreamingRequestHandler::handle_update_run()
         get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
+
     try {
+        // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+        const auto input_parameters = request_reader->read_parameters();
+        std::stringstream parameters_ss;
+        if (!input_parameters.empty()) {
+            parameters_ss << "Parameters:\n";
+            for (const auto& [var_name, object_id] : input_parameters) {
+                parameters_ss << var_name << " -> " << object_id << "\n";
+            }
+        }
+        logger(Category::Info) << parameters_ss.str();
+
         auto parser_start = std::chrono::system_clock::now();
-        create_logical_plan();
+        create_logical_plan(input_parameters);
         auto parser_duration = get_duration(parser_start);
 
         auto optimizer_start = std::chrono::system_clock::now();
@@ -230,7 +243,6 @@ void StreamingRequestHandler::handle_catalog()
 
 void StreamingRequestHandler::handle_cancel()
 {
-    // TODO: test this
     request_reader->check_datatype(Protocol::DataType::UINT32);
     const uint_fast32_t worker_idx = request_reader->read_uint32();
     request_reader->check_datatype(Protocol::DataType::STRING);

@@ -8,34 +8,34 @@ using namespace MQL;
 
 void ReplaceParameters::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 {
-    std::set<OpLabel> new_labels;
-    for (const auto& op_label : op_basic_graph_pattern.labels) {
-        new_labels.emplace(var_to_parameter(op_label.node), var_to_parameter(op_label.label));
+    std::set<Label> new_labels;
+    for (const auto& label : op_basic_graph_pattern.labels) {
+        new_labels.emplace(var_to_parameter(label.node), label.label);
     }
     op_basic_graph_pattern.labels = std::move(new_labels);
 
-    std::set<OpProperty> new_properties;
-    for (const auto& op_property : op_basic_graph_pattern.properties) {
+    std::set<Property> new_properties;
+    for (const auto& property : op_basic_graph_pattern.properties) {
         new_properties.emplace(
-            var_to_parameter(op_property.node),
-            op_property.key,
-            var_to_parameter(op_property.value)
+            var_to_parameter(property.obj),
+            property.key,
+            property.value
         );
     }
     op_basic_graph_pattern.properties = std::move(new_properties);
 
-    std::set<OpEdge> new_edges;
-    for (const auto& op_edge : op_basic_graph_pattern.edges) {
+    std::set<Edge> new_edges;
+    for (const auto& edge : op_basic_graph_pattern.edges) {
         new_edges.emplace(
-            var_to_parameter(op_edge.from),
-            var_to_parameter(op_edge.to),
-            var_to_parameter(op_edge.type),
-            var_to_parameter(op_edge.edge)
+            var_to_parameter(edge.from),
+            var_to_parameter(edge.to),
+            var_to_parameter(edge.type),
+            var_to_parameter(edge.edge)
         );
     }
     op_basic_graph_pattern.edges = std::move(new_edges);
 
-    std::set<OpPath> new_paths;
+    std::set<Path> new_paths;
     for (const auto& op_path : op_basic_graph_pattern.paths) {
         if (parameters.find(op_path.var) != parameters.end()) {
             throw QuerySemanticException(
@@ -55,14 +55,14 @@ void ReplaceParameters::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     op_basic_graph_pattern.paths = std::move(new_paths);
 
     // Disjoint vars may be converted to disjoint terms due to parameters
-    std::set<OpDisjointVar> new_disjoint_vars;
-    std::set<OpDisjointTerm> additional_disjoint_terms;
-    for (const auto& op_disjoin_var : op_basic_graph_pattern.disjoint_vars) {
-        const auto it = parameters.find(op_disjoin_var.var);
+    std::set<DisjointVar> new_disjoint_vars;
+    std::set<DisjointTerm> additional_disjoint_terms;
+    for (const auto& disjoint_var : op_basic_graph_pattern.disjoint_vars) {
+        const auto it = parameters.find(disjoint_var.var);
         if (it != parameters.end()) {
             additional_disjoint_terms.emplace(it->second);
         } else {
-            new_disjoint_vars.emplace(op_disjoin_var);
+            new_disjoint_vars.emplace(disjoint_var);
         }
     }
     op_basic_graph_pattern.disjoint_vars = std::move(new_disjoint_vars);
@@ -166,37 +166,6 @@ void ReplaceParameters::visit(OpWhere& op_where)
 
     ReplaceParametersExpr visitor(parameters);
     visitor.visit_or_replace_parameter(op_where.expr);
-}
-
-void ReplaceParameters::visit(OpDisjointTerm&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
-}
-void ReplaceParameters::visit(OpDisjointVar&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
-}
-void ReplaceParameters::visit(OpEdge&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
-}
-void ReplaceParameters::visit(OpLabel&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
-}
-void ReplaceParameters::visit(OpPath&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
-}
-void ReplaceParameters::visit(OpProperty&)
-{
-    // handled by OpBasicGraphPattern
-    assert(false);
 }
 
 Id ReplaceParameters::var_to_parameter(const Id& id)

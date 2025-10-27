@@ -31,14 +31,6 @@ struct GlobalInfo {
     std::string base_iri;
 
     std::unordered_map<std::string, std::string> iri_prefix_map;
-
-    std::map<VarId, ObjectId> query_parameters;
-
-    void set_query_parameters(const std::map<std::string, ObjectId>& input_parameters) {
-        for (const auto& [var_name, object_id] : input_parameters) {
-            query_parameters.emplace(get_query_ctx().get_or_create_var(var_name), object_id);
-        }
-    }
 };
 
 private:

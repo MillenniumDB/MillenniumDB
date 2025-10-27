@@ -31,7 +31,7 @@ public:
         return false; // TODO:
     }
 
-    void create_logical_plan() override
+    void create_logical_plan(const std::map<std::string, ObjectId>&) override
     {
         // TODO:
     }

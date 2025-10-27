@@ -30,9 +30,9 @@ public:
         return false; // TODO: for now streaming does not support updates in SPARQL
     }
 
-    void create_logical_plan() override
+    void create_logical_plan(const std::map<std::string, ObjectId>& input_parameters) override
     {
-        logical_plan = parser->get_query_plan();
+        logical_plan = parser->get_query_plan(input_parameters);
     }
 
     std::unique_ptr<StreamingQueryExecutor> create_streaming_executor() override

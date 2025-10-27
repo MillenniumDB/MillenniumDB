@@ -9,7 +9,7 @@
             "args": [
                 "server",
                 "--timeout=3600",
-                "${workspaceFolder}/tests/tmp/interactive-db"
+                "${workspaceFolder}/data/dbs/qm/cora"
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Debug Build"

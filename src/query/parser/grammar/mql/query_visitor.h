@@ -18,15 +18,6 @@ class OpBasicGraphPattern;
 
 class QueryVisitor : public MQL_ParserBaseVisitor {
 public:
-struct GlobalInfo {
-    std::map<VarId, ObjectId> query_parameters;
-
-    void set_query_parameters(const std::map<std::string, ObjectId>& input_parameters) {
-        for (const auto& [var_name, object_id] : input_parameters) {
-            query_parameters.emplace(get_query_ctx().get_or_create_var(var_name), object_id);
-        }
-    }
-};
 
 private:
     struct ReturnInfo {
@@ -107,8 +98,6 @@ private:
 
 public:
     std::unique_ptr<Op> current_op;
-
-    QueryVisitor(GlobalInfo& global_info) : global_info(global_info) { }
 
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;

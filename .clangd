@@ -5,4 +5,4 @@ InlayHints:
   DeducedTypes: Yes
 
 CompileFlags:
-  CompilationDatabase: build/Release/
+  CompilationDatabase: build/Debug/
