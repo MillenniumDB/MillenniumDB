@@ -116,11 +116,11 @@ inline std::string unpack_named_node(ObjectId oid)
         return ObjectId(oid);
     }
 
-    inline ObjectId pack_edge(int64_t edge_id) {
+    inline ObjectId pack_edge(uint64_t edge_id) {
         return ObjectId(ObjectId::MASK_EDGE | edge_id);
     }
 
-    inline ObjectId pack_anon_tmp(int64_t anon_id)
+    inline ObjectId pack_anon_tmp(uint64_t anon_id)
     {
         return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
     }
