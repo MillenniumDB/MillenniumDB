@@ -99,8 +99,8 @@ void EvaluateConstantsExpr::visit_and_try_eval_expr(std::unique_ptr<Expr>& expr)
     // recurse children if any
     expr->accept_visitor(*this);
 
-    if (dynamic_cast<ExprConstant*>(expr.get()) != nullptr) {
-        // expr is already a constant, nothing to do
+    if (expr->has_aggregation()) {
+        // aggregation, cannot evaluate
         return;
     }
 
@@ -109,8 +109,8 @@ void EvaluateConstantsExpr::visit_and_try_eval_expr(std::unique_ptr<Expr>& expr)
         return;
     }
 
-    if (expr->has_aggregation()) {
-        // aggregation, cannot evaluate
+    if (dynamic_cast<ExprConstant*>(expr.get()) != nullptr) {
+        // expr is already a constant, nothing to do
         return;
     }
 
