@@ -1,25 +1,19 @@
 #pragma once
 
-#include <map>
 #include <memory>
 
 #include "graph_models/object_id.h"
+#include "query/executor/binding.h"
 #include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/expr/mql/expr_visitor.h"
 #include "query/parser/op/mql/op_visitor.h"
 #include "query/update/mql/update_action_visitor.h"
-#include "query/var_id.h"
 
 namespace MQL {
 
-class ReplaceParameters : public OpVisitor {
+class EvaluateConstants : public OpVisitor {
 public:
-    ReplaceParameters(const std::map<VarId, ObjectId>& parameters_) :
-        parameters { parameters_ }
-    { }
-
-    void visit(OpBasicGraphPattern&) override;
     void visit(OpCall&) override;
     void visit(OpLet&) override;
     void visit(OpGroupBy&) override;
@@ -31,28 +25,23 @@ public:
     void visit(OpUpdate&) override;
     void visit(OpWhere&) override;
 
+    void visit(OpBasicGraphPattern&) override { }
     void visit(OpUnitTable&) override { }
     void visit(OpDescribe&) override { }
     void visit(OpShow&) override { }
-
-private:
-    Id var_to_parameter(const Id& id);
-
-    const std::map<VarId, ObjectId>& parameters;
 };
 
-class ReplaceParametersExpr : public ExprVisitor {
+class EvaluateConstantsExpr : public ExprVisitor {
 public:
-    ReplaceParametersExpr(const std::map<VarId, ObjectId>& parameters_) :
-        parameters { parameters_ }
-    { }
-
-    void visit_or_replace_parameter(std::unique_ptr<Expr>& expr);
+    void visit_and_try_eval_expr(std::unique_ptr<Expr>& expr);
 
 private:
+    Binding binding;
+
     void visit(ExprConstant&) override { }
-    void visit(ExprVar&) override;
-    void visit(ExprVarProperty&) override;
+    void visit(ExprVar&) override { }
+    void visit(ExprVarProperty&) override { }
+
     void visit(ExprAddition&) override;
     void visit(ExprDivision&) override;
     void visit(ExprModulo&) override;
@@ -88,31 +77,21 @@ private:
     void visit(ExprAggMax&) override;
     void visit(ExprAggMin&) override;
     void visit(ExprAggSum&) override;
-
-    const std::map<VarId, ObjectId>& parameters;
 };
 
-class ReplaceParametersUpdateAction : public UpdateActionVisitor {
+class EvaluateConstantsUpdateAction : public UpdateActionVisitor {
 public:
-    ReplaceParametersUpdateAction(const std::map<VarId, ObjectId>& parameters_) :
-        parameters { parameters_ }
-    { }
-
-    Id var_to_parameter(const Id& id);
-
-private:
-    void visit(InsertNode&) override;
-    void visit(InsertLabel&) override;
-    void visit(SetLabelOrType&) override;
-    void visit(InsertProperty&) override;
     void visit(InsertPropertyExpr&) override;
-    void visit(DeleteProperty&) override;
-    void visit(DeleteLabel&) override;
-    void visit(InsertEdge&) override;
-    void visit(DeleteObject&) override;
+
+    void visit(InsertNode&) override { }
+    void visit(InsertLabel&) override { }
+    void visit(SetLabelOrType&) override { }
+    void visit(InsertProperty&) override { }
+    void visit(DeleteProperty&) override { }
+    void visit(DeleteLabel&) override { }
+    void visit(InsertEdge&) override { }
+    void visit(DeleteObject&) override { }
     void visit(CreateTextIndex&) override { }
     void visit(CreateHNSWIndex&) override { }
-
-    const std::map<VarId, ObjectId>& parameters;
 };
 } // namespace MQL
