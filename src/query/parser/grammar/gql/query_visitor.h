@@ -197,6 +197,7 @@ public:
     std::any visitBooleanLiteral(GQLParser::BooleanLiteralContext* ctx) override;
     std::any visitGqlUnaryExpression(GQLParser::GqlUnaryExpressionContext* ctx) override;
     std::any visitListValueConstructor(GQLParser::ListValueConstructorContext* ctx) override;
+    std::any visitListLiteral(GQLParser::ListLiteralContext* ctx) override;
 
     std::any visitOrderByAndPageStatement(GQLParser::OrderByAndPageStatementContext* ctx) override;
     std::any visitOrderByClause(GQLParser::OrderByClauseContext* ctx) override;

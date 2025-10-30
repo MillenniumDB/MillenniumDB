@@ -1874,6 +1874,23 @@ std::any QueryVisitor::visitListValueConstructor(GQLParser::ListValueConstructor
     return 0;
 }
 
+std::any QueryVisitor::visitListLiteral(GQLParser::ListLiteralContext* ctx)
+{
+    std::vector<ObjectId> list;
+
+    for (auto& expr : ctx->generalLiteral()) {
+        visit(expr);
+        if (current_expr != nullptr) {
+            if (auto expr_term = dynamic_cast<ExprTerm*>(current_expr.get())) {
+                list.push_back(expr_term->term);
+            }
+        }
+    }
+    ObjectId list_oid = Conversions::pack_list(list);
+    current_expr = std::make_unique<ExprTerm>(list_oid);
+    return 0;
+}
+
 std::any QueryVisitor::visitDateFunction(GQLParser::DateFunctionContext* ctx)
 {
     // DATE
