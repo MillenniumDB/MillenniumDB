@@ -37,6 +37,7 @@ std::optional<T> DiskIntStack<T>::try_pop()
     auto* stack_size = reinterpret_cast<uint64_t*>(first_page.get_bytes());
 
     if (*stack_size == 0) {
+        buffer_manager.unpin(first_page);
         return {};
     }
 
@@ -55,15 +56,6 @@ std::optional<T> DiskIntStack<T>::try_pop()
 
     return std::optional<T>(res);
 }
-
-// template<typename T>
-// uint64_t DiskIntStack<T>::size() const noexcept
-// {
-//     auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
-//     auto res = *reinterpret_cast<uint64_t*>(first_page.get_bytes());
-//     buffer_manager.unpin(first_page);
-//     return res;
-// }
 
 template class DiskIntStack<uint32_t>;
 template class DiskIntStack<uint64_t>;

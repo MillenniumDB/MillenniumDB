@@ -168,7 +168,7 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
                            << get_query_ctx().cancellation_token;
 
     const auto start_parser = std::chrono::system_clock::now();
-    auto logical_plan = parser.get_query_plan();
+    auto logical_plan = parser.get_query_plan({});
     parser_duration += std::chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, MQL::ReturnType::TSV);
@@ -225,7 +225,7 @@ void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os,
                            << get_query_ctx().cancellation_token;
 
     const auto start_parser = std::chrono::system_clock::now();
-    auto logical_plan = parser.get_query_plan();
+    auto logical_plan = parser.get_query_plan({});
     parser_duration += std::chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, return_type);

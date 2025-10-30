@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/query_context.h"
 
 class BindingExprVar : public BindingExpr {
 public:

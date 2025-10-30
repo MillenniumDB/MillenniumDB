@@ -39,83 +39,113 @@ StreamingTCPSession::~StreamingTCPSession()
     }
 }
 
-void StreamingTCPSession::run()
+void StreamingTCPSession::start_decode_chunk()
 {
-    if (socket.is_open()) {
-        auto self = this->shared_from_this();
+    decoded_chunks.clear();
 
-        asio::async_read(
-            socket,
-            request_buffer.prepare(sizeof(uint32_t)),
-            boost::asio::transfer_all(),
-            [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
-                if (ec) {
-                    if (ec != asio::error::eof) {
-                        logger(Category::Error) << "StreamingTCPSession read error: " << ec.message();
-                    }
-                    return;
-                }
-
-                self->request_buffer.commit(sizeof(uint32_t));
-                const auto request_size_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data()
-                );
-                uint32_t request_size = 0;
-                request_size |= request_size_bytes[0] << 24;
-                request_size |= request_size_bytes[1] << 16;
-                request_size |= request_size_bytes[2] << 8;
-                request_size |= request_size_bytes[3];
-                self->request_buffer.consume(sizeof(uint32_t));
-
-                self->read_request(request_size);
-            }
-        );
-    }
-}
-
-void StreamingTCPSession::read_request(uint32_t request_size)
-{
     auto self = this->shared_from_this();
-    asio::async_read(
+
+    // read initial chunk size
+    boost::asio::async_read(
         socket,
-        request_buffer.prepare(request_size),
-        // boost::asio::transfer_all(),
-        boost::asio::transfer_exactly(request_size),
-        [self](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+        request_buffer.prepare(2),
+        boost::asio::transfer_all(),
+        [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 if (ec != asio::error::eof) {
-                    logger(Category::Error) << "StreamingTCPSession read error: " << ec.message();
+                    logger(Category::Error)
+                        << "StreamingTCPSession start_decode_chunk error: " << ec.message();
                 }
                 return;
             }
 
-            try {
-                self->request_buffer.commit(bytes_transferred);
-                const auto request_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
-                self->request_handler->handle(request_bytes, self->request_buffer.size());
-            } catch (const InterruptedException& e) {
-                auto& response_writer = self->request_handler->response_writer;
-                response_writer->write_error("Interruption exception: Query timed out");
-                response_writer->flush();
+            // read chunk size
+            self->request_buffer.commit(2);
+            const auto initial_chunk_size_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data(
+            ));
+            const uint16_t initial_chunk_size = (static_cast<uint16_t>(initial_chunk_size_bytes[0]) << 8)
+                                              | initial_chunk_size_bytes[1];
+            self->request_buffer.consume(2);
 
-                self->socket.close();
-                logger(Category::Error) << "Interruption exception: Query timed out";
-                if (ec) {
-                    logger(Category::Debug) << "Close failed:" << ec.what();
-                }
-            } catch (const ProtocolException& e) {
-                logger(Category::Error) << "Protocol exception: " << e.what();
-            } catch (const ConnectionException& e) {
-                logger(Category::Error) << "Connection exception: " << e.what();
-            } catch (const std::exception& e) {
-                logger(Category::Error) << "Uncaught exception: " << e.what();
-            } catch (...) {
-                logger(Category::Error) << "Unexpected exception!";
-            }
-
-            self->request_buffer.consume(bytes_transferred);
-            self->run();
+            // decode next chunk
+            self->decode_chunk(initial_chunk_size);
         }
     );
+}
+
+void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
+{
+    if (decoded_chunks.size() + chunk_size > Protocol::MAX_REQUEST_BYTES) {
+        // max request size reached
+        close_with_error("Protocol exception: Protocol::MAX_REQUEST_BYTES reached");
+        return;
+    }
+
+    if (chunk_size == 0) {
+        // no more chunks to decode, handle request
+        assert(request_buffer.size() == 0);
+
+        try {
+            request_handler->handle(decoded_chunks.data(), decoded_chunks.size());
+        } catch (const InterruptedException& e) {
+            close_with_error("Interruption exception: Query timed out");
+        } catch (const ProtocolException& e) {
+            close_with_error("Protocol exception: " + std::string(e.what()));
+        } catch (const ConnectionException& e) {
+            logger(Category::Error) << "Connection exception: " << e.what();
+            return;
+        } catch (const std::exception& e) {
+            logger(Category::Error) << "Uncaught exception: " << e.what();
+            return;
+        } catch (...) {
+            logger(Category::Error) << "Unexpected exception!";
+            return;
+        }
+
+        run();
+        return;
+    }
+
+    auto self = this->shared_from_this();
+
+    // read current chunk + next chunk size
+    boost::asio::async_read(
+        socket,
+        request_buffer.prepare(chunk_size + 2),
+        boost::asio::transfer_all(),
+        [self, chunk_size](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+            if (ec) {
+                if (ec != asio::error::eof) {
+                    logger(Category::Error) << "StreamingTCPSession decode_chunk error: " << ec.message();
+                }
+                return;
+            }
+
+            self->request_buffer.commit(chunk_size + 2);
+
+            // append decoded chunk
+            const auto chunk_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
+            const auto old_size = self->decoded_chunks.size();
+            self->decoded_chunks.resize(old_size + chunk_size);
+            std::memcpy(self->decoded_chunks.data() + old_size, chunk_bytes, chunk_size);
+
+            // read next size
+            const auto next_chunk_size_bytes = chunk_bytes + chunk_size;
+            const uint16_t next_chunk_size = (static_cast<uint16_t>(next_chunk_size_bytes[0]) << 8)
+                                           | next_chunk_size_bytes[1];
+            self->request_buffer.consume(chunk_size + 2);
+
+            // decode next chunk
+            self->decode_chunk(next_chunk_size);
+        }
+    );
+}
+
+void StreamingTCPSession::run()
+{
+    if (socket.is_open()) {
+        start_decode_chunk();
+    }
 }
 
 void StreamingTCPSession::write(const uint8_t* bytes, std::size_t num_bytes)
@@ -141,4 +171,15 @@ std::chrono::seconds StreamingTCPSession::get_timeout()
 bool StreamingTCPSession::try_cancel(uint_fast32_t worker_idx, const std::string& cancel_token)
 {
     return server.try_cancel(worker_idx, cancel_token);
+}
+
+void StreamingTCPSession::close_with_error(const std::string& msg) {
+    logger(Category::Error) << msg;
+    request_handler->response_writer->write_error(msg);
+    request_handler->response_writer->flush();
+
+    socket.close(ec);
+    if (ec) {
+        logger(Category::Debug) << "Close failed:" << ec.what();
+    }
 }

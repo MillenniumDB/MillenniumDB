@@ -1,31 +1,30 @@
 #pragma once
 
-#include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
 class BindingExprType : public BindingExpr {
 public:
-    VarId var;
+    std::unique_ptr<BindingExpr> expr;
 
-    BindingExprType(VarId var) :
-        var(var)
+    BindingExprType(std::unique_ptr<BindingExpr> expr_) :
+        expr(std::move(expr_))
     { }
 
     ObjectId eval(const Binding& binding) override
     {
-        ObjectId edge = binding[var];
+        const ObjectId oid = expr->eval(binding);
 
-        if (edge.get_type() != ObjectId::MASK_EDGE) {
+        if (oid.get_type() != ObjectId::MASK_EDGE) {
             return ObjectId::get_null();
         }
 
         bool interruption = false;
         BptIter<4> iter = quad_model.edge_from_to_type->get_range(
             &interruption,
-            { edge.id, 0, 0, 0 },
-            { edge.id, UINT64_MAX, UINT64_MAX, UINT64_MAX }
+            { oid.id, 0, 0, 0 },
+            { oid.id, UINT64_MAX, UINT64_MAX, UINT64_MAX }
         );
 
         auto record = iter.next();
@@ -37,9 +36,11 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>&) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
-        os << "TYPE(" << var << ')';
+        os << "TYPE(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace MQL

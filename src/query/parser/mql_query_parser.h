@@ -8,6 +8,8 @@
 #include "query/parser/grammar/mql/query_visitor.h"
 #include "query/parser/op/mql/op.h"
 #include "query/rewriter/mql/op/check_var_names.h"
+#include "query/rewriter/mql/op/evaluate_constants.h"
+#include "query/rewriter/mql/op/replace_parameters.h"
 
 namespace MQL {
 
@@ -44,14 +46,27 @@ public:
         return visitor.is_update;
     }
 
-    std::unique_ptr<Op> get_query_plan()
+    std::unique_ptr<Op> get_query_plan(const std::map<std::string, ObjectId>& input_parameters)
     {
         QueryVisitor visitor;
         visitor.visitRoot(root);
 
         auto res = std::move(visitor.current_op);
 
-        // logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
+        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
+
+        if (!input_parameters.empty()) {
+            std::map<VarId, ObjectId> query_parameters;
+            for (const auto& [var_name, object_id] : input_parameters) {
+                query_parameters.emplace(get_query_ctx().get_or_create_var(var_name), object_id);
+            }
+
+            ReplaceParameters replace_parameters(query_parameters);
+            res->accept_visitor(replace_parameters);
+        }
+
+        EvaluateConstants evaluate_constants;
+        res->accept_visitor(evaluate_constants);
 
         CheckVarNames check_var_names;
         res->accept_visitor(check_var_names);

@@ -1,2 +1,2 @@
-SUM(x.int)
+SUM(?x.int)
 1695

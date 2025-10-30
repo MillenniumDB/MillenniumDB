@@ -19,14 +19,17 @@ Trie::Trie(const std::filesystem::path& path) :
 {
     auto& first_page = buffer_manager.get_page_readonly(file_id, 0);
 
-    auto* end_page_pointer = reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    uint64_t* end_page_pointer = reinterpret_cast<uint64_t*>(first_page.get_bytes());
+    // uint64_t* id_count = end_page_pointer + 1;
 
-    if (end_page_pointer == 0) {
+    if (*end_page_pointer == 0) {
         // this is a new trie
-        auto& first_page_editable = buffer_manager.get_page_readonly(file_id, 0);
+        auto& first_page_editable = buffer_manager.get_page_editable(file_id, 0);
         end_page_pointer = reinterpret_cast<uint64_t*>(first_page_editable.get_bytes());
 
         *end_page_pointer = ROOT_ID + Node::MAX_NODE_SIZE;
+        Node::init_root(*this, &first_page_editable, ROOT_ID);
+
         buffer_manager.unpin(first_page_editable);
     }
 
@@ -38,6 +41,7 @@ uint64_t Trie::get_new_id()
     auto& first_page = buffer_manager.get_page_editable(file_id, 0);
     auto* end_page_pointer = reinterpret_cast<uint64_t*>(first_page.get_bytes());
     auto* id_count = end_page_pointer + 1;
+    ++(*id_count);
     auto res = *id_count;
 
     buffer_manager.unpin(first_page);

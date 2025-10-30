@@ -55,16 +55,16 @@ removeStatement: K_REMOVE removeAtom (',' removeAtom)*;
 removeAtom: (fixedObj | VARIABLE) KEY
 	| (fixedObj | VARIABLE) (TYPE)+;
 
-// TODO: introduce having?
 simpleQuery:
-	primitiveStatement+ groupByStatement? orderByStatement? (
+	primitiveStatement+ groupByStatement? havingStatement? orderByStatement? (
 		returnStatement
 		| updateStatement+
 	);
 
-primitiveStatement: (
-		(matchStatement | callStatement) whereStatement?
-	)
+primitiveStatement:
+	matchStatement
+	| callStatement
+	| whereStatement
 	| letStatement;
 
 createIndexQuery:
@@ -93,6 +93,8 @@ whereStatement: K_WHERE conditionalOrExpr;
 
 groupByStatement: K_GROUP K_BY groupByItem (',' groupByItem)*;
 
+havingStatement: K_HAVING conditionalOrExpr;
+
 orderByStatement: K_ORDER K_BY orderByItem (',' orderByItem)*;
 
 returnStatement:
@@ -116,21 +118,23 @@ limitClause: K_LIMIT UNSIGNED_INTEGER;
 
 offsetClause: K_OFFSET UNSIGNED_INTEGER;
 
-returnItem:
-	VARIABLE KEY?													# returnItemVar
-	| aggregateFunc '(' VARIABLE KEY? ')' (alias)?					# returnItemAgg
-	| K_COUNT '(' K_DISTINCT? (VARIABLE KEY? | '*') ')' (alias)?	# returnItemCount
-	| conditionalOrExpr alias										# returnItemExpr;
+// returnItem:
+// 	VARIABLE KEY?												# returnItemVar
+// 	| aggregateFunc '(' VARIABLE KEY? ')' alias?				# returnItemAgg
+// 	| K_COUNT '(' K_DISTINCT? (VARIABLE KEY? | '*') ')' alias?	# returnItemCount
+// 	| conditionalOrExpr alias?									# returnItemExpr;
+
+returnItem: conditionalOrExpr alias?;
 
 alias: K_AS VARIABLE;
 
 aggregateFunc: K_SUM | K_MAX | K_MIN | K_AVG;
 
-orderByItem:
-	VARIABLE KEY? (K_ASC | K_DESC)?									# orderByItemVar
-	| aggregateFunc '(' VARIABLE KEY? ')' (K_ASC | K_DESC)?			# orderByItemAgg
-	| K_COUNT '(' K_DISTINCT? VARIABLE KEY? ')' (K_ASC | K_DESC)?	# orderByItemCount
-	| conditionalOrExpr (K_ASC | K_DESC)?							# orderByItemExpr;
+// orderByItem: VARIABLE KEY? (K_ASC | K_DESC)? # orderByItemVar | aggregateFunc '(' VARIABLE KEY?
+// ')' (K_ASC | K_DESC)? # orderByItemAgg | K_COUNT '(' K_DISTINCT? VARIABLE KEY? ')' (K_ASC |
+// K_DESC)? # orderByItemCount | conditionalOrExpr (K_ASC | K_DESC)? # orderByItemExpr;
+
+orderByItem: conditionalOrExpr (K_ASC | K_DESC)?;
 
 groupByItem: VARIABLE KEY?;
 
@@ -236,11 +240,13 @@ unaryExpr:
 	| '-' unaryExpr;
 
 atomicExpr:
-	VARIABLE KEY?				# exprVar
-	| function					# exprFunction
-	| value						# exprValue
-	| fixedObj					# exprFixedObj
-	| '(' conditionalOrExpr ')'	# exprParenthesis;
+	VARIABLE KEY?										# exprVar
+	| function											# exprFunction
+	| aggregateFunc '(' VARIABLE KEY? ')'				# exprAgg
+	| K_COUNT '(' K_DISTINCT? (VARIABLE KEY? | '*') ')'	# exprCount
+	| value												# exprValue
+	| fixedObj											# exprFixedObj
+	| '(' conditionalOrExpr ')'							# exprParenthesis;
 
 function:
 	regex
@@ -279,11 +285,11 @@ normalize: K_NORMALIZE '(' conditionalOrExpr ')';
 
 str: K_STR '(' conditionalOrExpr ')';
 
-labels: K_LABELS '(' VARIABLE ')';
+labels: K_LABELS '(' conditionalOrExpr ')';
 
-propertiesFunction: K_PROPERTIES '(' VARIABLE ')';
+propertiesFunction: K_PROPERTIES '(' conditionalOrExpr ')';
 
-type: K_TYPE '(' VARIABLE ')';
+type: K_TYPE '(' conditionalOrExpr ')';
 
 textSearchIndexMode: K_PREFIX | K_MATCH;
 
@@ -314,6 +320,7 @@ keyword:
 	| K_EDIT_DISTANCE
 	| K_EUCLIDEAN_DISTANCE
 	| K_FROM
+	| K_HAVING
 	| K_INCOMING
 	| K_INDEX
 	| K_INSERT

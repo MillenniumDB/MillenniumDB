@@ -65,5 +65,15 @@ public:
 
         return false;
     }
+
+    std::optional<VarId> get_var() const override
+    {
+        return var_with_property;
+    }
+
+    void print(std::ostream& os) const override
+    {
+        os << var_with_property;
+    }
 };
 } // namespace MQL

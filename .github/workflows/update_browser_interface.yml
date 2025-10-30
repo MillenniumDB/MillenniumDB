@@ -16,18 +16,22 @@ jobs:
         with: 
           repository: MillenniumDB/MillenniumDB-browser
           ref: main
-      - name: Setup Node 20.x
-        uses: actions/setup-node@v4
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: '20.x'
+          version: latest
+        
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
+        
       - name: Build application
-        run: npm run build
+        run: pnpm run build
         env:
           # This is the URL that the MillenniumDB server will be running
           VITE_MDB_SERVER_URL: ws://localhost:1234
           VITE_APP_BASE_URL: /
+          
       - name: Upload dist/ as an artifact
         uses: actions/upload-artifact@v4
         with:
@@ -42,13 +46,16 @@ jobs:
     steps:
       - name: Checkout to this repository
         uses: actions/checkout@v4
+        
       - name: Delete current browser/
         run: rm -rf browser/
+        
       - name: Download browser-dist artifact at browser/
         uses: actions/download-artifact@v4
         with:
           name: browser-dist
           path: browser/
+          
       - name: Commit changes on browser/
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

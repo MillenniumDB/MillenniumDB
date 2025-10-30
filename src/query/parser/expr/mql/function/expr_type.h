@@ -6,15 +6,15 @@ namespace MQL {
 
 class ExprType : public Expr {
 public:
-    VarId var;
+    std::unique_ptr<Expr> expr;
 
-    ExprType(VarId edge_id) :
-        var(edge_id)
+    ExprType(std::unique_ptr<Expr> expr) :
+        expr(std::move(expr))
     { }
 
     virtual std::unique_ptr<Expr> clone() const override
     {
-        return std::make_unique<ExprType>(var);
+        return std::make_unique<ExprType>(expr->clone());
     }
 
     void accept_visitor(ExprVisitor& visitor) override
@@ -24,17 +24,24 @@ public:
 
     std::set<VarId> get_all_vars() const override
     {
-        return { var };
+        return expr->get_all_vars();
     }
 
     std::set<VarId> get_input_vars() const override
     {
-        return { var };
+        return expr->get_input_vars();
     }
 
     bool has_aggregation() const override
     {
-        return false;
+        return expr->has_aggregation();
+    }
+
+    void print(std::ostream& os) const override
+    {
+        os << "TYPE(";
+        expr->print(os);
+        os << ')';
     }
 };
 } // namespace MQL

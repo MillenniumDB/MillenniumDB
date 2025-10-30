@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -68,9 +67,14 @@ public:
             }
             first = false;
 
-            ExprPrinter printer(os);
-            expr->accept_visitor(printer);
-            os << " AS " << var; // TODO: ?x AS ?x is weird
+            os << *expr;
+            if (auto v = expr->get_var(); v.has_value()) {
+                if (v.value() != var) {
+                    os << " AS " << var;
+                }
+            } else {
+                os << " AS " << var;
+            }
         }
 
         if (limit != DEFAULT_LIMIT) {
@@ -81,7 +85,7 @@ public:
         }
         os << ")";
         os << "\n";
-        return op->print_to_ostream(os, indent);
+        return op->print_to_ostream(os, indent + 2);
     }
 };
 } // namespace MQL

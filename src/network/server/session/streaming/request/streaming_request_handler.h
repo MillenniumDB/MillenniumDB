@@ -17,13 +17,16 @@ public:
 
     StreamingSession& session;
 
+    std::unique_ptr<StreamingRequestReader> request_reader;
     std::unique_ptr<StreamingResponseWriter> response_writer;
 
     StreamingRequestHandler(
         StreamingSession& session,
+        std::unique_ptr<StreamingRequestReader> request_reader,
         std::unique_ptr<StreamingResponseWriter> response_writer
     ) :
         session(session),
+        request_reader(std::move(request_reader)),
         response_writer(std::move(response_writer))
     { }
 
@@ -32,14 +35,12 @@ public:
     void handle(const uint8_t* request_bytes, std::size_t request_size);
 
 protected:
-    StreamingRequestReader request_reader;
-
     virtual void initial_parse(const std::string& query) = 0;
 
     // is supposed to be called after initial_parse
     virtual bool is_update() = 0;
 
-    virtual void create_logical_plan() = 0;
+    virtual void create_logical_plan(const std::map<std::string, ObjectId>& input_parameters) = 0;
 
     virtual std::unique_ptr<StreamingQueryExecutor> create_streaming_executor() = 0;
 

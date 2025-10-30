@@ -1,18 +1,22 @@
 #pragma once
 
-#include "streaming_request_handler.h"
-
+#include "network/server/session/streaming/request/streaming_gql_request_reader.h"
 #include "network/server/session/streaming/response/streaming_gql_response_writer.h"
 #include "query/optimizer/property_graph_model/streaming_executor_constructor.h"
 #include "query/optimizer/rdf_model/streaming_executor_constructor.h"
 #include "query/parser/gql_query_parser.h"
+#include "streaming_request_handler.h"
 
 namespace MDBServer {
 
 class StreamingGQLRequestHandler : public StreamingRequestHandler {
 public:
     StreamingGQLRequestHandler(StreamingSession& session) :
-        StreamingRequestHandler(session, std::make_unique<StreamingGQLResponseWriter>(session))
+        StreamingRequestHandler(
+            session,
+            std::make_unique<StreamingGQLRequestReader>(),
+            std::make_unique<StreamingGQLResponseWriter>(session)
+        )
     { }
 
     ~StreamingGQLRequestHandler() = default;
@@ -27,7 +31,7 @@ public:
         return false; // TODO:
     }
 
-    void create_logical_plan() override
+    void create_logical_plan(const std::map<std::string, ObjectId>&) override
     {
         // TODO:
     }

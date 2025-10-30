@@ -71,9 +71,6 @@ int main(int argc, char* argv[])
         config.query_timeout = 10 * MDBServer::Protocol::DEFAULT_QUERY_TIMEOUT_SECONDS;
     }
 
-    QueryContext qc;
-    QueryContext::set_query_ctx(&qc);
-
     std::ifstream query_file(argv[2]);
     std::string query((std::istreambuf_iterator<char>(query_file)), (std::istreambuf_iterator<char>()));
 
@@ -106,8 +103,7 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    MQL::QueryParser parser(query);
-                    auto logical_plan = parser.get_query_plan();
+                    auto logical_plan = MQL::QueryParser::get_query_plan(query);
                     MQL::ExecutorConstructor query_optimizer(MQL::ReturnType::CSV);
                     logical_plan->accept_visitor(query_optimizer);
 
@@ -120,8 +116,7 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                MQL::QueryParser parser(query);
-                auto logical_plan = parser.get_query_plan();
+                auto logical_plan = MQL::QueryParser::get_query_plan(query);
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();
@@ -179,8 +174,7 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    SPARQL::QueryParser parser(query);
-                    auto logical_plan = parser.get_query_plan();
+                    auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
                     SPARQL::ExecutorConstructor executor_constructor(SPARQL::ResponseType::TSV);
                     logical_plan->accept_visitor(executor_constructor);
 
@@ -193,8 +187,7 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                SPARQL::QueryParser parser(query);
-                auto logical_plan = parser.get_query_plan();
+                auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();

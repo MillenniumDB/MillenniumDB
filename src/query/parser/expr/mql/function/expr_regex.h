@@ -65,5 +65,14 @@ public:
     {
         return expr1->has_aggregation() || expr2->has_aggregation() || (expr3 && expr3->has_aggregation());
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "REGEX(" << *expr1 << ',' << *expr2;
+        if (expr3 != nullptr) {
+            os << ',' << *expr3;
+        }
+        os << ')';
+    }
 };
 } // namespace MQL

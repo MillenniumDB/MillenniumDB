@@ -44,23 +44,41 @@ void CheckVarNames::visit(OpGroupBy& op_group_by)
 
 void CheckVarNames::visit(OpReturn& op_return)
 {
+    for (const auto& [expr, var] : op_return.projection) {
+        if (auto expr_var = expr->get_var(); expr_var.has_value()) {
+            if (expr_var.value() == var) {
+                continue;
+            }
+        }
+
+        // alias
+        if (alias_vars.contains(var)) {
+            throw QuerySemanticException(
+                "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
+            );
+        }
+        alias_vars.insert(var);
+    }
+
     op_return.op->accept_visitor(*this);
 
     for (const auto& [expr, var] : op_return.projection) {
         CheckVarNamesExpr visitor(declared_vars, unjoinable_vars, alias_vars);
         expr->accept_visitor(visitor);
 
-        auto expr_vars = expr->get_all_vars();
-
-        if (expr_vars.find(var) == expr_vars.end()) {
-            // alias
-            if (declared_vars.contains(var) || alias_vars.contains(var)) {
-                throw QuerySemanticException(
-                    "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
-                );
+        if (auto expr_var = expr->get_var(); expr_var.has_value()) {
+            if (expr_var.value() == var) {
+                continue;
             }
-            alias_vars.insert(var);
         }
+
+        // alias
+        if (declared_vars.contains(var)) {
+            throw QuerySemanticException(
+                "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
+            );
+        }
+        declared_vars.insert(var);
     }
 }
 
@@ -83,8 +101,11 @@ void CheckVarNames::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);
 
+    auto declared_vars_and_alias = declared_vars;
+    declared_vars_and_alias.merge(alias_vars);
+
     for (const auto& item : op_order_by.items) {
-        CheckVarNamesExpr visitor(declared_vars, unjoinable_vars, alias_vars);
+        CheckVarNamesExpr visitor(declared_vars_and_alias, unjoinable_vars, alias_vars);
         item->accept_visitor(visitor);
     }
 }
@@ -171,6 +192,17 @@ void CheckVarNames::visit(OpWhere& op_where)
     op_where.expr->accept_visitor(expr_visitor);
 }
 
+void CheckVarNames::visit(OpHaving& op_having)
+{
+    op_having.op->accept_visitor(*this);
+
+    auto declared_vars_and_alias = declared_vars;
+    declared_vars_and_alias.merge(alias_vars);
+
+    CheckVarNamesExpr expr_visitor(declared_vars_and_alias, unjoinable_vars, alias_vars);
+    op_having.expr->accept_visitor(expr_visitor);
+}
+
 /*************************** ExprVisitor ***************************/
 void CheckVarNamesExpr::visit(ExprVar& expr)
 {
@@ -180,11 +212,11 @@ void CheckVarNamesExpr::visit(ExprVar& expr)
         );
     }
 
-    if (alias_vars.contains(expr.var)) {
-        throw QuerySemanticException(
-            "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is cannot be re-declared"
-        );
-    }
+    // if (alias_vars.contains(expr.var)) {
+    //     throw QuerySemanticException(
+    //         "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is cannot be re-declared"
+    //     );
+    // }
 }
 
 void CheckVarNamesExpr::visit(ExprVarProperty& expr)
@@ -362,29 +394,17 @@ void CheckVarNamesExpr::visit(ExprStr& expr)
 
 void CheckVarNamesExpr::visit(ExprLabels& expr)
 {
-    if (!declared_vars.contains(expr.var)) {
-        throw QuerySemanticException(
-            "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is not declared"
-        );
-    }
+    expr.expr->accept_visitor(*this);
 }
 
 void CheckVarNamesExpr::visit(ExprType& expr)
 {
-    if (!declared_vars.contains(expr.var)) {
-        throw QuerySemanticException(
-            "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is not declared"
-        );
-    }
+    expr.expr->accept_visitor(*this);
 }
 
 void CheckVarNamesExpr::visit(ExprProperties& expr)
 {
-    if (!declared_vars.contains(expr.var)) {
-        throw QuerySemanticException(
-            "Variable \"" + get_query_ctx().get_var_name(expr.var) + "\" is not declared"
-        );
-    }
+    expr.expr->accept_visitor(*this);
 }
 
 void CheckVarNamesExpr::visit(ExprAggAvg& expr)

@@ -127,6 +127,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -167,19 +171,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitReturnItemCount(MQL_Parser::ReturnItemCountContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitReturnItemExpr(MQL_Parser::ReturnItemExprContext *ctx) override {
+  virtual std::any visitReturnItem(MQL_Parser::ReturnItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -191,19 +183,7 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitOrderByItemExpr(MQL_Parser::OrderByItemExprContext *ctx) override {
+  virtual std::any visitOrderByItem(MQL_Parser::OrderByItemContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -352,6 +332,14 @@ public:
   }
 
   virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprAgg(MQL_Parser::ExprAggContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprCount(MQL_Parser::ExprCountContext *ctx) override {
     return visitChildren(ctx);
   }
 

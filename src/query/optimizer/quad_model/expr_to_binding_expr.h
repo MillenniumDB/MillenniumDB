@@ -34,10 +34,13 @@ public:
     // (for now the language only permits Agg Functions in them)
     ExprToBindingExpr(BindingIterConstructor* _bic, std::optional<VarId> as_var, bool after_group) :
         bic(_bic),
-        fixed_types_properties(_bic->fixed_types_properties),
         as_var(as_var),
         after_group(after_group)
-    { }
+    {
+        if (bic) {
+            fixed_types_properties = bic->fixed_types_properties;
+        }
+    }
 
     void visit(ExprAggAvg&) override;
     void visit(ExprAggCountAll&) override;
@@ -81,6 +84,6 @@ public:
 private:
 
     template<typename AggType, class ... Args>
-    void check_and_make_aggregate(Expr*, Args&&... args);
+    void check_and_make_aggregate(Expr* expr, Expr* partent_expr, Args&&... args);
 };
 } // namespace MQL

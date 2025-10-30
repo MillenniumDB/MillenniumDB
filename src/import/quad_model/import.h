@@ -392,7 +392,7 @@ private:
     }
 
     // parse datatype and store it in value_id
-    void parse_prop_datatype(char* typed_str, uint64_t typed_str_len)
+    void parse_prop_datatype(char* typed_str, size_t typed_str_len)
     {
         // we have something like: `datatype("string")`
         // parse datatype name
@@ -766,7 +766,7 @@ private:
     }
 
     // normalize str in place, the resulting size is written in str_len
-    void normalize_string_literal(char* str, uint64_t* str_len)
+    void normalize_string_literal(char* str, size_t* str_len)
     {
         char* write_ptr = str;
         char* read_ptr = write_ptr + 1; // skip first character: '"'

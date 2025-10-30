@@ -59,5 +59,16 @@ public:
         }
         return res;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(';
+        os << *or_list[0];
+        for (size_t i = 1; i < or_list.size(); i++) {
+            os << " OR ";
+            os << *or_list[i];
+        }
+        os << ')';
+    }
 };
 } // namespace MQL

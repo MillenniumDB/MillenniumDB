@@ -86,5 +86,10 @@ public:
         }
         return "";
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(' << *expr << " IS " << (negation ? "NOT " : "") << get_type_name() << ')';
+    }
 };
 } // namespace MQL

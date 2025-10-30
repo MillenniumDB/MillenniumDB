@@ -150,9 +150,12 @@ void SessionDispatcher::dispatch_http()
                 }
 
                 logger(Category::Debug) << "Dispatching StreamingWebSocketSession";
-                StreamingWebSocketSession::run(
-                    std::make_unique<StreamingWebSocketSession>(server, std::move(*ws_stream), query_timeout)
-                );
+                std::make_shared<StreamingWebSocketSession>(
+                    server,
+                    std::move(*ws_stream),
+                    query_timeout
+                )
+                    ->run();
             }
         );
         return;

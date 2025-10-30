@@ -1,7 +1,7 @@
 #pragma once
 
-#include "streaming_request_handler.h"
-
+#include "network/server/session/streaming/request/streaming_quad_request_reader.h"
+#include "network/server/session/streaming/request/streaming_request_handler.h"
 #include "network/server/session/streaming/response/streaming_quad_response_writer.h"
 #include "query/optimizer/quad_model/streaming_executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
@@ -11,7 +11,11 @@ namespace MDBServer {
 class StreamingQuadRequestHandler : public StreamingRequestHandler {
 public:
     StreamingQuadRequestHandler(StreamingSession& session) :
-        StreamingRequestHandler(session, std::make_unique<StreamingQuadResponseWriter>(session))
+        StreamingRequestHandler(
+            session,
+            std::make_unique<StreamingQuadRequestReader>(),
+            std::make_unique<StreamingQuadResponseWriter>(session)
+        )
     { }
 
     ~StreamingQuadRequestHandler() = default;
@@ -26,9 +30,9 @@ public:
         return parser->is_update();
     }
 
-    void create_logical_plan() override
+    void create_logical_plan(const std::map<std::string, ObjectId>& input_parameters) override
     {
-        logical_plan = parser->get_query_plan();
+        logical_plan = parser->get_query_plan(input_parameters);
     }
 
     std::unique_ptr<StreamingQueryExecutor> create_streaming_executor() override

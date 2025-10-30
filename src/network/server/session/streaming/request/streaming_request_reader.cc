@@ -20,29 +20,32 @@ Protocol::RequestType StreamingRequestReader::read_request_type() {
     return static_cast<Protocol::RequestType>(value);
 }
 
-
-uint8_t StreamingRequestReader::read_uint8() {
-    check_datatype(Protocol::DataType::UINT8);
-    check_remaining_bytes(1);
-    uint8_t value = request_bytes[current_pos++];
-    return value;
-}
-
-
-uint32_t StreamingRequestReader::read_uint32() {
-    check_datatype(Protocol::DataType::UINT32);
-    check_remaining_bytes(4);
-    uint32_t value = 0;
-    for (auto i = 0; i < 4; ++i) {
-        value <<= 8;
-        value |= request_bytes[current_pos++];
+std::map<std::string, ObjectId> StreamingRequestReader::read_parameters()
+{
+    check_datatype(Protocol::DataType::MAP);
+    const uint_fast32_t size = read_size();
+    std::map<std::string, ObjectId> res;
+    for (std::size_t i = 0; i < size; ++i) {
+        check_datatype(Protocol::DataType::STRING);
+        const auto var_name = read_string();
+        const auto object_id = read_object();
+        res.emplace(std::move(var_name), object_id);
     }
+    return res;
+}
+
+uint32_t StreamingRequestReader::read_uint32()
+{
+    check_remaining_bytes(4);
+    uint32_t value = request_bytes[current_pos++] << 24;
+    value |= request_bytes[current_pos++] << 16;
+    value |= request_bytes[current_pos++] << 8;
+    value |= request_bytes[current_pos++];
     return value;
 }
 
-
-std::string StreamingRequestReader::read_string() {
-    check_datatype(Protocol::DataType::STRING);
+std::string StreamingRequestReader::read_string()
+{
     uint_fast32_t size = read_size();
     check_remaining_bytes(size);
     std::string result(reinterpret_cast<const char*>(&request_bytes[current_pos]), size);
@@ -50,21 +53,51 @@ std::string StreamingRequestReader::read_string() {
     return result;
 }
 
+int64_t StreamingRequestReader::read_int64()
+{
+    check_remaining_bytes(8);
+    int64_t value = static_cast<int64_t>(request_bytes[current_pos++]) << 56;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 48;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 40;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 32;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 24;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 16;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]) << 8;
+    value |= static_cast<int64_t>(request_bytes[current_pos++]);
+    return value;
+}
+
+float StreamingRequestReader::read_float()
+{
+    check_remaining_bytes(4);
+    float value;
+    auto value_bytes = reinterpret_cast<uint8_t*>(&value);
+    value_bytes[3] = request_bytes[current_pos++];
+    value_bytes[2] = request_bytes[current_pos++];
+    value_bytes[1] = request_bytes[current_pos++];
+    value_bytes[0] = request_bytes[current_pos++];
+    return value;
+}
 
 uint_fast32_t StreamingRequestReader::read_size() {
     check_remaining_bytes(4);
-    uint32_t value = 0;
-    for (auto i = 0; i < 4; ++i) {
-        value <<= 8;
-        value |= request_bytes[current_pos++];
-    }
+    uint32_t value { 0 };
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+    value |= static_cast<uint32_t>(request_bytes[current_pos++]);
     return value;
 }
 
 
-void StreamingRequestReader::check_datatype(Protocol::DataType expected) {
+Protocol::DataType StreamingRequestReader::read_datatype() {
     check_remaining_bytes(1);
-    auto actual = static_cast<Protocol::DataType>(request_bytes[current_pos++]);
+    return static_cast<Protocol::DataType>(request_bytes[current_pos++]);
+}
+
+
+void StreamingRequestReader::check_datatype(Protocol::DataType expected) {
+    const auto actual = read_datatype();
     if (expected != actual) {
         const auto expected_str = Protocol::datatype_to_string(expected);
         const auto actual_str   = Protocol::datatype_to_string(actual);
@@ -75,6 +108,6 @@ void StreamingRequestReader::check_datatype(Protocol::DataType expected) {
 
 void StreamingRequestReader::check_remaining_bytes(uint_fast32_t expected) const {
     if (current_pos + expected > request_size) {
-        throw ProtocolException("Not enough data in the request");
+        throw ProtocolException("Not enough data in the request: Request is incomplete");
     }
 }

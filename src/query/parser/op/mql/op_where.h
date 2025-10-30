@@ -1,7 +1,6 @@
 #pragma once
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -39,10 +38,7 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        auto printer = ExprPrinter(os);
-        os << "OpWhere(";
-        expr->accept_visitor(printer);
-        os << ")\n";
+        os << "OpWhere(" << *expr << ")\n";
         return op->print_to_ostream(os, indent + 2);
     }
 };

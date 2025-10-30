@@ -17,6 +17,8 @@ class Expr;
 class OpBasicGraphPattern;
 
 class QueryVisitor : public MQL_ParserBaseVisitor {
+public:
+
 private:
     struct ReturnInfo {
         std::vector<std::pair<std::unique_ptr<Expr>, VarId>> items;
@@ -121,19 +123,9 @@ public:
     virtual std::any visitLetStatement(MQL_Parser::LetStatementContext* ctx) override;
 
     virtual std::any visitReturnList(MQL_Parser::ReturnListContext* ctx) override;
-    virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext* ctx) override;
-    virtual std::any visitReturnItemExpr(MQL_Parser::ReturnItemExprContext* ctx) override;
-    virtual std::any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext* ctx) override;
-    virtual std::any visitReturnItemCount(MQL_Parser::ReturnItemCountContext* ctx) override;
     virtual std::any visitReturnAll(MQL_Parser::ReturnAllContext* ctx) override;
-
-    virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext* ctx) override;
-    virtual std::any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext* ctx) override;
-    virtual std::any visitOrderByItemExpr(MQL_Parser::OrderByItemExprContext* ctx) override;
-    virtual std::any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext* ctx) override;
-    virtual std::any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext* ctx) override;
-
-    virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext* ctx) override;
+    virtual std::any visitReturnItem(MQL_Parser::ReturnItemContext* ctx) override;
+    virtual std::any visitOrderByItem(MQL_Parser::OrderByItemContext* ctx) override;
     virtual std::any visitGroupByItem(MQL_Parser::GroupByItemContext* ctx) override;
 
     virtual std::any visitGraphPattern(MQL_Parser::GraphPatternContext* ctx) override;
@@ -157,6 +149,8 @@ public:
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext* ctx) override;
     virtual std::any visitExprFixedObj(MQL_Parser::ExprFixedObjContext* ctx) override;
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext* ctx) override;
+    virtual std::any visitExprCount(MQL_Parser::ExprCountContext* ctx) override;
+    virtual std::any visitExprAgg(MQL_Parser::ExprAggContext* ctx) override;
 
     virtual std::any visitConditionalOrExpr(MQL_Parser::ConditionalOrExprContext* ctx) override;
     virtual std::any visitConditionalAndExpr(MQL_Parser::ConditionalAndExprContext* ctx) override;
@@ -165,7 +159,6 @@ public:
     virtual std::any visitAdditiveExpr(MQL_Parser::AdditiveExprContext* ctx) override;
     virtual std::any visitMultiplicativeExpr(MQL_Parser::MultiplicativeExprContext* ctx) override;
     virtual std::any visitUnaryExpr(MQL_Parser::UnaryExprContext* ctx) override;
-    virtual std::any visitFunction(MQL_Parser::FunctionContext* ctx) override;
 
     virtual std::any visitRegex(MQL_Parser::RegexContext* ctx) override;
     virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext* ctx) override;

@@ -1,0 +1,5 @@
+MATCH (?y)-[:t1]->(X)
+GROUP BY ?y
+HAVING ?c > 1
+ORDER BY ?c DESC
+RETURN ?y,COUNT(*) AS ?c

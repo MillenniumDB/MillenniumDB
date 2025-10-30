@@ -90,7 +90,7 @@ public:
         }
         case ObjectId::MASK_EDGE: {
             const auto edge_id = MQL::Conversions::unpack_edge(oid);
-            return encode_string("_e" + std::to_string(edge_id), Protocol::DataType::EDGE);
+            return encode_edge(edge_id);
         }
         case ObjectId::MASK_DT_DATE: {
             const DateTime datetime = MQL::Conversions::unpack_datetime(oid);

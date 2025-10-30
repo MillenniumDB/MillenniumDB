@@ -2,7 +2,6 @@
 
 #include "query/exceptions.h"
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -93,15 +92,11 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        auto expr_printer = ExprPrinter(os);
-
         os << std::string(indent, ' ');
         os << "OpCall(";
-        os << get_procedure_string(procedure_type) << ", ";
-        argument_exprs[0]->accept_visitor(expr_printer);
+        os << get_procedure_string(procedure_type) << ", " << *argument_exprs[0];
         for (std::size_t i = 1; i < argument_exprs.size(); ++i) {
-            os << ", ";
-            argument_exprs[i]->accept_visitor(expr_printer);
+            os << ", " << *argument_exprs[i];
         }
         os << ") -> (";
         os << yield_vars[0];

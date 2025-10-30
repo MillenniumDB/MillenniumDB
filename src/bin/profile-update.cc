@@ -59,9 +59,6 @@ int main(int argc, const char* argv[])
     auto config = parse_profile_config(argv[1], args);
     auto model_id = Catalog::get_model_id(config.db_directory);
 
-    QueryContext qc;
-    QueryContext::set_query_ctx(&qc);
-
     std::ifstream query_file(argv[2]);
     std::string query((std::istreambuf_iterator<char>(query_file)), (std::istreambuf_iterator<char>()));
 
@@ -94,7 +91,7 @@ int main(int argc, const char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = MQL::QueryParser::get_query_plan(query);
+                auto logical_plan = MQL::QueryParser::get_query_plan(query, {});
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto execution_start = std::chrono::system_clock::now();

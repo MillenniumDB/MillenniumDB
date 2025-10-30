@@ -5,6 +5,7 @@
 #include "query/parser/op/mql/op_call.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_describe.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_group_by.h" // IWYU pragma: export
+#include "query/parser/op/mql/op_having.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_let.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_order_by.h" // IWYU pragma: export
 #include "query/parser/op/mql/op_return.h" // IWYU pragma: export

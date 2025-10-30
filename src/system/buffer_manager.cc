@@ -179,7 +179,17 @@ Page& BufferManager::get_page_readonly(FileId file_id, uint64_t page_number) noe
         page.next_version = nullptr;
         vp_map.insert({ page_id, &page });
 
-        file_manager.read_page(page_id, page.bytes);
+        if (page_id.page_number >= file_manager.count_pages(page_id.file_id)) {
+            // appending a new page
+            memset(page.bytes, 0, Page::SIZE);
+            appended_pages[file_id.id]++;
+            current_modifications.push_back(&page);
+            page.dirty = true;
+            page.version_number = result_version;
+        } else {
+            file_manager.read_page(page_id, page.bytes);
+        }
+
         vp_mutex.unlock();
 
         return page;
@@ -220,23 +230,29 @@ Page& BufferManager::get_page_editable(FileId file_id, uint64_t page_number) noe
     if (it == vp_map.end()) {
         auto& new_page = get_vpage_available();
         new_page.reassign(page_id); // this will pin the page
-
-        auto& old_page = get_vpage_available();
-        old_page.reassign_page_id(page_id);
-        old_page.version_number = start_version;
-        old_page.prev_version = nullptr;
-        old_page.next_version = &new_page;
-
         new_page.version_number = result_version;
-        new_page.prev_version = &old_page;
         new_page.next_version = nullptr;
         new_page.dirty = true;
 
-        vp_map.insert({ page_id, &old_page });
+        if (page_id.page_number < file_manager.count_pages(page_id.file_id)) {
+            auto& old_page = get_vpage_available();
+            old_page.reassign_page_id(page_id);
+            old_page.version_number = start_version;
+            old_page.prev_version = nullptr;
+            old_page.next_version = &new_page;
 
-        file_manager.read_page(page_id, old_page.bytes);
-        std::memcpy(new_page.bytes, old_page.bytes, Page::SIZE);
+            new_page.prev_version = &old_page;
 
+            vp_map.insert({ page_id, &old_page });
+            file_manager.read_page(page_id, old_page.bytes);
+            std::memcpy(new_page.bytes, old_page.bytes, Page::SIZE);
+        } else {
+            // appending new page
+            vp_map.insert({ page_id, &new_page });
+            new_page.prev_version = nullptr;
+            std::memset(new_page.bytes, 0, Page::SIZE);
+            appended_pages[file_id.id]++;
+        }
         current_modifications.push_back(&new_page);
 
         return new_page;
@@ -298,6 +314,8 @@ Page& BufferManager::append_page(FileId file_id)
     new_page.version_number = result_version;
     new_page.prev_version = nullptr;
     new_page.next_version = nullptr;
+
+    std::memset(new_page.bytes, 0, Page::SIZE);
 
     new_page.dirty = true;
 

@@ -100,6 +100,31 @@ inline std::string unpack_named_node(ObjectId oid)
     }
 }
 
+    inline ObjectId pack_named_node(const std::string& str)
+    {
+        uint64_t oid;
+        if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
+            oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+        } else {
+            const auto str_id = string_manager.get_str_id(str);
+            if (str_id != ObjectId::MASK_NOT_FOUND) {
+                oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
+            } else {
+                oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
+            }
+        }
+        return ObjectId(oid);
+    }
+
+    inline ObjectId pack_edge(uint64_t edge_id) {
+        return ObjectId(ObjectId::MASK_EDGE | edge_id);
+    }
+
+    inline ObjectId pack_anon_tmp(uint64_t anon_id)
+    {
+        return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
+    }
+
 inline DateTime unpack_datetime(ObjectId oid)
 {
     return DateTime(oid);

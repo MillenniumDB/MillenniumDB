@@ -43,5 +43,10 @@ public:
         res.insert(rhs_vars.begin(), rhs_vars.end());
         return res;
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << '(' << *lhs << '/' << *rhs << ')';
+    }
 };
 } // namespace MQL

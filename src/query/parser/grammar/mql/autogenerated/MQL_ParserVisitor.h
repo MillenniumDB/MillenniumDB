@@ -75,6 +75,8 @@ public:
 
     virtual std::any visitGroupByStatement(MQL_Parser::GroupByStatementContext *context) = 0;
 
+    virtual std::any visitHavingStatement(MQL_Parser::HavingStatementContext *context) = 0;
+
     virtual std::any visitOrderByStatement(MQL_Parser::OrderByStatementContext *context) = 0;
 
     virtual std::any visitReturnList(MQL_Parser::ReturnListContext *context) = 0;
@@ -95,25 +97,13 @@ public:
 
     virtual std::any visitOffsetClause(MQL_Parser::OffsetClauseContext *context) = 0;
 
-    virtual std::any visitReturnItemVar(MQL_Parser::ReturnItemVarContext *context) = 0;
-
-    virtual std::any visitReturnItemAgg(MQL_Parser::ReturnItemAggContext *context) = 0;
-
-    virtual std::any visitReturnItemCount(MQL_Parser::ReturnItemCountContext *context) = 0;
-
-    virtual std::any visitReturnItemExpr(MQL_Parser::ReturnItemExprContext *context) = 0;
+    virtual std::any visitReturnItem(MQL_Parser::ReturnItemContext *context) = 0;
 
     virtual std::any visitAlias(MQL_Parser::AliasContext *context) = 0;
 
     virtual std::any visitAggregateFunc(MQL_Parser::AggregateFuncContext *context) = 0;
 
-    virtual std::any visitOrderByItemVar(MQL_Parser::OrderByItemVarContext *context) = 0;
-
-    virtual std::any visitOrderByItemAgg(MQL_Parser::OrderByItemAggContext *context) = 0;
-
-    virtual std::any visitOrderByItemCount(MQL_Parser::OrderByItemCountContext *context) = 0;
-
-    virtual std::any visitOrderByItemExpr(MQL_Parser::OrderByItemExprContext *context) = 0;
+    virtual std::any visitOrderByItem(MQL_Parser::OrderByItemContext *context) = 0;
 
     virtual std::any visitGroupByItem(MQL_Parser::GroupByItemContext *context) = 0;
 
@@ -188,6 +178,10 @@ public:
     virtual std::any visitExprVar(MQL_Parser::ExprVarContext *context) = 0;
 
     virtual std::any visitExprFunction(MQL_Parser::ExprFunctionContext *context) = 0;
+
+    virtual std::any visitExprAgg(MQL_Parser::ExprAggContext *context) = 0;
+
+    virtual std::any visitExprCount(MQL_Parser::ExprCountContext *context) = 0;
 
     virtual std::any visitExprValue(MQL_Parser::ExprValueContext *context) = 0;
 

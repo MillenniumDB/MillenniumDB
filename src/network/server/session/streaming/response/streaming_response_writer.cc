@@ -470,6 +470,14 @@ std::string StreamingResponseWriter::encode_dictionary_literal(const DictionaryL
     return encode_object_id(dictionary_literal.object_id);
 }
 
+std::string StreamingResponseWriter::encode_edge(int64_t edge_id) const
+{
+    std::string res;
+    res += static_cast<char>(Protocol::DataType::EDGE);
+    res += encode_int64_raw(edge_id);
+    return res;
+}
+
 template std::string StreamingResponseWriter::encode_tensor<float>(const tensor::Tensor<float>& tensor) const;
 template std::string StreamingResponseWriter::encode_tensor<double>(const tensor::Tensor<double>& tensor
 ) const;

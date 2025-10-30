@@ -12,6 +12,7 @@
 #include "query/rewriter/sparql/op/check_scoped_blank_nodes.h"
 #include "query/rewriter/sparql/op/check_var_names.h"
 #include "query/rewriter/sparql/op/check_well_designed.h"
+#include "query/rewriter/sparql/op/replace_parameters.h"
 #include "query/rewriter/sparql/op/replace_single_values.h"
 #include "query/rewriter/sparql/op/replace_unscoped_variables.h"
 #include "query/rewriter/sparql/op/rewrite_expr_subqueries.h"
@@ -60,11 +61,21 @@ public:
         root = parser.query();
     }
 
-    std::unique_ptr<Op> get_query_plan()
+    std::unique_ptr<Op> get_query_plan(const std::map<std::string, ObjectId>& input_parameters)
     {
         QueryVisitor::GlobalInfo global_info;
         QueryVisitor visitor(global_info);
         visitor.visitQuery(root);
+
+        if (!input_parameters.empty()) {
+            std::map<VarId, ObjectId> query_parameters;
+            for (const auto& [var_name, object_id] : input_parameters) {
+                query_parameters.emplace(get_query_ctx().get_or_create_var(var_name), object_id);
+            }
+
+            ReplaceParameters replace_parameters(query_parameters);
+            visitor.current_op->accept_visitor(replace_parameters);
+        }
 
         auto res = rewrite(std::move(visitor.current_op));
 

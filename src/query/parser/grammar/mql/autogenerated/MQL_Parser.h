@@ -17,24 +17,25 @@ public:
     K_COSINE_SIMILARITY = 12, K_COUNT = 13, K_CREATE = 14, K_DELETE = 15, 
     K_DESCRIBE = 16, K_DESC = 17, K_DETACH = 18, K_DIMENSIONS = 19, K_DISTINCT = 20, 
     K_EDGE = 21, K_EDIT_DISTANCE = 22, K_EUCLIDEAN_DISTANCE = 23, K_FROM = 24, 
-    K_IDENTITY = 25, K_INCOMING = 26, K_INDEX = 27, K_INSERT = 28, K_INTEGER = 29, 
-    K_INTO = 30, K_IS = 31, K_FALSE = 32, K_FLOAT = 33, K_GROUP = 34, K_GROUPS = 35, 
-    K_LABELS = 36, K_LABEL = 37, K_LET = 38, K_LIMIT = 39, K_MANHATTAN_DISTANCE = 40, 
-    K_MATCH = 41, K_MAX = 42, K_MIN = 43, K_NORMALIZE = 44, K_OBJECTS = 45, 
-    K_OFFSET = 46, K_OPTIONAL = 47, K_ORDER = 48, K_OR = 49, K_OUTGOING = 50, 
-    K_PREFIX = 51, K_PROPERTY = 52, K_PROPERTIES = 53, K_NOT = 54, K_NULL = 55, 
-    K_SHORTEST = 56, K_SHOW = 57, K_SIMPLE = 58, K_STRING = 59, K_STR = 60, 
-    K_TEXT_SEARCH = 61, K_TYPE = 62, K_REGEX = 63, K_REMOVE = 64, K_RETURN = 65, 
-    K_SET = 66, K_SUM = 67, K_TRUE = 68, K_TRAILS = 69, K_VALUES = 70, K_WALKS = 71, 
-    K_WITH = 72, K_WHERE = 73, K_YIELD = 74, TRUE_PROP = 75, FALSE_PROP = 76, 
-    ANON_ID = 77, EDGE_ID = 78, KEY = 79, TYPE = 80, TYPE_VAR = 81, VARIABLE = 82, 
-    STRING = 83, UNSIGNED_INTEGER = 84, UNSIGNED_FLOAT = 85, UNSIGNED_SCIENTIFIC_NOTATION = 86, 
-    NAME = 87, LEQ = 88, GEQ = 89, EQ = 90, NEQ = 91, LT = 92, GT = 93, 
-    SINGLE_EQ = 94, PATH_SEQUENCE = 95, PATH_ALTERNATIVE = 96, PATH_NEGATION = 97, 
-    STAR = 98, PERCENT = 99, QUESTION_MARK = 100, PLUS = 101, MINUS = 102, 
-    L_PAR = 103, R_PAR = 104, LCURLY_BRACKET = 105, RCURLY_BRACKET = 106, 
-    LSQUARE_BRACKET = 107, RSQUARE_BRACKET = 108, COMMA = 109, COLON = 110, 
-    WHITE_SPACE = 111, SINGLE_LINE_COMMENT = 112, UNRECOGNIZED = 113
+    K_HAVING = 25, K_IDENTITY = 26, K_INCOMING = 27, K_INDEX = 28, K_INSERT = 29, 
+    K_INTEGER = 30, K_INTO = 31, K_IS = 32, K_FALSE = 33, K_FLOAT = 34, 
+    K_GROUP = 35, K_GROUPS = 36, K_LABELS = 37, K_LABEL = 38, K_LET = 39, 
+    K_LIMIT = 40, K_MANHATTAN_DISTANCE = 41, K_MATCH = 42, K_MAX = 43, K_MIN = 44, 
+    K_NORMALIZE = 45, K_OBJECTS = 46, K_OFFSET = 47, K_OPTIONAL = 48, K_ORDER = 49, 
+    K_OR = 50, K_OUTGOING = 51, K_PREFIX = 52, K_PROPERTY = 53, K_PROPERTIES = 54, 
+    K_NOT = 55, K_NULL = 56, K_SHORTEST = 57, K_SHOW = 58, K_SIMPLE = 59, 
+    K_STRING = 60, K_STR = 61, K_TEXT_SEARCH = 62, K_TYPE = 63, K_REGEX = 64, 
+    K_REMOVE = 65, K_RETURN = 66, K_SET = 67, K_SUM = 68, K_TRUE = 69, K_TRAILS = 70, 
+    K_VALUES = 71, K_WALKS = 72, K_WITH = 73, K_WHERE = 74, K_YIELD = 75, 
+    TRUE_PROP = 76, FALSE_PROP = 77, ANON_ID = 78, EDGE_ID = 79, KEY = 80, 
+    TYPE = 81, TYPE_VAR = 82, VARIABLE = 83, STRING = 84, UNSIGNED_INTEGER = 85, 
+    UNSIGNED_FLOAT = 86, UNSIGNED_SCIENTIFIC_NOTATION = 87, NAME = 88, LEQ = 89, 
+    GEQ = 90, EQ = 91, NEQ = 92, LT = 93, GT = 94, SINGLE_EQ = 95, PATH_SEQUENCE = 96, 
+    PATH_ALTERNATIVE = 97, PATH_NEGATION = 98, STAR = 99, PERCENT = 100, 
+    QUESTION_MARK = 101, PLUS = 102, MINUS = 103, L_PAR = 104, R_PAR = 105, 
+    LCURLY_BRACKET = 106, RCURLY_BRACKET = 107, LSQUARE_BRACKET = 108, RSQUARE_BRACKET = 109, 
+    COMMA = 110, COLON = 111, WHITE_SPACE = 112, SINGLE_LINE_COMMENT = 113, 
+    UNRECOGNIZED = 114
   };
 
   enum {
@@ -45,23 +46,24 @@ public:
     RuleCreateIndexQuery = 15, RuleCreateIndexOptions = 16, RuleCreateIndexOption = 17, 
     RuleShowQuery = 18, RuleDescribeQuery = 19, RuleDescribeFlag = 20, RuleMatchStatement = 21, 
     RuleLetStatement = 22, RuleLetDefinition = 23, RuleWhereStatement = 24, 
-    RuleGroupByStatement = 25, RuleOrderByStatement = 26, RuleReturnStatement = 27, 
-    RuleCallStatement = 28, RuleYieldStatement = 29, RuleYieldItem = 30, 
-    RuleCallArguments = 31, RuleLimitOffsetClauses = 32, RuleLimitClause = 33, 
-    RuleOffsetClause = 34, RuleReturnItem = 35, RuleAlias = 36, RuleAggregateFunc = 37, 
-    RuleOrderByItem = 38, RuleGroupByItem = 39, RuleGraphPattern = 40, RuleOptionalPattern = 41, 
-    RuleBasicPattern = 42, RuleLinearPattern = 43, RulePath = 44, RulePathAlternatives = 45, 
-    RulePathSequence = 46, RulePathAtom = 47, RulePathSuffix = 48, RulePathType = 49, 
-    RuleNode = 50, RuleFixedObj = 51, RuleVarNode = 52, RuleEdge = 53, RuleEdgeInside = 54, 
-    RuleProperties = 55, RuleProperty = 56, RuleConditionalOrType = 57, 
-    RuleIdentifier = 58, RuleBoolValue = 59, RuleNumericValue = 60, RuleDatatypeValue = 61, 
-    RuleValue = 62, RuleConditionalOrExpr = 63, RuleConditionalAndExpr = 64, 
-    RuleComparisonExpr = 65, RuleAdditiveExpr = 66, RuleMultiplicativeExpr = 67, 
-    RuleUnaryExpr = 68, RuleAtomicExpr = 69, RuleFunction = 70, RuleRegex = 71, 
-    RuleCosineSimilarity = 72, RuleCosineDistance = 73, RuleManhattanDistance = 74, 
-    RuleEuclideanDistance = 75, RuleEditDistance = 76, RuleNormalize = 77, 
-    RuleStr = 78, RuleLabels = 79, RulePropertiesFunction = 80, RuleType = 81, 
-    RuleTextSearchIndexMode = 82, RuleExprTypename = 83, RuleKeyword = 84
+    RuleGroupByStatement = 25, RuleHavingStatement = 26, RuleOrderByStatement = 27, 
+    RuleReturnStatement = 28, RuleCallStatement = 29, RuleYieldStatement = 30, 
+    RuleYieldItem = 31, RuleCallArguments = 32, RuleLimitOffsetClauses = 33, 
+    RuleLimitClause = 34, RuleOffsetClause = 35, RuleReturnItem = 36, RuleAlias = 37, 
+    RuleAggregateFunc = 38, RuleOrderByItem = 39, RuleGroupByItem = 40, 
+    RuleGraphPattern = 41, RuleOptionalPattern = 42, RuleBasicPattern = 43, 
+    RuleLinearPattern = 44, RulePath = 45, RulePathAlternatives = 46, RulePathSequence = 47, 
+    RulePathAtom = 48, RulePathSuffix = 49, RulePathType = 50, RuleNode = 51, 
+    RuleFixedObj = 52, RuleVarNode = 53, RuleEdge = 54, RuleEdgeInside = 55, 
+    RuleProperties = 56, RuleProperty = 57, RuleConditionalOrType = 58, 
+    RuleIdentifier = 59, RuleBoolValue = 60, RuleNumericValue = 61, RuleDatatypeValue = 62, 
+    RuleValue = 63, RuleConditionalOrExpr = 64, RuleConditionalAndExpr = 65, 
+    RuleComparisonExpr = 66, RuleAdditiveExpr = 67, RuleMultiplicativeExpr = 68, 
+    RuleUnaryExpr = 69, RuleAtomicExpr = 70, RuleFunction = 71, RuleRegex = 72, 
+    RuleCosineSimilarity = 73, RuleCosineDistance = 74, RuleManhattanDistance = 75, 
+    RuleEuclideanDistance = 76, RuleEditDistance = 77, RuleNormalize = 78, 
+    RuleStr = 79, RuleLabels = 80, RulePropertiesFunction = 81, RuleType = 82, 
+    RuleTextSearchIndexMode = 83, RuleExprTypename = 84, RuleKeyword = 85
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -107,6 +109,7 @@ public:
   class LetDefinitionContext;
   class WhereStatementContext;
   class GroupByStatementContext;
+  class HavingStatementContext;
   class OrderByStatementContext;
   class ReturnStatementContext;
   class CallStatementContext;
@@ -442,6 +445,7 @@ public:
     std::vector<PrimitiveStatementContext *> primitiveStatement();
     PrimitiveStatementContext* primitiveStatement(size_t i);
     GroupByStatementContext *groupByStatement();
+    HavingStatementContext *havingStatement();
     OrderByStatementContext *orderByStatement();
     std::vector<UpdateStatementContext *> updateStatement();
     UpdateStatementContext* updateStatement(size_t i);
@@ -648,6 +652,20 @@ public:
 
   GroupByStatementContext* groupByStatement();
 
+  class  HavingStatementContext : public antlr4::ParserRuleContext {
+  public:
+    HavingStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_HAVING();
+    ConditionalOrExprContext *conditionalOrExpr();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  HavingStatementContext* havingStatement();
+
   class  OrderByStatementContext : public antlr4::ParserRuleContext {
   public:
     OrderByStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -819,64 +837,13 @@ public:
   class  ReturnItemContext : public antlr4::ParserRuleContext {
   public:
     ReturnItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-   
-    ReturnItemContext() = default;
-    void copyFrom(ReturnItemContext *context);
-    using antlr4::ParserRuleContext::copyFrom;
-
     virtual size_t getRuleIndex() const override;
-
-   
-  };
-
-  class  ReturnItemExprContext : public ReturnItemContext {
-  public:
-    ReturnItemExprContext(ReturnItemContext *ctx);
-
     ConditionalOrExprContext *conditionalOrExpr();
     AliasContext *alias();
 
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemVarContext : public ReturnItemContext {
-  public:
-    ReturnItemVarContext(ReturnItemContext *ctx);
-
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *KEY();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemAggContext : public ReturnItemContext {
-  public:
-    ReturnItemAggContext(ReturnItemContext *ctx);
-
-    AggregateFuncContext *aggregateFunc();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *KEY();
-    AliasContext *alias();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  ReturnItemCountContext : public ReturnItemContext {
-  public:
-    ReturnItemCountContext(ReturnItemContext *ctx);
-
-    antlr4::tree::TerminalNode *K_COUNT();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *STAR();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    AliasContext *alias();
-    antlr4::tree::TerminalNode *KEY();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
   };
 
   ReturnItemContext* returnItem();
@@ -914,68 +881,14 @@ public:
   class  OrderByItemContext : public antlr4::ParserRuleContext {
   public:
     OrderByItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-   
-    OrderByItemContext() = default;
-    void copyFrom(OrderByItemContext *context);
-    using antlr4::ParserRuleContext::copyFrom;
-
     virtual size_t getRuleIndex() const override;
-
-   
-  };
-
-  class  OrderByItemCountContext : public OrderByItemContext {
-  public:
-    OrderByItemCountContext(OrderByItemContext *ctx);
-
-    antlr4::tree::TerminalNode *K_COUNT();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemExprContext : public OrderByItemContext {
-  public:
-    OrderByItemExprContext(OrderByItemContext *ctx);
-
     ConditionalOrExprContext *conditionalOrExpr();
     antlr4::tree::TerminalNode *K_ASC();
     antlr4::tree::TerminalNode *K_DESC();
 
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemVarContext : public OrderByItemContext {
-  public:
-    OrderByItemVarContext(OrderByItemContext *ctx);
-
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  OrderByItemAggContext : public OrderByItemContext {
-  public:
-    OrderByItemAggContext(OrderByItemContext *ctx);
-
-    AggregateFuncContext *aggregateFunc();
-    antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
-    antlr4::tree::TerminalNode *R_PAR();
-    antlr4::tree::TerminalNode *KEY();
-    antlr4::tree::TerminalNode *K_ASC();
-    antlr4::tree::TerminalNode *K_DESC();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
   };
 
   OrderByItemContext* orderByItem();
@@ -1537,10 +1450,10 @@ public:
 
   class  AdditiveExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s101 = nullptr;
-    std::vector<antlr4::Token *> op;
     antlr4::Token *s102 = nullptr;
-    antlr4::Token *_tset1596 = nullptr;
+    std::vector<antlr4::Token *> op;
+    antlr4::Token *s103 = nullptr;
+    antlr4::Token *_tset1470 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<MultiplicativeExprContext *> multiplicativeExpr();
@@ -1559,11 +1472,11 @@ public:
 
   class  MultiplicativeExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s98 = nullptr;
-    std::vector<antlr4::Token *> op;
-    antlr4::Token *s95 = nullptr;
     antlr4::Token *s99 = nullptr;
-    antlr4::Token *_tset1619 = nullptr;
+    std::vector<antlr4::Token *> op;
+    antlr4::Token *s96 = nullptr;
+    antlr4::Token *s100 = nullptr;
+    antlr4::Token *_tset1493 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<UnaryExprContext *> unaryExpr();
@@ -1639,11 +1552,39 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  ExprAggContext : public AtomicExprContext {
+  public:
+    ExprAggContext(AtomicExprContext *ctx);
+
+    AggregateFuncContext *aggregateFunc();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *R_PAR();
+    antlr4::tree::TerminalNode *KEY();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  ExprVarContext : public AtomicExprContext {
   public:
     ExprVarContext(AtomicExprContext *ctx);
 
     antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *KEY();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprCountContext : public AtomicExprContext {
+  public:
+    ExprCountContext(AtomicExprContext *ctx);
+
+    antlr4::tree::TerminalNode *K_COUNT();
+    antlr4::tree::TerminalNode *L_PAR();
+    antlr4::tree::TerminalNode *R_PAR();
+    antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *STAR();
+    antlr4::tree::TerminalNode *K_DISTINCT();
     antlr4::tree::TerminalNode *KEY();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1832,7 +1773,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *K_LABELS();
     antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
+    ConditionalOrExprContext *conditionalOrExpr();
     antlr4::tree::TerminalNode *R_PAR();
 
 
@@ -1848,7 +1789,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *K_PROPERTIES();
     antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
+    ConditionalOrExprContext *conditionalOrExpr();
     antlr4::tree::TerminalNode *R_PAR();
 
 
@@ -1864,7 +1805,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *K_TYPE();
     antlr4::tree::TerminalNode *L_PAR();
-    antlr4::tree::TerminalNode *VARIABLE();
+    ConditionalOrExprContext *conditionalOrExpr();
     antlr4::tree::TerminalNode *R_PAR();
 
 
@@ -1932,6 +1873,7 @@ public:
     antlr4::tree::TerminalNode *K_EDIT_DISTANCE();
     antlr4::tree::TerminalNode *K_EUCLIDEAN_DISTANCE();
     antlr4::tree::TerminalNode *K_FROM();
+    antlr4::tree::TerminalNode *K_HAVING();
     antlr4::tree::TerminalNode *K_INCOMING();
     antlr4::tree::TerminalNode *K_INDEX();
     antlr4::tree::TerminalNode *K_INSERT();

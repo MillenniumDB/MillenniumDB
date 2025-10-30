@@ -35,5 +35,10 @@ public:
     {
         return expr->get_input_vars();
     }
+
+    void print(std::ostream& os) const override
+    {
+        os << "-(" << *expr << ')';
+    }
 };
 } // namespace MQL

@@ -18,6 +18,8 @@ System::System(
     uint64_t workers
 )
 {
+    QueryContext::set_query_ctx(&qc);
+
     FileManager::init(db_folder);
     BufferManager::init(shared_buffer_size, private_buffer_size, workers);
     PathManager::init(workers);

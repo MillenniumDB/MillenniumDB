@@ -7,23 +7,23 @@
 namespace MQL {
 class BindingExprLabels : public BindingExpr {
 public:
-    VarId var;
+    std::unique_ptr<BindingExpr> expr;
 
-    BindingExprLabels(VarId var) :
-        var(var)
+    BindingExprLabels(std::unique_ptr<BindingExpr> expr_) :
+        expr(std::move(expr_))
     { }
 
     ObjectId eval(const Binding& binding) override
     {
-        ObjectId node = binding[var];
+        const ObjectId oid = expr->eval(binding);
 
-        if ((node.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_NAMED_NODE) {
+        if ((oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_NAMED_NODE) {
             return ObjectId::get_null();
         }
 
         bool interruption = false;
         BptIter<2> iter = quad_model.node_label
-                              ->get_range(&interruption, { node.id, 0 }, { node.id, UINT64_MAX });
+                              ->get_range(&interruption, { oid.id, 0 }, { oid.id, UINT64_MAX });
 
         std::vector<ObjectId> labels;
 
@@ -41,9 +41,11 @@ public:
         visitor.visit(*this);
     }
 
-    void print(std::ostream& os, std::vector<BindingIter*>&) const override
+    void print(std::ostream& os, std::vector<BindingIter*>& ops) const override
     {
-        os << "LABELS(" << var << ')';
+        os << "LABELS(";
+        expr->print(os, ops);
+        os << ')';
     }
 };
 } // namespace MQL

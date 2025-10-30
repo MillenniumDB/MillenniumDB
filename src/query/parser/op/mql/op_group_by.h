@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
@@ -50,8 +49,6 @@ public:
     {
         os << std::string(indent, ' ') << "OpGroupBy(";
 
-        ExprPrinter printer(os);
-
         auto first = true;
         for (const auto& e : exprs) {
             if (first)
@@ -59,14 +56,9 @@ public:
             else
                 os << ", ";
 
-            e->accept_visitor(printer);
+            os << *e;
         }
         os << ")\n";
-
-        for (size_t i = 0; i < printer.ops.size(); i++) {
-            os << std::string(indent + 2, ' ') << "_Op_" << i << "_:\n";
-            printer.ops[i]->print_to_ostream(os, indent + 4);
-        }
 
         return op->print_to_ostream(os, indent + 2);
     }

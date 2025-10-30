@@ -1,18 +1,17 @@
 #pragma once
 
 #include "query/parser/expr/mql/expr.h"
-#include "query/parser/expr/mql/expr_printer.h"
 #include "query/parser/op/mql/op.h"
 
 namespace MQL {
 
 class OpLet : public Op {
 public:
-    using VarExprType = std::vector<std::pair<VarId, std::unique_ptr<Expr>>>;
+    using VarExprVecType = std::vector<std::pair<VarId, std::unique_ptr<Expr>>>;
 
-    VarExprType var_expr;
+    VarExprVecType var_expr;
 
-    OpLet(VarExprType&& var_expr_) :
+    OpLet(VarExprVecType&& var_expr_) :
         var_expr { std::move(var_expr_) }
     {
         assert(!var_expr.empty());
@@ -20,7 +19,7 @@ public:
 
     std::unique_ptr<Op> clone() const override
     {
-        VarExprType var_expr_clone;
+        VarExprVecType var_expr_clone;
         var_expr_clone.reserve(var_expr.size());
         for (const auto& [var, expr] : var_expr) {
             var_expr_clone.emplace_back(var, expr->clone());
@@ -47,17 +46,15 @@ public:
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
-        ExprPrinter printer(os);
-
         os << std::string(indent, ' ') << "OpLet(";
 
         os << get_query_ctx().get_var_name(var_expr[0].first) << "=";
-        var_expr[0].second->accept_visitor(printer);
+        os << *var_expr[0].second;
 
         for (size_t i = 1; i < var_expr.size(); i++) {
             os << ", ";
             os << get_query_ctx().get_var_name(var_expr[i].first) << "=";
-            var_expr[i].second->accept_visitor(printer);
+            os << *var_expr[i].second;
         }
 
         return os << ")\n";
