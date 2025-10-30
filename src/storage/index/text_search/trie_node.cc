@@ -10,6 +10,13 @@
 
 namespace TextSearch {
 
+void Node::init_root(Trie& trie, Page* page, uint64_t page_offset) {
+    buffer_manager.pin(*page); // to balance the unpin that the destructor of root will execute
+    Node root(trie, page, page_offset);
+    write_xbytes(0, root.node_id_ptr, NODE_ID_SIZE);
+    write_xbytes(MAX_NODE_SIZE, root.capacity_ptr, CAPACITY_SIZE);
+}
+
 Node::Node(Trie& trie, Page* page, uint64_t page_offset) :
     trie(trie),
     page(page),

@@ -639,9 +639,6 @@ inline int mdb_dump(const DumpConfig& config)
         1
     );
 
-    QueryContext qc;
-    QueryContext::set_query_ctx(&qc);
-
     std::cout << "Loading database..." << std::endl;
     try {
         std::unique_ptr<ModelDestroyer> model_destroyer;

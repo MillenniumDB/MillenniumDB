@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include "query/query_context.h"
+
 class System {
 public:
     static constexpr uint8_t MAJOR_VER = 1;
@@ -21,4 +23,7 @@ public:
     );
 
     ~System();
+
+private:
+    QueryContext qc;
 };

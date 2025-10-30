@@ -101,9 +101,10 @@ uint64_t Table::insert(const std::vector<uint64_t>& values)
     auto& first_page_editable = buffer_manager.get_page_editable(file_id, 0);
 
     auto column_count_ptr = reinterpret_cast<uint64_t*>(first_page_editable.get_bytes());
+    auto end_table_ptr = column_count_ptr + 1;
 
-    auto page_number = *column_count_ptr / Page::SIZE;
-    auto page_offset = *column_count_ptr % Page::SIZE;
+    auto page_number = *end_table_ptr / Page::SIZE;
+    auto page_offset = *end_table_ptr % Page::SIZE;
 
     const auto row_size = values.size() * sizeof(uint64_t);
 
@@ -111,14 +112,14 @@ uint64_t Table::insert(const std::vector<uint64_t>& values)
         // Not enough space left at the end of page
         page_number++;
         page_offset = 0;
-        *column_count_ptr = page_number * Page::SIZE;
+        *end_table_ptr = page_number * Page::SIZE;
     }
 
     auto& insert_page = buffer_manager.get_page_editable(file_id, page_number);
     std::memcpy(insert_page.get_bytes() + page_offset, values.data(), row_size);
 
-    auto res = *column_count_ptr;
-    *column_count_ptr += row_size;
+    auto res = *end_table_ptr;
+    *end_table_ptr += row_size;
 
     buffer_manager.unpin(first_page_editable);
     buffer_manager.unpin(insert_page);

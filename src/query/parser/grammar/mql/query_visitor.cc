@@ -499,8 +499,7 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
     }
 
     // validate yield statement
-    const auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(procedure_type
-    );
+    auto available_yield_var_names = OpCall::get_procedure_available_yield_variable_names(procedure_type);
 
     auto check_yield_var = [&](const std::string& var_name) -> void {
         std::string var_names_str = "{ ";
@@ -1717,6 +1716,8 @@ void QueryVisitor::parse_index_options(
 
 Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx)
 {
+    update_info.update_ctx = std::make_unique<UpdateContext>();
+
     std::string index_name = ctx->STRING()->getText();
     index_name = index_name.substr(1, index_name.size() - 2);
 
@@ -1851,6 +1852,12 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }
+
+    current_op = std::make_unique<OpUpdate>(
+        std::make_unique<OpUnitTable>(),
+        std::move(update_info.update_ctx),
+        std::move(update_info.update_actions)
+    );
 
     return 0;
 }

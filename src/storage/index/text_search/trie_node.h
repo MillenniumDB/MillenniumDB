@@ -12,6 +12,7 @@ namespace TextSearch {
 class Trie;
 
 class Node {
+    friend class Trie;
     friend class TrieIterList;
 
     template<SearchType, bool>
@@ -48,6 +49,8 @@ public:
         Node* child_node,
         unsigned char child_char
     );
+
+    static void init_root(Trie& trie, Page* page, uint64_t page_offset);
 
     ~Node();
 

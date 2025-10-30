@@ -71,9 +71,6 @@ int main(int argc, char* argv[])
         config.query_timeout = 10 * MDBServer::Protocol::DEFAULT_QUERY_TIMEOUT_SECONDS;
     }
 
-    QueryContext qc;
-    QueryContext::set_query_ctx(&qc);
-
     std::ifstream query_file(argv[2]);
     std::string query((std::istreambuf_iterator<char>(query_file)), (std::istreambuf_iterator<char>()));
 
