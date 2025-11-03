@@ -180,6 +180,10 @@ void BindingIterConstructor::visit(OpCall& op_call)
         argument_binding_exprs.emplace_back(std::move(expr_to_binding_expr.tmp));
     }
 
+    for (const auto& yield_var : op_call.yield_vars) {
+        safe_assigned_vars.insert(yield_var);
+    }
+
     switch (op_call.procedure_type) {
     case OpCall::ProcedureType::HNSW_TOP_K:
         tmp = std::make_unique<Procedure::HNSWTopK>(
@@ -213,10 +217,6 @@ void BindingIterConstructor::visit(OpCall& op_call)
             + std::to_string(static_cast<uint8_t>(op_call.procedure_type))
         );
     }
-
-    for (const auto& yield_var : op_call.yield_vars) {
-        safe_assigned_vars.insert(yield_var);
-    }
 }
 
 void BindingIterConstructor::visit(OpLet& op_let)
@@ -226,8 +226,8 @@ void BindingIterConstructor::visit(OpLet& op_let)
     for (auto& [var, expr] : op_let.var_expr) {
         ExprToBindingExpr expr_to_binding_expr(this, {}, false);
         expr->accept_visitor(expr_to_binding_expr);
-        var_binding_expr.emplace_back(var, std::move(expr_to_binding_expr.tmp)),
-            safe_assigned_vars.emplace(var);
+        var_binding_expr.emplace_back(var, std::move(expr_to_binding_expr.tmp));
+        safe_assigned_vars.emplace(var);
     }
 
     tmp = std::make_unique<Let>(std::move(var_binding_expr));

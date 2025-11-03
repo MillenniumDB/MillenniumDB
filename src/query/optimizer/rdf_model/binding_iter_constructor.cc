@@ -503,6 +503,10 @@ void BindingIterConstructor::visit(OpProcedure& op_procedure)
         argument_binding_exprs.emplace_back(std::move(expr_to_binding_expr.tmp));
     }
 
+    for (const auto& yield_var : op_procedure.binding_vars) {
+        safe_assigned_vars.insert(yield_var);
+    }
+
     switch (op_procedure.procedure_type) {
     case OpProcedure::ProcedureType::HNSW_TOP_K:
         tmp = std::make_unique<Procedure::HNSWTopK>(
@@ -535,10 +539,6 @@ void BindingIterConstructor::visit(OpProcedure& op_procedure)
             "BindingIterConstructor::visit(OpProcedure&): Not implemented procedure with procedure_type: "
             + std::to_string(static_cast<uint8_t>(op_procedure.procedure_type))
         );
-    }
-
-    for (const auto& yield_var : op_procedure.binding_vars) {
-        safe_assigned_vars.insert(yield_var);
     }
 }
 

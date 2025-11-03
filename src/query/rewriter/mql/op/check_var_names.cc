@@ -148,7 +148,8 @@ void CheckVarNames::visit(OpCall& op_call)
     for (const auto& var : op_call.yield_vars) {
         if (declared_vars.contains(var)) {
             throw QuerySemanticException(
-                "Variable \"" + get_query_ctx().get_var_name(var) + "\" cannot be re-declared"
+                "Variable \"" + get_query_ctx().get_var_name(var)
+                + "\" cannot be re-declared in a procedure YIELD"
             );
         }
         try_insert_joinable_var(var);
