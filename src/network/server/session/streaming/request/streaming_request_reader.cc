@@ -79,6 +79,38 @@ float StreamingRequestReader::read_float()
     return value;
 }
 
+template<typename T>
+tensor::Tensor<T> StreamingRequestReader::read_tensor()
+{
+    const auto size = read_size();
+    const auto num_bytes = sizeof(T) * size;
+    check_remaining_bytes(num_bytes);
+
+    tensor::Tensor<T> result(size);
+    auto result_bytes = reinterpret_cast<uint8_t*>(result.data());
+    for (std::size_t i = 0; i < size; ++i) {
+        result_bytes += sizeof(T) *i;
+        if constexpr (std::is_same_v<T, float>) {
+            result_bytes[3] = request_bytes[current_pos++];
+            result_bytes[2] = request_bytes[current_pos++];
+            result_bytes[1] = request_bytes[current_pos++];
+            result_bytes[0] = request_bytes[current_pos++];
+        } else if constexpr (std::is_same_v<T, double>) {
+            result_bytes[7] = request_bytes[current_pos++];
+            result_bytes[6] = request_bytes[current_pos++];
+            result_bytes[5] = request_bytes[current_pos++];
+            result_bytes[4] = request_bytes[current_pos++];
+            result_bytes[3] = request_bytes[current_pos++];
+            result_bytes[2] = request_bytes[current_pos++];
+            result_bytes[1] = request_bytes[current_pos++];
+            result_bytes[0] = request_bytes[current_pos++];
+        }
+    }
+
+    current_pos += num_bytes;
+    return result;
+}
+
 uint_fast32_t StreamingRequestReader::read_size() {
     check_remaining_bytes(4);
     uint32_t value { 0 };
@@ -111,3 +143,6 @@ void StreamingRequestReader::check_remaining_bytes(uint_fast32_t expected) const
         throw ProtocolException("Not enough data in the request: Request is incomplete");
     }
 }
+
+template tensor::Tensor<float> StreamingRequestReader::read_tensor<float>();
+template tensor::Tensor<double> StreamingRequestReader::read_tensor<double>();

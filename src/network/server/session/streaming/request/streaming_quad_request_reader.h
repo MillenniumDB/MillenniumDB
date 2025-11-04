@@ -34,13 +34,31 @@ public:
             const auto node_id = read_string();
             return MQL::Conversions::pack_named_node(node_id);
         }
-        case Protocol::DataType::EDGE:{
+        case Protocol::DataType::EDGE: {
             const auto edge_id = read_int64();
             return MQL::Conversions::pack_edge(edge_id);
         }
         case Protocol::DataType::ANON: {
             const auto anon_id = read_int64();
             return MQL::Conversions::pack_anon_tmp(anon_id);
+        }
+        case Protocol::DataType::TENSOR: {
+            const auto tensor_type = read_datatype();
+            switch (tensor_type) {
+            case Protocol::DataType::FLOAT:{
+                const auto tensor = read_tensor<float>();
+                return Common::Conversions::pack_tensor(tensor);
+            }
+            case Protocol::DataType::DOUBLE:{
+                const auto tensor = read_tensor<double>();
+                return Common::Conversions::pack_tensor(tensor);
+            }
+            default: {
+                throw QueryException(
+                    "Unsupported tensor datatype received as parameter: " + Protocol::datatype_to_string(tensor_type)
+                );
+            }
+            }
         }
         default:
             throw QueryException(

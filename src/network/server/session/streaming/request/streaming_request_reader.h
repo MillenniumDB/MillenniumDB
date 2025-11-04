@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 
+#include "graph_models/common/datatypes/tensor/tensor.h"
 #include "network/server/protocol.h"
 
 namespace MDBServer {
@@ -29,9 +30,15 @@ public:
     std::map<std::string, ObjectId> read_parameters();
 
     uint32_t read_uint32();
+
     std::string read_string();
+
     int64_t read_int64();
+
     float read_float();
+
+    template<typename T>
+    tensor::Tensor<T> read_tensor();
 
     Protocol::DataType read_datatype();
 

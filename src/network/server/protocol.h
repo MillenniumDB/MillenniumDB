@@ -71,6 +71,7 @@ enum class DataType : uint8_t {
     PATH,
     LIST,
     MAP,
+    TENSOR,
 
     TOTAL,
 };
@@ -125,6 +126,8 @@ inline std::string datatype_to_string(const DataType& data_type) {
         return "LIST";
     case DataType::MAP:
         return "MAP";
+    case DataType::TENSOR:
+        return "TENSOR";
     default:
         return "UNKNOWN_DATA_TYPE (" + std::to_string(static_cast<uint8_t>(data_type)) + ")";
     }
