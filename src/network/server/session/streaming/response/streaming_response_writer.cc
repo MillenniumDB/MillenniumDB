@@ -334,17 +334,40 @@ template<typename T>
 std::string StreamingResponseWriter::encode_tensor(const tensor::Tensor<T>& tensor) const
 {
     std::string res;
-    res += static_cast<char>(Protocol::DataType::LIST);
+    res += static_cast<char>(Protocol::DataType::TENSOR);
+
+    if constexpr (std::is_same_v<T, float>) {
+        res += static_cast<char>(Protocol::DataType::FLOAT);
+    } else if constexpr (std::is_same_v<T, double>) {
+        res += static_cast<char>(Protocol::DataType::DOUBLE);
+    }
+
     res += encode_size(tensor.size());
+
+    const auto data_offset = res.size();
+    res.resize(data_offset + sizeof(T) * tensor.size());
+
     for (std::size_t i = 0; i < tensor.size(); ++i) {
+        auto dst = reinterpret_cast<uint8_t*>(res.data()) + data_offset + sizeof(T) * i;
         if constexpr (std::is_same_v<T, float>) {
-            res += encode_float(tensor[i]);
+            auto src = reinterpret_cast<const uint32_t*>(tensor.data()) + i;
+            dst[0] = static_cast<uint8_t>((*src >> 24) & 0xFF);
+            dst[1] = static_cast<uint8_t>((*src >> 16) & 0xFF);
+            dst[2] = static_cast<uint8_t>((*src >> 8) & 0xFF);
+            dst[3] = static_cast<uint8_t>(*src & 0xFF);
         } else if constexpr (std::is_same_v<T, double>) {
-            res += encode_double(tensor[i]);
-        } else {
-            throw std::runtime_error("Unhandled tensor type");
+            auto src = reinterpret_cast<const uint64_t*>(tensor.data()) + i;
+            dst[0] = static_cast<uint8_t>((*src >> 56) & 0xFF);
+            dst[1] = static_cast<uint8_t>((*src >> 48) & 0xFF);
+            dst[2] = static_cast<uint8_t>((*src >> 40) & 0xFF);
+            dst[3] = static_cast<uint8_t>((*src >> 32) & 0xFF);
+            dst[4] = static_cast<uint8_t>((*src >> 24) & 0xFF);
+            dst[5] = static_cast<uint8_t>((*src >> 16) & 0xFF);
+            dst[6] = static_cast<uint8_t>((*src >> 8) & 0xFF);
+            dst[7] = static_cast<uint8_t>(*src & 0xFF);
         }
     }
+
     return res;
 }
 

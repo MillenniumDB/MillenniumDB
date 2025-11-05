@@ -71,11 +71,11 @@ float StreamingRequestReader::read_float()
 {
     check_remaining_bytes(4);
     float value;
-    auto value_bytes = reinterpret_cast<uint8_t*>(&value);
-    value_bytes[3] = request_bytes[current_pos++];
-    value_bytes[2] = request_bytes[current_pos++];
-    value_bytes[1] = request_bytes[current_pos++];
-    value_bytes[0] = request_bytes[current_pos++];
+    auto dst = reinterpret_cast<uint32_t*>(&value);
+    *dst = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]);
     return value;
 }
 
@@ -86,29 +86,27 @@ tensor::Tensor<T> StreamingRequestReader::read_tensor()
     const auto num_bytes = sizeof(T) * size;
     check_remaining_bytes(num_bytes);
 
-    tensor::Tensor<T> result(size);
-    auto result_bytes = reinterpret_cast<uint8_t*>(result.data());
+    tensor::Tensor<T> res(size);
     for (std::size_t i = 0; i < size; ++i) {
-        result_bytes += sizeof(T) *i;
         if constexpr (std::is_same_v<T, float>) {
-            result_bytes[3] = request_bytes[current_pos++];
-            result_bytes[2] = request_bytes[current_pos++];
-            result_bytes[1] = request_bytes[current_pos++];
-            result_bytes[0] = request_bytes[current_pos++];
+            auto dst = reinterpret_cast<uint32_t*>(res.data()) + i;
+            *dst = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]);
         } else if constexpr (std::is_same_v<T, double>) {
-            result_bytes[7] = request_bytes[current_pos++];
-            result_bytes[6] = request_bytes[current_pos++];
-            result_bytes[5] = request_bytes[current_pos++];
-            result_bytes[4] = request_bytes[current_pos++];
-            result_bytes[3] = request_bytes[current_pos++];
-            result_bytes[2] = request_bytes[current_pos++];
-            result_bytes[1] = request_bytes[current_pos++];
-            result_bytes[0] = request_bytes[current_pos++];
+            auto dst = reinterpret_cast<uint64_t*>(res.data()) + i;
+            *dst = static_cast<uint64_t>(request_bytes[current_pos++]) << 56;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 48;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 40;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 32;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 24;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 16;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 8;
+            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]);
         }
     }
-
-    current_pos += num_bytes;
-    return result;
+    return res;
 }
 
 uint_fast32_t StreamingRequestReader::read_size() {
