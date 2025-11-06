@@ -84,10 +84,11 @@ public:
     ObjectId set_path(const Paths::ShortestKGroupsTrails::PathState* visited_pointer, VarId path_var);
     ObjectId set_path(const Paths::ShortestKGroupsWalks::SearchState* visited_pointer, VarId path_var);
 
-    void print(std::ostream& os,
-               uint64_t path_id,
-               std::function<void(std::ostream& os, ObjectId)> print_node,
-               std::function<void(std::ostream& os, ObjectId, bool inverse)> print_edge) const;
+    void for_each(
+        uint64_t path_id,
+        std::function<void(ObjectId)> print_node,
+        std::function<void(ObjectId, bool)> print_edge
+    ) const;
 
 private:
     PathManager(uint_fast32_t max_threads);

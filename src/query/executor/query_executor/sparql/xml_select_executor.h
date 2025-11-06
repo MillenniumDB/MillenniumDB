@@ -30,8 +30,8 @@ private:
 
     static void print(std::ostream& os, std::ostream& escaped_os, ObjectId);
 
-    static void print_path_node(std::ostream& os, ObjectId node_id);
+    static void print_path_node(ObjectId node_id, std::ostream& os);
 
-    static void print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse);
+    static void print_path_edge(ObjectId edge_id, bool inverse, std::ostream& os);
 };
 } // namespace SPARQL

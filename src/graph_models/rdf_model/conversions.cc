@@ -415,12 +415,13 @@ std::string Conversions::to_lexical_str(ObjectId oid) {
     case RDF_OID::Type::PATH: {
         std::stringstream ss;
         ss << '[';
-        path_manager.print(
-            ss,
-            Conversions::get_path_id(oid),
-            &print_path_node,
-            &print_path_edge
-        );
+        // TODO:
+        // path_manager.print(
+        //     ss,
+        //     Conversions::get_path_id(oid),
+        //     &print_path_node,
+        //     &print_path_edge
+        // );
         ss << ']';
         return ss.str();
     }
@@ -543,12 +544,13 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid) {
     case RDF_OID::Type::PATH: {
         using namespace std::placeholders;
         os << '[';
-        path_manager.print(
-            os,
-            Conversions::get_path_id(oid),
-            std::bind(&print_path_node, _1, _2),
-            std::bind(&print_path_edge, _1, _2, _3)
-        );
+        // TODO:
+        // path_manager.print(
+        //     os,
+        //     Conversions::get_path_id(oid),
+        //     std::bind(&print_path_node, _1, _2),
+        //     std::bind(&print_path_edge, _1, _2, _3)
+        // );
         os << ']';
         break;
     }

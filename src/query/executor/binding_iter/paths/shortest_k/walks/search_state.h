@@ -86,10 +86,9 @@ struct SearchState {
             && distance == other.distance;
     }
 
-    void print(
-        std::ostream& os,
-        std::function<void(std::ostream& os, ObjectId)> print_node,
-        std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+    void for_each(
+        std::function<void(ObjectId)> node_func,
+        std::function<void(ObjectId, bool)> edge_func,
         bool begin_at_left
     ) const;
 };

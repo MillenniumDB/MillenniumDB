@@ -65,8 +65,8 @@ uint64_t XMLSelectExecutor::execute(std::ostream& os) {
     return result_count;
 }
 
-
-void XMLSelectExecutor::print_path_node(std::ostream& os, ObjectId node_id) {
+void XMLSelectExecutor::print_path_node(ObjectId node_id, std::ostream& os)
+{
     XMLOstreamEscape xml_ostream_escape(os);
     std::ostream escaped_os(&xml_ostream_escape);
 
@@ -75,13 +75,12 @@ void XMLSelectExecutor::print_path_node(std::ostream& os, ObjectId node_id) {
     os << "</node>";
 }
 
-
-void XMLSelectExecutor::print_path_edge(std::ostream& os, ObjectId edge_id, bool inverse) {
+void XMLSelectExecutor::print_path_edge(ObjectId edge_id, bool inverse, std::ostream& os)
+{
     os << "<edge inverse=" << (inverse ? "true" : "false") << ">";
     print(os, os, edge_id); // No need to escape os, as only IRIs are possible edges
     os << "</edge>";
 }
-
 
 void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid) {
     switch (RDF_OID::get_type(oid)) {
@@ -153,10 +152,11 @@ void XMLSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
     case RDF_OID::Type::PATH: {
         using namespace std::placeholders;
         os << "<path>";
-        path_manager.print(os,
-                           Conversions::get_path_id(oid),
-                           std::bind(&XMLSelectExecutor::print_path_node, _1, _2),
-                           std::bind(&XMLSelectExecutor::print_path_edge, _1, _2, _3));
+        path_manager.for_each(
+            Conversions::get_path_id(oid),
+            [&](ObjectId oid) { print_path_node(oid, os); },
+            [&](ObjectId oid, bool reverse) { print_path_edge(oid, reverse, os); }
+        );
         os << "</path>";
         break;
     }

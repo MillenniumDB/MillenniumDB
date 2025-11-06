@@ -27,10 +27,11 @@ struct PathState {
         inverse_dir (inverse_dir),
         prev_state  (prev_state) { }
 
-    void print(std::ostream& os,
-               std::function<void(std::ostream& os, ObjectId)> print_node,
-               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
-               bool begin_at_left) const;
+    void for_each(
+        std::function<void(ObjectId)> node_func,
+        std::function<void(ObjectId, bool)> edge_func,
+        bool begin_at_left
+    ) const;
 };
 
 // Represents a search state to expand
@@ -69,10 +70,11 @@ struct SearchStateDFS {
         inverse_dir     (inverse_dir),
         prev_state      (prev_state) { }
 
-    void print(std::ostream& os,
-               std::function<void(std::ostream& os, ObjectId)> print_node,
-               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
-               bool begin_at_left) const;
+    void for_each(
+        std::function<void(ObjectId)> node_func,
+        std::function<void(ObjectId, bool)> edge_func,
+        bool begin_at_left
+    ) const;
 };
 
 inline bool is_simple_path(const PathState* path_state, ObjectId new_node) {

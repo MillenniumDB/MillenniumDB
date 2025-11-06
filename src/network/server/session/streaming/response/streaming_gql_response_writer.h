@@ -22,45 +22,42 @@ public:
         return GQLCatalog::MAJOR_VERSION;
     }
 
-    std::string encode_path_edge(ObjectId edge_id, ObjectId direction_id) const
+    void write_dictionary_key(const ObjectId& oid) override
     {
-        std::string direction;
+        std::stringstream ss;
+        ss << oid;
+        write_typed_string(ss.str(), Protocol::DataType::STRING);
+    }
 
+    void write_gql_path_edge(ObjectId edge_id, ObjectId direction_id)
+    {
         switch (direction_id.id) {
         case ObjectId::DIRECTION_LEFT:
-            direction = "left";
+            write_string_raw("left");
             break;
         case ObjectId::DIRECTION_RIGHT:
-            direction = "right";
+            write_string_raw("right");
             break;
         case ObjectId::DIRECTION_UNDIRECTED:
-            direction = "undirected";
+            write_string_raw("undirected");
             break;
         }
 
-        std::string res;
-        res += encode_size(direction.size());
-        res += direction;
-        res += encode_object_id(edge_id);
-        return res;
+        write_object_id(edge_id);
     }
 
-    std::string encode_gql_path(const ObjectId& oid) const
+    void write_gql_path(const ObjectId& oid)
     {
         std::vector<ObjectId> path;
         GQL::Conversions::unpack_path(oid, path);
 
-        GQL::Conversions::debug_print(std::cout, oid);
-        std::cout << std::endl;
+        const uint32_t path_length = path.size() / 3;
 
-        std::string res;
-        uint32_t path_length = path.size() / 3;
-
-        res += static_cast<char>(Protocol::DataType::PATH);
-        res += encode_size(path_length);
+        response_ostream.put(static_cast<char>(Protocol::DataType::PATH));
+        write_size(path_length);
 
         auto it = path.begin();
-        res += encode_object_id(*it);
+        write_object_id(*it);
         it++;
 
         while (it != path.end()) {
@@ -68,121 +65,120 @@ public:
             it++;
             ObjectId direction_id = *it;
             it++;
-            res += encode_path_edge(edge_id, direction_id);
-            res += encode_object_id(*it);
+            write_gql_path_edge(edge_id, direction_id);
+            write_object_id(*it);
             it++;
         }
-        return res;
     }
 
-    std::string encode_list(const ObjectId& oid) const
-    {
-        std::vector<ObjectId> oid_list;
-        GQL::Conversions::unpack_list(oid, oid_list);
-
-        std::string res;
-        res += static_cast<char>(Protocol::DataType::LIST);
-        res += encode_size(oid_list.size());
-
-        for (auto it = oid_list.begin(); it != oid_list.end(); ++it) {
-            res += encode_object_id(*it);
-        }
-        return res;
-    }
-
-    std::string encode_dictionary_key(const ObjectId& oid) const override
-    {
-        std::stringstream ss;
-        ss << oid;
-        return encode_string(ss.str(), Protocol::DataType::STRING);
-    }
-
-    std::string encode_object_id(const ObjectId& oid) const override
+    void write_object_id(const ObjectId& oid) override
     {
         const auto type = GQL_OID::get_type(oid);
         const auto value = oid.get_value();
 
         switch (type) {
         case GQL_OID::Type::NULL_ID: {
-            return encode_null();
+            write_null();
+            break;
         }
         case GQL_OID::Type::STRING_SIMPLE_INLINE:
         case GQL_OID::Type::STRING_SIMPLE_EXTERN:
         case GQL_OID::Type::STRING_SIMPLE_TMP: {
-            return encode_string(GQL::Conversions::unpack_string(oid), Protocol::DataType::STRING);
+            write_typed_string(GQL::Conversions::unpack_string(oid), Protocol::DataType::STRING);
+            break;
         }
         case GQL_OID::Type::INT56_INLINE:
         case GQL_OID::Type::INT64_EXTERN:
         case GQL_OID::Type::INT64_TMP: {
             const int64_t i = GQL::Conversions::unpack_int(oid);
-            return encode_int64(i);
+            write_int64(i);
+            break;
         }
         case GQL_OID::Type::FLOAT32: {
             const int64_t f = GQL::Conversions::unpack_float(oid);
-            return encode_float(f);
+            write_float(f);
+            break;
         }
         case GQL_OID::Type::DOUBLE64_EXTERN:
         case GQL_OID::Type::DOUBLE64_TMP: {
             const double d = GQL::Conversions::unpack_double(oid);
-            return encode_double(d);
+            write_double(d);
+            break;
         }
         case GQL_OID::Type::DECIMAL_INLINE:
         case GQL_OID::Type::DECIMAL_EXTERN:
         case GQL_OID::Type::DECIMAL_TMP: {
             const Decimal dec = GQL::Conversions::unpack_decimal(oid);
-            return encode_string(dec.to_string(), Protocol::DataType::DECIMAL);
+            write_typed_string(dec.to_string(), Protocol::DataType::DECIMAL);
+            break;
         }
         case GQL_OID::Type::DATE: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
-            return encode_date(datetime);
+            write_date(datetime);
+            break;
         }
         case GQL_OID::Type::TIME: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
-            return encode_time(datetime);
+            write_time(datetime);
+            break;
         }
         case GQL_OID::Type::DATETIME:
         case GQL_OID::Type::DATETIMESTAMP: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
-            return encode_datetime(datetime);
+            write_datetime(datetime);
+            break;
         }
         case GQL_OID::Type::BOOL: {
             const auto b = GQL::Conversions::unpack_bool(oid);
-            return encode_bool(b);
+            write_bool(b);
+            break;
         }
         case GQL_OID::Type::PATH: {
-            return encode_gql_path(oid);
+            write_gql_path(oid);
+            break;
         }
         case GQL_OID::Type::NODE: {
-            return encode_string("_n" + std::to_string(value), Protocol::DataType::NAMED_NODE);
+            write_typed_string("_n" + std::to_string(value), Protocol::DataType::NAMED_NODE);
+            break;
         }
-        case GQL_OID::Type::DIRECTED_EDGE: {
-            return encode_string("_e" + std::to_string(value), Protocol::DataType::EDGE);
-        }
+        case GQL_OID::Type::DIRECTED_EDGE:
         case GQL_OID::Type::UNDIRECTED_EDGE: {
-            return encode_string("_u" + std::to_string(value), Protocol::DataType::EDGE);
+            write_edge(value);
+            break;
         }
         case GQL_OID::Type::NODE_LABEL: {
-            return encode_string(gql_model.catalog.node_labels_str[value], Protocol::DataType::STRING);
+            write_typed_string(gql_model.catalog.node_labels_str[value], Protocol::DataType::STRING);
+            break;
         }
         case GQL_OID::Type::EDGE_LABEL: {
-            return encode_string(gql_model.catalog.edge_labels_str[value], Protocol::DataType::STRING);
+            write_typed_string(gql_model.catalog.edge_labels_str[value], Protocol::DataType::STRING);
+            break;
         }
         case GQL_OID::Type::NODE_KEY: {
-            return encode_string(gql_model.catalog.node_keys_str[value], Protocol::DataType::STRING);
+            write_typed_string(gql_model.catalog.node_keys_str[value], Protocol::DataType::STRING);
+            break;
         }
         case GQL_OID::Type::EDGE_KEY: {
-            return encode_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
+            write_typed_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
+            break;
         }
         case GQL_OID::Type::DICTIONARY: {
             std::unique_ptr<Dictionary> dictionary;
             Common::Conversions::unpack_dictionary(oid, dictionary);
-            return encode_dictionary(*dictionary);
+            write_dictionary(*dictionary);
+            break;
         }
         case GQL_OID::Type::LIST: {
-            return encode_list(oid);
+            std::vector<ObjectId> oid_list;
+            GQL::Conversions::unpack_list(oid, oid_list);
+            write_list(oid_list);
+            break;
         }
         default: {
-            return encode_null();
+            throw std::logic_error(
+                "Unmanaged type in StreamingGQLResponseWriter::encode_object_id: "
+                + std::to_string(static_cast<uint8_t>(type))
+            );
         }
         }
     }

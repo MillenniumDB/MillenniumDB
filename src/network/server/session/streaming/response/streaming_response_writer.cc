@@ -19,23 +19,23 @@ void StreamingResponseWriter::write_variables(
 )
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::VARIABLES));
 
-    write_string("payload");
+    write_typed_string("payload", Protocol::DataType::STRING);
     write_map_header(2UL);
-    write_string("variables");
+    write_typed_string("variables", Protocol::DataType::STRING);
     write_list_header(projection_vars.size());
     for (const auto& var_id : projection_vars) {
         const auto var_name = get_query_ctx().get_var_name(var_id);
-        write_string(var_name);
+        write_typed_string(var_name, Protocol::DataType::STRING);
     }
-    write_string("queryPreamble");
+    write_typed_string("queryPreamble", Protocol::DataType::STRING);
     write_map_header(2UL);
-    write_string("workerIndex");
+    write_typed_string("workerIndex", Protocol::DataType::STRING);
     write_uint32(worker_idx);
-    write_string("cancellationToken");
-    write_string(cancellation_token);
+    write_typed_string("cancellationToken", Protocol::DataType::STRING);
+    write_typed_string(cancellation_token, Protocol::DataType::STRING);
 
     seal();
 }
@@ -48,20 +48,20 @@ void StreamingResponseWriter::write_records_success(
 )
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload");
+    write_typed_string("payload", Protocol::DataType::STRING);
     write_map_header(5UL);
-    write_string("update");
+    write_typed_string("update", Protocol::DataType::STRING);
     write_bool(false);
-    write_string("resultCount");
+    write_typed_string("resultCount", Protocol::DataType::STRING);
     write_uint64(result_count);
-    write_string("parserDurationMs");
+    write_typed_string("parserDurationMs", Protocol::DataType::STRING);
     write_double(parser_duration_ms);
-    write_string("optimizerDurationMs");
+    write_typed_string("optimizerDurationMs", Protocol::DataType::STRING);
     write_double(optimizer_duration_ms);
-    write_string("executionDurationMs");
+    write_typed_string("executionDurationMs", Protocol::DataType::STRING);
     write_double(execution_duration_ms);
 
     seal();
@@ -74,19 +74,19 @@ void StreamingResponseWriter::write_update_success(
 )
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload");
+    write_typed_string("payload", Protocol::DataType::STRING);
     write_map_header(4UL);
 
-    write_string("update");
+    write_typed_string("update", Protocol::DataType::STRING);
     write_bool(true);
-    write_string("parserDurationMs");
+    write_typed_string("parserDurationMs", Protocol::DataType::STRING);
     write_double(parser_duration_ms);
-    write_string("optimizerDurationMs");
+    write_typed_string("optimizerDurationMs", Protocol::DataType::STRING);
     write_double(optimizer_duration_ms);
-    write_string("executionDurationMs");
+    write_typed_string("executionDurationMs", Protocol::DataType::STRING);
     write_double(execution_duration_ms);
 
     // TODO: Send update data
@@ -97,18 +97,18 @@ void StreamingResponseWriter::write_update_success(
 void StreamingResponseWriter::write_catalog_success()
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload");
+    write_typed_string("payload", Protocol::DataType::STRING);
     write_map_header(3UL);
-    write_string("modelId");
+    write_typed_string("modelId", Protocol::DataType::STRING);
     write_uint64(get_model_id());
-    write_string("version");
+    write_typed_string("version", Protocol::DataType::STRING);
     write_uint64(get_catalog_version());
 
-    // TODO: Pass useful additional metadata about the catalog and/or database
-    write_string("metadata");
+    // // TODO: Pass useful additional metadata about the catalog and/or database
+    write_typed_string("metadata", Protocol::DataType::STRING);
     write_null();
 
     seal();
@@ -117,10 +117,10 @@ void StreamingResponseWriter::write_catalog_success()
 void StreamingResponseWriter::write_cancel_success()
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::SUCCESS));
 
-    write_string("payload");
+    write_typed_string("payload", Protocol::DataType::STRING);
     write_null();
 
     seal();
@@ -129,10 +129,10 @@ void StreamingResponseWriter::write_cancel_success()
 void StreamingResponseWriter::write_record(const std::vector<VarId>& projection_vars, const Binding& binding)
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type", Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::RECORD));
 
-    write_string("payload");
+    write_typed_string("payload",Protocol::DataType::STRING);
     write_list_header(projection_vars.size());
     for (const auto& var : projection_vars) {
         write_object_id(binding[var]);
@@ -144,51 +144,61 @@ void StreamingResponseWriter::write_record(const std::vector<VarId>& projection_
 void StreamingResponseWriter::write_error(const std::string& message)
 {
     write_map_header(2UL);
-    write_string("type");
+    write_typed_string("type",Protocol::DataType::STRING);
     write_uint8(static_cast<uint8_t>(Protocol::ResponseType::ERROR));
 
-    write_string("payload");
-    write_string(message);
+    write_typed_string("payload", Protocol::DataType::STRING);
+    write_typed_string(message, Protocol::DataType::STRING);
 
     seal();
 }
 
-std::string StreamingResponseWriter::encode_null() const
+void StreamingResponseWriter::write_null()
 {
-    return std::string(1, static_cast<char>(Protocol::DataType::NULL_));
+    response_ostream.put(static_cast<char>(Protocol::DataType::NULL_));
 }
 
-std::string StreamingResponseWriter::encode_bool(bool value) const
+void StreamingResponseWriter::write_bool(bool value)
 {
-    return std::string(
-        1,
+    response_ostream.put(
         static_cast<char>(value ? Protocol::DataType::BOOL_TRUE : Protocol::DataType::BOOL_FALSE)
     );
 }
 
-std::string StreamingResponseWriter::encode_uint8(uint8_t value) const
+void StreamingResponseWriter::write_uint8(uint8_t value)
 {
     uint8_t bytes[2];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::UINT8);
     bytes[1] = static_cast<uint8_t>(value);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_float(float value_) const
+void StreamingResponseWriter::write_float(float value_)
 {
-    auto* value = reinterpret_cast<uint32_t*>(&value_);
+    auto value = reinterpret_cast<const uint32_t*>(&value_);
     uint8_t bytes[5];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::FLOAT);
     bytes[1] = static_cast<uint8_t>((*value >> 24) & 0xFF);
     bytes[2] = static_cast<uint8_t>((*value >> 16) & 0xFF);
     bytes[3] = static_cast<uint8_t>((*value >> 8) & 0xFF);
     bytes[4] = static_cast<uint8_t>(*value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_double(double value_) const
+void StreamingResponseWriter::write_float_raw(float value_)
 {
-    auto* value = reinterpret_cast<uint64_t*>(&value_);
+    auto value = reinterpret_cast<const uint32_t*>(&value_);
+    uint8_t bytes[4];
+    bytes[0] = static_cast<uint8_t>((*value >> 24) & 0xFF);
+    bytes[1] = static_cast<uint8_t>((*value >> 16) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((*value >> 8) & 0xFF);
+    bytes[3] = static_cast<uint8_t>(*value & 0xFF);
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+}
+
+void StreamingResponseWriter::write_double(double value_)
+{
+    auto value = reinterpret_cast<const uint64_t*>(&value_);
     uint8_t bytes[9];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::DOUBLE);
     bytes[1] = static_cast<uint8_t>((*value >> 56) & 0xFF);
@@ -199,10 +209,31 @@ std::string StreamingResponseWriter::encode_double(double value_) const
     bytes[6] = static_cast<uint8_t>((*value >> 16) & 0xFF);
     bytes[7] = static_cast<uint8_t>((*value >> 8) & 0xFF);
     bytes[8] = static_cast<uint8_t>(*value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_uint32(uint32_t value) const
+void StreamingResponseWriter::write_double_raw(double value_)
+{
+    auto value = reinterpret_cast<const uint64_t*>(&value_);
+    uint8_t bytes[8];
+    bytes[0] = static_cast<uint8_t>((*value >> 56) & 0xFF);
+    bytes[1] = static_cast<uint8_t>((*value >> 48) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((*value >> 40) & 0xFF);
+    bytes[3] = static_cast<uint8_t>((*value >> 32) & 0xFF);
+    bytes[4] = static_cast<uint8_t>((*value >> 24) & 0xFF);
+    bytes[5] = static_cast<uint8_t>((*value >> 16) & 0xFF);
+    bytes[6] = static_cast<uint8_t>((*value >> 8) & 0xFF);
+    bytes[7] = static_cast<uint8_t>(*value & 0xFF);
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+}
+
+void StreamingResponseWriter::write_string_raw(const std::string& value)
+{
+    write_size(value.size());
+    response_ostream.write(value.data(), value.size());
+}
+
+void StreamingResponseWriter::write_uint32(uint32_t value)
 {
     uint8_t bytes[5];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::UINT32);
@@ -210,10 +241,10 @@ std::string StreamingResponseWriter::encode_uint32(uint32_t value) const
     bytes[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
     bytes[3] = static_cast<uint8_t>((value >> 8) & 0xFF);
     bytes[4] = static_cast<uint8_t>(value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_uint64(uint64_t value) const
+void StreamingResponseWriter::write_uint64(uint64_t value)
 {
     uint8_t bytes[9];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::UINT64);
@@ -225,10 +256,10 @@ std::string StreamingResponseWriter::encode_uint64(uint64_t value) const
     bytes[6] = static_cast<uint8_t>((value >> 16) & 0xFF);
     bytes[7] = static_cast<uint8_t>((value >> 8) & 0xFF);
     bytes[8] = static_cast<uint8_t>(value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_int64(int64_t value) const
+void StreamingResponseWriter::write_int64(int64_t value)
 {
     uint8_t bytes[9];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::INT64);
@@ -240,39 +271,49 @@ std::string StreamingResponseWriter::encode_int64(int64_t value) const
     bytes[6] = static_cast<uint8_t>((value >> 16) & 0xFF);
     bytes[7] = static_cast<uint8_t>((value >> 8) & 0xFF);
     bytes[8] = static_cast<uint8_t>(value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string
-    StreamingResponseWriter::encode_string(const std::string& value, Protocol::DataType data_type) const
+void StreamingResponseWriter::write_typed_string(const std::string& value, Protocol::DataType datatype)
 {
-    std::string res;
-    res += static_cast<char>(data_type);
-    res += encode_size(value.size());
-    res += value;
-    return res;
+    response_ostream.put(static_cast<char>(datatype));
+    write_size(value.size());
+    response_ostream.write(value.data(), value.size());
 }
 
-std::string StreamingResponseWriter::encode_path(uint64_t path_id) const
+void StreamingResponseWriter::write_path(uint64_t path_id)
 {
     using namespace std::placeholders;
-    uint_fast32_t path_length = 0UL;
-    std::stringstream ss;
-    path_manager.print(
-        ss,
+
+    response_ostream.put(static_cast<char>(Protocol::DataType::PATH));
+
+    std::vector<ObjectId> nodes;
+    std::vector<std::pair<ObjectId, bool>> edges;
+    path_manager.for_each(
         path_id,
-        std::bind(&StreamingResponseWriter::write_path_node, this, _1, _2),
-        std::bind(&StreamingResponseWriter::write_path_edge, this, _1, _2, _3, &path_length)
+        [&](ObjectId oid) { nodes.emplace_back(oid); },
+        [&](ObjectId oid, bool reverse) { edges.emplace_back(oid, reverse); }
     );
+    assert(nodes.size() == edges.size() + 1);
 
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::PATH);
-    res += encode_size(path_length);
-    res += ss.str();
-    return res;
+    response_ostream.put(static_cast<char>(Protocol::DataType::PATH));
+    write_size(edges.size());
+
+    auto nodes_it = nodes.begin();
+    auto edges_it = edges.begin();
+
+    write_object_id(*nodes_it);
+    ++nodes_it;
+
+    while (edges_it != edges.end()) {
+        write_path_edge(edges_it->first, edges_it->second);
+        write_object_id(*nodes_it);
+        ++edges_it;
+        ++nodes_it;
+    }
 }
 
-std::string StreamingResponseWriter::encode_date(DateTime datetime) const
+void StreamingResponseWriter::write_date(DateTime datetime)
 {
     bool error;
     const int64_t year = datetime.get_year(&error);
@@ -280,17 +321,14 @@ std::string StreamingResponseWriter::encode_date(DateTime datetime) const
     const int64_t day = datetime.get_day(&error);
     const int64_t tz_min_offset = datetime.get_tz_min_offset(&error);
 
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::DATE);
-    res += encode_int64_raw(year);
-    res += encode_int64_raw(month);
-    res += encode_int64_raw(day);
-    res += encode_int64_raw(error ? 0 : tz_min_offset);
-
-    return res;
+    response_ostream.put(static_cast<char>(Protocol::DataType::DATE));
+    write_int64_raw(year);
+    write_int64_raw(month);
+    write_int64_raw(day);
+    write_int64_raw(error ? 0 : tz_min_offset);
 }
 
-std::string StreamingResponseWriter::encode_time(DateTime datetime) const
+void StreamingResponseWriter::write_time(DateTime datetime)
 {
     bool error;
     const int64_t hour = datetime.get_hour(&error);
@@ -298,16 +336,14 @@ std::string StreamingResponseWriter::encode_time(DateTime datetime) const
     const int64_t second = datetime.get_second(&error);
     const int64_t tz_min_offset = datetime.get_tz_min_offset(&error);
 
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::TIME);
-    res += encode_int64_raw(hour);
-    res += encode_int64_raw(minute);
-    res += encode_int64_raw(second);
-    res += encode_int64_raw(error ? 0 : tz_min_offset);
-    return res;
+    response_ostream.put(static_cast<char>(Protocol::DataType::TIME));
+    write_int64_raw(hour);
+    write_int64_raw(minute);
+    write_int64_raw(second);
+    write_int64_raw(error ? 0 : tz_min_offset);
 }
 
-std::string StreamingResponseWriter::encode_datetime(DateTime datetime) const
+void StreamingResponseWriter::write_datetime(DateTime datetime)
 {
     bool error;
     const int64_t year = datetime.get_year(&error);
@@ -318,70 +354,58 @@ std::string StreamingResponseWriter::encode_datetime(DateTime datetime) const
     const int64_t second = datetime.get_second(&error);
     const int64_t tz_min_offset = datetime.get_tz_min_offset(&error);
 
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::DATETIME);
-    res += encode_int64_raw(year);
-    res += encode_int64_raw(month);
-    res += encode_int64_raw(day);
-    res += encode_int64_raw(hour);
-    res += encode_int64_raw(minute);
-    res += encode_int64_raw(second);
-    res += encode_int64_raw(error ? 0 : tz_min_offset);
-    return res;
+    response_ostream.put(static_cast<char>(Protocol::DataType::DATETIME));
+    write_int64_raw(year);
+    write_int64_raw(month);
+    write_int64_raw(day);
+    write_int64_raw(hour);
+    write_int64_raw(minute);
+    write_int64_raw(second);
+    write_int64_raw(error ? 0 : tz_min_offset);
 }
 
 template<typename T>
-std::string StreamingResponseWriter::encode_tensor(const tensor::Tensor<T>& tensor) const
+void StreamingResponseWriter::write_tensor(const tensor::Tensor<T>& tensor)
 {
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::TENSOR);
+    response_ostream.put(static_cast<char>(Protocol::DataType::TENSOR));
 
     if constexpr (std::is_same_v<T, float>) {
-        res += static_cast<char>(Protocol::DataType::FLOAT);
+        response_ostream.put(static_cast<char>(Protocol::DataType::FLOAT));
     } else if constexpr (std::is_same_v<T, double>) {
-        res += static_cast<char>(Protocol::DataType::DOUBLE);
+        response_ostream.put(static_cast<char>(Protocol::DataType::DOUBLE));
     }
 
-    res += encode_size(tensor.size());
-
-    const auto data_offset = res.size();
-    res.resize(data_offset + sizeof(T) * tensor.size());
+    write_size(tensor.size());
 
     for (std::size_t i = 0; i < tensor.size(); ++i) {
-        auto dst = reinterpret_cast<uint8_t*>(res.data()) + data_offset + sizeof(T) * i;
         if constexpr (std::is_same_v<T, float>) {
-            auto src = reinterpret_cast<const uint32_t*>(tensor.data()) + i;
-            dst[0] = static_cast<uint8_t>((*src >> 24) & 0xFF);
-            dst[1] = static_cast<uint8_t>((*src >> 16) & 0xFF);
-            dst[2] = static_cast<uint8_t>((*src >> 8) & 0xFF);
-            dst[3] = static_cast<uint8_t>(*src & 0xFF);
+            write_float_raw(tensor[i]);
         } else if constexpr (std::is_same_v<T, double>) {
-            auto src = reinterpret_cast<const uint64_t*>(tensor.data()) + i;
-            dst[0] = static_cast<uint8_t>((*src >> 56) & 0xFF);
-            dst[1] = static_cast<uint8_t>((*src >> 48) & 0xFF);
-            dst[2] = static_cast<uint8_t>((*src >> 40) & 0xFF);
-            dst[3] = static_cast<uint8_t>((*src >> 32) & 0xFF);
-            dst[4] = static_cast<uint8_t>((*src >> 24) & 0xFF);
-            dst[5] = static_cast<uint8_t>((*src >> 16) & 0xFF);
-            dst[6] = static_cast<uint8_t>((*src >> 8) & 0xFF);
-            dst[7] = static_cast<uint8_t>(*src & 0xFF);
+            write_double_raw(tensor[i]);
         }
     }
-
-    return res;
 }
 
-std::string StreamingResponseWriter::encode_size(uint32_t value) const
+void StreamingResponseWriter::write_list(const std::vector<ObjectId>& list)
+{
+    response_ostream.put(static_cast<char>(Protocol::DataType::LIST));
+    write_size(list.size());
+    for (const auto& oid : list) {
+        write_object_id(oid);
+    }
+}
+
+void StreamingResponseWriter::write_size(uint32_t value)
 {
     uint8_t bytes[4];
     bytes[0] = static_cast<uint8_t>((value >> 24) & 0xFF);
     bytes[1] = static_cast<uint8_t>((value >> 16) & 0xFF);
     bytes[2] = static_cast<uint8_t>((value >> 8) & 0xFF);
     bytes[3] = static_cast<uint8_t>(value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-std::string StreamingResponseWriter::encode_int64_raw(int64_t value) const
+void StreamingResponseWriter::write_int64_raw(int64_t value)
 {
     uint8_t bytes[8];
     bytes[0] = static_cast<uint8_t>((value >> 56) & 0xFF);
@@ -392,7 +416,7 @@ std::string StreamingResponseWriter::encode_int64_raw(int64_t value) const
     bytes[5] = static_cast<uint8_t>((value >> 16) & 0xFF);
     bytes[6] = static_cast<uint8_t>((value >> 8) & 0xFF);
     bytes[7] = static_cast<uint8_t>(value & 0xFF);
-    return std::string(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
 void StreamingResponseWriter::seal()
@@ -400,107 +424,85 @@ void StreamingResponseWriter::seal()
     response_buffer.seal();
 }
 
-void StreamingResponseWriter::write_path_node(std::ostream& os, ObjectId oid) const
+void StreamingResponseWriter::get_path_node(ObjectId oid, std::vector<ObjectId>& nodes)
 {
-    const auto encoded_oid = encode_object_id(oid);
-    os.write(encoded_oid.c_str(), encoded_oid.size());
+    nodes.emplace_back(oid);
 }
 
-void StreamingResponseWriter::write_path_edge(
-    std::ostream& os,
+void StreamingResponseWriter::get_path_edge(
     ObjectId oid,
     bool reverse,
-    uint_fast32_t* path_length
-) const
+    std::vector<std::pair<ObjectId, bool>>& edges
+)
 {
-    const std::string direction = reverse ? "left" : "right";
-
-    const std::string direction_size = encode_size(direction.size());
-    os.write(direction_size.c_str(), direction_size.size());
-
-    os.write(direction.c_str(), direction.size());
-
-    const auto encoded_oid = encode_object_id(oid);
-    os.write(encoded_oid.c_str(), encoded_oid.size());
-
-    ++(*path_length);
+    edges.emplace_back(oid, reverse);
 }
 
-void StreamingResponseWriter::write_size(uint_fast32_t value)
+void StreamingResponseWriter::write_path_edge(ObjectId oid, bool reverse)
 {
-    uint8_t bytes[4];
-    bytes[0] = static_cast<uint8_t>((value >> 24) & 0xFF);
-    bytes[1] = static_cast<uint8_t>((value >> 16) & 0xFF);
-    bytes[2] = static_cast<uint8_t>((value >> 8) & 0xFF);
-    bytes[3] = static_cast<uint8_t>(value & 0xFF);
-    response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    write_string_raw(reverse ? "left" : "right");
+    write_object_id(oid);
 }
 
-std::string StreamingResponseWriter::encode_dictionary(const Dictionary& dictionary) const
+void StreamingResponseWriter::write_dictionary(const Dictionary& dictionary)
 {
     if (auto literal = dynamic_cast<DictionaryLiteral*>(dictionary.dictionary.get())) {
-        return encode_dictionary_literal(*literal);
+        write_object_id(literal->object_id);
     } else if (auto array = dynamic_cast<DictionaryArray*>(dictionary.dictionary.get())) {
-        return encode_dictionary_array(*array);
+        write_dictionary_array(*array);
     } else if (auto object = dynamic_cast<DictionaryObject*>(dictionary.dictionary.get())) {
-        return encode_dictionary_object(*object);
+        write_dictionary_object(*object);
+    } else {
+        write_null(); // should throw error instead?
     }
-    return encode_null();
 }
 
-std::string StreamingResponseWriter::encode_dictionary_object(const DictionaryObject& dictionary) const
+void StreamingResponseWriter::write_dictionary_object(const DictionaryObject& dictionary)
 {
-    std::string res;
-    res += static_cast<uint8_t>(Protocol::DataType::MAP);
-    res += encode_size(dictionary.keys.size());
+    response_ostream.put(static_cast<char>(Protocol::DataType::MAP));
+    write_size(dictionary.keys.size());
 
-    for (auto&& [key, value] : dictionary.keys) {
-        res += encode_dictionary_key(key);
+    for (const auto& [key, value] : dictionary.keys) {
+        write_dictionary_key(key);
 
         if (auto literal = dynamic_cast<DictionaryLiteral*>(value.get())) {
-            res += encode_dictionary_literal(*literal);
+            write_object_id(literal->object_id);
         } else if (auto array = dynamic_cast<DictionaryArray*>(value.get())) {
-            res += encode_dictionary_array(*array);
+            write_dictionary_array(*array);
         } else if (auto object = dynamic_cast<DictionaryObject*>(value.get())) {
-            res += encode_dictionary_object(*object);
+            write_dictionary_object(*object);
         }
     }
-    return res;
 }
 
-std::string StreamingResponseWriter::encode_dictionary_array(const DictionaryArray& dictionary_array) const
+void StreamingResponseWriter::write_dictionary_array(const DictionaryArray& dictionary_array)
 {
-    std::string res;
-
-    res += static_cast<uint8_t>(Protocol::DataType::LIST);
-    res += encode_size(dictionary_array.values.size());
+    response_ostream.put(static_cast<char>(Protocol::DataType::LIST));
+    write_size(dictionary_array.values.size());
 
     for (auto& elem : dictionary_array.values) {
         if (auto literal = dynamic_cast<DictionaryLiteral*>(elem.get())) {
-            res += encode_dictionary_literal(*literal);
+            write_object_id(literal->object_id);
         } else if (auto array = dynamic_cast<DictionaryArray*>(elem.get())) {
-            res += encode_dictionary_array(*array);
+            write_dictionary_array(*array);
         } else if (auto object = dynamic_cast<DictionaryObject*>(elem.get())) {
-            res += encode_dictionary_object(*object);
+            write_dictionary_object(*object);
         }
     }
-    return res;
 }
 
-std::string StreamingResponseWriter::encode_dictionary_literal(const DictionaryLiteral& dictionary_literal
-) const
+void StreamingResponseWriter::write_edge(uint64_t edge_id)
 {
-    return encode_object_id(dictionary_literal.object_id);
+    response_ostream.put(static_cast<char>(Protocol::DataType::EDGE));
+    write_int64_raw(edge_id);
 }
 
-std::string StreamingResponseWriter::encode_edge(int64_t edge_id) const
+
+void StreamingResponseWriter::write_anon(uint64_t anon_id)
 {
-    std::string res;
-    res += static_cast<char>(Protocol::DataType::EDGE);
-    res += encode_int64_raw(edge_id);
-    return res;
+    response_ostream.put(static_cast<char>(Protocol::DataType::ANON));
+    write_int64_raw(anon_id);
 }
 
-template std::string StreamingResponseWriter::encode_tensor<float>(const tensor::Tensor<float>& tensor) const;
-template std::string StreamingResponseWriter::encode_tensor<double>(const tensor::Tensor<double>& tensor
-) const;
+template void StreamingResponseWriter::write_tensor<float>(const tensor::Tensor<float>& tensor);
+template void StreamingResponseWriter::write_tensor<double>(const tensor::Tensor<double>& tensor);

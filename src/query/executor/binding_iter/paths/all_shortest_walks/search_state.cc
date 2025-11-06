@@ -47,10 +47,9 @@ void SearchState::start_enumeration() const
     current_transition->previous->next();
 }
 
-void SearchState::print(
-    std::ostream& os,
-    std::function<void(std::ostream& os, ObjectId)> print_node,
-    std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
+void SearchState::for_each(
+    std::function<void(ObjectId)> node_func,
+    std::function<void(ObjectId, bool)> edge_func,
     bool begin_at_left
 ) const
 {
@@ -70,23 +69,22 @@ void SearchState::print(
         }
         nodes.push_back(current_state->node_id);
 
-        print_node(os, nodes[nodes.size() - 1]);
+        node_func(nodes[nodes.size() - 1]);
         for (int_fast32_t i = nodes.size() - 2; i >= 0; i--) { // don't use unsigned i, will overflow
-            print_edge(os, edges[i], inverse_directions[i]);
-            print_node(os, nodes[i]);
+            edge_func(edges[i], inverse_directions[i]);
+            node_func(nodes[i]);
         }
     } else {
         auto current_state = this;
         for (; current_state->current_transition != nullptr;
              current_state = current_state->current_transition->previous)
         {
-            print_node(os, current_state->node_id);
-            print_edge(
-                os,
+            node_func(current_state->node_id);
+            edge_func(
                 current_state->current_transition->type_id,
                 !current_state->current_transition->inverse_direction
             );
         }
-        print_node(os, current_state->node_id);
+        node_func(current_state->node_id);
     }
 }

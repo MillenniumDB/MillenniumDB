@@ -16,10 +16,10 @@ uint64_t AskStreamingExecutor::execute(MDBServer::StreamingResponseWriter& respo
     const bool has_result = iter->next();
 
     response_writer.write_map_header(2UL);
-    response_writer.write_string("type", MDBServer::Protocol::DataType::STRING);
+    response_writer.write_typed_string("type", MDBServer::Protocol::DataType::STRING);
     response_writer.write_uint8(static_cast<uint8_t>(MDBServer::Protocol::ResponseType::RECORD));
 
-    response_writer.write_string("payload", MDBServer::Protocol::DataType::STRING);
+    response_writer.write_typed_string("payload", MDBServer::Protocol::DataType::STRING);
     response_writer.write_list_header(1);
     response_writer.write_bool(has_result);
 

@@ -182,11 +182,10 @@ ObjectId PathManager::set_path(const Paths::ShortestKGroupsWalks::SearchState* v
     return ObjectId(ObjectId::MASK_PATH | SHORTEST_K_GROUPS_WALKS_MASK | path_var.id);
 }
 
-void PathManager::print(
-    std::ostream& os,
+void PathManager::for_each(
     uint64_t path_id,
-    std::function<void(std::ostream&, ObjectId)> print_node,
-    std::function<void(std::ostream&, ObjectId, bool)> print_edge
+    std::function<void(ObjectId)> node_func,
+    std::function<void(ObjectId, bool)> edge_func
 ) const
 {
     auto index = get_thread_index();
@@ -201,113 +200,113 @@ void PathManager::print(
     switch (path_type) {
     case ANY_SHORTEST_WALKS_MASK: {
         auto state = reinterpret_cast<const Any::SearchState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ANY_SHORTEST_WALKS_DIR_MASK: {
         auto state = reinterpret_cast<const Any::DirectionalSearchState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_SHORTEST_WALKS_MASK: {
         auto state = reinterpret_cast<const AllShortest::SearchState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case DIJKSTRA_MASK: {
         auto state = reinterpret_cast<const Paths::Any::SearchStateDijkstra*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ANY_SIMPLE_MASK: {
         auto state = reinterpret_cast<const Paths::AnySimple::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ANY_SIMPLE_DFS_MASK: {
         auto state = reinterpret_cast<const Paths::AnySimple::SearchStateDFS*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_SIMPLE_MASK: {
         auto state = reinterpret_cast<const Paths::AllSimple::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_SIMPLE_DFS_MASK: {
         auto state = reinterpret_cast<const Paths::AllSimple::SearchStateDFS*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_SHORTEST_SIMPLE_MASK: {
         auto state = reinterpret_cast<const Paths::AllShortestSimple::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ANY_TRAILS_MASK: {
         auto state = reinterpret_cast<const Paths::AnyTrails::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     // case ANY_TRAILS_DIR_MASK: {
     //     auto state = reinterpret_cast<const Paths::AnyTrails::DirectionalPathState*>(paths[index][decoded_id]);
-    //     state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+    //     state->for_each(os, print_node, print_edge, begin_at_left[index][decoded_id]);
     //     break;
     // }
     case ANY_TRAILS_DFS_MASK: {
         auto state = reinterpret_cast<const Paths::AnyTrails::SearchStateDFS*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_TRAILS_MASK: {
         auto state = reinterpret_cast<const Paths::AllTrails::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_TRAILS_DFS_MASK: {
         auto state = reinterpret_cast<const Paths::AllTrails::SearchStateDFS*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case ALL_SHORTEST_TRAILS_MASK: {
         auto state = reinterpret_cast<const Paths::AllShortestTrails::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_WALKS_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKWalks::SearchState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_SIMPLE_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKSimple::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_TRAILS_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKTrails::PathState*>(paths[index][decoded_id]);
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_GROUPS_SIMPLE_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKGroupsSimple::PathState*>(
             paths[index][decoded_id]
         );
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_GROUPS_TRAILS_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKGroupsTrails::PathState*>(
             paths[index][decoded_id]
         );
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     case SHORTEST_K_GROUPS_WALKS_MASK: {
         auto state = reinterpret_cast<const Paths::ShortestKGroupsWalks::SearchState*>(
             paths[index][decoded_id]
         );
-        state->print(os, print_node, print_edge, begin_at_left[index][decoded_id]);
+        state->for_each(node_func, edge_func, begin_at_left[index][decoded_id]);
         break;
     }
     default:

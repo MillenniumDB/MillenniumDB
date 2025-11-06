@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <ostream>
 
 #include "graph_models/object_id.h"
 
@@ -60,10 +59,11 @@ struct SearchStateDijkstra {
         return SearchStateDijkstra(automaton_state, node_id, previous, inverse_direction, type_id, cost, inverted_path);
     }
 
-    void print(std::ostream& os,
-               std::function<void(std::ostream& os, ObjectId)> print_node,
-               std::function<void(std::ostream& os, ObjectId, bool)> print_edge,
-               bool begin_at_left) const;
+    void for_each(
+        std::function<void(ObjectId)> node_func,
+        std::function<void(ObjectId, bool)> edge_func,
+        bool begin_at_left
+    ) const;
 };
 
 // Represents a priority queue element for Dijkstra's algorithm

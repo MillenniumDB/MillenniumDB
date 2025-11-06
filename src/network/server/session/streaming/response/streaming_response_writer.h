@@ -22,8 +22,8 @@ namespace MDBServer {
  */
 class StreamingResponseWriter {
 public:
-    // Convert an object id to its string representation
-    virtual std::string encode_object_id(const ObjectId& oid) const = 0;
+    // Write any object id to the response_ostream
+    virtual void write_object_id(const ObjectId& oid) = 0;
 
     virtual uint64_t get_model_id() const = 0;
 
@@ -40,36 +40,38 @@ public:
     void flush();
 
     // Primitive types encoding
-    std::string encode_null() const;
-    std::string encode_bool(bool value) const;
-    std::string encode_uint8(uint8_t value) const;
-    std::string encode_float(float value) const;
-    std::string encode_double(double value) const;
-    std::string encode_uint32(uint32_t value) const;
-    std::string encode_uint64(uint64_t value) const;
-    std::string encode_int64(int64_t value) const;
-    std::string encode_string(const std::string& value, Protocol::DataType data_type) const;
-    std::string encode_path(uint64_t path_id) const;
-    std::string encode_date(DateTime datetime) const;
-    std::string encode_time(DateTime datetime) const;
-    std::string encode_datetime(DateTime datetime) const;
-    std::string encode_dictionary(const Dictionary& dictionary) const;
-    std::string encode_dictionary_object(const DictionaryObject& dictionary) const;
-    std::string encode_dictionary_array(const DictionaryArray& dictionary) const;
-    std::string encode_dictionary_literal(const DictionaryLiteral& dictionary) const;
-    std::string encode_edge(int64_t edge_id) const;
+    void write_null();
+    void write_bool(bool value);
+    void write_uint8(uint8_t value);
+    void write_float(float value);
+    void write_double(double value);
+    void write_uint32(uint32_t value);
+    void write_uint64(uint64_t value);
+    void write_int64(int64_t value);
+    void write_typed_string(const std::string& value, Protocol::DataType datatype);
+    void write_path(uint64_t path_id);
+    void write_date(DateTime datetime);
+    void write_time(DateTime datetime);
+    void write_datetime(DateTime datetime);
+    void write_dictionary(const Dictionary& dictionary);
+    void write_dictionary_object(const DictionaryObject& dictionary);
+    void write_dictionary_array(const DictionaryArray& dictionary);
+    void write_edge(uint64_t edge_id);
+    void write_anon(uint64_t anon_id);
+    template<typename T>
+    void write_tensor(const tensor::Tensor<T>& tensor);
+    void write_list(const std::vector<ObjectId>& list);
 
-    virtual std::string encode_dictionary_key(const ObjectId&) const
-    {
-        return encode_null();
+    virtual void write_dictionary_key(const ObjectId&) {
+        assert(false); // should be overriden if used
     }
 
-    template<typename T>
-    std::string encode_tensor(const tensor::Tensor<T>& tensor) const;
-
     // utilities for composed types
-    std::string encode_int64_raw(int64_t value) const;
-    std::string encode_size(uint32_t value) const;
+    void write_int64_raw(int64_t value);
+    void write_float_raw(float value);
+    void write_double_raw(double value);
+    void write_string_raw(const std::string& value);
+    void write_size(uint32_t value);
 
     // Helpers writing responses
     void write_variables(
@@ -93,61 +95,12 @@ public:
     void write_record(const std::vector<VarId>& projection_vars, const Binding& binding);
     void write_error(const std::string& message);
 
-    void write_object_id(const ObjectId& oid)
-    {
-        const auto encoded_oid = encode_object_id(oid);
-        response_ostream.write(encoded_oid.data(), encoded_oid.size());
-    }
-    void write_null()
-    {
-        const auto enc = encode_null();
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_uint8(uint8_t value)
-    {
-        const auto enc = encode_uint8(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_bool(bool value)
-    {
-        const auto enc = encode_bool(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_uint32(uint32_t value)
-    {
-        const auto enc = encode_uint32(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_float(float value)
-    {
-        const auto enc = encode_float(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_double(double value)
-    {
-        const auto enc = encode_double(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_uint64(uint64_t value)
-    {
-        const auto enc = encode_uint64(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_int64(int64_t value)
-    {
-        const auto enc = encode_int64(value);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
-    void write_string(const std::string& value, Protocol::DataType data_type = Protocol::DataType::STRING)
-    {
-        const auto enc = encode_string(value, data_type);
-        response_ostream.write(enc.c_str(), enc.size());
-    }
     void write_map_header(uint32_t size)
     {
         response_ostream.put(static_cast<char>(Protocol::DataType::MAP));
         write_size(size);
     }
+
     void write_list_header(uint32_t size)
     {
         response_ostream.put(static_cast<char>(Protocol::DataType::LIST));
@@ -160,13 +113,12 @@ public:
 private:
     StreamingResponseBuffer response_buffer;
 
+    // Path helpers to extract path data
+    void get_path_node(ObjectId oid, std::vector<ObjectId>& nodes);
+    void get_path_edge(ObjectId oid, bool reverse, std::vector<std::pair<ObjectId, bool>>& edges);
+    void write_path_edge(ObjectId oid, bool reverse);
+
+protected:
     std::ostream response_ostream;
-
-    // Path helpers. write_path_edge receives a pointer to a number in order to track the path length.
-    void write_path_node(std::ostream& os, ObjectId oid) const;
-    void write_path_edge(std::ostream& os, ObjectId oid, bool reverse, uint_fast32_t* path_length) const;
-
-    // Write the size prefix of a variable-size object
-    void write_size(uint_fast32_t size);
 };
 } // namespace MDBServer

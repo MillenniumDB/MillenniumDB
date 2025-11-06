@@ -129,11 +129,12 @@ void CSVSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Object
     case RDF_OID::Type::PATH: {
         using namespace std::placeholders;
         os << '[';
-        path_manager.print(os,
-                           Conversions::get_path_id(oid),
-                           std::bind(&CSVSelectExecutor::print_path_node, _1, _2),
-                           std::bind(&CSVSelectExecutor::print_path_edge, _1, _2, _3));
-        os << ']';
+        // TODO:
+        // path_manager.print(os,
+        //                    Conversions::get_path_id(oid),
+        //                    std::bind(&CSVSelectExecutor::print_path_node, _1, _2),
+        //                    std::bind(&CSVSelectExecutor::print_path_edge, _1, _2, _3));
+        // os << ']';
         break;
     }
     case RDF_OID::Type::IRI_INLINE:

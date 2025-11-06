@@ -140,12 +140,13 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
     case ObjectId::MASK_PATH: {
         using namespace std::placeholders;
         os << '[';
-        path_manager.print(
-            os,
-            unmasked_id,
-            std::bind(&ReturnExecutor<ret>::print_path_node, _1, _2),
-            std::bind(&ReturnExecutor<ret>::print_path_edge, _1, _2, _3)
-        );
+        // TODO:
+        // path_manager.print(
+        //     os,
+        //     unmasked_id,
+        //     std::bind(&ReturnExecutor<ret>::print_path_node, _1, _2),
+        //     std::bind(&ReturnExecutor<ret>::print_path_edge, _1, _2, _3)
+        // );
         os << ']';
         break;
     }
