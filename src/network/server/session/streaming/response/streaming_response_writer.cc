@@ -285,8 +285,6 @@ void StreamingResponseWriter::write_path(uint64_t path_id)
 {
     using namespace std::placeholders;
 
-    response_ostream.put(static_cast<char>(Protocol::DataType::PATH));
-
     std::vector<ObjectId> nodes;
     std::vector<std::pair<ObjectId, bool>> edges;
     path_manager.for_each(
