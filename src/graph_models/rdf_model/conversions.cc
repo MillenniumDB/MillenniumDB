@@ -415,13 +415,11 @@ std::string Conversions::to_lexical_str(ObjectId oid) {
     case RDF_OID::Type::PATH: {
         std::stringstream ss;
         ss << '[';
-        // TODO:
-        // path_manager.print(
-        //     ss,
-        //     Conversions::get_path_id(oid),
-        //     &print_path_node,
-        //     &print_path_edge
-        // );
+        path_manager.for_each(
+            Conversions::get_path_id(oid),
+            [&](ObjectId oid) { print_path_node(ss, oid); },
+            [&](ObjectId oid, bool reverse) { print_path_edge(ss, oid, reverse); }
+        );
         ss << ']';
         return ss.str();
     }
@@ -544,13 +542,11 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid) {
     case RDF_OID::Type::PATH: {
         using namespace std::placeholders;
         os << '[';
-        // TODO:
-        // path_manager.print(
-        //     os,
-        //     Conversions::get_path_id(oid),
-        //     std::bind(&print_path_node, _1, _2),
-        //     std::bind(&print_path_edge, _1, _2, _3)
-        // );
+        path_manager.for_each(
+            Conversions::get_path_id(oid),
+            [&](ObjectId oid) { print_path_node(os, oid); },
+            [&](ObjectId oid, bool reverse) { print_path_edge(os, oid, reverse); }
+        );
         os << ']';
         break;
     }
