@@ -89,8 +89,10 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
             request_handler->handle(decoded_chunks.data(), decoded_chunks.size());
         } catch (const InterruptedException& e) {
             close_with_error("Interruption exception: Query timed out");
+            return;
         } catch (const ProtocolException& e) {
             close_with_error("Protocol exception: " + std::string(e.what()));
+            return;
         } catch (const ConnectionException& e) {
             logger(Category::Error) << "Connection exception: " << e.what();
             return;
@@ -121,9 +123,8 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
                 return;
             }
 
-            self->request_buffer.commit(chunk_size + 2);
-
             // append decoded chunk
+            self->request_buffer.commit(chunk_size + 2);
             const auto chunk_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
             const auto old_size = self->decoded_chunks.size();
             self->decoded_chunks.resize(old_size + chunk_size);

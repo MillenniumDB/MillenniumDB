@@ -58,7 +58,6 @@ void StreamingWebSocketSession::start_decode_chunk()
     // read initial chunk size
     async_read_nbytes(2, [self]() {
         // read chunk size
-        self->request_buffer.commit(2);
         const auto initial_chunk_size_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
         const uint16_t initial_chunk_size = (static_cast<uint16_t>(initial_chunk_size_bytes[0]) << 8)
                                           | initial_chunk_size_bytes[1];
@@ -74,6 +73,7 @@ void StreamingWebSocketSession::decode_chunk(std::size_t chunk_size)
     if (decoded_chunks.size() + chunk_size > Protocol::MAX_REQUEST_BYTES) {
         // max request size reached
         close_with_error("Protocol exception: Protocol::MAX_REQUEST_BYTES reached");
+        return;
     }
 
     if (chunk_size == 0) {
@@ -84,8 +84,10 @@ void StreamingWebSocketSession::decode_chunk(std::size_t chunk_size)
             request_handler->handle(decoded_chunks.data(), decoded_chunks.size());
         } catch (const InterruptedException& e) {
             close_with_error("Interruption exception: Query timed out");
+            return;
         } catch (const ProtocolException& e) {
             close_with_error("Protocol exception: " + std::string(e.what()));
+            return;
         } catch (const ConnectionException& e) {
             logger(Category::Error) << "Connection exception: " << e.what();
             return;
@@ -105,12 +107,11 @@ void StreamingWebSocketSession::decode_chunk(std::size_t chunk_size)
 
     // read current chunk + next chunk size
     async_read_nbytes(chunk_size + 2, [self, chunk_size]() {
-        self->request_buffer.commit(chunk_size + 2);
-
         // append decoded chunk
         const auto chunk_bytes = asio::buffer_cast<const uint8_t*>(self->request_buffer.data());
-        self->decoded_chunks.resize(self->decoded_chunks.size() + chunk_size);
-        std::memcpy(self->decoded_chunks.data(), chunk_bytes, chunk_size);
+        const auto old_size = self->decoded_chunks.size();
+        self->decoded_chunks.resize(old_size + chunk_size);
+        std::memcpy(self->decoded_chunks.data() + old_size, chunk_bytes, chunk_size);
 
         // read next size
         const auto next_chunk_size_bytes = chunk_bytes + chunk_size;
@@ -168,10 +169,10 @@ void StreamingWebSocketSession::async_read_nbytes(std::size_t n, OnRead&& on_rea
 
     stream.async_read(
         request_buffer,
-        [self,
-         n,
-         on_read_ = std::forward<OnRead>(on_read
-         )](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+        [self, n, on_read_ = std::forward<OnRead>(on_read)](
+            const boost::system::error_code& ec,
+            std::size_t /*bytes_transferred*/
+        ) {
             if (ec) {
                 if (ec != websocket::error::closed) {
                     logger(Category::Error) << "StreamingWebSocketSession read error: " << ec.message();

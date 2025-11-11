@@ -38,7 +38,7 @@ private:
 
     websocket_stream_type stream;
 
-    boost::beast::flat_buffer request_buffer;
+    boost::asio::streambuf request_buffer;
 
     std::vector<uint8_t> decoded_chunks;
 
