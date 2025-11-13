@@ -43,7 +43,11 @@ StringManager::StringManager(uint64_t static_buffer_size, uint64_t dynamic_buffe
     init_free_space();
 
     if (static_buffer == nullptr || dynamic_buffer == nullptr || frames == nullptr) {
-        FATAL_ERROR("Could not allocate StringManager buffers, try using a smaller size");
+        FATAL_ERROR(
+            "Could not allocate StringManager buffers ( ",
+            static_buffer_size + (BLOCK_SIZE * dynamic_buffer_frames) + (dynamic_buffer_frames * sizeof(StringManager::Frame)),
+            "Bytes), try using a smaller size"
+        );
     }
 
     uint64_t string_file_size = lseek(str_file_id.id, 0, SEEK_END);

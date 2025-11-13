@@ -33,7 +33,11 @@ TensorManager::TensorManager(uint64_t aligned_static_buffer_size, uint64_t align
     tensors_hash("tensor_hash")
 {
     if (static_buffer == nullptr || dynamic_buffer == nullptr || frames == nullptr) {
-        FATAL_ERROR("Could not allocate TensorManager buffers, try using a smaller size");
+        FATAL_ERROR(
+            "Could not allocate TensorManager buffers ( ",
+            static_buffer_size + dynamic_buffer_size + (num_frames * sizeof(TensorManager::Frame)),
+            "Bytes), try using a smaller size"
+        );
     }
 
     const std::size_t tensor_file_size = lseek(tensor_file_id.id, 0, SEEK_END);

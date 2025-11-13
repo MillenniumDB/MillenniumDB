@@ -30,11 +30,19 @@ BufferManager::BufferManager(
     pp_pool_size(ppage_buffer_pool_size_per_worker)
 {
     if (vp_data == nullptr || vp_pool == nullptr) {
-        FATAL_ERROR("Could not allocate versioned page buffers, try using a smaller size");
+        FATAL_ERROR(
+            "Could not allocate versioned page buffers ( ",
+            vpage_buffer_pool_size * sizeof(Page),
+            "Bytes), try using a smaller size"
+        );
     }
 
     if (pp_data == nullptr || pp_pool == nullptr) {
-        FATAL_ERROR("Could not allocate private page buffers, try using a smaller size");
+        FATAL_ERROR(
+            "Could not allocate private page buffers ( ",
+            ppage_buffer_pool_size_per_worker * workers * sizeof(PPage),
+            "Bytes), try using a smaller size"
+        );
     }
 
     for (uint64_t i = 0; i < vp_pool_size; i++) {

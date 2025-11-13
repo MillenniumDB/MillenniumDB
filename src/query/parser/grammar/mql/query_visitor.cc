@@ -122,7 +122,7 @@ Any QueryVisitor::visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx)
 
     for (auto& primitiveStatement : primitiveStatements) {
         visit(primitiveStatement);
-        if (auto where_stmt = primitiveStatement->whereStatement()) {
+        if (primitiveStatement->whereStatement()) {
             assert(current_expr != nullptr);
             if (current_expr->has_aggregation()) {
                 throw QueryException("Cannot have aggregations inside WHERE, use HAVING INSTEAD");

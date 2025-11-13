@@ -121,7 +121,7 @@ public:
         case ObjectId::MASK_DICTIONARY:
         case ObjectId::MASK_DICTIONARY_TMP: {
             const auto dictionary = Common::Conversions::unpack_dictionary(oid);
-            write_dictionary(*dictionary);
+            return write_dictionary(*dictionary);
         }
         case ObjectId::MASK_LIST:
         case ObjectId::MASK_LIST_EXTERN:

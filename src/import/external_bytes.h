@@ -11,22 +11,8 @@ namespace Import {
 class ExternalBytes {
 public:
     static char* data;
-    // static std::size_t size;
 
     uint64_t offset;
-
-    // must be called before using this class
-    // static inline void allocate(std::size_t num_bytes)
-    // {
-    //     assert(num_bytes > 0);
-
-    //     ExternalBytes::data = reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(num_bytes));
-    //     ExternalBytes::size = num_bytes;
-
-    //     if (ExternalBytes::data == nullptr) {
-    //         FATAL_ERROR("Could not allocate ExternalBytes::data buffer, try using smaller buffer sizes");
-    //     }
-    // }
 
     ExternalBytes(uint64_t offset) :
         offset(offset)
