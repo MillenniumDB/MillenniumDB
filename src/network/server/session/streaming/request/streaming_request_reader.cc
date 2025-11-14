@@ -69,19 +69,27 @@ int64_t StreamingRequestReader::read_int64()
 
 float StreamingRequestReader::read_float()
 {
+    static_assert(sizeof(float) == sizeof(uint32_t));
+
     check_remaining_bytes(4);
-    float value;
-    auto dst = reinterpret_cast<uint32_t*>(&value);
-    *dst = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
-    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
-    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
-    *dst |= static_cast<uint32_t>(request_bytes[current_pos++]);
-    return value;
+
+    uint32_t u = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+    u |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+    u |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+    u |= static_cast<uint32_t>(request_bytes[current_pos++]);
+
+    float f;
+    std::memcpy(&f, &u, sizeof(float));
+
+    return f;
 }
 
 template<typename T>
 tensor::Tensor<T> StreamingRequestReader::read_tensor()
 {
+    static_assert(sizeof(float) == sizeof(uint32_t));
+    static_assert(sizeof(double) == sizeof(uint64_t));
+
     const auto size = read_size();
     const auto num_bytes = sizeof(T) * size;
     check_remaining_bytes(num_bytes);
@@ -89,21 +97,21 @@ tensor::Tensor<T> StreamingRequestReader::read_tensor()
     tensor::Tensor<T> res(size);
     for (std::size_t i = 0; i < size; ++i) {
         if constexpr (std::is_same_v<T, float>) {
-            auto dst = reinterpret_cast<uint32_t*>(res.data()) + i;
-            *dst = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
-            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
-            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
-            *dst |= static_cast<uint32_t>(request_bytes[current_pos++]);
+            uint32_t u = static_cast<uint32_t>(request_bytes[current_pos++]) << 24;
+            u |= static_cast<uint32_t>(request_bytes[current_pos++]) << 16;
+            u |= static_cast<uint32_t>(request_bytes[current_pos++]) << 8;
+            u |= static_cast<uint32_t>(request_bytes[current_pos++]);
+            std::memcpy(&res[i], &u, sizeof(float));
         } else if constexpr (std::is_same_v<T, double>) {
-            auto dst = reinterpret_cast<uint64_t*>(res.data()) + i;
-            *dst = static_cast<uint64_t>(request_bytes[current_pos++]) << 56;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 48;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 40;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 32;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 24;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 16;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]) << 8;
-            *dst |= static_cast<uint64_t>(request_bytes[current_pos++]);
+            uint64_t u = static_cast<uint64_t>(request_bytes[current_pos++]) << 56;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 48;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 40;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 32;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 24;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 16;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]) << 8;
+            u |= static_cast<uint64_t>(request_bytes[current_pos++]);
+            std::memcpy(&res[i], &u, sizeof(double));
         }
     }
     return res;

@@ -1,7 +1,5 @@
 #include "streaming_response_writer.h"
 
-#include <sstream>
-
 #include "query/query_context.h"
 #include "system/path_manager.h"
 
@@ -173,57 +171,73 @@ void StreamingResponseWriter::write_uint8(uint8_t value)
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-void StreamingResponseWriter::write_float(float value_)
+void StreamingResponseWriter::write_float(float value)
 {
-    auto value = reinterpret_cast<const uint32_t*>(&value_);
+    static_assert(sizeof(float) == sizeof(uint32_t));
+
+    uint32_t u;
+    std::memcpy(&u, &value, sizeof(float));
+
     uint8_t bytes[5];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::FLOAT);
-    bytes[1] = static_cast<uint8_t>((*value >> 24) & 0xFF);
-    bytes[2] = static_cast<uint8_t>((*value >> 16) & 0xFF);
-    bytes[3] = static_cast<uint8_t>((*value >> 8) & 0xFF);
-    bytes[4] = static_cast<uint8_t>(*value & 0xFF);
+    bytes[1] = static_cast<uint8_t>((u >> 24) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((u >> 16) & 0xFF);
+    bytes[3] = static_cast<uint8_t>((u >> 8) & 0xFF);
+    bytes[4] = static_cast<uint8_t>(u & 0xFF);
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-void StreamingResponseWriter::write_float_raw(float value_)
+void StreamingResponseWriter::write_float_raw(float value)
 {
-    auto value = reinterpret_cast<const uint32_t*>(&value_);
+    static_assert(sizeof(float) == sizeof(uint32_t));
+
+    uint32_t u;
+    std::memcpy(&u, &value, sizeof(float));
+
     uint8_t bytes[4];
-    bytes[0] = static_cast<uint8_t>((*value >> 24) & 0xFF);
-    bytes[1] = static_cast<uint8_t>((*value >> 16) & 0xFF);
-    bytes[2] = static_cast<uint8_t>((*value >> 8) & 0xFF);
-    bytes[3] = static_cast<uint8_t>(*value & 0xFF);
+    bytes[0] = static_cast<uint8_t>((u >> 24) & 0xFF);
+    bytes[1] = static_cast<uint8_t>((u >> 16) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((u >> 8) & 0xFF);
+    bytes[3] = static_cast<uint8_t>(u & 0xFF);
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-void StreamingResponseWriter::write_double(double value_)
+void StreamingResponseWriter::write_double(double value)
 {
-    auto value = reinterpret_cast<const uint64_t*>(&value_);
+    static_assert(sizeof(double) == sizeof(uint64_t));
+
+    uint64_t u;
+    std::memcpy(&u, &value, sizeof(double));
+
     uint8_t bytes[9];
     bytes[0] = static_cast<uint8_t>(Protocol::DataType::DOUBLE);
-    bytes[1] = static_cast<uint8_t>((*value >> 56) & 0xFF);
-    bytes[2] = static_cast<uint8_t>((*value >> 48) & 0xFF);
-    bytes[3] = static_cast<uint8_t>((*value >> 40) & 0xFF);
-    bytes[4] = static_cast<uint8_t>((*value >> 32) & 0xFF);
-    bytes[5] = static_cast<uint8_t>((*value >> 24) & 0xFF);
-    bytes[6] = static_cast<uint8_t>((*value >> 16) & 0xFF);
-    bytes[7] = static_cast<uint8_t>((*value >> 8) & 0xFF);
-    bytes[8] = static_cast<uint8_t>(*value & 0xFF);
+    bytes[1] = static_cast<uint8_t>((u >> 56) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((u >> 48) & 0xFF);
+    bytes[3] = static_cast<uint8_t>((u >> 40) & 0xFF);
+    bytes[4] = static_cast<uint8_t>((u >> 32) & 0xFF);
+    bytes[5] = static_cast<uint8_t>((u >> 24) & 0xFF);
+    bytes[6] = static_cast<uint8_t>((u >> 16) & 0xFF);
+    bytes[7] = static_cast<uint8_t>((u >> 8) & 0xFF);
+    bytes[8] = static_cast<uint8_t>(u & 0xFF);
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
-void StreamingResponseWriter::write_double_raw(double value_)
+void StreamingResponseWriter::write_double_raw(double value)
 {
-    auto value = reinterpret_cast<const uint64_t*>(&value_);
+     static_assert(sizeof(double) == sizeof(uint64_t));
+
+    uint64_t u;
+    std::memcpy(&u, &value, sizeof(double));
+
     uint8_t bytes[8];
-    bytes[0] = static_cast<uint8_t>((*value >> 56) & 0xFF);
-    bytes[1] = static_cast<uint8_t>((*value >> 48) & 0xFF);
-    bytes[2] = static_cast<uint8_t>((*value >> 40) & 0xFF);
-    bytes[3] = static_cast<uint8_t>((*value >> 32) & 0xFF);
-    bytes[4] = static_cast<uint8_t>((*value >> 24) & 0xFF);
-    bytes[5] = static_cast<uint8_t>((*value >> 16) & 0xFF);
-    bytes[6] = static_cast<uint8_t>((*value >> 8) & 0xFF);
-    bytes[7] = static_cast<uint8_t>(*value & 0xFF);
+    bytes[0] = static_cast<uint8_t>((u >> 56) & 0xFF);
+    bytes[1] = static_cast<uint8_t>((u >> 48) & 0xFF);
+    bytes[2] = static_cast<uint8_t>((u >> 40) & 0xFF);
+    bytes[3] = static_cast<uint8_t>((u >> 32) & 0xFF);
+    bytes[4] = static_cast<uint8_t>((u >> 24) & 0xFF);
+    bytes[5] = static_cast<uint8_t>((u >> 16) & 0xFF);
+    bytes[6] = static_cast<uint8_t>((u >> 8) & 0xFF);
+    bytes[7] = static_cast<uint8_t>(u & 0xFF);
     response_ostream.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
 }
 
