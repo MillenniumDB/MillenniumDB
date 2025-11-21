@@ -34,7 +34,7 @@ void SessionDispatcher::run()
 
             self->read_buffer.commit(Protocol::DRIVER_PREAMBLE.size());
             auto preamble = std::string(
-                asio::buffer_cast<const char*>(self->read_buffer.data()),
+                static_cast<const char*>(self->read_buffer.data().data()),
                 Protocol::DRIVER_PREAMBLE.size()
             );
             if (preamble == Protocol::DRIVER_PREAMBLE) {

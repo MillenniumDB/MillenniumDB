@@ -7,6 +7,7 @@
 
 #include <boost/beast.hpp>
 
+#include "misc/fatal_error.h"
 #include "misc/logger.h"
 #include "network/server/listener.h"
 #include "network/server/protocol.h"
@@ -238,8 +239,28 @@ void MDBServer::Server::browser_session(tcp::socket&& socket)
 
 void Server::browser_listener(asio::io_context* browser_io_context, int port)
 {
-    // Start the acceptor and listen for connections, dispatching them to the session
-    asio::ip::tcp::acceptor acceptor(*browser_io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port));
+    asio::ip::tcp::acceptor acceptor(*browser_io_context);
+    asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), port);
+
+    boost::system::error_code ec;
+
+    acceptor.open(endpoint.protocol(), ec);
+    if (ec) {
+        FATAL_ERROR("error while trying to start browser listener: ", ec.message());
+    }
+
+    acceptor.bind(endpoint, ec);
+    if (ec) {
+        if (ec == boost::asio::error::address_in_use) {
+            FATAL_ERROR("Browser port ", endpoint.port(), " already in use, try using a different port");
+        } else {
+            FATAL_ERROR("error while trying to start browser listener: ", ec.message());
+        }
+    }
+    acceptor.listen(asio::socket_base::max_listen_connections, ec);
+    if (ec) {
+        FATAL_ERROR("error while trying to start browser listener: ", ec.message());
+    }
 
     while (true) {
         asio::ip::tcp::socket socket(*browser_io_context);

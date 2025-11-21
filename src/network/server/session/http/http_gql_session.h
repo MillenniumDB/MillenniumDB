@@ -1,11 +1,8 @@
 #pragma once
 
-#include <mutex>
-
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include "network/sparql/response_type.h"
 #include "query/executor/query_executor/gql/return_executor.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/parser/op/gql/op.h"

@@ -25,6 +25,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 # Uncomment to disable CLI
 # add_definitions(-DNO_MDB_CLI)
+add_definitions(-DBOOST_ASIO_NO_DEPRECATED)
 
 if(APPLE)
     message("https://cmake.org/cmake/help/latest/variable/APPLE.html?highlight=apple")

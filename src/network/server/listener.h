@@ -8,16 +8,18 @@ namespace MDBServer {
 
 class Listener {
 public:
-    Server&                        server;
-    boost::asio::io_context&       io_context;
+    Server& server;
+    boost::asio::io_context& io_context;
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::endpoint endpoint;
-    std::chrono::seconds           query_timeout;
+    std::chrono::seconds query_timeout;
 
-    explicit Listener(Server&                        server,
-                      boost::asio::io_context&       io_context,
-                      boost::asio::ip::tcp::endpoint endpoint,
-                      std::chrono::seconds           query_timeout);
+    explicit Listener(
+        Server& server,
+        boost::asio::io_context& io_context,
+        boost::asio::ip::tcp::endpoint endpoint,
+        std::chrono::seconds query_timeout
+    );
 
     void run();
 
