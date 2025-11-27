@@ -221,11 +221,9 @@ const DirectionalSearchState* BFSCheck::merge_directions(
 void BFSCheck::print(std::ostream& os, int indent, bool stats) const
 {
     if (stats) {
-        if (stats) {
-            os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
-               << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
-               << "]\n";
-        }
+        os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
+            << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+            << "]\n";
     }
     os << std::string(indent, ' ') << "Paths::Any::BFSCheck(path_var: " << path_var
        << ", start: " << start << ", end: " << end << ")";

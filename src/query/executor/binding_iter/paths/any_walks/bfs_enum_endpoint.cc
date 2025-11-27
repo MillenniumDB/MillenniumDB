@@ -1,34 +1,26 @@
-#include "bfs_enum.h"
-
-#include "system/path_manager.h"
+#include "bfs_enum_endpoint.h"
 
 using namespace std;
 using namespace Paths::Any;
 
 template<bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_begin(Binding& _parent_binding)
+void BFSEnumEndpoint<MULTIPLE_FINAL>::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
     // first_next = true;
 
     // Add starting states to open and visited
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(
-        automaton.start_state,
-        start_object_id,
-        nullptr,
-        true,
-        ObjectId::get_null()
-    );
+    auto state_inserted = visited.emplace(automaton.start_state, start_object_id);
     open.push(state_inserted.first.operator->());
     iter = make_unique<NullIndexIterator>();
 }
 
 template<bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::_reset()
+void BFSEnumEndpoint<MULTIPLE_FINAL>::_reset()
 {
     // Empty open and visited
-    queue<const SearchState*> empty;
+    queue<const EndpointSearchState*> empty;
     open.swap(empty);
     visited.clear();
     if (MULTIPLE_FINAL) {
@@ -38,19 +30,13 @@ void BFSEnum<MULTIPLE_FINAL>::_reset()
 
     // Add starting states to open and visited
     ObjectId start_object_id = start.is_var() ? (*parent_binding)[start.get_var()] : start.get_OID();
-    auto state_inserted = visited.emplace(
-        automaton.start_state,
-        start_object_id,
-        nullptr,
-        true,
-        ObjectId::get_null()
-    );
+    auto state_inserted = visited.emplace(automaton.start_state, start_object_id);
     open.push(state_inserted.first.operator->());
     iter = make_unique<NullIndexIterator>();
 }
 
 template<bool MULTIPLE_FINAL>
-bool BFSEnum<MULTIPLE_FINAL>::_next()
+bool BFSEnumEndpoint<MULTIPLE_FINAL>::_next()
 {
     // Check if first state is final
     if (first_next) {
@@ -68,8 +54,6 @@ bool BFSEnum<MULTIPLE_FINAL>::_next()
             if (MULTIPLE_FINAL) {
                 reached_final.insert(current_state->node_id.id);
             }
-            auto path_id = path_manager.set_path(current_state, path_var);
-            parent_binding->add(path_var, path_id);
             parent_binding->add(end, current_state->node_id);
             return true;
         }
@@ -81,8 +65,6 @@ bool BFSEnum<MULTIPLE_FINAL>::_next()
 
         // Enumerate reached solutions
         if (reached_final_state != nullptr) {
-            auto path_id = path_manager.set_path(reached_final_state, path_var);
-            parent_binding->add(path_var, path_id);
             parent_binding->add(end, reached_final_state->node_id);
             return true;
         } else {
@@ -94,7 +76,8 @@ bool BFSEnum<MULTIPLE_FINAL>::_next()
 }
 
 template<bool MULTIPLE_FINAL>
-const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& current_state)
+const EndpointSearchState*
+    BFSEnumEndpoint<MULTIPLE_FINAL>::expand_neighbors(const EndpointSearchState& current_state)
 {
     // Check if this is the first time that current_state is explored
     if (iter->at_end()) {
@@ -113,13 +96,7 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
 
         // Iterate over records until a final state is reached
         while (iter->next()) {
-            SearchState next_state(
-                transition.to,
-                ObjectId(iter->get_reached_node()),
-                &current_state,
-                transition.inverse,
-                transition.type_id
-            );
+            EndpointSearchState next_state(transition.to, ObjectId(iter->get_reached_node()));
             auto visited_state = visited.insert(next_state);
 
             // If next state was visited for the first time
@@ -152,16 +129,16 @@ const SearchState* BFSEnum<MULTIPLE_FINAL>::expand_neighbors(const SearchState& 
 }
 
 template<bool MULTIPLE_FINAL>
-void BFSEnum<MULTIPLE_FINAL>::print(std::ostream& os, int indent, bool stats) const
+void BFSEnumEndpoint<MULTIPLE_FINAL>::print(std::ostream& os, int indent, bool stats) const
 {
     if (stats) {
         os << std::string(indent, ' ') << "[begin: " << stat_begin << " next: " << stat_next
-            << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
-            << "]\n";
+           << " reset: " << stat_reset << " results: " << results << " idx_searches: " << idx_searches
+           << "]\n";
     }
-    os << std::string(indent, ' ') << "Paths::Any::BFSEnum(path_var: " << path_var
-       << ", start: " << start << ", end: " << end << ")";
+    os << std::string(indent, ' ') << "Paths::Any::BFSEnumEndpoint(start: " << start << ", end: " << end
+       << ")";
 }
 
-template class Paths::Any::BFSEnum<true>;
-template class Paths::Any::BFSEnum<false>;
+template class Paths::Any::BFSEnumEndpoint<true>;
+template class Paths::Any::BFSEnumEndpoint<false>;

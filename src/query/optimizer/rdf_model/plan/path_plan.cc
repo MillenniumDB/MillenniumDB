@@ -18,15 +18,18 @@
 #include "query/executor/binding_iter/paths/any_simple/dfs_enum.h"
 #include "query/executor/binding_iter/paths/any_walks/bfs_check.h"
 #include "query/executor/binding_iter/paths/any_walks/bfs_enum.h"
+#include "query/executor/binding_iter/paths/any_walks/bfs_enum_endpoint.h"
 #include "query/executor/binding_iter/paths/any_walks/dfs_check.h"
 #include "query/executor/binding_iter/paths/any_walks/dfs_enum.h"
-#include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_check.h"
-#include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_enum.h"
 #include "query/executor/binding_iter/paths/index_provider/rdf_model_index_provider.h"
 #include "query/executor/binding_iter/paths/unfixed_composite.h"
 #include "query/parser/paths/automaton/rpq_automaton.h"
 #include "query/parser/paths/regular_path_expr.h"
+// #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_check.h"
+// #include "query/executor/binding_iter/paths/experimental/all_shortest_walks_count/bfs_enum.h"
 
+using namespace Paths;
+using namespace std;
 using namespace SPARQL;
 
 PathPlan::PathPlan(
@@ -37,22 +40,22 @@ PathPlan::PathPlan(
     Id object,
     PathSemantic path_semantic
 ) :
-    begin_at_left    (begin_at_left),
-    path_var         (path_var),
-    subject          (subject),
-    path             (path),
-    object           (object),
-    subject_assigned (subject.is_OID()),
-    object_assigned  (object.is_OID()),
-    path_semantic    (path_semantic)
+    begin_at_left(begin_at_left),
+    path_var(path_var),
+    subject(subject),
+    path(path),
+    object(object),
+    subject_assigned(subject.is_OID()),
+    object_assigned(object.is_OID()),
+    path_semantic(path_semantic)
 {
     automaton = path.get_rpq_automaton(&SPARQL::Conversions::pack_iri);
     auto inverted_path = path.clone()->invert();
     automaton_inverted = inverted_path->get_rpq_automaton(&SPARQL::Conversions::pack_iri);
 }
 
-
-double PathPlan::estimate_cost() const {
+double PathPlan::estimate_cost() const
+{
     // TODO: find a better estimation
     if (!subject_assigned && !object_assigned) {
         return std::numeric_limits<double>::max();
@@ -60,8 +63,8 @@ double PathPlan::estimate_cost() const {
     return /*100.0 +*/ estimate_output_size();
 }
 
-
-void PathPlan::print(std::ostream& os, int indent) const {
+void PathPlan::print(std::ostream& os, int indent) const
+{
     for (int i = 0; i < indent; ++i) {
         os << ' ';
     }
@@ -77,7 +80,6 @@ void PathPlan::print(std::ostream& os, int indent) const {
     os << "  ↳ Estimated factor: " << estimate_output_size() << '\n';
 }
 
-
 double PathPlan::estimate_output_size() const {
     if (!cached_output_estimation_is_valid) {
         cached_output_estimation = _estimate_output_size();
@@ -87,8 +89,8 @@ double PathPlan::estimate_output_size() const {
     return cached_output_estimation;
 }
 
-
-double PathPlan::_estimate_output_size() const {
+double PathPlan::_estimate_output_size() const
+{
     double res = 0;
     // cost is the sum of all properties multiplied with a factor
     // we chose 1.1 so a simple path (eg: :P1*) is more expensive than a simple triple
@@ -140,8 +142,8 @@ double PathPlan::_estimate_output_size() const {
     return res;
 }
 
-
-std::set<VarId> PathPlan::get_vars() const {
+std::set<VarId> PathPlan::get_vars() const
+{
     std::set<VarId> result;
     if (subject.is_var() && !subject_assigned) {
         result.insert(subject.get_var());
@@ -153,26 +155,24 @@ std::set<VarId> PathPlan::get_vars() const {
     return result;
 }
 
-
-void PathPlan::set_input_vars(const std::set<VarId>& input_vars) {
-    auto previous_assigned_count = static_cast<int>(subject_assigned)
-                                 + static_cast<int>(object_assigned);
+void PathPlan::set_input_vars(const std::set<VarId>& input_vars)
+{
+    auto previous_assigned_count = static_cast<int>(subject_assigned) + static_cast<int>(object_assigned);
 
     set_input_var(input_vars, subject, &subject_assigned);
-    set_input_var(input_vars, object,  &object_assigned);
+    set_input_var(input_vars, object, &object_assigned);
 
-    auto after_assigned_count = static_cast<int>(subject_assigned)
-                              + static_cast<int>(object_assigned);
+    auto after_assigned_count = static_cast<int>(subject_assigned) + static_cast<int>(object_assigned);
 
     if (previous_assigned_count != after_assigned_count) {
         cached_output_estimation_is_valid = false;
     }
 }
 
-
-std::unique_ptr<Paths::IndexProvider> PathPlan::get_provider(const RPQ_DFA& automaton) const {
-    auto t_info = std::unordered_map<uint64_t, Paths::IndexType>();
-    auto t_inv_info = std::unordered_map<uint64_t, Paths::IndexType>();
+std::unique_ptr<IndexProvider> PathPlan::get_provider(const RPQ_DFA& automaton) const
+{
+    auto t_info = std::unordered_map<uint64_t, IndexType>();
+    auto t_inv_info = std::unordered_map<uint64_t, IndexType>();
     for (size_t state = 0; state < automaton.from_to_connections.size(); state++) {
         for (auto& transition : automaton.from_to_connections[state]) {
             if (transition.inverse) {
@@ -180,22 +180,23 @@ std::unique_ptr<Paths::IndexProvider> PathPlan::get_provider(const RPQ_DFA& auto
                 if (t_inv_info.find(transition.type_id.id) != t_inv_info.end()) {
                     continue;
                 }
-                t_inv_info.insert({transition.type_id.id, Paths::IndexType::BTREE});
+                t_inv_info.insert({ transition.type_id.id, IndexType::BTREE });
 
             } else {
                 // Avoid transitions that are already stored
                 if (t_info.find(transition.type_id.id) != t_info.end()) {
                     continue;
                 }
-                t_info.insert({transition.type_id.id, Paths::IndexType::BTREE});
+                t_info.insert({ transition.type_id.id, IndexType::BTREE });
             }
         }
     }
-    return std::make_unique<Paths::RdfModelIndexProvider>(std::move(t_info),
-                                                          std::move(t_inv_info),
-                                                          &get_query_ctx().thread_info.interruption_requested);
+    return make_unique<RdfModelIndexProvider>(
+        std::move(t_info),
+        std::move(t_inv_info),
+        &get_query_ctx().thread_info.interruption_requested
+    );
 }
-
 
 std::unique_ptr<BindingIter> PathPlan::get_check(const RPQ_DFA& automaton, Id start, Id end) const {
     auto provider = get_provider(automaton);
@@ -203,55 +204,55 @@ std::unique_ptr<BindingIter> PathPlan::get_check(const RPQ_DFA& automaton, Id st
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AllSimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AllSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AllSimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AllSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AnySimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::DFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AnySimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::DFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::Any::DFSCheck>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<Any::DFSCheck>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
         }
     }
 
     // Shortest only support BFS
     case PathSemantic::ALL_SHORTEST_ACYCLIC:
-        return std::make_unique<Paths::AllShortestSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AllShortestSimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ALL_SHORTEST_SIMPLE:
-        return std::make_unique<Paths::AllShortestSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AllShortestSimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ALL_SHORTEST_WALKS:
-        return std::make_unique<Paths::AllShortest::BFSCheck>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AllShortest::BFSCheck>(path_var, start, end, automaton, std::move(provider));
 
     case PathSemantic::ANY_SHORTEST_ACYCLIC:
-        return std::make_unique<Paths::AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AnySimple::BFSCheck<false>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ANY_SHORTEST_SIMPLE:
-        return std::make_unique<Paths::AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AnySimple::BFSCheck<true>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ANY_SHORTEST_WALKS:
     case PathSemantic::DEFAULT:
-        return std::make_unique<Paths::Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<Any::BFSCheck>(path_var, start, end, automaton, std::move(provider));
 
     case PathSemantic::ALL_SHORTEST_WALKS_COUNT:
         throw QuerySemanticException("ALL_SHORTEST_WALKS_COUNT check not supported yet");
@@ -267,70 +268,88 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
     switch (path_semantic) {
     case PathSemantic::ALL_ACYCLIC: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AllSimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AllSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ALL_SIMPLE: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AllSimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AllSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_ACYCLIC: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AnySimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_SIMPLE: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
-            return std::make_unique<Paths::AnySimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         }
     }
     case PathSemantic::ANY_WALKS: {
         if (rdf_model.path_mode == PathSearchMode::DFS) {
             if (automaton.total_final_states > 1) {
-                return std::make_unique<Paths::Any::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+                return make_unique<Any::DFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
             } else {
-                return std::make_unique<Paths::Any::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+                return make_unique<Any::DFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
             }
         } else {
-            if (automaton.total_final_states > 1) {
-                return std::make_unique<Paths::Any::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            if (get_query_ctx().is_internal(path_var)) {
+                if (automaton.total_final_states > 1) {
+                    return make_unique<Any::BFSEnumEndpoint<true>>(start, end, automaton, std::move(provider));
+                } else {
+                    return make_unique<Any::BFSEnumEndpoint<false>>(start, end, automaton, std::move(provider));
+                }
             } else {
-                return std::make_unique<Paths::Any::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+                if (automaton.total_final_states > 1) {
+                    return make_unique<Any::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+                } else {
+                    return make_unique<Any::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+                }
             }
         }
     }
 
     // Shortest only support BFS
     case PathSemantic::ALL_SHORTEST_ACYCLIC:
-        return std::make_unique<Paths::AllShortestSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AllShortestSimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ALL_SHORTEST_SIMPLE:
-        return std::make_unique<Paths::AllShortestSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AllShortestSimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ALL_SHORTEST_WALKS:
         if (automaton.total_final_states > 1) {
-            return std::make_unique<Paths::AllShortest::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllShortest::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
         } else {
-            return std::make_unique<Paths::AllShortest::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            return make_unique<AllShortest::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
         }
     case PathSemantic::ANY_SHORTEST_ACYCLIC:
-        return std::make_unique<Paths::AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AnySimple::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ANY_SHORTEST_SIMPLE:
-        return std::make_unique<Paths::AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+        return make_unique<AnySimple::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
     case PathSemantic::ANY_SHORTEST_WALKS:
-    case PathSemantic::DEFAULT:
-        if (automaton.total_final_states > 1) {
-            return std::make_unique<Paths::Any::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+    case PathSemantic::DEFAULT: {
+        // TODO: if not internal but unused also can use endpoint
+        if (get_query_ctx().is_internal(path_var)) {
+            if (automaton.total_final_states > 1) {
+                return make_unique<Any::BFSEnumEndpoint<true>>(start, end, automaton, std::move(provider));
+            } else {
+                return make_unique<Any::BFSEnumEndpoint<false>>(start, end, automaton, std::move(provider));
+            }
         } else {
-            return std::make_unique<Paths::Any::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            if (automaton.total_final_states > 1) {
+                return make_unique<Any::BFSEnum<true>>(path_var, start, end, automaton, std::move(provider));
+            } else {
+                return make_unique<Any::BFSEnum<false>>(path_var, start, end, automaton, std::move(provider));
+            }
         }
+    }
     case PathSemantic::ALL_SHORTEST_WALKS_COUNT:
         throw QuerySemanticException("ALL_SHORTEST_WALKS_COUNT enum not supported yet");
 
@@ -339,13 +358,11 @@ std::unique_ptr<BindingIter> PathPlan::get_enum(const RPQ_DFA& automaton, Id sta
     }
 }
 
+std::unique_ptr<BindingIter> PathPlan::get_unfixed(const RPQ_DFA& automaton, VarId start, VarId end) const
+{
+    auto iter = start == end ? get_check(automaton, start, end) : get_enum(automaton, start, end);
 
-std::unique_ptr<BindingIter> PathPlan::get_unfixed(const RPQ_DFA& automaton, VarId start, VarId end) const {
-    auto iter = start == end
-              ? get_check(automaton, start, end)
-              : get_enum(automaton, start, end);
-
-    return std::make_unique<Paths::UnfixedComposite>(
+    return make_unique<UnfixedComposite>(
         path_var,
         start,
         end,
@@ -355,8 +372,8 @@ std::unique_ptr<BindingIter> PathPlan::get_unfixed(const RPQ_DFA& automaton, Var
     );
 }
 
-
-bool PathPlan::subject_is_better_start_direction() const {
+bool PathPlan::subject_is_better_start_direction() const
+{
     if (automaton.total_states == 1 || automaton.is_final_state[0]) {
         return true;
     }
@@ -381,12 +398,12 @@ bool PathPlan::subject_is_better_start_direction() const {
     }
 }
 
-
-std::unique_ptr<BindingIter> PathPlan::get_binding_iter() const {
+std::unique_ptr<BindingIter> PathPlan::get_binding_iter() const
+{
     // border case with nullable paths and empty database, example at test
     // tests/sparql/test_suites/sparql11/property-path/values_and_path.rq
     if (rdf_model.catalog.get_triples_count() == 0) {
-        return std::make_unique<EmptyBindingIter>();
+        return make_unique<EmptyBindingIter>();
     }
     if (subject_assigned) {
         if (object_assigned) {
@@ -394,7 +411,7 @@ std::unique_ptr<BindingIter> PathPlan::get_binding_iter() const {
             begin_at_left[path_var.id] = star_at_subject;
             const RPQ_DFA& best_automaton = star_at_subject ? automaton : automaton_inverted;
             Id start = star_at_subject ? subject : object;
-            Id end   = star_at_subject ? object  : subject;
+            Id end = star_at_subject ? object : subject;
 
             return get_check(best_automaton, start, end);
         } else {
@@ -411,7 +428,7 @@ std::unique_ptr<BindingIter> PathPlan::get_binding_iter() const {
             begin_at_left[path_var.id] = star_at_subject;
             const RPQ_DFA& best_automaton = star_at_subject ? automaton : automaton_inverted;
             Id start = star_at_subject ? subject : object;
-            Id end   = star_at_subject ? object  : subject;
+            Id end = star_at_subject ? object : subject;
             return get_unfixed(best_automaton, start.get_var(), end.get_var());
         }
     }
