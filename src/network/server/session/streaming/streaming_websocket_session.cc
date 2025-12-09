@@ -108,7 +108,7 @@ void StreamingWebSocketSession::decode_chunk(std::size_t chunk_size)
     // read current chunk + next chunk size
     async_read_nbytes(chunk_size + 2, [self, chunk_size]() {
         // append decoded chunk
-        auto chunk_bytes = static_cast<const char*>(self->request_buffer.data().data());
+        auto chunk_bytes = static_cast<const uint8_t*>(self->request_buffer.data().data());
         const auto old_size = self->decoded_chunks.size();
         self->decoded_chunks.resize(old_size + chunk_size);
         std::memcpy(self->decoded_chunks.data() + old_size, chunk_bytes, chunk_size);
