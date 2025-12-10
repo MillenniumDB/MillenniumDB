@@ -28,13 +28,17 @@ public:
         session(session),
         request_reader(std::move(request_reader)),
         response_writer(std::move(response_writer))
-    { }
+    {
+        has_write_auth = !session.server.has_admin_user();
+    }
 
     virtual ~StreamingRequestHandler() = default;
 
     void handle(const uint8_t* request_bytes, std::size_t request_size);
 
 protected:
+    bool has_write_auth;
+
     virtual void initial_parse(const std::string& query) = 0;
 
     // is supposed to be called after initial_parse

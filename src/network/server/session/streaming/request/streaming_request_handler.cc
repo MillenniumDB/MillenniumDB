@@ -33,6 +33,11 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
         handle_cancel();
         break;
     }
+    case Protocol::RequestType::AUTH: {
+        logger(Category::Debug) << "Request received: AUTH";
+        has_write_auth = true;
+        break;
+    }
     default: {
         throw ProtocolException("Unhandled request type: " + Protocol::request_type_to_string(request_type));
     }
@@ -50,7 +55,7 @@ void StreamingRequestHandler::handle_readonly_run()
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
                            << get_query_ctx().cancellation_token;
 
-    // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+    // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {
@@ -107,6 +112,10 @@ void StreamingRequestHandler::handle_readonly_run()
 
 void StreamingRequestHandler::handle_update_run()
 {
+    if (!has_write_auth) {
+        throw QueryException("Update not authorized");
+    }
+
     // Mutex to allow only one write query at a time
     std::lock_guard<std::mutex> lock(session.server.update_execution_mutex);
 
@@ -116,7 +125,7 @@ void StreamingRequestHandler::handle_update_run()
         get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
-    // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+    // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {
