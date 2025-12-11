@@ -16,7 +16,7 @@ StreamingTCPSession::StreamingTCPSession(
     boost::asio::ip::tcp::socket&& socket_,
     std::chrono::seconds query_timeout_
 ) :
-    StreamingSession(server),
+    StreamingSession(server, false),
     query_timeout(query_timeout_),
     socket(std::move(socket_))
 {

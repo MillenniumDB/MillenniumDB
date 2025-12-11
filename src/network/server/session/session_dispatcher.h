@@ -33,6 +33,8 @@ public:
 
     void dispatch_http();
 
+    std::pair<std::string, std::string>
+        get_user_password(const boost::beast::http::request<boost::beast::http::string_body>& http_request);
 
 private:
     Server& server;

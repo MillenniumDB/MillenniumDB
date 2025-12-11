@@ -59,6 +59,10 @@ public:
 
     void set_admin_user(const std::string& user, const std::string& password);
 
+    bool has_admin_user() const {
+        return !users.empty();
+    }
+
 private:
     static void browser_session(boost::asio::ip::tcp::socket&& socket);
 

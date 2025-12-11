@@ -17,7 +17,8 @@ class StreamingWebSocketSession : public StreamingSession, public std::enable_sh
 public:
     explicit StreamingWebSocketSession(Server&                 server,
                                        websocket_stream_type&& stream,
-                                       std::chrono::seconds    query_timeout);
+                                       std::chrono::seconds    query_timeout,
+                                       bool write_authorized);
 
     ~StreamingWebSocketSession();
 

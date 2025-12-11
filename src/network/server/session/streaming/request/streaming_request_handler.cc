@@ -107,6 +107,10 @@ void StreamingRequestHandler::handle_readonly_run()
 
 void StreamingRequestHandler::handle_update_run()
 {
+    if (!session.write_authorized) {
+        throw QueryException("Write not authorized in this session");
+    }
+
     // Mutex to allow only one write query at a time
     std::lock_guard<std::mutex> lock(session.server.update_execution_mutex);
 

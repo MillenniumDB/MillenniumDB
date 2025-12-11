@@ -133,6 +133,18 @@ void SessionDispatcher::dispatch_http()
     http::request<http::string_body> http_request = http_parser.release();
     beast::tcp_stream stream(std::move(socket));
 
+    bool write_authorized = !server.has_admin_user();
+    const auto&& [user, password] = get_user_password(http_request);
+
+    if (!user.empty() && !password.empty()) {
+        const auto [auth_token, valid_until] = server.create_auth_token(user, password);
+        if (!auth_token.empty()) {
+            write_authorized = true;
+        } else {
+            // TODO: tell the user that authorization failed?
+        }
+    }
+
     if (websocket::is_upgrade(http_request)) {
         auto ws_stream = std::make_unique<websocket::stream<beast::tcp_stream>>(std::move(stream));
         auto* ws_stream_p = ws_stream.get();
@@ -142,18 +154,20 @@ void SessionDispatcher::dispatch_http()
             http_request,
             [ws_stream = std::move(ws_stream),
              &server = server,
-             query_timeout = query_timeout](const boost::system::error_code& ec) {
+             query_timeout = query_timeout,
+             write_authorized](const boost::system::error_code& ec) {
                 if (ec) {
                     ws_stream->close(websocket::close_code::abnormal);
                     logger(Category::Error) << "Could not perform the WebSocket handshake with the client";
                     return;
                 }
-
                 logger(Category::Debug) << "Dispatching StreamingWebSocketSession";
+
                 std::make_shared<StreamingWebSocketSession>(
                     server,
                     std::move(*ws_stream),
-                    query_timeout
+                    query_timeout,
+                    write_authorized
                 )
                     ->run();
             }
@@ -187,4 +201,12 @@ void SessionDispatcher::dispatch_http()
     } else {
         throw std::runtime_error("Unhandled ModelId: " + std::to_string(server.model_id));
     }
+}
+
+std::pair<std::string, std::string> SessionDispatcher::get_user_password(
+    const boost::beast::http::request<boost::beast::http::string_body>& http_request
+)
+{
+    // TODO: parse query params
+    return { "admin", "1234" };
 }

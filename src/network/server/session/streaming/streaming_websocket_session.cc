@@ -16,9 +16,10 @@ namespace websocket = beast::websocket;
 StreamingWebSocketSession::StreamingWebSocketSession(
     Server& server_,
     websocket_stream_type&& stream_,
-    std::chrono::seconds query_timeout_
+    std::chrono::seconds query_timeout_,
+    bool write_authorized
 ) :
-    StreamingSession(server_),
+    StreamingSession(server_, write_authorized),
     query_timeout(query_timeout_),
     stream(std::move(stream_))
 {

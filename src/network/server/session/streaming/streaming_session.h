@@ -14,11 +14,14 @@ namespace MDBServer {
  */
 class StreamingSession {
 public:
-    StreamingSession(Server& server) :
-        server(server)
+    StreamingSession(Server& server, bool write_authorized) :
+        server(server),
+        write_authorized(write_authorized)
     { }
 
     Server& server;
+
+    bool write_authorized;
 
     virtual ~StreamingSession() = default;
 
