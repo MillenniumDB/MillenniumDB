@@ -50,7 +50,7 @@ void StreamingRequestHandler::handle_readonly_run()
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
                            << get_query_ctx().cancellation_token;
 
-    // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+    // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {
@@ -120,7 +120,7 @@ void StreamingRequestHandler::handle_update_run()
         get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
-    // Request must be read here because query_ctx.prepare() clears all posible tmp that could come as parameters
+    // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {

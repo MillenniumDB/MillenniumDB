@@ -42,8 +42,10 @@ void SessionDispatcher::run()
                 asio::async_write(
                     self->socket,
                     asio::buffer(Protocol::SERVER_PREAMBLE),
-                    [self = self->shared_from_this(
-                     )](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+                    [self = self->shared_from_this()](
+                        const boost::system::error_code& ec,
+                        std::size_t /*bytes_transferred*/
+                    ) {
                         if (ec) {
                             self->socket.close();
                             logger(Category::Error) << "Could not write the server's preamble";
@@ -178,35 +180,81 @@ void SessionDispatcher::dispatch_http()
     // Handle regular HTTP requests
     logger(Category::Debug) << "Dispatching HTTPSession";
     if (server.model_id == Protocol::QUAD_MODEL_ID) {
-        HttpQuadSession::run(std::make_unique<HttpQuadSession>(
-            server,
-            std::move(stream),
-            std::move(http_request),
-            query_timeout
-        ));
+        HttpQuadSession::run(
+            std::make_unique<HttpQuadSession>(
+                server,
+                std::move(stream),
+                std::move(http_request),
+                query_timeout
+            )
+        );
     } else if (server.model_id == Protocol::RDF_MODEL_ID) {
-        HttpRdfSession::run(std::make_unique<HttpRdfSession>(
-            server,
-            std::move(stream),
-            std::move(http_request),
-            query_timeout
-        ));
+        HttpRdfSession::run(
+            std::make_unique<HttpRdfSession>(
+                server,
+                std::move(stream),
+                std::move(http_request),
+                query_timeout
+            )
+        );
     } else if (server.model_id == Protocol::GQL_MODEL_ID) {
-        HttpGQLSession::run(std::make_unique<HttpGQLSession>(
-            server,
-            std::move(stream),
-            std::move(http_request),
-            query_timeout
-        ));
+        HttpGQLSession::run(
+            std::make_unique<HttpGQLSession>(
+                server,
+                std::move(stream),
+                std::move(http_request),
+                query_timeout
+            )
+        );
     } else {
         throw std::runtime_error("Unhandled ModelId: " + std::to_string(server.model_id));
     }
 }
 
 std::pair<std::string, std::string> SessionDispatcher::get_user_password(
-    const boost::beast::http::request<boost::beast::http::string_body>& http_request
+    const boost::beast::http::request<boost::beast::http::string_body>& request
 )
 {
-    // TODO: parse query params
-    return { "admin", "1234" };
+    std::string_view url = request.target();
+
+    // Find the beginning of the query string
+    size_t qm = url.find('?');
+    if (qm == std::string_view::npos) {
+        return { "", "" }; // No query
+    }
+
+    std::string_view query = url.substr(qm + 1);
+
+    std::string user;
+    std::string password;
+
+    while (!query.empty()) {
+        // Find next '&'
+        size_t amp = query.find('&');
+        auto pair = (amp == std::string_view::npos) ? query : query.substr(0, amp);
+
+        // Move to next part
+        if (amp != std::string_view::npos)
+            query.remove_prefix(amp + 1);
+        else
+            query = {};
+
+        // Split "key=value"
+        size_t eq = pair.find('=');
+        if (eq == std::string_view::npos)
+            continue;
+
+        std::string_view key = pair.substr(0, eq);
+        std::string_view val = pair.substr(eq + 1);
+
+        std::cout << key << ":" << val << std::endl;
+
+        if (key == "user") {
+            user = std::string(val);
+        } else if (key == "password") {
+            password = std::string(val);
+        }
+    }
+
+    return { user, password };
 }
