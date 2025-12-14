@@ -1,5 +1,7 @@
 #include "listener.h"
 
+#include <boost/asio/strand.hpp>
+
 #include "misc/fatal_error.h"
 #include "misc/logger.h"
 #include "network/server/session/session_dispatcher.h"
@@ -10,12 +12,14 @@ using namespace boost;
 Listener::Listener(
     Server& server,
     asio::io_context& io_context,
+    asio::ssl::context& ssl_context,
     asio::ip::tcp::endpoint endpoint,
     std::chrono::seconds query_timeout
 ) :
     server(server),
     io_context(io_context),
-    acceptor(io_context),
+    ssl_context(ssl_context),
+    acceptor(boost::asio::make_strand(io_context)),
     endpoint(endpoint),
     query_timeout(query_timeout)
 {
@@ -48,14 +52,14 @@ Listener::Listener(
 
 void Listener::run()
 {
-    acceptor.async_accept([&](const boost::system::error_code& ec, asio::ip::tcp::socket socket) {
+    acceptor.async_accept(boost::asio::make_strand(io_context), [&](const boost::system::error_code& ec, asio::ip::tcp::socket socket) {
         // A new connection is accepted
         logger(Category::Debug) << "New client connected";
         if (!ec) {
             // Disable Nagle's Algorithm to reduce latency, as our protocol may flush many small
             // messages when answering requests
             socket.set_option(asio::ip::tcp::no_delay(true));
-            std::make_shared<SessionDispatcher>(server, std::move(socket), query_timeout)->run();
+            std::make_shared<SessionSSLDetector>(server, std::move(socket), ssl_context, query_timeout)->run();
         }
 
         // Accept another connection

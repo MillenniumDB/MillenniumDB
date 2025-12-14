@@ -2,6 +2,8 @@
 
 #include <iomanip>
 
+#include <boost/beast/ssl.hpp>
+
 #include "misc/logger.h"
 #include "misc/trim.h"
 #include "network/server/server.h"
@@ -13,12 +15,12 @@
 
 using namespace boost;
 using namespace MDBServer;
-namespace beast = boost::beast;
 namespace http = beast::http;
 
-HttpGQLSession::HttpGQLSession(
+template<typename stream_t>
+HttpGQLSession<stream_t>::HttpGQLSession(
     Server& server,
-    stream_type&& stream,
+    stream_t&& stream,
     http::request<http::string_body>&& request,
     std::chrono::seconds query_timeout
 ) :
@@ -28,14 +30,17 @@ HttpGQLSession::HttpGQLSession(
     query_timeout(query_timeout)
 { }
 
-HttpGQLSession::~HttpGQLSession()
+template<typename stream_t>
+HttpGQLSession<stream_t>::~HttpGQLSession()
 {
-    if (stream.socket().is_open()) {
-        stream.close();
-    }
+    // TODO:
+    // if (stream.socket().is_open()) {
+    //     stream.close();
+    // }
 }
 
-void HttpGQLSession::run(std::unique_ptr<HttpGQLSession> obj)
+template<typename stream_t>
+void HttpGQLSession<stream_t>::run(std::unique_ptr<HttpGQLSession> obj)
 {
     HttpResponseBuffer response_buffer(obj->stream);
 
@@ -82,9 +87,6 @@ void HttpGQLSession::run(std::unique_ptr<HttpGQLSession> obj)
         return;
     }
 
-    // After parsing the query we don't want to have a connection timeout
-    obj->stream.expires_never();
-
     logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
 
     if (request_type == Protocol::RequestType::UPDATE) {
@@ -94,7 +96,8 @@ void HttpGQLSession::run(std::unique_ptr<HttpGQLSession> obj)
     }
 }
 
-void HttpGQLSession::execute_readonly_query(
+template<typename stream_t>
+void HttpGQLSession<stream_t>::execute_readonly_query(
     const std::string& query,
     std::ostream& os,
     GQL::ReturnType response_type
@@ -155,7 +158,8 @@ void HttpGQLSession::execute_readonly_query(
     }
 }
 
-std::unique_ptr<Op> HttpGQLSession::create_readonly_logical_plan(const std::string& query)
+template<typename stream_t>
+std::unique_ptr<Op> HttpGQLSession<stream_t>::create_readonly_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
 
@@ -164,8 +168,9 @@ std::unique_ptr<Op> HttpGQLSession::create_readonly_logical_plan(const std::stri
     return logical_plan;
 }
 
+template<typename stream_t>
 std::unique_ptr<QueryExecutor>
-    HttpGQLSession::create_readonly_physical_plan(Op& logical_plan, GQL::ReturnType response_type)
+    HttpGQLSession<stream_t>::create_readonly_physical_plan(Op& logical_plan, GQL::ReturnType response_type)
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
@@ -176,7 +181,8 @@ std::unique_ptr<QueryExecutor>
     return std::move(executor_constructor.executor);
 }
 
-void HttpGQLSession::execute_readonly_query_plan(
+template<typename stream_t>
+void HttpGQLSession<stream_t>::execute_readonly_query_plan(
     QueryExecutor& physical_plan,
     std::ostream& os,
     GQL::ReturnType return_type
@@ -225,7 +231,8 @@ void HttpGQLSession::execute_readonly_query_plan(
                                << "Execution duration: " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info
+        logger(
+            Category::Info
         ) << "Timeout thrown after "
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
     } catch (const QueryExecutionException& e) {
@@ -238,4 +245,10 @@ void HttpGQLSession::execute_readonly_query_plan(
     }
 }
 
-void HttpGQLSession::execute_update_query(const std::string& /* query */, std::ostream& /* os */) { }
+template<typename stream_t>
+void HttpGQLSession<stream_t>::execute_update_query(const std::string& /* query */, std::ostream& /* os */)
+{ }
+
+template class MDBServer::HttpGQLSession<asio::ip::tcp::socket>;
+template class MDBServer::HttpGQLSession<boost::beast::ssl_stream<asio::ip::tcp::socket>>;
+

@@ -11,86 +11,38 @@
 
 using namespace MDBServer;
 using namespace boost;
-namespace beast = boost::beast;
 namespace http = beast::http;
 namespace websocket = beast::websocket;
 
-void SessionDispatcher::run()
+template<typename stream_t>
+void SessionDispatcher<stream_t>::run()
 {
-    // Set the timeout for getting the query
-    auto self = this->shared_from_this();
-
-    // Peek initial bytes to determine the client type
-    asio::async_read(
-        socket,
-        read_buffer.prepare(Protocol::DRIVER_PREAMBLE.size()),
-        boost::asio::transfer_all(),
-        [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
-            if (ec) {
-                self->socket.close();
-                logger(Category::Error) << "Could not read the client's preamble";
-                return;
-            }
-
-            self->read_buffer.commit(Protocol::DRIVER_PREAMBLE.size());
-            auto preamble = std::string(
-                static_cast<const char*>(self->read_buffer.data().data()),
-                Protocol::DRIVER_PREAMBLE.size()
-            );
-            if (preamble == Protocol::DRIVER_PREAMBLE) {
-                // The client is using the driver protocol, send the proper preamble
-                asio::async_write(
-                    self->socket,
-                    asio::buffer(Protocol::SERVER_PREAMBLE),
-                    [self = self->shared_from_this()](
-                        const boost::system::error_code& ec,
-                        std::size_t /*bytes_transferred*/
-                    ) {
-                        if (ec) {
-                            self->socket.close();
-                            logger(Category::Error) << "Could not write the server's preamble";
-                            return;
-                        }
-
-                        std::make_shared<StreamingTCPSession>(
-                            self->server,
-                            std::move(self->socket),
-                            self->query_timeout
-                        )
-                            ->run();
-                    }
-                );
-                return;
-            }
-
-            self->read_http_header();
-        }
-    );
+    read_http_header();
 }
 
-void SessionDispatcher::read_http_header()
+template<typename stream_t>
+void SessionDispatcher<stream_t>::read_http_header()
 {
     http_parser.eager(true);
     http_parser.body_limit(16 * 1024 * 1024);
 
-    auto self = this->shared_from_this();
     asio::async_read_until(
-        socket,
+        stream,
         read_buffer,
         "\r\n\r\n",
-        [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+        [self = this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
-                self->socket.close();
+                // self->stream.close(); // TODO:
                 logger(Category::Error) << "Could not read the HTTP header: " << ec.message();
                 return;
             }
-            auto tmp_buf = boost::asio::buffer(self->read_buffer.data(), self->read_buffer.size());
-            boost::system::error_code ec2;
+            auto tmp_buf = asio::buffer(self->read_buffer.data(), self->read_buffer.size());
+            system::error_code ec2;
             self->http_parser.put(tmp_buf, ec2);
             self->read_buffer.consume(self->read_buffer.size());
 
             if (ec2) {
-                self->socket.close();
+                // self->stream.close(); // TODO:
                 logger(Category::Error) << "Could not parse the HTTP header: " << ec2.message();
                 return;
             }
@@ -99,25 +51,26 @@ void SessionDispatcher::read_http_header()
     );
 }
 
-void SessionDispatcher::read_http_body()
+template<typename stream_t>
+void SessionDispatcher<stream_t>::read_http_body()
 {
     if (!http_parser.is_done()) {
-        auto self = this->shared_from_this();
-        boost::asio::async_read(
-            socket,
+        asio::async_read(
+            stream,
             read_buffer,
-            boost::asio::transfer_at_least(1),
-            [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+            asio::transfer_at_least(1),
+            [self =
+                 this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
                 if (ec) {
-                    self->socket.close();
+                    // self->stream.close(); // TODO:
                     logger(Category::Error) << "Could not parse the HTTP body: " << ec.message();
                     return;
                 }
-                auto tmp_buf = boost::asio::buffer(self->read_buffer.data(), self->read_buffer.size());
-                boost::system::error_code ec2;
+                auto tmp_buf = asio::buffer(self->read_buffer.data(), self->read_buffer.size());
+                system::error_code ec2;
                 self->http_parser.put(tmp_buf, ec2);
                 if (ec2) {
-                    self->socket.close();
+                    // self->stream.close(); // TODO:
                     logger(Category::Error) << "Could not parse the HTTP: " << ec2.message();
                     return;
                 }
@@ -130,10 +83,10 @@ void SessionDispatcher::read_http_body()
     }
 }
 
-void SessionDispatcher::dispatch_http()
+template<typename stream_t>
+void SessionDispatcher<stream_t>::dispatch_http()
 {
     http::request<http::string_body> http_request = http_parser.release();
-    beast::tcp_stream stream(std::move(socket));
 
     bool write_authorized = !server.has_admin_user();
     const auto&& [user, password] = get_user_password(http_request);
@@ -148,16 +101,15 @@ void SessionDispatcher::dispatch_http()
     }
 
     if (websocket::is_upgrade(http_request)) {
-        auto ws_stream = std::make_unique<websocket::stream<beast::tcp_stream>>(std::move(stream));
+        auto ws_stream = std::make_unique<websocket::stream<stream_t>>(std::move(stream));
         auto* ws_stream_p = ws_stream.get();
 
         // Try to handshake with the WebSocket client
         ws_stream_p->async_accept(
             http_request,
             [ws_stream = std::move(ws_stream),
-             &server = server,
-             query_timeout = query_timeout,
-             write_authorized](const boost::system::error_code& ec) {
+             self = this->shared_from_this(),
+             write_authorized](const system::error_code& ec) {
                 if (ec) {
                     ws_stream->close(websocket::close_code::abnormal);
                     logger(Category::Error) << "Could not perform the WebSocket handshake with the client";
@@ -165,10 +117,10 @@ void SessionDispatcher::dispatch_http()
                 }
                 logger(Category::Debug) << "Dispatching StreamingWebSocketSession";
 
-                std::make_shared<StreamingWebSocketSession>(
-                    server,
+                std::make_shared<StreamingWebSocketSession<beast::websocket::stream<stream_t>>>(
+                    self->server,
                     std::move(*ws_stream),
-                    query_timeout,
+                    self->query_timeout,
                     write_authorized
                 )
                     ->run();
@@ -180,8 +132,8 @@ void SessionDispatcher::dispatch_http()
     // Handle regular HTTP requests
     logger(Category::Debug) << "Dispatching HTTPSession";
     if (server.model_id == Protocol::QUAD_MODEL_ID) {
-        HttpQuadSession::run(
-            std::make_unique<HttpQuadSession>(
+        HttpQuadSession<stream_t>::run(
+            std::make_unique<HttpQuadSession<stream_t>>(
                 server,
                 std::move(stream),
                 std::move(http_request),
@@ -189,8 +141,8 @@ void SessionDispatcher::dispatch_http()
             )
         );
     } else if (server.model_id == Protocol::RDF_MODEL_ID) {
-        HttpRdfSession::run(
-            std::make_unique<HttpRdfSession>(
+        HttpRdfSession<stream_t>::run(
+            std::make_unique<HttpRdfSession<stream_t>>(
                 server,
                 std::move(stream),
                 std::move(http_request),
@@ -198,8 +150,8 @@ void SessionDispatcher::dispatch_http()
             )
         );
     } else if (server.model_id == Protocol::GQL_MODEL_ID) {
-        HttpGQLSession::run(
-            std::make_unique<HttpGQLSession>(
+        HttpGQLSession<stream_t>::run(
+            std::make_unique<HttpGQLSession<stream_t>>(
                 server,
                 std::move(stream),
                 std::move(http_request),
@@ -211,8 +163,9 @@ void SessionDispatcher::dispatch_http()
     }
 }
 
-std::pair<std::string, std::string> SessionDispatcher::get_user_password(
-    const boost::beast::http::request<boost::beast::http::string_body>& request
+template<typename stream_t>
+std::pair<std::string, std::string> SessionDispatcher<stream_t>::get_user_password(
+    const beast::http::request<beast::http::string_body>& request
 )
 {
     std::string_view url = request.target();
@@ -258,3 +211,55 @@ std::pair<std::string, std::string> SessionDispatcher::get_user_password(
 
     return { user, password };
 }
+
+void SessionSSLDetector::run()
+{
+    tcp_stream.async_receive(
+        asio::buffer(&peek_byte, 1),
+        asio::socket_base::message_peek,
+        [self = shared_from_this()](const system::error_code& ec, std::size_t bytes_transferred) {
+            if (ec || bytes_transferred == 0) {
+                self->tcp_stream.close();
+                logger(Category::Error) << "Could not read the client's preamble";
+                return;
+            }
+
+            const bool is_tls = self->peek_byte == 0x16;
+            if (is_tls) {
+                logger(Category::Debug) << "SSL detected.";
+                self->ssl_stream = std::make_unique<beast::ssl_stream<asio::ip::tcp::socket>>(
+                    std::move(self->tcp_stream),
+                    self->ssl_ctx
+                );
+
+                self->ssl_stream->async_handshake(
+                    asio::ssl::stream_base::server,
+                    [self = self->shared_from_this()](beast::error_code ec /*, std::size_t bytes_used*/) {
+                        if (ec) {
+                            logger(Category::Error) << "Error in ssl handshake: " << ec.message();
+                            return;
+                        }
+
+                        std::make_shared<SessionDispatcher<beast::ssl_stream<asio::ip::tcp::socket>>>(
+                            self->server,
+                            std::move(*self->ssl_stream),
+                            self->query_timeout
+                        )
+                            ->run();
+                    }
+                );
+            } else {
+                logger(Category::Debug) << "SSL not detected.";
+                std::make_shared<SessionDispatcher<asio::ip::tcp::socket>>(
+                    self->server,
+                    std::move(self->tcp_stream),
+                    self->query_timeout
+                )
+                    ->run();
+            }
+        }
+    );
+}
+
+template class MDBServer::SessionDispatcher<asio::ip::tcp::socket>;
+template class MDBServer::SessionDispatcher<beast::ssl_stream<asio::ip::tcp::socket>>;

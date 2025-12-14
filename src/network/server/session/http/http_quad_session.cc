@@ -2,6 +2,8 @@
 
 #include <iomanip>
 
+#include <boost/beast/ssl.hpp>
+
 #include "misc/logger.h"
 #include "misc/trim.h"
 #include "network/server/protocol.h"
@@ -20,9 +22,10 @@ using namespace MQL;
 namespace beast = boost::beast;
 namespace http = beast::http;
 
-HttpQuadSession::HttpQuadSession(
+template<typename stream_t>
+HttpQuadSession<stream_t>::HttpQuadSession(
     Server& server,
-    stream_type&& stream,
+    stream_t&& stream,
     http::request<http::string_body>&& request,
     std::chrono::seconds query_timeout
 ) :
@@ -32,14 +35,17 @@ HttpQuadSession::HttpQuadSession(
     query_timeout(query_timeout)
 { }
 
-HttpQuadSession::~HttpQuadSession()
+template<typename stream_t>
+HttpQuadSession<stream_t>::~HttpQuadSession()
 {
-    if (stream.socket().is_open()) {
-        stream.close();
-    }
+    // TODO:
+    // if (stream.socket().is_open()) {
+    //     stream.close();
+    // }
 }
 
-void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
+template<typename stream_t>
+void HttpQuadSession<stream_t>::run(std::unique_ptr<HttpQuadSession<stream_t>> obj)
 {
     HttpResponseBuffer response_buffer(obj->stream);
 
@@ -90,8 +96,6 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
         return;
     }
 
-    obj->stream.expires_never();
-
     logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
 
     try {
@@ -105,8 +109,9 @@ void HttpQuadSession::run(std::unique_ptr<HttpQuadSession> obj)
     }
 }
 
+template<typename stream_t>
 std::unique_ptr<QueryExecutor>
-    HttpQuadSession::create_query_executor(Op& logical_plan, ReturnType return_type)
+    HttpQuadSession<stream_t>::create_query_executor(Op& logical_plan, ReturnType return_type)
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
@@ -117,7 +122,12 @@ std::unique_ptr<QueryExecutor>
     return std::move(executor_constructor.executor);
 }
 
-void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, ReturnType response_type)
+template<typename stream_t>
+void HttpQuadSession<stream_t>::execute_query(
+    const std::string& query,
+    std::ostream& os,
+    ReturnType response_type
+)
 {
     try {
         const auto start_parser = std::chrono::system_clock::now();
@@ -154,7 +164,8 @@ void HttpQuadSession::execute_query(const std::string& query, std::ostream& os, 
     }
 }
 
-void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os)
+template<typename stream_t>
+void HttpQuadSession<stream_t>::run_write_query(MQL::QueryParser& parser, std::ostream& os)
 {
     std::lock_guard<std::mutex> lock(server.update_execution_mutex);
 
@@ -212,7 +223,12 @@ void HttpQuadSession::run_write_query(MQL::QueryParser& parser, std::ostream& os
     }
 }
 
-void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os, ReturnType return_type)
+template<typename stream_t>
+void HttpQuadSession<stream_t>::run_read_query(
+    MQL::QueryParser& parser,
+    std::ostream& os,
+    ReturnType return_type
+)
 {
     auto version_scope = buffer_manager.init_version_readonly();
 
@@ -281,3 +297,6 @@ void HttpQuadSession::run_read_query(MQL::QueryParser& parser, std::ostream& os,
         logger(Category::Error) << e.what();
     }
 }
+
+template class MDBServer::HttpQuadSession<asio::ip::tcp::socket>;
+template class MDBServer::HttpQuadSession<boost::beast::ssl_stream<asio::ip::tcp::socket>>;

@@ -2,6 +2,8 @@
 
 #include <iomanip>
 
+#include <boost/beast/ssl.hpp>
+
 #include "misc/logger.h"
 #include "misc/trim.h"
 #include "network/server/protocol.h"
@@ -20,12 +22,12 @@
 using namespace SPARQL;
 using namespace boost;
 using namespace MDBServer;
-namespace beast = boost::beast;
 namespace http = beast::http;
 
-HttpRdfSession::HttpRdfSession(
+template<typename stream_t>
+HttpRdfSession<stream_t>::HttpRdfSession(
     Server& server,
-    stream_type&& stream,
+    stream_t&& stream,
     http::request<http::string_body>&& request,
     std::chrono::seconds query_timeout
 ) :
@@ -35,14 +37,17 @@ HttpRdfSession::HttpRdfSession(
     query_timeout(query_timeout)
 { }
 
-HttpRdfSession::~HttpRdfSession()
+template<typename stream_t>
+HttpRdfSession<stream_t>::~HttpRdfSession()
 {
-    if (stream.socket().is_open()) {
-        stream.close();
-    }
+    // TODO:
+    // if (stream.socket().is_open()) {
+    //     stream.close();
+    // }
 }
 
-void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj)
+template<typename stream_t>
+void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
 {
     HttpResponseBuffer response_buffer(obj->stream);
 
@@ -93,9 +98,6 @@ void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj)
         return;
     }
 
-    // After parsing the query we don't want to have a connection timeout
-    obj->stream.expires_never();
-
     logger(Category::Info) << "\nQuery received:\n" << trim_string(query) << "\n";
 
     if (request_type == Protocol::RequestType::UPDATE) {
@@ -105,7 +107,8 @@ void HttpRdfSession::run(std::unique_ptr<HttpRdfSession> obj)
     }
 }
 
-void HttpRdfSession::execute_readonly_query(
+template<typename stream_t>
+void HttpRdfSession<stream_t>::execute_readonly_query(
     const std::string& query,
     std::ostream& os,
     SPARQL::ResponseType response_type
@@ -169,7 +172,8 @@ void HttpRdfSession::execute_readonly_query(
     }
 }
 
-std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::string& query)
+template<typename stream_t>
+std::unique_ptr<Op> HttpRdfSession<stream_t>::create_readonly_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
     SPARQL::QueryParser parser(query);
@@ -178,8 +182,9 @@ std::unique_ptr<Op> HttpRdfSession::create_readonly_logical_plan(const std::stri
     return logical_plan;
 }
 
+template<typename stream_t>
 std::unique_ptr<QueryExecutor>
-    HttpRdfSession::create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type)
+    HttpRdfSession<stream_t>::create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type)
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
@@ -190,7 +195,8 @@ std::unique_ptr<QueryExecutor>
     return std::move(executor_constructor.executor);
 }
 
-void HttpRdfSession::execute_readonly_query_plan(
+template<typename stream_t>
+void HttpRdfSession<stream_t>::execute_readonly_query_plan(
     QueryExecutor& physical_plan,
     std::ostream& os,
     SPARQL::ResponseType response_type
@@ -270,7 +276,8 @@ void HttpRdfSession::execute_readonly_query_plan(
     }
 }
 
-void HttpRdfSession::execute_update_query(const std::string& query, std::ostream& os)
+template<typename stream_t>
+void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, std::ostream& os)
 {
     // Mutex to allow only one write query at a time
     std::lock_guard<std::mutex> lock(server.update_execution_mutex);
@@ -355,10 +362,14 @@ void HttpRdfSession::execute_update_query(const std::string& query, std::ostream
                            << "Execution duration:" << execution_duration.count() << "ms";
 }
 
-std::unique_ptr<SPARQL::OpUpdate> HttpRdfSession::create_update_logical_plan(const std::string& query)
+template<typename stream_t>
+std::unique_ptr<SPARQL::OpUpdate> HttpRdfSession<stream_t>::create_update_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = SPARQL::UpdateParser::get_query_plan(query);
     parser_duration = std::chrono::system_clock::now() - start_parser;
     return logical_plan;
 }
+
+template class MDBServer::HttpRdfSession<asio::ip::tcp::socket>;
+template class MDBServer::HttpRdfSession<boost::beast::ssl_stream<asio::ip::tcp::socket>>;

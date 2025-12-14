@@ -4,24 +4,27 @@
 #include <memory>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
+#include <boost/beast/ssl.hpp>
+
+#include "network/server/server.h"
 
 namespace MDBServer {
-
-class Server;
 
 /**
  * Handle the initial connection and chooses the session based on the type of client that has connected
  */
-class SessionDispatcher : public std::enable_shared_from_this<SessionDispatcher> {
+template<typename stream_t>
+class SessionDispatcher : public std::enable_shared_from_this<SessionDispatcher<stream_t>> {
 public:
     SessionDispatcher(
         Server& server,
-        boost::asio::ip::tcp::socket&& socket,
+        stream_t&& stream,
         std::chrono::seconds query_timeout
     ) :
         server(server),
-        socket(std::move(socket)),
+        stream(std::move(stream)),
         query_timeout(query_timeout)
     { }
 
@@ -39,12 +42,45 @@ public:
 private:
     Server& server;
 
-    boost::asio::ip::tcp::socket socket;
+    stream_t stream;
+
+    boost::asio::streambuf read_buffer;
+
+    std::chrono::seconds query_timeout;
+
+    boost::beast::http::request_parser<boost::beast::http::string_body> http_parser;
+};
+
+class SessionSSLDetector : public std::enable_shared_from_this<SessionSSLDetector> {
+public:
+    SessionSSLDetector(
+        Server& server,
+        boost::asio::ip::tcp::socket&& socket,
+        boost::asio::ssl::context& ssl_ctx,
+        std::chrono::seconds query_timeout
+    ) :
+        server(server),
+        tcp_stream(std::move(socket)),
+        ssl_ctx(ssl_ctx),
+        query_timeout(query_timeout)
+    { }
+
+    void run();
+
+private:
+    Server& server;
+
+    boost::asio::ip::tcp::socket tcp_stream;
+
+    boost::asio::ssl::context& ssl_ctx;
 
     std::chrono::seconds query_timeout;
 
     boost::asio::streambuf read_buffer;
 
-    boost::beast::http::request_parser<boost::beast::http::string_body> http_parser;
+    std::unique_ptr<boost::beast::ssl_stream<boost::asio::ip::tcp::socket>> ssl_stream;
+
+    // used to peek the request and check if it is encrypted or not
+    uint8_t peek_byte = 0;
 };
 } // namespace MDBServer

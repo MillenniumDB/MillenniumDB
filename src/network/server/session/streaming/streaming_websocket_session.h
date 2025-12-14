@@ -11,14 +11,17 @@ namespace MDBServer {
 
 class Server;
 
-class StreamingWebSocketSession : public StreamingSession, public std::enable_shared_from_this<StreamingWebSocketSession> {
-    using websocket_stream_type = boost::beast::websocket::stream<boost::beast::tcp_stream>;
-
+template<typename ws_stream_t>
+class StreamingWebSocketSession :
+    public StreamingSession,
+    public std::enable_shared_from_this<StreamingWebSocketSession<ws_stream_t>> {
 public:
-    explicit StreamingWebSocketSession(Server&                 server,
-                                       websocket_stream_type&& stream,
-                                       std::chrono::seconds    query_timeout,
-                                       bool write_authorized);
+    explicit StreamingWebSocketSession(
+        Server& server,
+        ws_stream_t&& stream,
+        std::chrono::seconds query_timeout,
+        bool write_authorized
+    );
 
     ~StreamingWebSocketSession();
 
@@ -35,11 +38,11 @@ public:
 private:
     boost::beast::error_code ec;
 
-    std::chrono::seconds query_timeout;
-
-    websocket_stream_type stream;
+    ws_stream_t stream;
 
     boost::asio::streambuf request_buffer;
+
+    std::chrono::seconds query_timeout;
 
     std::vector<uint8_t> decoded_chunks;
 
@@ -50,7 +53,7 @@ private:
     void decode_chunk(std::size_t chunk_size);
 
     // helper function for reading at least n bytes from the ws stream
-    template <typename OnRead>
+    template<typename OnRead>
     void async_read_nbytes(std::size_t n, OnRead&& on_read);
 
     void close_with_error(const std::string& msg);

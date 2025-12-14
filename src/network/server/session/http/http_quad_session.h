@@ -12,9 +12,8 @@ namespace MDBServer {
 
 class Server;
 
-class HttpQuadSession : public std::enable_shared_from_this<HttpQuadSession> {
-    using stream_type = boost::beast::tcp_stream;
-
+template<typename stream_t>
+class HttpQuadSession {
 public:
     using DurationMS = std::chrono::duration<float, std::milli>;
 
@@ -22,10 +21,12 @@ public:
     DurationMS optimizer_duration;
     DurationMS execution_duration;
 
-    explicit HttpQuadSession(Server&                                                        server,
-                             stream_type&&                                                  stream,
-                             boost::beast::http::request<boost::beast::http::string_body>&& request,
-                             std::chrono::seconds                                           query_timeout);
+    explicit HttpQuadSession(
+        Server& server,
+        stream_t&& stream,
+        boost::beast::http::request<boost::beast::http::string_body>&& request,
+        std::chrono::seconds query_timeout
+    );
 
     virtual ~HttpQuadSession();
 
@@ -36,7 +37,7 @@ private:
 
     Server& server;
 
-    stream_type stream;
+    stream_t stream;
 
     boost::beast::http::request<boost::beast::http::string_body> request;
 
@@ -44,7 +45,8 @@ private:
 
     void execute_query(const std::string& query, std::ostream& os, MQL::ReturnType response_type);
 
-    std::unique_ptr<QueryExecutor> create_query_executor(MQL::Op& logical_plan, MQL::ReturnType response_type);
+    std::unique_ptr<QueryExecutor>
+        create_query_executor(MQL::Op& logical_plan, MQL::ReturnType response_type);
 
     void run_read_query(MQL::QueryParser& parser, std::ostream& os, MQL::ReturnType response_type);
 

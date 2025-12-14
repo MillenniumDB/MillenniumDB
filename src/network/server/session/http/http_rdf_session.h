@@ -11,9 +11,8 @@ namespace MDBServer {
 
 class Server;
 
+template<typename stream_t>
 class HttpRdfSession {
-    using stream_type = boost::beast::tcp_stream;
-
 public:
     using DurationMS = std::chrono::duration<float, std::milli>;
 
@@ -23,7 +22,7 @@ public:
 
     explicit HttpRdfSession(
         Server& server,
-        stream_type&& stream,
+        stream_t&& stream,
         boost::beast::http::request<boost::beast::http::string_body>&& request,
         std::chrono::seconds query_timeout
     );
@@ -37,7 +36,7 @@ private:
 
     Server& server;
 
-    stream_type stream;
+    stream_t stream;
 
     boost::beast::http::request<boost::beast::http::string_body> request;
 

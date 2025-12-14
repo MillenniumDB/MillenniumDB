@@ -5,6 +5,7 @@
 #include <thread>
 #include <vector>
 
+#include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 
 #include "misc/fatal_error.h"
@@ -280,7 +281,14 @@ void Server::run(
 {
     asio::io_context io_context(num_workers);
 
-    Listener listener(*this, io_context, tcp::endpoint(tcp::v4(), port), query_timeout);
+    // The SSL context is required, and holds certificates
+    asio::ssl::context ssl_ctx(asio::ssl::context::tls_server);
+
+    // TODO: this files may not exist
+    ssl_ctx.use_certificate_chain_file("cert.pem");
+    ssl_ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+
+    Listener listener(*this, io_context, ssl_ctx, tcp::endpoint(tcp::v4(), port), query_timeout);
 
     std::signal(SIGTERM, &signal_shutdown_server);
     std::signal(SIGINT, &signal_shutdown_server);
