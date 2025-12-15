@@ -49,6 +49,9 @@ private:
     std::chrono::seconds query_timeout;
 
     boost::beast::http::request_parser<boost::beast::http::string_body> http_parser;
+
+    // helper that closes either raw tcp or ssl stream
+    static void close_stream(stream_t& stream);
 };
 
 class SessionSSLDetector : public std::enable_shared_from_this<SessionSSLDetector> {
@@ -56,7 +59,7 @@ public:
     SessionSSLDetector(
         Server& server,
         boost::asio::ip::tcp::socket&& socket,
-        boost::asio::ssl::context& ssl_ctx,
+        std::optional<boost::asio::ssl::context>& ssl_ctx,
         std::chrono::seconds query_timeout
     ) :
         server(server),
@@ -72,7 +75,7 @@ private:
 
     boost::asio::ip::tcp::socket tcp_stream;
 
-    boost::asio::ssl::context& ssl_ctx;
+    std::optional<boost::asio::ssl::context>& ssl_ctx;
 
     std::chrono::seconds query_timeout;
 

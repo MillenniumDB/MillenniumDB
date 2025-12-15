@@ -32,8 +32,8 @@ void SessionDispatcher<stream_t>::read_http_header()
         "\r\n\r\n",
         [self = this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
-                // self->stream.close(); // TODO:
                 logger(Category::Error) << "Could not read the HTTP header: " << ec.message();
+                SessionDispatcher<stream_t>::close_stream(self->stream);
                 return;
             }
             auto tmp_buf = asio::buffer(self->read_buffer.data(), self->read_buffer.size());
@@ -42,8 +42,8 @@ void SessionDispatcher<stream_t>::read_http_header()
             self->read_buffer.consume(self->read_buffer.size());
 
             if (ec2) {
-                // self->stream.close(); // TODO:
                 logger(Category::Error) << "Could not parse the HTTP header: " << ec2.message();
+                SessionDispatcher<stream_t>::close_stream(self->stream);
                 return;
             }
             self->read_http_body();
@@ -62,7 +62,7 @@ void SessionDispatcher<stream_t>::read_http_body()
             [self =
                  this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
                 if (ec) {
-                    // self->stream.close(); // TODO:
+                    SessionDispatcher<stream_t>::close_stream(self->stream);
                     logger(Category::Error) << "Could not parse the HTTP body: " << ec.message();
                     return;
                 }
@@ -70,7 +70,7 @@ void SessionDispatcher<stream_t>::read_http_body()
                 system::error_code ec2;
                 self->http_parser.put(tmp_buf, ec2);
                 if (ec2) {
-                    // self->stream.close(); // TODO:
+                    SessionDispatcher<stream_t>::close_stream(self->stream);
                     logger(Category::Error) << "Could not parse the HTTP: " << ec2.message();
                     return;
                 }
@@ -163,6 +163,16 @@ void SessionDispatcher<stream_t>::dispatch_http()
     }
 }
 
+template <typename stream_t>
+void SessionDispatcher<stream_t>::close_stream(stream_t& stream)
+{
+    if constexpr (std::is_same_v<stream_t, asio::ip::tcp::socket>) {
+        stream.close();
+    } else if constexpr (std::is_same_v<stream_t, beast::ssl_stream<asio::ip::tcp::socket>>) {
+        stream.next_layer().close();
+    }
+}
+
 template<typename stream_t>
 std::pair<std::string, std::string> SessionDispatcher<stream_t>::get_user_password(
     const beast::http::request<beast::http::string_body>& request
@@ -219,17 +229,24 @@ void SessionSSLDetector::run()
         asio::socket_base::message_peek,
         [self = shared_from_this()](const system::error_code& ec, std::size_t bytes_transferred) {
             if (ec || bytes_transferred == 0) {
-                self->tcp_stream.close();
                 logger(Category::Error) << "Could not read the client's preamble";
+                self->tcp_stream.close();
                 return;
             }
 
             const bool is_tls = self->peek_byte == 0x16;
             if (is_tls) {
                 logger(Category::Debug) << "SSL detected.";
+
+                if (!self->ssl_ctx.has_value()) {
+                    logger(Category::Error) << "The server is not configured to accept SSL connections.";
+                    self->tcp_stream.close();
+                    return;
+                }
+
                 self->ssl_stream = std::make_unique<beast::ssl_stream<asio::ip::tcp::socket>>(
                     std::move(self->tcp_stream),
-                    self->ssl_ctx
+                    self->ssl_ctx.value()
                 );
 
                 self->ssl_stream->async_handshake(

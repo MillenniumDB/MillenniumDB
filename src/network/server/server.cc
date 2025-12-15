@@ -5,7 +5,6 @@
 #include <thread>
 #include <vector>
 
-#include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 
 #include "misc/fatal_error.h"
@@ -13,6 +12,7 @@
 #include "network/server/listener.h"
 #include "network/server/protocol.h"
 #include "query/query_context.h"
+#include "storage/filesystem.h"
 
 using namespace MDBServer;
 using namespace boost;
@@ -250,6 +250,11 @@ void Server::browser_listener(asio::io_context* browser_io_context, int port)
         FATAL_ERROR("error while trying to start browser listener: ", ec.message());
     }
 
+    acceptor.set_option(asio::socket_base::reuse_address(true), ec);
+    if (ec) {
+        FATAL_ERROR("error while trying to start browser listener: ", ec.message());
+    }
+
     acceptor.bind(endpoint, ec);
     if (ec) {
         if (ec == boost::asio::error::address_in_use) {
@@ -280,13 +285,6 @@ void Server::run(
 )
 {
     asio::io_context io_context(num_workers);
-
-    // The SSL context is required, and holds certificates
-    asio::ssl::context ssl_ctx(asio::ssl::context::tls_server);
-
-    // TODO: this files may not exist
-    ssl_ctx.use_certificate_chain_file("cert.pem");
-    ssl_ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
 
     Listener listener(*this, io_context, ssl_ctx, tcp::endpoint(tcp::v4(), port), query_timeout);
 
@@ -418,4 +416,15 @@ std::pair<std::string, std::chrono::system_clock::time_point>
 void Server::set_admin_user(const std::string& user, const std::string& password)
 {
     users.emplace_back(user, password);
+}
+
+void Server::enable_ssl(const std::string& cert_file, const std::string& key_file)
+{
+    // it is assumed the files have been already checked before calling this function
+    assert(Filesystem::is_regular_file(cert_file) && "SSL certificate must exist here");
+    assert(Filesystem::is_regular_file(key_file) && "SSL key must exist here");
+
+    ssl_ctx.emplace(asio::ssl::context(asio::ssl::context::tls_server));
+    ssl_ctx->use_certificate_chain_file(cert_file);
+    ssl_ctx->use_private_key_file(key_file, boost::asio::ssl::context::pem);
 }

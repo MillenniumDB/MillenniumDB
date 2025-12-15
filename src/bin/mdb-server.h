@@ -12,6 +12,7 @@
 #include "network/server/protocol.h"
 #include "network/server/server.h"
 #include "query/parser/paths/regular_path_expr.h"
+#include "storage/filesystem.h"
 #include "system/buffer_manager.h"
 #include "system/string_manager.h"
 #include "system/system.h"
@@ -42,12 +43,16 @@ struct SystemConfig {
 
     std::string admin_user;
     std::string admin_password;
+    std::string ssl_cert_file;
+    std::string ssl_key_file;
 };
 
 struct SystemOptions {
     std::optional<bool> browser;
     std::optional<std::string> admin_user;
     std::optional<std::string> admin_password;
+    std::optional<std::string> ssl_cert_file;
+    std::optional<std::string> ssl_key_file;
 
     std::optional<uint_fast32_t> port;
     std::optional<uint_fast32_t> browser_port;
@@ -79,9 +84,17 @@ inline int mdb_server(const SystemConfig& conf)
     );
 
     MDBServer::Server server;
+
     if (!conf.admin_user.empty()) {
         server.set_admin_user(conf.admin_user, conf.admin_password);
     }
+
+    if (!conf.ssl_cert_file.empty() && !conf.ssl_key_file.empty()) {
+        server.enable_ssl(conf.ssl_cert_file, conf.ssl_key_file);
+    } else {
+        std::cout << "Warning: SSL is not enabled" << std::endl;
+    }
+
     try {
         std::unique_ptr<ModelDestroyer> model_destroyer;
         switch (model_id) {
@@ -266,6 +279,22 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     return "";
                 } });
 
+    opt.insert({ "ssl-cert", [](SystemOptions& config, const std::string& value) {
+                    if (!value.empty() && !Filesystem::is_regular_file(value)) {
+                        return "SSL certificate file does not exist";
+                    }
+                    config.ssl_cert_file = value;
+                    return "";
+                } });
+
+    opt.insert({ "ssl-key", [](SystemOptions& config, const std::string& value) {
+                    if (!value.empty() && !Filesystem::is_regular_file(value)) {
+                        return "SSL key file does not exist";
+                    }
+                    config.ssl_key_file = value;
+                    return "";
+                } });
+
     return opt;
 }
 
@@ -355,6 +384,8 @@ inline SystemConfig get_system_config(const std::string& db_directory, const Sys
     try_replace(res.tensors_static_buffer, args.tensors_static_buffer, db_config.tensors_static_buffer);
     try_replace(res.path_mode, args.path_mode, db_config.path_mode);
     try_replace(res.query_timeout, args.query_timeout, db_config.query_timeout);
+    try_replace(res.ssl_cert_file, args.ssl_cert_file, db_config.ssl_cert_file);
+    try_replace(res.ssl_key_file, args.ssl_key_file, db_config.ssl_key_file);
 
     return res;
 }

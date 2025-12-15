@@ -12,13 +12,13 @@ using namespace boost;
 Listener::Listener(
     Server& server,
     asio::io_context& io_context,
-    asio::ssl::context& ssl_context,
+    std::optional<asio::ssl::context>& ssl_ctx,
     asio::ip::tcp::endpoint endpoint,
     std::chrono::seconds query_timeout
 ) :
     server(server),
     io_context(io_context),
-    ssl_context(ssl_context),
+    ssl_ctx(ssl_ctx),
     acceptor(boost::asio::make_strand(io_context)),
     endpoint(endpoint),
     query_timeout(query_timeout)
@@ -59,7 +59,7 @@ void Listener::run()
             // Disable Nagle's Algorithm to reduce latency, as our protocol may flush many small
             // messages when answering requests
             socket.set_option(asio::ip::tcp::no_delay(true));
-            std::make_shared<SessionSSLDetector>(server, std::move(socket), ssl_context, query_timeout)->run();
+            std::make_shared<SessionSSLDetector>(server, std::move(socket), ssl_ctx, query_timeout)->run();
         }
 
         // Accept another connection
