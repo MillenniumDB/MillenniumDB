@@ -25,6 +25,8 @@ void print_server_help()
             "\n    --browser-port <port>              browser port (default: 4321)"
             "\n    --admin-user <username>            admin username"
             "\n    --admin-password <password>        admin password"
+            "\n    --ssl-cert <path>                  path for ssl certificate file"
+            "\n    --ssl-key <path>                   path for ssl key file"
             "\n    --strings-dynamic <bytes>          size for the strings-dynamic-buffer"
             "\n    --strings-static <bytes>           size for static strings-static-buffer"
             "\n    --tensors-dynamic <bytes>          size for the tensors-dynamic-buffer"

@@ -311,6 +311,9 @@ void Server::run(
     work_guard.reset();
 
     std::cout << "MillenniumDB HTTP/WebSocket server listening on http://localhost:" << port << "\n";
+    if (ssl_ctx.has_value()) {
+        std::cout << "MillenniumDB HTTPS/WSS server listening on https://localhost:" << port << "\n";
+    }
 
     std::unique_ptr<asio::io_context> browser_io_context;
     if (launch_browser) {

@@ -40,10 +40,15 @@ HttpRdfSession<stream_t>::HttpRdfSession(
 template<typename stream_t>
 HttpRdfSession<stream_t>::~HttpRdfSession()
 {
-    // TODO:
-    // if (stream.socket().is_open()) {
-    //     stream.close();
-    // }
+    if constexpr (std::is_same_v<stream_t, asio::ip::tcp::socket>) {
+        if (stream.is_open()) {
+            stream.close();
+        }
+    } else if constexpr (std::is_same_v<stream_t, beast::ssl_stream<asio::ip::tcp::socket>>) {
+        if (stream.next_layer().is_open()) {
+            stream.next_layer().close();
+        }
+    }
 }
 
 template<typename stream_t>
@@ -183,8 +188,10 @@ std::unique_ptr<Op> HttpRdfSession<stream_t>::create_readonly_logical_plan(const
 }
 
 template<typename stream_t>
-std::unique_ptr<QueryExecutor>
-    HttpRdfSession<stream_t>::create_readonly_physical_plan(Op& logical_plan, SPARQL::ResponseType response_type)
+std::unique_ptr<QueryExecutor> HttpRdfSession<stream_t>::create_readonly_physical_plan(
+    Op& logical_plan,
+    SPARQL::ResponseType response_type
+)
 {
     const auto start_optimizer = std::chrono::system_clock::now();
 
@@ -265,7 +272,8 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
             os << '\n';
         });
 
-        logger(Category::Info
+        logger(
+            Category::Info
         ) << "Timeout thrown after "
           << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
         throw e;
@@ -338,11 +346,12 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         return;
     } catch (const InterruptedException& e) {
         execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info
-        ) << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(parser_duration + execution_duration)
-                 .count()
-          << " ms";
+        logger(Category::Info) << "Timeout thrown after "
+                               << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                      parser_duration + execution_duration
+                                  )
+                                      .count()
+                               << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
         return;
@@ -363,7 +372,8 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
 }
 
 template<typename stream_t>
-std::unique_ptr<SPARQL::OpUpdate> HttpRdfSession<stream_t>::create_update_logical_plan(const std::string& query)
+std::unique_ptr<SPARQL::OpUpdate>
+    HttpRdfSession<stream_t>::create_update_logical_plan(const std::string& query)
 {
     const auto start_parser = std::chrono::system_clock::now();
     auto logical_plan = SPARQL::UpdateParser::get_query_plan(query);

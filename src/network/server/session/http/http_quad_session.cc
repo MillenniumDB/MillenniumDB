@@ -38,10 +38,15 @@ HttpQuadSession<stream_t>::HttpQuadSession(
 template<typename stream_t>
 HttpQuadSession<stream_t>::~HttpQuadSession()
 {
-    // TODO:
-    // if (stream.socket().is_open()) {
-    //     stream.close();
-    // }
+    if constexpr (std::is_same_v<stream_t, asio::ip::tcp::socket>) {
+        if (stream.is_open()) {
+            stream.close();
+        }
+    } else if constexpr (std::is_same_v<stream_t, beast::ssl_stream<asio::ip::tcp::socket>>) {
+        if (stream.next_layer().is_open()) {
+            stream.next_layer().close();
+        }
+    }
 }
 
 template<typename stream_t>

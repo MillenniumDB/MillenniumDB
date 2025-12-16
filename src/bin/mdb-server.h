@@ -91,8 +91,6 @@ inline int mdb_server(const SystemConfig& conf)
 
     if (!conf.ssl_cert_file.empty() && !conf.ssl_key_file.empty()) {
         server.enable_ssl(conf.ssl_cert_file, conf.ssl_key_file);
-    } else {
-        std::cout << "Warning: SSL is not enabled" << std::endl;
     }
 
     try {
