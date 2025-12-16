@@ -4,6 +4,7 @@
 #include <streambuf>
 
 #include <boost/beast.hpp>
+#include <boost/beast/ssl.hpp>
 
 #include "network/exceptions.h"
 #include "network/server/protocol.h"
@@ -20,15 +21,18 @@ public:
 
     ~HttpResponseBuffer()
     {
-        // TODO:
-        // if (stream.socket().is_open()) {
-        //     flush();
-        //     stream.close();
-        // }
-        // if (boost::beast::get_lowest_layer(stream).is_open()) {
-            flush();
-            // boost::beast::get_lowest_layer(stream).close();
-        // }
+        if constexpr (std::is_same_v<stream_t, boost::asio::ip::tcp::socket>) {
+            if (stream.is_open()) {
+                flush();
+                stream.close();
+            }
+        } else if constexpr (std::is_same_v<stream_t, boost::beast::ssl_stream<boost::asio::ip::tcp::socket>>)
+        {
+            if (stream.next_layer().is_open()) {
+                flush();
+                stream.next_layer().close();
+            }
+        }
     }
 
 protected:
@@ -83,8 +87,14 @@ private:
         boost::asio::write(stream, boost::asio::buffer(buffer, current_pos), ec);
         current_pos = 0;
         if (ec) {
-            // TODO:
-            // stream.close();
+            if constexpr (std::is_same_v<stream_t, boost::asio::ip::tcp::socket>) {
+                stream.close();
+            } else if constexpr (std::is_same_v<
+                                     stream_t,
+                                     boost::beast::ssl_stream<boost::asio::ip::tcp::socket>>)
+            {
+                stream.next_layer().close();
+            }
             throw ConnectionException(ec.message());
         }
     }

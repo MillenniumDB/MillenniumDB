@@ -12,7 +12,6 @@
 #include "network/server/listener.h"
 #include "network/server/protocol.h"
 #include "query/query_context.h"
-#include "storage/filesystem.h"
 
 using namespace MDBServer;
 using namespace boost;
@@ -423,10 +422,6 @@ void Server::set_admin_user(const std::string& user, const std::string& password
 
 void Server::enable_ssl(const std::string& cert_file, const std::string& key_file)
 {
-    // it is assumed the files have been already checked before calling this function
-    assert(Filesystem::is_regular_file(cert_file) && "SSL certificate must exist here");
-    assert(Filesystem::is_regular_file(key_file) && "SSL key must exist here");
-
     ssl_ctx.emplace(asio::ssl::context(asio::ssl::context::tls_server));
     ssl_ctx->use_certificate_chain_file(cert_file);
     ssl_ctx->use_private_key_file(key_file, boost::asio::ssl::context::pem);

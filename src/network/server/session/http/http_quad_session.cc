@@ -21,13 +21,14 @@ using namespace MDBServer;
 using namespace MQL;
 namespace beast = boost::beast;
 namespace http = beast::http;
+namespace chrono = std::chrono;
 
 template<typename stream_t>
 HttpQuadSession<stream_t>::HttpQuadSession(
     Server& server,
     stream_t&& stream,
     http::request<http::string_body>&& request,
-    std::chrono::seconds query_timeout
+    chrono::seconds query_timeout
 ) :
     server(server),
     stream(std::move(stream)),
@@ -71,7 +72,7 @@ void HttpQuadSession<stream_t>::run(std::unique_ptr<HttpQuadSession<stream_t>> o
         if (auth_token.empty()) {
             response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
         } else {
-            auto valid_until_t = std::chrono::system_clock::to_time_t(valid_until);
+            auto valid_until_t = chrono::system_clock::to_time_t(valid_until);
             response_ostream << "HTTP/1.1 200 OK\r\n"
                                 "Content-Type: application/json; charset=utf-8\r\n"
                                 "{\"token\":\""
@@ -118,12 +119,12 @@ template<typename stream_t>
 std::unique_ptr<QueryExecutor>
     HttpQuadSession<stream_t>::create_query_executor(Op& logical_plan, ReturnType return_type)
 {
-    const auto start_optimizer = std::chrono::system_clock::now();
+    const auto start_optimizer = chrono::system_clock::now();
 
     ExecutorConstructor executor_constructor(return_type);
     logical_plan.accept_visitor(executor_constructor);
 
-    optimizer_duration = std::chrono::system_clock::now() - start_optimizer;
+    optimizer_duration = chrono::system_clock::now() - start_optimizer;
     return std::move(executor_constructor.executor);
 }
 
@@ -135,9 +136,9 @@ void HttpQuadSession<stream_t>::execute_query(
 )
 {
     try {
-        const auto start_parser = std::chrono::system_clock::now();
+        const auto start_parser = chrono::system_clock::now();
         QueryParser parser(query);
-        parser_duration = std::chrono::system_clock::now() - start_parser;
+        parser_duration = chrono::system_clock::now() - start_parser;
 
         if (parser.is_update()) {
             run_write_query(parser, os);
@@ -183,13 +184,13 @@ void HttpQuadSession<stream_t>::run_write_query(MQL::QueryParser& parser, std::o
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
                            << get_query_ctx().cancellation_token;
 
-    const auto start_parser = std::chrono::system_clock::now();
+    const auto start_parser = chrono::system_clock::now();
     auto logical_plan = parser.get_query_plan({});
-    parser_duration += std::chrono::system_clock::now() - start_parser;
+    parser_duration += chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, MQL::ReturnType::TSV);
 
-    const auto execution_start = std::chrono::system_clock::now();
+    const auto execution_start = chrono::system_clock::now();
     try {
         logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
             executor->analyze(os, false);
@@ -198,7 +199,7 @@ void HttpQuadSession<stream_t>::run_write_query(MQL::QueryParser& parser, std::o
 
         executor->execute(os);
         version_scope->commited = true;
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
             executor->analyze(os, true);
@@ -209,16 +210,15 @@ void HttpQuadSession<stream_t>::run_write_query(MQL::QueryParser& parser, std::o
         logger(Category::Info) << "Parser duration:    " << parser_duration.count() << "ms\n"
                                << "Execution duration: " << execution_duration.count() << "ms";
     } catch (const InterruptedException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
-        logger(
-            Category::Info
-        ) << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
+        logger(Category::Info) << "Timeout thrown after "
+                               << chrono::duration_cast<chrono::milliseconds>(execution_duration).count()
+                               << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
     } catch (const QueryExecutionException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
         logger(Category::Error) << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
@@ -245,13 +245,13 @@ void HttpQuadSession<stream_t>::run_read_query(
     logger(Category::Info) << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
                            << get_query_ctx().cancellation_token;
 
-    const auto start_parser = std::chrono::system_clock::now();
+    const auto start_parser = chrono::system_clock::now();
     auto logical_plan = parser.get_query_plan({});
-    parser_duration += std::chrono::system_clock::now() - start_parser;
+    parser_duration += chrono::system_clock::now() - start_parser;
 
     auto executor = create_query_executor(*logical_plan, return_type);
 
-    const auto execution_start = std::chrono::system_clock::now();
+    const auto execution_start = chrono::system_clock::now();
     try {
         os << "HTTP/1.1 200 OK\r\n"
               "Server: MillenniumDB\r\n";
@@ -280,7 +280,7 @@ void HttpQuadSession<stream_t>::run_read_query(
         });
 
         const auto result_count = executor->execute(os);
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&executor](std::ostream& os) {
             executor->analyze(os, true);
@@ -292,13 +292,12 @@ void HttpQuadSession<stream_t>::run_read_query(
                                << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
                                << "Execution duration: " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(
-            Category::Info
-        ) << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
+        execution_duration = chrono::system_clock::now() - execution_start;
+        logger(Category::Info) << "Timeout thrown after "
+                               << chrono::duration_cast<chrono::milliseconds>(execution_duration).count()
+                               << " ms";
     } catch (const QueryExecutionException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
         logger(Category::Error) << e.what();
     }
 }

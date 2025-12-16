@@ -23,13 +23,14 @@ using namespace SPARQL;
 using namespace boost;
 using namespace MDBServer;
 namespace http = beast::http;
+namespace chrono = std::chrono;
 
 template<typename stream_t>
 HttpRdfSession<stream_t>::HttpRdfSession(
     Server& server,
     stream_t&& stream,
     http::request<http::string_body>&& request,
-    std::chrono::seconds query_timeout
+    chrono::seconds query_timeout
 ) :
     server(server),
     stream(std::move(stream)),
@@ -73,7 +74,7 @@ void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
         if (auth_token.empty()) {
             response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
         } else {
-            auto valid_until_t = std::chrono::system_clock::to_time_t(valid_until);
+            auto valid_until_t = chrono::system_clock::to_time_t(valid_until);
             response_ostream << "HTTP/1.1 200 OK\r\n"
                                 "Content-Type: application/json; charset=utf-8\r\n"
                                 "{\"token\":\""
@@ -180,10 +181,10 @@ void HttpRdfSession<stream_t>::execute_readonly_query(
 template<typename stream_t>
 std::unique_ptr<Op> HttpRdfSession<stream_t>::create_readonly_logical_plan(const std::string& query)
 {
-    const auto start_parser = std::chrono::system_clock::now();
+    const auto start_parser = chrono::system_clock::now();
     SPARQL::QueryParser parser(query);
     auto logical_plan = parser.get_query_plan({});
-    parser_duration = std::chrono::system_clock::now() - start_parser;
+    parser_duration = chrono::system_clock::now() - start_parser;
     return logical_plan;
 }
 
@@ -193,12 +194,12 @@ std::unique_ptr<QueryExecutor> HttpRdfSession<stream_t>::create_readonly_physica
     SPARQL::ResponseType response_type
 )
 {
-    const auto start_optimizer = std::chrono::system_clock::now();
+    const auto start_optimizer = chrono::system_clock::now();
 
     ExecutorConstructor executor_constructor(response_type);
     logical_plan.accept_visitor(executor_constructor);
 
-    optimizer_duration = std::chrono::system_clock::now() - start_optimizer;
+    optimizer_duration = chrono::system_clock::now() - start_optimizer;
     return std::move(executor_constructor.executor);
 }
 
@@ -209,7 +210,7 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
     SPARQL::ResponseType response_type
 )
 {
-    const auto execution_start = std::chrono::system_clock::now();
+    const auto execution_start = chrono::system_clock::now();
     try {
         os << "HTTP/1.1 200 OK\r\n"
            << "Server: MillenniumDB\r\n";
@@ -247,7 +248,7 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
         });
 
         const auto result_count = physical_plan.execute(os);
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
             physical_plan.analyze(os, true);
@@ -265,20 +266,19 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
                                   "Execution duration : "
                                << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
             physical_plan.analyze(os, true);
             os << '\n';
         });
 
-        logger(
-            Category::Info
-        ) << "Timeout thrown after "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(execution_duration).count() << " ms";
+        logger(Category::Info) << "Timeout thrown after "
+                               << chrono::duration_cast<chrono::milliseconds>(execution_duration).count()
+                               << " ms";
         throw e;
     } catch (const QueryExecutionException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
         logger(Category::Error) << e.what();
         throw e;
     }
@@ -327,7 +327,7 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         return;
     }
 
-    const auto execution_start = std::chrono::system_clock::now();
+    const auto execution_start = chrono::system_clock::now();
 
     try {
         UpdateExecutor update_executor;
@@ -335,7 +335,7 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
             update->accept_visitor(update_executor);
         }
         version_scope->commited = true;
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
 
         logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
             os << "Update Stats\n";
@@ -345,18 +345,17 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         logger(Category::Error) << "Connection Exception: " << e.what();
         return;
     } catch (const InterruptedException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
-        logger(Category::Info) << "Timeout thrown after "
-                               << std::chrono::duration_cast<std::chrono::milliseconds>(
-                                      parser_duration + execution_duration
-                                  )
-                                      .count()
-                               << " ms";
+        execution_duration = chrono::system_clock::now() - execution_start;
+        logger(
+            Category::Info
+        ) << "Timeout thrown after "
+          << chrono::duration_cast<chrono::milliseconds>(parser_duration + execution_duration).count()
+          << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
         return;
     } catch (const QueryExecutionException& e) {
-        execution_duration = std::chrono::system_clock::now() - execution_start;
+        execution_duration = chrono::system_clock::now() - execution_start;
         logger(Category::Error) << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
@@ -375,9 +374,9 @@ template<typename stream_t>
 std::unique_ptr<SPARQL::OpUpdate>
     HttpRdfSession<stream_t>::create_update_logical_plan(const std::string& query)
 {
-    const auto start_parser = std::chrono::system_clock::now();
+    const auto start_parser = chrono::system_clock::now();
     auto logical_plan = SPARQL::UpdateParser::get_query_plan(query);
-    parser_duration = std::chrono::system_clock::now() - start_parser;
+    parser_duration = chrono::system_clock::now() - start_parser;
     return logical_plan;
 }
 

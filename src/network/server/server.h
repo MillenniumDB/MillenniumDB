@@ -73,7 +73,6 @@ private:
 
     std::vector<LoginInfo> users;
 
-    // The SSL context is required, and holds certificates
     std::optional<boost::asio::ssl::context> ssl_ctx;
 };
 } // namespace MDBServer
