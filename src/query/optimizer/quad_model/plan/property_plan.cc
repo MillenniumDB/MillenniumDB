@@ -4,20 +4,22 @@
 
 #include "graph_models/quad_model/quad_model.h"
 #include "query/executor/binding_iter/index_scan.h"
+#include "query/query_context.h"
 #include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 
 using namespace std;
 
 PropertyPlan::PropertyPlan(Id object, Id key, Id value) :
-    object          (object),
-    key             (key),
-    value           (value),
-    object_assigned (object.is_OID()),
-    key_assigned    (key.is_OID()),
-    value_assigned  (value.is_OID()) { }
+    object(object),
+    key(key),
+    value(value),
+    object_assigned(object.is_OID()),
+    key_assigned(key.is_OID()),
+    value_assigned(value.is_OID())
+{ }
 
-
-void PropertyPlan::print(std::ostream& os, int indent) const {
+void PropertyPlan::print(std::ostream& os, int indent) const
+{
     for (int i = 0; i < indent; ++i) {
         os << ' ';
     }
@@ -34,15 +36,16 @@ void PropertyPlan::print(std::ostream& os, int indent) const {
     os << "  ↳ Estimated factor: " << estimate_output_size();
 }
 
-
-double PropertyPlan::estimate_cost() const {
+double PropertyPlan::estimate_cost() const
+{
     return /*100.0 +*/ estimate_output_size();
 }
 
-
-double PropertyPlan::estimate_output_size() const {
-    const auto total_objects    = static_cast<double>(quad_model.catalog.nodes_count
-                                                      + quad_model.catalog.edge_count());
+double PropertyPlan::estimate_output_size() const
+{
+    const auto total_objects = static_cast<double>(
+        quad_model.catalog.nodes_count + quad_model.catalog.edge_count()
+    );
 
     const auto total_properties = static_cast<double>(quad_model.catalog.properties_count);
 
@@ -95,15 +98,15 @@ double PropertyPlan::estimate_output_size() const {
     }
 }
 
-
-void PropertyPlan::set_input_vars(const std::set<VarId>& input_vars) {
+void PropertyPlan::set_input_vars(const std::set<VarId>& input_vars)
+{
     set_input_var(input_vars, object, &object_assigned);
-    set_input_var(input_vars, key,    &key_assigned);
-    set_input_var(input_vars, value,  &value_assigned);
+    set_input_var(input_vars, key, &key_assigned);
+    set_input_var(input_vars, value, &value_assigned);
 }
 
-
-std::set<VarId> PropertyPlan::get_vars() const {
+std::set<VarId> PropertyPlan::get_vars() const
+{
     std::set<VarId> result;
     if (object.is_var() && !object_assigned) {
         result.insert(object.get_var());
@@ -117,7 +120,6 @@ std::set<VarId> PropertyPlan::get_vars() const {
 
     return result;
 }
-
 
 /**
  * ╔═╦══════════════╦═══════════════╦══════════════════╦═════════╗
@@ -133,7 +135,8 @@ std::set<VarId> PropertyPlan::get_vars() const {
  * ║8║      no      ║      no       ║        no        ║   KVO   ║
  * ╚═╩══════════════╩═══════════════╩══════════════════╩═════════╝
  */
-unique_ptr<BindingIter> PropertyPlan::get_binding_iter() const {
+unique_ptr<BindingIter> PropertyPlan::get_binding_iter() const
+{
     array<unique_ptr<ScanRange>, 3> ranges;
 
     assert((key_assigned || !value_assigned) && "fixed values with open key is not supported");
@@ -151,10 +154,11 @@ unique_ptr<BindingIter> PropertyPlan::get_binding_iter() const {
     }
 }
 
-
-bool PropertyPlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
-                                     vector<VarId>&                              var_order,
-                                     uint_fast32_t&                              enumeration_level) const
+bool PropertyPlan::get_leapfrog_iter(
+    std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
+    vector<VarId>& var_order,
+    uint_fast32_t& enumeration_level
+) const
 {
     vector<unique_ptr<ScanRange>> initial_ranges;
     vector<VarId> intersection_vars;
@@ -198,10 +202,8 @@ bool PropertyPlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>&
         }
     }
 
-    auto assign = [&initial_ranges, &enumeration_vars, &intersection_vars]
-                  (int_fast32_t& index, Id id)
-                  -> void
-    {
+    auto assign =
+        [&initial_ranges, &enumeration_vars, &intersection_vars](int_fast32_t& index, Id id) -> void {
         if (index == -1) {
             initial_ranges.push_back(ScanRange::get(id, true));
         } else if (index == INT32_MAX) {
@@ -213,8 +215,8 @@ bool PropertyPlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>&
 
     // object_key_value
     if (obj_index <= key_index && key_index <= value_index) {
-        assign(obj_index,   object);
-        assign(key_index,   key);
+        assign(obj_index, object);
+        assign(key_index, key);
         assign(value_index, value);
 
         leapfrog_iters.push_back(make_unique<LeapfrogBptIter<3>>(
@@ -227,10 +229,11 @@ bool PropertyPlan::get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>&
         return true;
     }
     // key_value_object
-    else if (key_index <= value_index && value_index <= obj_index) {
-        assign(key_index,   key);
+    else if (key_index <= value_index && value_index <= obj_index)
+    {
+        assign(key_index, key);
         assign(value_index, value);
-        assign(obj_index,   object);
+        assign(obj_index, object);
 
         leapfrog_iters.push_back(make_unique<LeapfrogBptIter<3>>(
             &get_query_ctx().thread_info.interruption_requested,

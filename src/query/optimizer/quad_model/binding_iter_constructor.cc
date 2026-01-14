@@ -74,20 +74,20 @@ void BindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     std::vector<std::unique_ptr<Plan>> base_plans;
 
     // Process Labels
-    for (auto& op_label : op_basic_graph_pattern.labels) {
-        base_plans.push_back(std::make_unique<LabelPlan>(op_label.node, op_label.label));
+    for (auto& label : op_basic_graph_pattern.labels) {
+        base_plans.push_back(std::make_unique<LabelPlan>(label.node, label.label));
     }
 
     // Process properties (value is fixed)
-    for (auto& op_property : op_basic_graph_pattern.properties) {
+    for (auto& property : op_basic_graph_pattern.properties) {
         base_plans.push_back(
-            std::make_unique<PropertyPlan>(op_property.obj, op_property.key, op_property.value)
+            std::make_unique<PropertyPlan>(property.obj, property.key, property.value)
         );
     }
 
     // Process connections
-    for (auto& op_edge : op_basic_graph_pattern.edges) {
-        base_plans.push_back(std::make_unique<EdgePlan>(op_edge.from, op_edge.to, op_edge.type, op_edge.edge)
+    for (auto& edge : op_basic_graph_pattern.edges) {
+        base_plans.push_back(std::make_unique<EdgePlan>(edge.from, edge.to, edge.type, edge.edge)
         );
     }
 

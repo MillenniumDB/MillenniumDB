@@ -10,28 +10,22 @@ class Property {
 public:
     Id obj;
     ObjectId key;
-    ObjectId value;
+    Id value;
 
-    Property(Id obj, ObjectId key, ObjectId value) :
+    Property(Id obj, ObjectId key, Id value) :
         obj(obj),
         key(key),
         value(value)
     { }
 
-    // Only comparing obj and key, not checking value
     bool operator<(const Property& other) const
     {
-        if (obj < other.obj) {
-            return true;
-        } else if (other.obj < obj) {
-            return false;
-        } else if (key < other.key) {
-            return true;
-        } else if (key > other.key) {
-            return false;
-        } else {
+        if (obj != other.obj)
+            return obj < other.obj;
+        if (key != other.key)
+            return key < other.key;
+        else
             return value < other.value;
-        }
     }
 
     std::ostream& print(std::ostream& os, int indent = 0) const

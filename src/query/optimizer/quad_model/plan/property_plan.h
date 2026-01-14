@@ -1,6 +1,5 @@
 #pragma once
 
-#include "query/query_context.h"
 #include "query/optimizer/plan/plan.h"
 
 class PropertyPlan : public Plan {
@@ -8,18 +7,23 @@ public:
     PropertyPlan(Id object, Id key, Id value);
 
     PropertyPlan(const PropertyPlan& other) :
-        object          (other.object),
-        key             (other.key),
-        value           (other.value),
-        object_assigned (other.object_assigned),
-        key_assigned    (other.key_assigned),
-        value_assigned  (other.value_assigned) { }
+        object(other.object),
+        key(other.key),
+        value(other.value),
+        object_assigned(other.object_assigned),
+        key_assigned(other.key_assigned),
+        value_assigned(other.value_assigned)
+    { }
 
-    std::unique_ptr<Plan> clone() const override {
+    std::unique_ptr<Plan> clone() const override
+    {
         return std::make_unique<PropertyPlan>(*this);
     }
 
-    int relation_size() const override { return 3; }
+    int relation_size() const override
+    {
+        return 3;
+    }
 
     double estimate_cost() const override;
     double estimate_output_size() const override;
@@ -29,9 +33,11 @@ public:
 
     std::unique_ptr<BindingIter> get_binding_iter() const override;
 
-    bool get_leapfrog_iter(std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
-                           std::vector<VarId>&                         var_order,
-                           uint_fast32_t&                              enumeration_level) const override;
+    bool get_leapfrog_iter(
+        std::vector<std::unique_ptr<LeapfrogIter>>& leapfrog_iters,
+        std::vector<VarId>& var_order,
+        uint_fast32_t& enumeration_level
+    ) const override;
 
     void print(std::ostream& os, int indent) const override;
 

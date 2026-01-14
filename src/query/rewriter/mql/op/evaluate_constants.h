@@ -2,9 +2,7 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "query/executor/binding.h"
-#include "query/id.h"
 #include "query/parser/expr/mql/expr.h"
 #include "query/parser/expr/mql/expr_visitor.h"
 #include "query/parser/op/mql/op_visitor.h"

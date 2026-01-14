@@ -74,7 +74,7 @@ public:
         labels.emplace(node, label);
     }
 
-    void add_property(Id obj, ObjectId key, ObjectId value)
+    void add_property(Id obj, ObjectId key, Id value)
     {
         if (obj.is_var()) {
             vars.insert(obj.get_var());
