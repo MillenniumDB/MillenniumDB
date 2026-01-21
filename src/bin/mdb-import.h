@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include "bin/common.h"
@@ -13,6 +12,7 @@
 #include "import/rdf_model/default_config.h"
 #include "import/rdf_model/import.h"
 #include "import/rdf_model/xml/import.h"
+#include "macros/isatty.h"
 #include "misc/fatal_error.h"
 #include "storage/filesystem.h"
 #include "system/file_manager.h"
@@ -204,16 +204,8 @@ inline int mdb_import(ImportConfig& config)
 
     std::cout << "Creating new database\n";
     std::cout << "  db directory:  " << db_dir << "\n";
-    if (input_files.empty()) {
-        auto in_avail = std::cin.rdbuf()->in_avail();
-        if (in_avail == 0) {
-            // wait just in case
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            in_avail = std::cin.rdbuf()->in_avail();
-            if (in_avail == 0) {
-                FATAL_ERROR("Nothing received as standard input.");
-            }
-        }
+    if (input_files.empty() && !is_input_piped()) {
+        FATAL_ERROR("No files provided and no piped input detected.");
     }
     if (!config.prefixes_file.empty()) {
         std::cout << "  prefixes file: " << config.prefixes_file << "\n";
