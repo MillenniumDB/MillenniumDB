@@ -1,10 +1,8 @@
 #include "comparisons.h"
 
 #include "graph_models/common/datatypes/datetime.h"
-#include "graph_models/inliner.h"
 #include "graph_models/quad_model/conversions.h"
 #include "system/string_manager.h"
-#include "system/tmp_manager.h"
 
 using namespace MQL;
 

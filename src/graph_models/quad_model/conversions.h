@@ -6,7 +6,6 @@
 
 #include "graph_models/common/conversions.h" // IWYU pragma: export
 #include "graph_models/inliner.h"
-#include "query/executor/query_executor/mql/return_executor.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "graph_models/quad_model/comparisons.h"
 #include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"

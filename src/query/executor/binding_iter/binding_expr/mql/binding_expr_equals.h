@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "graph_models/quad_model/comparisons.h"
+#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
@@ -27,8 +28,7 @@ public:
             return ObjectId(ObjectId::BOOL_TRUE);
         }
 
-        return Comparisons::compare(lhs_oid, rhs_oid) == 0 ? ObjectId(ObjectId::BOOL_TRUE)
-                                                           : ObjectId(ObjectId::BOOL_FALSE);
+        return Conversions::pack_bool(Comparisons::compare(lhs_oid, rhs_oid) == 0);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

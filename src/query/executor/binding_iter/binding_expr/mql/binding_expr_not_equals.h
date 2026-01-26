@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "graph_models/quad_model/comparisons.h"
+#include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace MQL {
@@ -21,12 +23,7 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        // Check if the ids are equal
-        if (lhs_oid != rhs_oid) {
-            return ObjectId(ObjectId::BOOL_TRUE);
-        } else {
-            return ObjectId(ObjectId::BOOL_FALSE);
-        }
+        return Conversions::pack_bool(Comparisons::compare(lhs_oid, rhs_oid) != 0);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override
