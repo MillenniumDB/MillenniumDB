@@ -78,21 +78,7 @@ OnDiskImport::~OnDiskImport()
 void OnDiskImport::print_error()
 {
     parsing_errors++;
-    std::cout << "ERROR on line " << current_line << std::endl;
-}
-
-void OnDiskImport::print_error_msg(const std::string& msg)
-{
-    parsing_errors++;
-    std::cout << "ERROR on line " << current_line << ": " << msg << std::endl;
-}
-
-void OnDiskImport::print_fatal_error_msg(const std::string& msg)
-{
-    std::string error = "FATAL ERROR on line ";
-    error += std::to_string(current_line);
-    error += ": " + msg;
-    FATAL_ERROR(error);
+    WARN("ERROR on line ", current_line);
 }
 
 std::vector<std::string> OnDiskImport::split(const std::string& input, const std::string& delimiter)
@@ -148,7 +134,6 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
         //   2. default prefixes
         // Until exhausting or reaching 256 prefixes.
 
-        // std::set<std::string> prefix_set = { "" }; // empty prefix
         prefix_set = { "" }; // empty prefix
 
         if (!prefixes_filename.empty()) {
@@ -212,10 +197,7 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
 
     while (auto token = lexer.get_token()) {
         current_state = get_transition(current_state, token);
-        // State state = static_cast<State>(current_state); // Only for debugging. Remove when not in use
-        // std::cout << "Content: " << lexer.str << "\tToken: " << token << "\tState: " << state << std::endl; //"\n";
     }
-    // std::cout << std::endl;
 
     print_duration("Parsing", start);
 
@@ -399,7 +381,7 @@ std::string OnDiskImport::get_url_from_tag_declaration(std::string& string)
         to_return += xml_global_namespace;
         to_return += separated[0];
     } else {
-        print_fatal_error_msg("Prefix " + separated[0] + " was not linked");
+        FATAL_ERROR("ERROR on line ", current_line, ": Prefix ", separated[0], " was not linked");
     }
 
     return to_return;
@@ -842,7 +824,10 @@ void OnDiskImport::triple_preparation(XMLTag& subject, XMLTag& predicate, XMLTag
         predicate_id = get_iri_id(predicate.iri.c_str(), predicate.iri.size());
         predicate.object_id = predicate_id;
     } else {
-        print_fatal_error_msg("Predicate does not have an IRI specified, but all predicates must have an IRI"
+        FATAL_ERROR(
+            "ERROR on line ",
+            current_line,
+            ": Predicate does not have an IRI specified, but all predicates must have an IRI"
         );
     }
 
@@ -983,8 +968,7 @@ void OnDiskImport::determine_tag_datatype(XMLTag& new_xml_tag, std::vector<std::
             new_xml_tag.datatype = RDFDatatype::TENSOR_DOUBLE;
         }
         // Unsupported datatypes are stored as literals with datatype
-        else
-        {
+        else {
             new_xml_tag.datatype = RDFDatatype::UNRECOGNIZED;
         }
 
@@ -1176,7 +1160,7 @@ void OnDiskImport::open_tag()
 void OnDiskImport::add_tag_value()
 {
     if (current_rdf_term != RDFTerm::PREDICATE) {
-        print_fatal_error_msg("Only the predicate can have a written value");
+        FATAL_ERROR("ERROR on line ", current_line, ": Only the predicate can have a written value");
     }
     xml_branch.back().value += lexer.str;
 

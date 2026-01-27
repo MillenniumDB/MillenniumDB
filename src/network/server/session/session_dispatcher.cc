@@ -210,8 +210,6 @@ std::pair<std::string, std::string> SessionDispatcher<stream_t>::get_user_passwo
         std::string_view key = pair.substr(0, eq);
         std::string_view val = pair.substr(eq + 1);
 
-        std::cout << key << ":" << val << std::endl;
-
         if (key == "user") {
             user = std::string(val);
         } else if (key == "password") {

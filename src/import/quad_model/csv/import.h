@@ -37,10 +37,6 @@ public:
 
     void print_error();
 
-    void print_error_msg(const std::string& msg);
-
-    void print_fatal_error_msg(const std::string& msg);
-
     std::vector<std::string> split(const std::string& input, const std::string& delimiter);
 
 private:

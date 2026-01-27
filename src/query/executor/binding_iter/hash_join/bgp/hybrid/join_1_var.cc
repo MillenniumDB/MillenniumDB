@@ -260,8 +260,6 @@ void Join1Var::prepare_chunks_for_new_partition()
 bool Join1Var::get_next_partition()
 {
     while (current_partition < partitions.size()) {
-        //std::cout << "First: " << partitions[current_partition].first->total_tuples << std::endl;
-        //std::cout << "Second: " << partitions[current_partition].second->total_tuples << std::endl;
         // Avoid partitions where build or probe does not has tuples
         if (partitions[current_partition].first->total_tuples == 0
             || partitions[current_partition].second->total_tuples == 0)

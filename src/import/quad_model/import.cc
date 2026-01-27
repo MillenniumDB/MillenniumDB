@@ -36,9 +36,11 @@ void OnDiskImport::start_import(MDBIstream& in)
 
     std::cout << "-------------------------------------\n";
     if (parsing_errors != 0) {
-        std::cout << "\n!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!\n";
-        std::cout << "  " << parsing_errors << " errors found.\n";
-        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
+        WARN(
+            "\n!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!\n  ",
+            parsing_errors,
+            " errors found.\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+        );
     }
 
     print_duration("Parsing", start);

@@ -14,6 +14,7 @@
 
 #include "import/stats_processor.h"
 #include "macros/aligned_alloc.h"
+#include "misc/fatal_error.h"
 #include "storage/index/bplus_tree/bpt_mem_import.h"
 #include "storage/page/page.h"
 
@@ -311,7 +312,7 @@ private:
             queue.push(std::make_pair(*current_pos[last_run], last_run));
         }
         if (!file.good()) {
-            std::cout << "WARNING: file not good\n";
+            WARN("disk vector file not good");
             file.clear();
         }
 

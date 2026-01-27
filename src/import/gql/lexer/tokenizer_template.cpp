@@ -43,9 +43,7 @@ bool GQLTokenizer::fill(size_t need)
     cur -= free;
     mar -= free;
     token_start -= free;
-    // std::cout << "trying to read " << free << " bytes\n";
     auto r = in->read(lim, free);
-    // std::cout << "read " << r << " bytes\n";
     lim += r;
 
     if (lim < buf + GQLTokenizer_SIZE) {

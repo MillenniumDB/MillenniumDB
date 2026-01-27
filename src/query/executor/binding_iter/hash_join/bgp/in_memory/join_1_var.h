@@ -2,11 +2,12 @@
 
 #include <memory>
 #include <vector>
+
 #include <boost/unordered/unordered_flat_map.hpp>
 
 #include "query/executor/binding_iter.h"
-#include "query/executor/binding_iter/hash_join/value.h"
 #include "query/executor/binding_iter/hash_join/bgp/base.h"
+#include "query/executor/binding_iter/hash_join/value.h"
 
 namespace HashJoin { namespace BGP { namespace InMemory {
 
@@ -15,9 +16,9 @@ public:
     Join1Var(
         std::unique_ptr<BindingIter> build_rel,
         std::unique_ptr<BindingIter> probe_rel,
-        VarId                        join_var,
-        std::vector<VarId>&&         build_vars,
-        std::vector<VarId>&&         probe_vars
+        VarId join_var,
+        std::vector<VarId>&& build_vars,
+        std::vector<VarId>&& probe_vars
     );
 
     ~Join1Var();
@@ -48,9 +49,7 @@ private:
     size_t data_chunk_index; // Chunk index
 
     // Hash table
-    boost::unordered_flat_map<ObjectId,
-                              HashJoin::Value,
-                              HashJoin::BGP::ObjectIdHasher> hash_table;
+    boost::unordered_flat_map<ObjectId, HashJoin::Value, HashJoin::BGP::ObjectIdHasher> hash_table;
     void build_hash_table();
 };
-}}}
+}}} // namespace HashJoin::BGP::InMemory

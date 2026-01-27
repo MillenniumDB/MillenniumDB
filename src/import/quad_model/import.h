@@ -422,52 +422,45 @@ private:
             value_id = DateTime::from_dateTime(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << " invalid dateTime: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid dateTime ", typed_str);
                 return;
             }
         } else if (strcmp(datatype_beg, "date") == 0) {
             value_id = DateTime::from_date(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid date: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid date ", typed_str);
                 return;
             }
         } else if (strcmp(datatype_beg, "time") == 0) {
             value_id = DateTime::from_time(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid time: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid time ", typed_str);
                 return;
             }
         } else if (strcmp(datatype_beg, "dateTimeStamp") == 0) {
             value_id = DateTime::from_dateTimeStamp(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 parsing_errors++;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid dateTimeStamp: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid dateTimeStamp ", typed_str);
                 return;
             }
         } else if (strcmp(datatype_beg, "tensorFloat") == 0) {
             value_id = get_tensor_id<float>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorFloat: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid tensorFloat ", typed_str);
             }
         } else if (strcmp(datatype_beg, "tensorDouble") == 0) {
             value_id = get_tensor_id<double>(typed_str);
             if (value_id == ObjectId::NULL_ID) {
                 ++parsing_errors;
-                std::cout << "ERROR on line " << current_line << ", ";
-                std::cout << "invalid tensorDouble: " << typed_str << "\n";
+                WARN("line ", current_line, ": invalid tensorDouble ", typed_str);
             }
         } else {
             parsing_errors++;
-            std::cout << "ERROR on line " << current_line << ", ";
-            std::cout << "unknown datatype: " << datatype_beg << "\n";
+            WARN("line ", current_line, ": unknown datatype  ", datatype_beg);
             return;
         }
     }
@@ -684,7 +677,7 @@ private:
     void print_error()
     {
         parsing_errors++;
-        std::cout << "ERROR on line " << current_line << "\n";
+        WARN("ERROR on line ", current_line);
     }
 
     // processes a pending file by iterations, until no more pending tuples are available
@@ -750,16 +743,6 @@ private:
 
     void get_transition(int token)
     {
-        // try {
-        //     state_funcs[State::TOTAL_STATES*state + token]();
-        //     return state_transitions[State::TOTAL_STATES*state + token];
-        // }
-        // catch (std::exception& e) {
-        //     parsing_errors++;
-        //     std::cout << "ERROR on line " << current_line << "\n";
-        //     std::cout << e.what() << "\n";
-        //     return State::WRONG_LINE;
-        // }
         auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
         current_state = state_transitions[State::TOTAL_STATES * current_state + token];
         func();

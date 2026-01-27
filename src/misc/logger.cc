@@ -41,26 +41,6 @@ std::ostream& operator<<(std::ostream& os, Category category)
     return os;
 }
 
-Category string_to_category(const std::string_view category)
-{
-    if (category == "Query")
-        return Category::Query;
-    else if (category == "LogicalPlan")
-        return Category::LogicalPlan;
-    else if (category == "PhysicalPlan")
-        return Category::PhysicalPlan;
-    else if (category == "ExecutionStats")
-        return Category::ExecutionStats;
-    else if (category == "Error")
-        return Category::Error;
-    else if (category == "Info")
-        return Category::Info;
-    else if (category == "Debug")
-        return Category::Debug;
-    else
-        return Category::InvalidCategory;
-}
-
 static void write_time(std::ostream& os)
 {
     auto time = std::time(nullptr);
@@ -162,7 +142,7 @@ OStream Logger::operator()(Category category, unsigned verbosity)
     auto& config = it->second;
 
     if (!config.enabled || verbosity > config.verbosity)
-        return {};
+        return OStream();
 
     return OStream(mutex, category, config);
 }

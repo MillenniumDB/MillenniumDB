@@ -295,21 +295,7 @@ void OnDiskImport::try_save_edge_property(uint64_t edge_id, uint64_t key_id, uin
 void OnDiskImport::print_error()
 {
     parsing_errors++;
-    std::cout << "ERROR on line " << current_line << std::endl;
-}
-
-void OnDiskImport::print_error_msg(std::string msg)
-{
-    parsing_errors++;
-    std::cout << "ERROR on line " << current_line << ": " << msg << std::endl;
-}
-
-void OnDiskImport::print_fatal_error_msg(std::string msg)
-{
-    std::string error = "FATAL ERROR on line ";
-    error += std::to_string(current_line);
-    error += ": " + msg;
-    FATAL_ERROR(error);
+    WARN("ERROR on line ", current_line);
 }
 
 std::vector<std::string> OnDiskImport::split(std::string input, std::string delimiter)
@@ -425,20 +411,22 @@ void OnDiskImport::save_header_column()
         } else if (split_new_col[1] == "START_ID") {
             new_column_type = CSVType::START_ID;
             if (split_new_col.size() == 3) {
-                if (csvid_groups_index.contains(split_new_col[2]))
+                if (csvid_groups_index.contains(split_new_col[2])) {
                     current_group_idx_from = csvid_groups_index[split_new_col[2]];
-                else
-                    print_fatal_error_msg("Group \"" + split_new_col[2] + "\" does not exist");
+                } else {
+                    FATAL_ERROR("line ", current_line, ": Group \"", split_new_col[2], "\" does not exist");
+                }
             } else {
                 current_group_idx_from = -1;
             }
         } else if (split_new_col[1] == "END_ID") {
             new_column_type = CSVType::END_ID;
             if (split_new_col.size() == 3) {
-                if (csvid_groups_index.contains(split_new_col[2]))
+                if (csvid_groups_index.contains(split_new_col[2])) {
                     current_group_idx_to = csvid_groups_index[split_new_col[2]];
-                else
-                    print_fatal_error_msg("Group \"" + split_new_col[2] + "\" does not exist");
+                } else {
+                    FATAL_ERROR("line ", current_line, ": Group \"", split_new_col[2], "\" does not exist");
+                }
             } else {
                 current_group_idx_to = -1;
             }
@@ -446,20 +434,34 @@ void OnDiskImport::save_header_column()
             new_column_type = CSVType::ID;
             if (!has_set_first_undirected) {
                 if (split_new_col.size() == 3) {
-                    if (csvid_groups_index.contains(split_new_col[2]))
+                    if (csvid_groups_index.contains(split_new_col[2])) {
                         current_group_idx_from = csvid_groups_index[split_new_col[2]];
-                    else
-                        print_fatal_error_msg("Group \"" + split_new_col[2] + "\" does not exist");
+                    } else {
+                        FATAL_ERROR(
+                            "line ",
+                            current_line,
+                            ": Group \"",
+                            split_new_col[2],
+                            "\" does not exist"
+                        );
+                    }
                 } else {
                     current_group_idx_from = -1;
                 }
                 has_set_first_undirected = true;
             } else {
                 if (split_new_col.size() == 3) {
-                    if (csvid_groups_index.contains(split_new_col[2]))
+                    if (csvid_groups_index.contains(split_new_col[2])) {
                         current_group_idx_to = csvid_groups_index[split_new_col[2]];
-                    else
-                        print_fatal_error_msg("Group \"" + split_new_col[2] + "\" does not exist");
+                    } else {
+                        FATAL_ERROR(
+                            "line ",
+                            current_line,
+                            ": Group \"",
+                            split_new_col[2],
+                            "\" does not exist"
+                        );
+                    }
                 } else {
                     current_group_idx_to = -1;
                 }
@@ -513,15 +515,14 @@ void OnDiskImport::verify_edge_file_header()
         if (columns[col_idx].type == CSVType::START_ID && !has_start_id) {
             has_start_id = true;
             column_with_id_from = col_idx;
-        } else if (columns[col_idx].type == CSVType::START_ID && has_start_id)
-            print_fatal_error_msg("More than one START_ID column is present");
-        else if (columns[col_idx].type == CSVType::END_ID && !has_end_id) {
+        } else if (columns[col_idx].type == CSVType::START_ID && has_start_id) {
+            FATAL_ERROR("line ", current_line, ": More than one START_ID column is present");
+        } else if (columns[col_idx].type == CSVType::END_ID && !has_end_id) {
             has_end_id = true;
             column_with_id_to = col_idx;
-        } else if (columns[col_idx].type == CSVType::END_ID && has_end_id)
-            print_fatal_error_msg("More than one END_ID column is present");
-
-        else if (columns[col_idx].type == CSVType::ID && !has_first_undirected_id) {
+        } else if (columns[col_idx].type == CSVType::END_ID && has_end_id) {
+            FATAL_ERROR("line ", current_line, ": More than one END_ID column is present");
+        } else if (columns[col_idx].type == CSVType::ID && !has_first_undirected_id) {
             has_first_undirected_id = true;
             column_with_id_from = col_idx;
         } else if (columns[col_idx].type == CSVType::ID && has_first_undirected_id
@@ -531,16 +532,26 @@ void OnDiskImport::verify_edge_file_header()
             column_with_id_to = col_idx;
         } else if (columns[col_idx].type == CSVType::ID && has_first_undirected_id
                    && !has_second_undirected_id)
-            print_fatal_error_msg("Too many undirected IDs are present");
+        {
+            FATAL_ERROR("line ", current_line, ": Too many undirected IDs are present");
+        }
     }
 
     bool has_directed_ids = has_start_id && has_end_id;
     bool has_undirected_ids = has_first_undirected_id && has_second_undirected_id;
     if (has_directed_ids && has_undirected_ids) {
-        print_fatal_error_msg("Both directed and undirected IDs have been specified. Please choose only one");
+        FATAL_ERROR(
+            "line ",
+            current_line,
+            ": Both directed and undirected IDs have been specified. Please choose only one"
+        );
     }
     if (!has_directed_ids && !has_undirected_ids) {
-        print_fatal_error_msg("No IDs have been specified for the relations, or some ID columns are missing");
+        FATAL_ERROR(
+            "line ",
+            current_line,
+            ": No IDs have been specified for the relations, or some ID columns are missing"
+        );
     }
 
     has_direction = has_directed_ids;
@@ -566,9 +577,9 @@ void OnDiskImport::save_body_column_to_buffer()
         case Token::FLOAT:
             columns[current_column].type = CSVType::DECIMAL;
             break;
-
         default:
-            print_error_msg("Cannot detect type. Please specify in CSV header");
+            parsing_errors++;
+            WARN("line ", current_line, ": Cannot detect type. Please specify in CSV header");
             break;
         }
     }
@@ -600,21 +611,26 @@ void OnDiskImport::process_node_line()
         node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
     } else {
         if (columns[column_with_id].value_size == 0) {
-            print_error_msg(
-                "No ID was given for the node despite declaring IDs in the header. The node will be saved"
+            WARN(
+                "line ",
+                current_line,
+                ": No ID was given for the node despite declaring IDs in the header. The node will be saved"
             );
+            parsing_errors++;
             node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
         } else {
             if (global_ids) {
                 // If a node with the same ID exists, do not save.
                 if (csvid_global.contains(columns[column_with_id].value_str)) {
-                    std::string error_msg = "Duplicated ID \"";
-                    error_msg += columns[column_with_id].value_str;
-                    error_msg += "\". Node will not be saved.";
-                    print_error_msg(error_msg);
-
+                    WARN(
+                        "line ",
+                        current_line,
+                        ": Duplicated ID \"",
+                        columns[column_with_id].value_str,
+                        "\". Node will not be saved."
+                    );
+                    parsing_errors++;
                     go_to_next_line();
-
                     return;
                 }
                 // Using global IDs
@@ -623,15 +639,17 @@ void OnDiskImport::process_node_line()
             } else {
                 // Using IDs inside the scope of a group
                 if (csvid_groups[current_group_idx].contains(columns[column_with_id].value_str)) {
-                    std::string error_msg = "Duplicated ID \"";
-                    error_msg += columns[column_with_id].value_str;
-                    error_msg += "\" inside group \"";
-                    error_msg += current_group;
-                    error_msg += "\". Node will not be saved.";
-
+                    WARN(
+                        "line ",
+                        current_line,
+                        ": Duplicated ID \"",
+                        columns[column_with_id].value_str,
+                        "\" inside group \"",
+                        current_group,
+                        "\". Node will not be saved."
+                    );
+                    parsing_errors++;
                     go_to_next_line();
-
-                    print_error_msg(error_msg);
                     return;
                 }
                 node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
@@ -698,9 +716,8 @@ void OnDiskImport::process_node_line()
         case CSVType::DATE: {
             uint64_t value_id = DateTime::from_date(col.value_str);
             if (value_id == ObjectId::NULL_ID) {
-                std::string error = "Invalid date: ";
-                error += col.value_str;
-                print_error_msg(error);
+                WARN("line ", current_line, ": Invalid date `", col.value_str, '`');
+                parsing_errors++;
                 break;
             }
             uint64_t key_id = get_node_key_id(col.name);
@@ -710,9 +727,8 @@ void OnDiskImport::process_node_line()
         case CSVType::DATETIME: {
             uint64_t value_id = DateTime::from_dateTime(col.value_str);
             if (value_id == ObjectId::NULL_ID) {
-                std::string error = "Invalid date: ";
-                error += col.value_str;
-                print_error_msg(error);
+                WARN("line ", current_line, ": Invalid dateTime `", col.value_str, '`');
+                parsing_errors++;
                 break;
             }
             uint64_t key_id = get_node_key_id(col.name);
@@ -745,7 +761,8 @@ void OnDiskImport::process_node_line()
         }
 
         default:
-            print_error_msg("Unhandled type");
+            WARN("line ", current_line, ": Unhandled type");
+            parsing_errors++;
             break;
         }
     }
@@ -768,7 +785,12 @@ uint64_t OnDiskImport::get_edge_key_id(const std::string& column_name)
 void OnDiskImport::save_edge_line()
 {
     if (columns[column_with_id_from].value_size == 0 || columns[column_with_id_to].value_size == 0) {
-        print_error_msg("The edge has missing IDs and they are required. The edge will not be saved");
+        WARN(
+            "line ",
+            current_line,
+            ": The edge has missing IDs and they are required. The edge will not be saved"
+        );
+        parsing_errors++;
         go_to_next_line();
         return;
     }
@@ -777,28 +799,32 @@ void OnDiskImport::save_edge_line()
     if (current_group_idx_from == -1) {
         // Using global scope of ids.
         if (!csvid_global.contains(columns[column_with_id_from].value_str)) {
-            std::string error = "The ID ";
-            error += columns[column_with_id_from].value_str;
-            error += " does not exist in the global scope. Edge will not be saved.";
-            print_error_msg(error);
-
+            WARN(
+                "line ",
+                current_line,
+                ": The ID ",
+                columns[column_with_id_from].value_str,
+                " does not exist in the global scope. Edge will not be saved."
+            );
+            parsing_errors++;
             go_to_next_line();
-
             return;
         }
         id_node_from = csvid_global[columns[column_with_id_from].value_str];
     } else {
         // Using a group of ids.
         if (!csvid_groups[current_group_idx_from].contains(columns[column_with_id_from].value_str)) {
-            std::string error = "The ID ";
-            error += columns[column_with_id_from].value_str;
-            error += " does not exist in the group ";
-            error += current_group_from;
-            error += ". Edge will not be saved.";
-            print_error_msg(error);
-
+            WARN(
+                "line ",
+                current_line,
+                ": The ID ",
+                columns[column_with_id_from].value_str,
+                " does not exist in the group ",
+                current_group_from,
+                ". Edge will not be saved."
+            );
+            parsing_errors++;
             go_to_next_line();
-
             return;
         }
         id_node_from = csvid_groups[current_group_idx_from][columns[column_with_id_from].value_str];
@@ -807,28 +833,32 @@ void OnDiskImport::save_edge_line()
     if (current_group_idx_to == -1) {
         // Using global scope of ids.
         if (!csvid_global.contains(columns[column_with_id_to].value_str)) {
-            std::string error = "The ID ";
-            error += columns[column_with_id_to].value_str;
-            error += " does not exist in the global scope. Edge will not be saved.";
-            print_error_msg(error);
-
+            WARN(
+                "line ",
+                current_line,
+                ": The ID ",
+                columns[column_with_id_to].value_str,
+                " does not exist in the global scope. Edge will not be saved."
+            );
+            parsing_errors++;
             go_to_next_line();
-
             return;
         }
         id_node_to = csvid_global[columns[column_with_id_to].value_str];
     } else {
         // Using a group of ids.
         if (!csvid_groups[current_group_idx_to].contains(columns[column_with_id_to].value_str)) {
-            std::string error = "The ID ";
-            error += columns[column_with_id_to].value_str;
-            error += " does not exist in the group ";
-            error += current_group_to;
-            error += ". Edge will not be saved.";
-            print_error_msg(error);
-
+            WARN(
+                "line ",
+                current_line,
+                ": The ID ",
+                columns[column_with_id_to].value_str,
+                " does not exist in the group ",
+                current_group_to,
+                ". Edge will not be saved."
+            );
+            parsing_errors++;
             go_to_next_line();
-
             return;
         }
         id_node_to = csvid_groups[current_group_idx_to][columns[column_with_id_to].value_str];
@@ -915,9 +945,8 @@ void OnDiskImport::save_edge_line()
         case CSVType::DATE: {
             uint64_t value_id = DateTime::from_date(col.value_str);
             if (value_id == ObjectId::NULL_ID) {
-                std::string error = "Invalid date: ";
-                error += col.value_str;
-                print_error_msg(error);
+                WARN("line ", current_line, ": Invalid date `", col.value_str, '`');
+                parsing_errors++;
                 break;
             }
             uint64_t key_id = get_edge_key_id(col.name);
@@ -927,9 +956,8 @@ void OnDiskImport::save_edge_line()
         case CSVType::DATETIME: {
             uint64_t value_id = DateTime::from_dateTime(col.value_str);
             if (value_id == ObjectId::NULL_ID) {
-                std::string error = "Invalid dateTime: ";
-                error += col.value_str;
-                print_error_msg(error);
+                WARN("line ", current_line, ": Invalid dateTime `", col.value_str, '`');
+                parsing_errors++;
                 break;
             }
             uint64_t key_id = get_edge_key_id(col.name);
@@ -962,7 +990,8 @@ void OnDiskImport::save_edge_line()
         }
 
         default:
-            print_error_msg("Unhandled type");
+            WARN("line ", current_line, ": Unhandled type");
+            parsing_errors++;
             break;
         }
     }

@@ -21,11 +21,13 @@ struct CombinationEnumerator {
         count = ones_needed * -1;
     }
 
-    ~CombinationEnumerator() {
-        delete[](arr);
+    ~CombinationEnumerator()
+    {
+        delete[] (arr);
     }
 
-    void sum_one() {
+    void sum_one()
+    {
         for (size_t i = 0; i < size /* redundant condition */; ++i) {
             if (arr[i]) {
                 // 1 -> 0
@@ -40,7 +42,8 @@ struct CombinationEnumerator {
         }
     }
 
-    bool* get_next_combination() {
+    bool* get_next_combination()
+    {
         do {
             sum_one();
         } while (count != 0);
@@ -48,34 +51,30 @@ struct CombinationEnumerator {
     }
 };
 
-
 SelingerOptimizer::SelingerOptimizer(const std::vector<std::unique_ptr<Plan>>& base_plans) :
-    plans_size (base_plans.size())
+    plans_size(base_plans.size())
 {
     assert(plans_size > 0);
     optimal_plans = new std::unique_ptr<Plan>*[plans_size];
 
-    // std::cout << "\nBase Plans:" << plans_size << "\n";
     for (size_t i = 0; i < plans_size; ++i) {
-        auto arr_size = nCr(plans_size, i+1);
+        auto arr_size = nCr(plans_size, i + 1);
 
         optimal_plans[i] = new std::unique_ptr<Plan>[arr_size];
         optimal_plans[0][i] = base_plans[i]->clone();
-        // optimal_plans[0][i]->print(std::cout, 0);
-        // std::cout << "\n";
     }
 }
 
-
-SelingerOptimizer::~SelingerOptimizer() {
+SelingerOptimizer::~SelingerOptimizer()
+{
     for (size_t i = 0; i < plans_size; ++i) {
-        delete[](optimal_plans[i]);
+        delete[] (optimal_plans[i]);
     }
-    delete[](optimal_plans);
+    delete[] (optimal_plans);
 }
 
-
-std::unique_ptr<Plan> SelingerOptimizer::get_plan() {
+std::unique_ptr<Plan> SelingerOptimizer::get_plan()
+{
     for (size_t i = 2; i <= plans_size; ++i) {
         auto combination_enumerator = CombinationEnumerator(plans_size, i);
 
@@ -98,7 +97,7 @@ std::unique_ptr<Plan> SelingerOptimizer::get_plan() {
                     arr[bit_pos] = false;
 
                     auto current_plan = std::make_unique<IndexNestedLoopPlan>(
-                        optimal_plans[i-2][get_index(arr, plans_size)]->clone(),
+                        optimal_plans[i - 2][get_index(arr, plans_size)]->clone(),
                         optimal_plans[0][bit_pos]->clone()
                     );
 
@@ -112,31 +111,31 @@ std::unique_ptr<Plan> SelingerOptimizer::get_plan() {
                     arr[bit_pos] = true;
                 }
             }
-            optimal_plans[i-1][get_index(arr, plans_size)] = std::move(best_plan);
+            optimal_plans[i - 1][get_index(arr, plans_size)] = std::move(best_plan);
         }
     }
-    return std::move(optimal_plans[plans_size-1][0]);
+    return std::move(optimal_plans[plans_size - 1][0]);
 }
 
-
-uint64_t SelingerOptimizer::nCr(uint_fast32_t n, uint_fast32_t r) {
+uint64_t SelingerOptimizer::nCr(uint_fast32_t n, uint_fast32_t r)
+{
     if (n < r) {
         return 0;
     }
 
     uint64_t res = 1;
     for (uint_fast32_t i = 0; i < r; ++i) {
-        res *= n-i;
-        res /= i+1;
+        res *= n - i;
+        res /= i + 1;
     }
 
     return res;
 }
 
-
-uint_fast32_t SelingerOptimizer::get_index(bool* arr, uint_fast32_t size) {
+uint_fast32_t SelingerOptimizer::get_index(bool* arr, uint_fast32_t size)
+{
     uint_fast32_t res = 0;
-    uint_fast32_t k   = 0;
+    uint_fast32_t k = 0;
 
     for (uint_fast32_t i = 0; i < size; ++i) {
         if (arr[i] == 1) {

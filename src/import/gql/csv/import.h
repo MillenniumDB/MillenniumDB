@@ -87,10 +87,6 @@ public:
 
     void print_error();
 
-    void print_error_msg(std::string msg);
-
-    void print_fatal_error_msg(std::string msg);
-
     std::vector<std::string> split(std::string input, std::string delimiter);
 
 private:

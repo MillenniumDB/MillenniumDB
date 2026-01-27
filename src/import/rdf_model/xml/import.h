@@ -71,8 +71,6 @@ public:
 
     void start_import(MDBIstream& in, const std::string& prefixes_filename);
     void print_error();
-    void print_error_msg(const std::string& msg);
-    void print_fatal_error_msg(const std::string& msg);
     std::vector<std::string> split(const std::string& input, const std::string& delimiter);
     std::vector<std::string> split_xml_param(const std::string& input);
 

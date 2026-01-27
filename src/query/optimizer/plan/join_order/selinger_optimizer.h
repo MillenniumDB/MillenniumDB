@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "query/executor/binding_iter.h"
-#include "query/query_context.h"
 #include "query/optimizer/plan/plan.h"
 
 class SelingerOptimizer {

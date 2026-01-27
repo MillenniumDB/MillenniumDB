@@ -2,22 +2,25 @@
 
 #include <memory>
 #include <vector>
+
 #include <boost/unordered/unordered_flat_map.hpp>
 
 #include "query/executor/binding_iter.h"
-#include "query/executor/binding_iter/hash_join/value.h"
 #include "query/executor/binding_iter/hash_join/bgp/base.h"
+#include "query/executor/binding_iter/hash_join/value.h"
 
 namespace HashJoin { namespace BGP { namespace InMemory {
 
-template<std::size_t N> class Join : public BindingIter {
+template<std::size_t N>
+class Join : public BindingIter {
 public:
     Join(
         std::unique_ptr<BindingIter> build_rel,
         std::unique_ptr<BindingIter> probe_rel,
-        std::vector<VarId>&&         join_vars,
-        std::vector<VarId>&&         build_vars,
-        std::vector<VarId>&&         probe_vars);
+        std::vector<VarId>&& join_vars,
+        std::vector<VarId>&& build_vars,
+        std::vector<VarId>&& probe_vars
+    );
 
     ~Join();
 
@@ -57,15 +60,13 @@ private:
     size_t data_chunk_index; // Chunk index
 
     // Hash table
-    boost::unordered_flat_map<HashJoin::BGP::Key<N>,
-                                   HashJoin::Value,
-                                   HashJoin::BGP::Hasher<N>> hash_table;
+    boost::unordered_flat_map<HashJoin::BGP::Key<N>, HashJoin::Value, HashJoin::BGP::Hasher<N>> hash_table;
     void build_hash_table();
 
     // probe key: Avoid to ask for an uint64 array in each next call
-    uint64_t pk_start [N];
+    uint64_t pk_start[N];
     uint64_t last_pk_start[N];
     Key<N> probe_key;
     Key<N> last_probe_key;
 };
-}}}
+}}} // namespace HashJoin::BGP::InMemory

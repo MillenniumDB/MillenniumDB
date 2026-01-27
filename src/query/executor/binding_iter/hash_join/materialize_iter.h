@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "query/executor/binding_iter.h"
-#include "storage/index/hash/key_value_hash/key_value_pair_hasher.h"
 #include "storage/page/private_page.h"
 
 namespace HashJoin {
@@ -20,9 +19,7 @@ public:
     // MAX_DEPTH on split to avoid infinite split
     static const uint64_t MAX_DEPTH = 64;
 
-    MaterializeIter(
-        const std::vector<VarId>& vars,
-        uint64_t depth);
+    MaterializeIter(const std::vector<VarId>& vars, uint64_t depth);
 
     ~MaterializeIter();
 
@@ -81,4 +78,4 @@ private:
 
     const uint64_t max_tuples_per_page;
 };
-}
+} // namespace HashJoin

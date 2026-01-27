@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "query/executor/binding_iter/scan_ranges/term.h"
-#include "storage/index/leapfrog/leapfrog_bpt_iter.h"
 #include "storage/index/leapfrog/leapfrog_iter.h"
 
 class LeapfrogEstimator {
@@ -28,15 +26,9 @@ public:
     double estimate_var_cost() {
         bool finished = false;
 
-        // for (const auto& lf_iter : leapfrog_iters) {
-        //     auto var_size = lf_iter->get_relation_size();
-        //     std::cout << "var size " << var_size << "\n";
-        // }
-
         auto estimation_output = do_seeks(&finished);
 
         if (finished) {
-            // std::cout << "Finished with " << seeks << " seeks\n";
             return 0;
         }
 
@@ -53,13 +45,7 @@ public:
         for (size_t i = 0; i < initial_estimations.size(); i++) {
             assert(initial_estimations[i] >= after_estimations[i]);
             cost += initial_estimations[i] / (1+after_estimations[i]);
-            // auto a = initial_estimations[i] / (1+after_estimations[i]);
-            // std::cout << "initial_estimations: " << initial_estimations[i] << "\n";
-            // std::cout << "after_estimations: " << after_estimations[i] << "\n";
-            // std::cout << "Cost: " << a << "\n";
         }
-        // std::cout << "Estimation output: " << estimation_output << "\n";
-        // std::cout << "initial_estimations.size(): " << initial_estimations.size() << "\n";
         // Average
         return cost / initial_estimations.size() * (estimation_output + 1);
     }

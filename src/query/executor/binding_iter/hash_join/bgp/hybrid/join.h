@@ -1,24 +1,25 @@
 #pragma once
 
 #include <memory>
-#include <array>
 #include <vector>
+
 #include <boost/unordered/unordered_flat_map.hpp>
 
 #include "query/executor/binding_iter.h"
-#include "query/executor/binding_iter/hash_join/value.h"
-#include "query/executor/binding_iter/hash_join/materialize_iter.h"
 #include "query/executor/binding_iter/hash_join/bgp/base.h"
+#include "query/executor/binding_iter/hash_join/materialize_iter.h"
+#include "query/executor/binding_iter/hash_join/value.h"
 
 namespace HashJoin { namespace BGP { namespace Hybrid {
-template<std::size_t N> class Join : public BindingIter {
+template<std::size_t N>
+class Join : public BindingIter {
 public:
     Join(
         std::unique_ptr<BindingIter> lhs,
         std::unique_ptr<BindingIter> rhs,
-        std::vector<VarId>&&         join_vars,
-        std::vector<VarId>&&         lhs_vars,
-        std::vector<VarId>&&         rhs_vars
+        std::vector<VarId>&& join_vars,
+        std::vector<VarId>&& lhs_vars,
+        std::vector<VarId>&& rhs_vars
     );
 
     ~Join();
@@ -63,8 +64,9 @@ private:
     uint64_t current_partition = 0;
     uint64_t current_partition_stack = 0;
 
-    std::vector<std::pair<std::unique_ptr<HashJoin::MaterializeIter>,
-                          std::unique_ptr<HashJoin::MaterializeIter>>> partitions;
+    std::vector<
+        std::pair<std::unique_ptr<HashJoin::MaterializeIter>, std::unique_ptr<HashJoin::MaterializeIter>>>
+        partitions;
 
     /*
     Keys and data (non join vars of build relation) will be stored in a array
@@ -77,21 +79,17 @@ private:
            will be stored in chunks_dir
     */
     // Key
-    uint64_t* key_chunk;                   // Chunk
-    size_t key_chunk_index;                // Chunk index
+    uint64_t* key_chunk; // Chunk
+    size_t key_chunk_index; // Chunk index
     std::vector<uint64_t*> key_chunks_dir; // Directory
 
     // Data
-    uint64_t* data_chunk;                   // Chunk
-    size_t data_chunk_index;                // Chunk index
+    uint64_t* data_chunk; // Chunk
+    size_t data_chunk_index; // Chunk index
     std::vector<uint64_t*> data_chunks_dir; // Directory
 
-
     // Hash table
-    boost::unordered_flat_map<HashJoin::BGP::Key<N>,
-                                   HashJoin::Value,
-                                   HashJoin::BGP::Hasher<N>> hash_table;
-
+    boost::unordered_flat_map<HashJoin::BGP::Key<N>, HashJoin::Value, HashJoin::BGP::Hasher<N>> hash_table;
 
     // probe key: Avoid to ask for an uint64 array in each next call
     uint64_t pk_start[N];
@@ -107,4 +105,4 @@ private:
 
     bool get_next_partition();
 };
-}}}
+}}} // namespace HashJoin::BGP::Hybrid

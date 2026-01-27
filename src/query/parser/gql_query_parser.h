@@ -44,19 +44,12 @@ public:
 
         auto res = std::move(visitor.current_op);
 
-        // logger(Category::LogicalPlan, 1) << "Initial logical plan:\n" << *res;
-
-        res->print_to_ostream(std::cout);
+        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
 
         res->get_var_types();
-
-        std::cout << std::endl;
-
         res = rewrite(std::move(res));
 
-        std::cout << "\nAFTER REWRITING" << std::endl;
-        res->print_to_ostream(std::cout);
-        std::cout.flush();
+        logger(Category::LogicalPlan) << *res;
 
         return res;
     }

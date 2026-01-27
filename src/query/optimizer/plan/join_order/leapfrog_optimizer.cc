@@ -29,10 +29,8 @@ map<VarId, vector<Plan*>> get_var2plans(const vector<unique_ptr<Plan>>& base_pla
     return res;
 }
 
-
-unique_ptr<BindingIter> LeapfrogOptimizer::try_get_iter_without_assigned(
-    const vector<unique_ptr<Plan>>& base_plans
-)
+unique_ptr<BindingIter>
+    LeapfrogOptimizer::try_get_iter_without_assigned(const vector<unique_ptr<Plan>>& base_plans)
 {
     set<VarId> intersection_vars;
     set<VarId> enumeration_vars;
@@ -108,7 +106,6 @@ unique_ptr<BindingIter> LeapfrogOptimizer::try_get_iter_without_assigned(
             return nullptr;
         }
         var_costs.push_back({ var, cost, false });
-        // std::cout << "LeapfrogEstimator for var " << var << ": " << cost << "\n";
     }
 
     // order vars by cost
@@ -233,12 +230,6 @@ begin_while:
         var_order.push_back(enumeration_var);
     }
 
-    // cout << "Var order: [";
-    // for (const auto& var : var_order) {
-    //     cout << " " << var;
-    // }
-    // cout << " ]\n";
-
     // second pass on the base_plans, now creating the leapfrog iterators using the variable order constructed
     vector<unique_ptr<LeapfrogIter>> leapfrog_iters;
 
@@ -257,9 +248,11 @@ begin_while:
         return nullptr;
     }
 
-
-    std::unique_ptr<BindingIter> lf_iter =
-        make_unique<LeapfrogJoin>(std::move(leapfrog_iters), std::move(var_order), enumeration_level);
+    std::unique_ptr<BindingIter> lf_iter = make_unique<LeapfrogJoin>(
+        std::move(leapfrog_iters),
+        std::move(var_order),
+        enumeration_level
+    );
 
     if (remaining_plans.empty()) {
         return lf_iter;
@@ -293,19 +286,14 @@ begin_while:
             remaining_plans[i]->set_input_vars(intersection_vars);
         }
         auto remaining_plan = GreedyOptimizer::get_plan(remaining_plans);
-        return std::make_unique<IndexNestedLoopJoin>(
-            std::move(lf_iter),
-            remaining_plan->get_binding_iter()
-        );
+        return std::make_unique<IndexNestedLoopJoin>(std::move(lf_iter), remaining_plan->get_binding_iter());
     }
 
     return nullptr;
 }
 
-
-unique_ptr<BindingIter> LeapfrogOptimizer::try_get_iter_with_assigned(
-    const vector<unique_ptr<Plan>>& base_plans
-)
+unique_ptr<BindingIter>
+    LeapfrogOptimizer::try_get_iter_with_assigned(const vector<unique_ptr<Plan>>& base_plans)
 {
     map<VarId, pair<double, size_t>> var2cost;
     set<VarId> unchosen_intersection_vars;
@@ -385,12 +373,6 @@ unique_ptr<BindingIter> LeapfrogOptimizer::try_get_iter_with_assigned(
     for (auto enumeration_var : enumeration_vars) {
         var_order.push_back(enumeration_var);
     }
-
-    // cout << "Var order: [";
-    // for (const auto& var : var_order) {
-    //     cout << " " << var;
-    // }
-    // cout << " ]\n";
 
     // second pass on the base_plans, now creating the leapfrog iterators using the variable order constructed
     vector<unique_ptr<LeapfrogIter>> leapfrog_iters;

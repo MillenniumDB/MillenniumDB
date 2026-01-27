@@ -35,7 +35,8 @@ Join1Var::~Join1Var()
     }
 }
 
-void Join1Var::print(std::ostream& os, int indent, bool stats) const {
+void Join1Var::print(std::ostream& os, int indent, bool stats) const
+{
     if (stats) {
         print_generic_stats(os, indent);
     }

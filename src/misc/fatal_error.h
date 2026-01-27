@@ -34,6 +34,7 @@ template <typename T>
 inline void _WARN(const T& t) {
     std::cerr << t;
     std::cerr << "\n\x1B[0m";
+    std::cerr.flush();
 }
 
 template <typename First, typename... Rest>
@@ -47,6 +48,7 @@ inline void WARN(const First& first) {
     std::cerr << "\x1b[0;33mWARNING: ";
     std::cerr << first;
     std::cerr << "\n\x1B[0m";
+    std::cerr.flush();
 }
 
 template <typename First, typename... Rest>

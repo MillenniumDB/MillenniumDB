@@ -2,11 +2,9 @@
 
 #include <cstdint>
 #include <queue>
-#include <map>
 #include <utility>
 #include <vector>
 
-#include "query/var_id.h"
 #include "storage/file_id.h"
 #include "storage/index/hash/key_value_hash/key_value_hash_bucket.h"
 

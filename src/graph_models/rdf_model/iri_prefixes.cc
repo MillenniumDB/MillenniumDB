@@ -5,7 +5,8 @@
 // Orders strings from shortest to longest,
 // and same size strings lexicographically.
 struct string_comparison {
-    inline bool operator()(const std::string& first, const std::string& second) const {
+    inline bool operator()(const std::string& first, const std::string& second) const
+    {
         if (first.size() != second.size()) {
             return first.size() < second.size();
         } else {
@@ -14,8 +15,8 @@ struct string_comparison {
     }
 };
 
-
-void IriPrefixes::init(std::set<std::string>&& prefix_set) {
+void IriPrefixes::init(std::set<std::string>&& prefix_set)
+{
     // There should be no reason to initialize twice
     assert(prefixes.size() == 0);
 
@@ -67,15 +68,10 @@ void IriPrefixes::init(std::set<std::string>&& prefix_set) {
         // Prefix-id 0 is the empty prefix, by adding 1 we get a value > 0
         longest_prefix[current_node] = p;
     }
-
-    // std::cout << "Compression Prefixes:\n";
-    // for (auto& prefix : prefixes) {
-    //     std::cout << " - \"" << prefix << "\"\n";
-    // }
 }
 
-
-void IriPrefixes::init(std::vector<std::string>&& prefix_vec) {
+void IriPrefixes::init(std::vector<std::string>&& prefix_vec)
+{
     std::set<std::string> prefix_set;
 
     for (auto& prefix : prefix_vec) {
@@ -85,8 +81,8 @@ void IriPrefixes::init(std::vector<std::string>&& prefix_vec) {
     init(std::move(prefix_set));
 }
 
-
-std::pair<uint_fast8_t, size_t> IriPrefixes::get_prefix_id(const char* string, size_t size) const { 
+std::pair<uint_fast8_t, size_t> IriPrefixes::get_prefix_id(const char* string, size_t size) const
+{
     uint_fast16_t current_node = 0;
 
     for (size_t i = 0; i < size; i++) {
@@ -114,5 +110,5 @@ std::pair<uint_fast8_t, size_t> IriPrefixes::get_prefix_id(const char* string, s
     auto prefix_id = longest_prefix[current_node];
     auto prefix_size = prefixes[prefix_id].size();
 
-    return {prefix_id, prefix_size};
+    return { prefix_id, prefix_size };
 }

@@ -70,7 +70,6 @@ Token CSVTokenizer::get_token()
     std::memcpy(_str, token_start, str_len);
     _str[str_len] = '\0';
     str = _str;
-    // std::cout << "[DEBUG] Token: " << res << "\tstr: \"" << str << "\"\n";
     return res;
 }
 

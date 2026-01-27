@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "system/buffer_manager.h"
+#include "third_party/hashes/hash_function_wrapper.h"
 
 using namespace std;
 using namespace HashJoin;

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <boost/unordered/unordered_flat_map.hpp>
 #include <memory>
 #include <vector>
+
+#include <boost/unordered/unordered_flat_map.hpp>
 
 #include "query/executor/binding_iter.h"
 #include "query/executor/binding_iter/hash_join/bgp/base.h"
