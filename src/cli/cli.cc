@@ -646,9 +646,9 @@ void CLI::AppendHistoryEntryToFile(const std::vector<std::wstring>& history_entr
 
 
 int CLI::Init() {
-    for (auto& cat : logger.categories) {
-        cat.second.enabled = false;
-    }
+    logger.debug_config.enabled = false;
+    logger.error_config.enabled = false;
+    logger.info_config.enabled = false;
 
     setlocale(LC_ALL, "en_US.UTF-8");
     std::locale::global(std::locale("en_US.UTF-8"));

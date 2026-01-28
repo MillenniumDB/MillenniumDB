@@ -44,12 +44,12 @@ public:
 
         auto res = std::move(visitor.current_op);
 
-        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
+        logger.debug() << "Initial logical plan:\n" << *res;
 
         res->get_var_types();
         res = rewrite(std::move(res));
 
-        logger(Category::LogicalPlan) << *res;
+        logger.debug() << *res;
 
         return res;
     }

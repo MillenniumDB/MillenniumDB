@@ -84,7 +84,9 @@ int main(int argc, const char* argv[])
                 quad_model.MAX_LIMIT = config.limit;
             }
 
-            quad_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                quad_model.catalog.print(os);
+            });
 
             try {
                 auto version_scope = buffer_manager.init_version_editable();
@@ -104,21 +106,21 @@ int main(int argc, const char* argv[])
                     update_executor.print_stats(os);
                 });
 
-                logger(Category::Info) << "Parser duration:    " << parser_duration.count()
+                logger.info() << "Parser duration:    " << parser_duration.count()
                                        << " ms\n"
                                           "Execution duration: "
                                        << execution_duration.count() << " ms";
             } catch (const QueryParsingException& e) {
-                logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
                                         << ": " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {
-                logger(Category::Error) << "Query Exception: " << e.what();
+                logger.error() << "Query Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const LogicException& e) {
-                logger(Category::Error) << "Logic Exception: " << e.what();
+                logger.error() << "Logic Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             }
@@ -133,7 +135,9 @@ int main(int argc, const char* argv[])
                 rdf_model.MAX_LIMIT = config.limit;
             }
 
-            rdf_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                rdf_model.catalog.print(os);
+            });
 
             try {
                 auto version_scope = buffer_manager.init_version_editable();
@@ -152,16 +156,16 @@ int main(int argc, const char* argv[])
                     update_executor.print_stats(os);
                 });
             } catch (const QueryParsingException& e) {
-                logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
                                         << ": " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {
-                logger(Category::Error) << "Query Exception: " << e.what();
+                logger.error() << "Query Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const LogicException& e) {
-                logger(Category::Error) << "Logic Exception: " << e.what();
+                logger.error() << "Logic Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             }

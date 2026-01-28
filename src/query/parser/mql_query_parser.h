@@ -54,7 +54,7 @@ public:
 
         auto res = std::move(visitor.current_op);
 
-        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *res;
+        logger.debug() << "Initial logical plan:\n" << *res;
 
         if (!input_parameters.empty()) {
             std::map<VarId, ObjectId> query_parameters;
@@ -83,7 +83,7 @@ public:
         PushWhereProperties push_where_properties;
         res->accept_visitor(push_where_properties);
 
-        logger(Category::LogicalPlan) << *res;
+        logger.debug() << *res;
 
         return res;
     }

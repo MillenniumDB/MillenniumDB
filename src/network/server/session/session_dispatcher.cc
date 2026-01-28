@@ -32,7 +32,7 @@ void SessionDispatcher<stream_t>::read_http_header()
         "\r\n\r\n",
         [self = this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
-                logger(Category::Error) << "Could not read the HTTP header: " << ec.message();
+                logger.error() << "Could not read the HTTP header: " << ec.message();
                 SessionDispatcher<stream_t>::close_stream(self->stream);
                 return;
             }
@@ -42,7 +42,7 @@ void SessionDispatcher<stream_t>::read_http_header()
             self->read_buffer.consume(self->read_buffer.size());
 
             if (ec2) {
-                logger(Category::Error) << "Could not parse the HTTP header: " << ec2.message();
+                logger.error() << "Could not parse the HTTP header: " << ec2.message();
                 SessionDispatcher<stream_t>::close_stream(self->stream);
                 return;
             }
@@ -63,7 +63,7 @@ void SessionDispatcher<stream_t>::read_http_body()
                  this->shared_from_this()](const system::error_code& ec, std::size_t /*bytes_transferred*/) {
                 if (ec) {
                     SessionDispatcher<stream_t>::close_stream(self->stream);
-                    logger(Category::Error) << "Could not parse the HTTP body: " << ec.message();
+                    logger.error() << "Could not parse the HTTP body: " << ec.message();
                     return;
                 }
                 auto tmp_buf = asio::buffer(self->read_buffer.data(), self->read_buffer.size());
@@ -71,7 +71,7 @@ void SessionDispatcher<stream_t>::read_http_body()
                 self->http_parser.put(tmp_buf, ec2);
                 if (ec2) {
                     SessionDispatcher<stream_t>::close_stream(self->stream);
-                    logger(Category::Error) << "Could not parse the HTTP: " << ec2.message();
+                    logger.error() << "Could not parse the HTTP: " << ec2.message();
                     return;
                 }
                 self->read_buffer.consume(self->read_buffer.size());
@@ -112,10 +112,10 @@ void SessionDispatcher<stream_t>::dispatch_http()
              write_authorized](const system::error_code& ec) {
                 if (ec) {
                     ws_stream->close(websocket::close_code::abnormal);
-                    logger(Category::Error) << "Could not perform the WebSocket handshake with the client";
+                    logger.error() << "Could not perform the WebSocket handshake with the client";
                     return;
                 }
-                logger(Category::Debug) << "Dispatching StreamingWebSocketSession";
+                logger.debug() << "Dispatching StreamingWebSocketSession";
 
                 std::make_shared<StreamingWebSocketSession<beast::websocket::stream<stream_t>>>(
                     self->server,
@@ -130,7 +130,7 @@ void SessionDispatcher<stream_t>::dispatch_http()
     }
 
     // Handle regular HTTP requests
-    logger(Category::Debug) << "Dispatching HTTPSession";
+    logger.debug() << "Dispatching HTTPSession";
     if (server.model_id == Protocol::QUAD_MODEL_ID) {
         HttpQuadSession<stream_t>::run(
             std::make_unique<HttpQuadSession<stream_t>>(
@@ -227,17 +227,17 @@ void SessionSSLDetector::run()
         asio::socket_base::message_peek,
         [self = shared_from_this()](const system::error_code& ec, std::size_t bytes_transferred) {
             if (ec || bytes_transferred == 0) {
-                logger(Category::Error) << "Could not read the client's preamble";
+                logger.error() << "Could not read the client's preamble";
                 self->tcp_stream.close();
                 return;
             }
 
             const bool is_tls = self->peek_byte == 0x16;
             if (is_tls) {
-                logger(Category::Debug) << "SSL detected.";
+                logger.debug() << "SSL detected.";
 
                 if (!self->ssl_ctx.has_value()) {
-                    logger(Category::Error) << "The server is not configured to accept SSL connections.";
+                    logger.error() << "The server is not configured to accept SSL connections.";
                     self->tcp_stream.close();
                     return;
                 }
@@ -251,7 +251,7 @@ void SessionSSLDetector::run()
                     asio::ssl::stream_base::server,
                     [self = self->shared_from_this()](beast::error_code ec /*, std::size_t bytes_used*/) {
                         if (ec) {
-                            logger(Category::Error) << "Error in ssl handshake: " << ec.message();
+                            logger.error() << "Error in ssl handshake: " << ec.message();
                             return;
                         }
 
@@ -264,7 +264,7 @@ void SessionSSLDetector::run()
                     }
                 );
             } else {
-                logger(Category::Debug) << "SSL not detected.";
+                logger.debug() << "SSL not detected.";
                 std::make_shared<SessionDispatcher<asio::ip::tcp::socket>>(
                     self->server,
                     std::move(self->tcp_stream),

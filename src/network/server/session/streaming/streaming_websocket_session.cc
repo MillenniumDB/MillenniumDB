@@ -47,9 +47,9 @@ StreamingWebSocketSession<ws_stream_t>::~StreamingWebSocketSession()
 {
     if (stream.is_open()) {
         stream.close(websocket::close_code::normal, ec);
-        logger(Category::Debug) << "StreamingWebSocketSession: connection closed by destructor";
+        logger.debug() << "StreamingWebSocketSession: connection closed by destructor";
         if (ec) {
-            logger(Category::Error) << "Close failed:" << ec.what();
+            logger.error() << "Close failed:" << ec.what();
         }
     }
 }
@@ -94,13 +94,13 @@ void StreamingWebSocketSession<ws_stream_t>::decode_chunk(std::size_t chunk_size
             close_with_error("Protocol exception: " + std::string(e.what()));
             return;
         } catch (const ConnectionException& e) {
-            logger(Category::Error) << "Connection exception: " << e.what();
+            logger.error() << "Connection exception: " << e.what();
             return;
         } catch (const std::exception& e) {
-            logger(Category::Error) << "Uncaught exception: " << e.what();
+            logger.error() << "Uncaught exception: " << e.what();
             return;
         } catch (...) {
-            logger(Category::Error) << "Unexpected exception!";
+            logger.error() << "Unexpected exception!";
             return;
         }
 
@@ -185,7 +185,7 @@ void StreamingWebSocketSession<ws_stream_t>::async_read_nbytes(std::size_t n, On
         ) {
             if (ec) {
                 if (ec != websocket::error::closed) {
-                    logger(Category::Error) << "StreamingWebSocketSession read error: " << ec.message();
+                    logger.error() << "StreamingWebSocketSession read error: " << ec.message();
                 }
                 return;
             }
@@ -199,13 +199,13 @@ void StreamingWebSocketSession<ws_stream_t>::async_read_nbytes(std::size_t n, On
 template<typename ws_stream_t>
 void StreamingWebSocketSession<ws_stream_t>::close_with_error(const std::string& msg)
 {
-    logger(Category::Error) << msg;
+    logger.error() << msg;
     request_handler->response_writer->write_error(msg);
     request_handler->response_writer->flush();
 
     stream.close(websocket::close_code::normal, ec);
     if (ec) {
-        logger(Category::Error) << "Close failed:" << ec.what();
+        logger.error() << "Close failed:" << ec.what();
     }
 }
 

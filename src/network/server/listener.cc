@@ -54,7 +54,7 @@ void Listener::run()
 {
     acceptor.async_accept(boost::asio::make_strand(io_context), [&](const boost::system::error_code& ec, asio::ip::tcp::socket socket) {
         // A new connection is accepted
-        logger(Category::Debug) << "New client connected";
+        logger.debug() << "New client connected";
         if (!ec) {
             // Disable Nagle's Algorithm to reduce latency, as our protocol may flush many small
             // messages when answering requests

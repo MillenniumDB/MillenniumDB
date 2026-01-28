@@ -9,6 +9,7 @@
 #include "graph_models/quad_model/quad_model.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "misc/fatal_error.h"
+#include "misc/logger.h"
 #include "network/server/protocol.h"
 #include "network/server/server.h"
 #include "query/parser/paths/regular_path_expr.h"
@@ -97,7 +98,7 @@ inline int mdb_server(const SystemConfig& conf)
         std::unique_ptr<ModelDestroyer> model_destroyer;
         switch (model_id) {
         case Catalog::ModelID::QUAD: {
-            std::cout << "Initializing Quad Model..." << std::endl;
+            logger.info() << "Initializing Quad Model...";
             model_destroyer = QuadModel::init();
 
             quad_model.path_mode = conf.path_mode;
@@ -105,12 +106,15 @@ inline int mdb_server(const SystemConfig& conf)
                 quad_model.MAX_LIMIT = conf.limit;
             }
 
-            quad_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                quad_model.catalog.print(os);
+            });
+
             server.model_id = MDBServer::Protocol::QUAD_MODEL_ID;
             break;
         }
         case Catalog::ModelID::RDF: {
-            std::cout << "Initializing RDF Model..." << std::endl;
+            logger.info() << "Initializing RDF Model...";
             model_destroyer = RdfModel::init();
 
             rdf_model.path_mode = conf.path_mode;
@@ -118,15 +122,19 @@ inline int mdb_server(const SystemConfig& conf)
                 rdf_model.MAX_LIMIT = conf.limit;
             }
 
-            rdf_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                rdf_model.catalog.print(os);
+            });
             server.model_id = MDBServer::Protocol::RDF_MODEL_ID;
             break;
         }
         case Catalog::ModelID::GQL: {
-            std::cout << "Initializing GQL Model..." << std::endl;
+            logger.info()  << "Initializing GQL Model...";
             model_destroyer = GQLModel::init();
 
-            gql_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                gql_model.catalog.print(os);
+            });
             server.model_id = MDBServer::Protocol::GQL_MODEL_ID;
             break;
         }

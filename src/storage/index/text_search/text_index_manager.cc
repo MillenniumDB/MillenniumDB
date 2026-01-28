@@ -42,9 +42,9 @@ void TextIndexManager::load_text_index(const std::string& name, const TextIndexM
         name2metadata[name] = metadata;
         predicate2names[metadata.predicate].emplace_back(name);
     } catch (const std::exception& e) {
-        logger(Category::Error) << "Failed to load TextSearchIndex \"" + name + "\": " + e.what();
+        logger.error() << "Failed to load TextSearchIndex \"" + name + "\": " + e.what();
     } catch (...) {
-        logger(Category::Error) << "Failed to load TextSearchIndex \"" + name + "\": Unknown error";
+        logger.error() << "Failed to load TextSearchIndex \"" + name + "\": Unknown error";
     }
 }
 

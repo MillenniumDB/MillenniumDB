@@ -3,52 +3,36 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <map>
 #include <mutex>
 #include <sstream>
 #include <string>
-
-enum class Category {
-    Query,
-    LogicalPlan,
-    PhysicalPlan,
-    ExecutionStats,
-    Error,
-    Info,
-    Debug,
-    InvalidCategory,
-};
 
 struct CategoryConfig {
     std::ostream* os = &std::cout;
     bool enabled = true;
     bool print_time = false;
     bool print_category = false;
-    unsigned verbosity = 0;
+    std::string category_name;
 };
 
 class OStream {
     friend class Logger;
 
 private:
-    std::mutex* mutex;
-    Category category;
     CategoryConfig* config;
     std::stringstream stream;
 
     OStream() :
-        mutex(nullptr),
-        category(Category::InvalidCategory),
         config(nullptr)
     { }
 
-    OStream(std::mutex& mutex, Category category, CategoryConfig& config) :
-        mutex(&mutex),
-        category(category),
+    OStream(CategoryConfig& config) :
         config(&config)
     { }
 
 public:
+    static inline std::mutex mutex;
+
     ~OStream();
 
     template<typename T>
@@ -74,18 +58,50 @@ static_assert(!std::is_copy_constructible<OStream>());
 static_assert(!std::is_copy_assignable<OStream>());
 
 class Logger {
-private:
-    std::mutex mutex;
-
 public:
-    std::map<Category, CategoryConfig> categories;
-    std::map<std::string, std::ofstream> ofstreams;
+
+    CategoryConfig debug_config;
+    CategoryConfig error_config;
+    CategoryConfig info_config;
 
     Logger();
 
-    void log(Category category, std::function<void(std::ostream&)>, unsigned verbosity = 0);
+    void debug(std::function<void(std::ostream&)> f)
+    {
+        return get(debug_config, f);
+    }
 
-    OStream operator()(Category category, unsigned verbosity = 0);
+    void error(std::function<void(std::ostream&)> f)
+    {
+        return get(error_config, f);
+    }
+
+    void info(std::function<void(std::ostream&)> f)
+    {
+        return get(info_config, f);
+    }
+
+    OStream debug()
+    {
+        return get(debug_config);
+    }
+
+    OStream error()
+    {
+        return get(error_config);
+    }
+
+    OStream info()
+    {
+        return get(info_config);
+    }
+
+    static void write_time(std::ostream& os);
+
+private:
+    OStream get(CategoryConfig& config);
+
+    void get(CategoryConfig& config, std::function<void(std::ostream&)> print_function);
 };
 
 inline Logger logger;

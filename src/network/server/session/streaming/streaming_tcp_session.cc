@@ -53,8 +53,7 @@ void StreamingTCPSession::start_decode_chunk()
         [self](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 if (ec != asio::error::eof) {
-                    logger(Category::Error)
-                        << "StreamingTCPSession start_decode_chunk error: " << ec.message();
+                    logger.error() << "StreamingTCPSession start_decode_chunk error: " << ec.message();
                 }
                 return;
             }
@@ -93,13 +92,13 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
             close_with_error("Protocol exception: " + std::string(e.what()));
             return;
         } catch (const ConnectionException& e) {
-            logger(Category::Error) << "Connection exception: " << e.what();
+            logger.error() << "Connection exception: " << e.what();
             return;
         } catch (const std::exception& e) {
-            logger(Category::Error) << "Uncaught exception: " << e.what();
+            logger.error() << "Uncaught exception: " << e.what();
             return;
         } catch (...) {
-            logger(Category::Error) << "Unexpected exception!";
+            logger.error() << "Unexpected exception!";
             return;
         }
 
@@ -117,7 +116,7 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
         [self, chunk_size](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 if (ec != asio::error::eof) {
-                    logger(Category::Error) << "StreamingTCPSession decode_chunk error: " << ec.message();
+                    logger.error() << "StreamingTCPSession decode_chunk error: " << ec.message();
                 }
                 return;
             }
@@ -173,13 +172,14 @@ bool StreamingTCPSession::try_cancel(uint_fast32_t worker_idx, const std::string
     return server.try_cancel(worker_idx, cancel_token);
 }
 
-void StreamingTCPSession::close_with_error(const std::string& msg) {
-    logger(Category::Error) << msg;
+void StreamingTCPSession::close_with_error(const std::string& msg)
+{
+    logger.error() << msg;
     request_handler->response_writer->write_error(msg);
     request_handler->response_writer->flush();
 
     socket.close(ec);
     if (ec) {
-        logger(Category::Debug) << "Close failed:" << ec.what();
+        logger.debug() << "Close failed:" << ec.what();
     }
 }

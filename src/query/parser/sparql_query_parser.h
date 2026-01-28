@@ -79,18 +79,17 @@ public:
 
         auto res = rewrite(std::move(visitor.current_op));
 
-        logger(Category::LogicalPlan) << *res;
+        logger.debug() << *res;
 
         return res;
     }
 
     static std::unique_ptr<Op> rewrite(std::unique_ptr<Op> op)
     {
-        logger(Category::LogicalPlan) << "Initial logical plan:\n" << *op;
+        logger.debug() << "Initial logical plan:\n" << *op;
 
         TranslatePropertyPaths translate_property_paths;
         op->accept_visitor(translate_property_paths);
-        // logger(Category::LogicalPlan, 0) << "Translating property paths:\n" << *op;
 
         CheckVarNames check_var_names;
         op->accept_visitor(check_var_names);
@@ -100,21 +99,17 @@ public:
 
         ReplaceUnscopedVariables replace_unscoped_variables;
         op->accept_visitor(replace_unscoped_variables);
-        // logger(Category::LogicalPlan, 0) << "Replacing unscoped variables:\n" << *op;
 
         QueryParser::use_all_rewrite_rules(op);
 
         ChangeJoinToSequence join_to_sequence_visitor;
         op->accept_visitor(join_to_sequence_visitor);
-        // logger(Category::LogicalPlan) << "Changing join to sequence:\n" << *op;
 
         ReplaceSingleValues replace_single_values;
         op->accept_visitor(replace_single_values);
-        // logger(Category::LogicalPlan) << "Replacing single values:\n" << *op;
 
         RewriteExprSubqueries rewrite_expr_subqueries;
         op->accept_visitor(rewrite_expr_subqueries);
-        // logger(Category::LogicalPlan) << "Rewriting filter subqueries:\n" << *op;
         return op;
     }
 

@@ -33,7 +33,7 @@ public:
         UpdateVisitor visitor;
         visitor.visitQuery(tree);
 
-        logger(Category::LogicalPlan) << "Update logical plan:\n" << *visitor.op_update;
+        logger.debug() << "Update logical plan:\n" << *visitor.op_update;
 
         return std::move(visitor.op_update);
     }

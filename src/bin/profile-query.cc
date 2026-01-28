@@ -96,7 +96,9 @@ int main(int argc, char* argv[])
                 quad_model.MAX_LIMIT = config.limit;
             }
 
-            quad_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                quad_model.catalog.print(os);
+            });
 
             try {
                 for (int i = 0; i < warmups; i++) {
@@ -137,21 +139,21 @@ int main(int argc, char* argv[])
                 auto result_count = physical_plan->execute(std::cout);
                 DurationMS execution_duration = system_clock::now() - execution_start;
 
-                logger(Category::Info) << "Results: " << result_count << "\n"
-                                       << "Parser duration:    " << parser_duration.count() << " ms\n"
-                                       << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
-                                       << "Execution duration: " << execution_duration.count() << " ms";
+                logger.info() << "Results            : " << result_count << "\n"
+                              << "Parser duration    : " << parser_duration.count() << " ms\n"
+                              << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
+                              << "Execution duration : " << execution_duration.count() << " ms";
             } catch (const QueryParsingException& e) {
-                logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
-                                        << ": " << e.what();
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
+                               << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {
-                logger(Category::Error) << "Query Exception: " << e.what();
+                logger.error() << "Query Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const LogicException& e) {
-                logger(Category::Error) << "Logic Exception: " << e.what();
+                logger.error() << "Logic Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             }
@@ -167,7 +169,9 @@ int main(int argc, char* argv[])
                 rdf_model.MAX_LIMIT = config.limit;
             }
 
-            rdf_model.catalog.print(std::cout);
+            logger.info([](std::ostream& os) {
+                rdf_model.catalog.print(os);
+            });
 
             try {
                 for (int i = 0; i < warmups; i++) {
@@ -213,22 +217,22 @@ int main(int argc, char* argv[])
                     os << '\n';
                 });
 
-                logger(Category::Info) << "Results: " << result_count << "\n"
-                                       << "Parser duration:    " << parser_duration.count() << " ms\n"
-                                       << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
-                                       << "Execution duration: " << execution_duration.count() << " ms";
+                logger.info() << "Results            : " << result_count << "\n"
+                              << "Parser duration    : " << parser_duration.count() << " ms\n"
+                              << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
+                              << "Execution duration : " << execution_duration.count() << " ms";
 
             } catch (const QueryParsingException& e) {
-                logger(Category::Error) << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
-                                        << ": " << e.what();
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
+                               << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {
-                logger(Category::Error) << "Query Exception: " << e.what();
+                logger.error() << "Query Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const LogicException& e) {
-                logger(Category::Error) << "Logic Exception: " << e.what();
+                logger.error() << "Logic Exception: " << e.what();
 
                 std::cout << std::string(e.what());
             }
