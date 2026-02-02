@@ -322,7 +322,7 @@ void Server::run(
         logger.info() << "MillenniumDB browser interface is available at http://localhost:" << browser_port;
     }
 
-    logger.info() << "\nTo terminate the server, press Ctrl+C";
+    logger.info() << "To terminate the server, press Ctrl+C";
 
     execute_timeouts();
 

@@ -104,7 +104,8 @@ void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
         return;
     }
 
-    logger.info() << "Query received:\n" << trim_string(query) << "\n";
+    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
+                  << trim_string(query);
 
     if (request_type == Protocol::RequestType::UPDATE) {
         obj->execute_update_query(query, response_ostream);
@@ -127,8 +128,8 @@ void HttpRdfSession<stream_t>::execute_readonly_query(
         std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
         get_query_ctx().prepare(*version_scope, query_timeout);
     }
-    logger.info() << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
-                  << get_query_ctx().cancellation_token;
+    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
+                   << get_query_ctx().thread_info.worker_index << ')';
 
     std::unique_ptr<QueryExecutor> current_physical_plan;
     try {
@@ -253,7 +254,9 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        logger.info() << "Results            : " << result_count << "\n"
+        auto worker_index = get_query_ctx().thread_info.worker_index;
+        logger.info() << "Worker             : " << worker_index << "\n"
+                      << "Results            : " << result_count << "\n"
                       << "Parser duration    : " << parser_duration.count() << " ms\n"
                       << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
                       << "Execution duration : " << execution_duration.count() << " ms";
@@ -264,8 +267,8 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        logger.info() << "Timeout thrown after "
-                      << chrono::duration_cast<chrono::milliseconds>(execution_duration).count() << " ms";
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
+                       << execution_duration.count() << " ms";
         throw e;
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
@@ -335,10 +338,8 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         return;
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.info(
-        ) << "Timeout thrown after "
-          << chrono::duration_cast<chrono::milliseconds>(parser_duration + execution_duration).count()
-          << " ms";
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
+                       << execution_duration.count() << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
         return;

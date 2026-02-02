@@ -88,6 +88,9 @@ void HttpGQLSession<stream_t>::run(std::unique_ptr<HttpGQLSession> obj)
 
     auto&& [query, response_type] = GQL::RequestParser::parse_query(obj->request);
 
+    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
+                  << trim_string(query);
+
     if (!obj->server.authorize(request_type, auth_token)) {
         response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
         return;
@@ -115,9 +118,8 @@ void HttpGQLSession<stream_t>::execute_readonly_query(
         get_query_ctx().prepare(*read_only_version_scope, query_timeout);
     }
 
-    logger.info() << "Query received (worker:" << get_query_ctx().thread_info.worker_index
-                  << ", cancel:" << get_query_ctx().cancellation_token << ")\n"
-                  << trim_string(query);
+    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
+                   << get_query_ctx().thread_info.worker_index << ')';
 
     std::unique_ptr<QueryExecutor> physical_plan;
     try {
@@ -229,14 +231,16 @@ void HttpGQLSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        logger.info() << "Results            : " << result_count << "\n"
+        auto worker_index = get_query_ctx().thread_info.worker_index;
+        logger.info() << "Worker             : " << worker_index << "\n"
+                      << "Results            : " << result_count << "\n"
                       << "Parser duration    : " << parser_duration.count() << " ms\n"
                       << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
                       << "Execution duration : " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.info() << "Timeout thrown after "
-                      << chrono::duration_cast<chrono::milliseconds>(execution_duration).count() << " ms";
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
+                       << execution_duration.count() << " ms";
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
         logger.error() << e.what();

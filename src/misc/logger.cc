@@ -2,64 +2,75 @@
 
 #include <ctime>
 
+#include "misc/fatal_error.h"
+
+OStream::OStream() :
+    config(nullptr)
+{ }
+
+OStream::OStream(CategoryConfig& config) :
+    config(&config)
+{
+    stream << '\n';
+}
+
 OStream::~OStream()
 {
     if (config != nullptr) {
-        std::unique_lock lck(mutex);
+        std::unique_lock lck(Logger::mutex);
 
-        if (config->print_category) {
+        if (Logger::print_category) {
             *config->os << '[' << config->category_name << ']';
         }
 
-        if (config->print_time) {
+        if (Logger::print_time) {
             *config->os << '[';
             Logger::write_time(*config->os);
             *config->os << ']';
         }
 
-        *config->os << '\n';
-        *config->os << stream.str();
-        *config->os << '\n';
+        std::string output = stream.str();
+
+        *config->os << output;
+        if (output.back() != '\n') { // output cannot be empty, always starts with '\n'
+            *config->os << '\n';
+        }
         *config->os << std::flush;
     }
 }
 
-// --------------------- Logger ------------------------
-
 Logger::Logger()
 {
+    print_time = false;
+    print_category = false;
+
+    debug_config.category_name = "DEBUG";
+    info_config.category_name = "INFO";
+    error_config.category_name = "ERROR";
+
+    info_config.enabled = true;
+    error_config.enabled = true;
+
 #ifdef NDEBUG
-    debug_config.category_name = "DEBUG";
     debug_config.enabled = false;
-    debug_config.print_category = true;
-    debug_config.print_time = true;
-
-    info_config.category_name = "INFO";
-    info_config.enabled = true;
-    info_config.print_category = true;
-    info_config.print_time = true;
-
-    error_config.category_name = "ERROR";
-    error_config.enabled = true;
-    error_config.print_category = true;
-    error_config.print_time = true;
 #else
-    debug_config.category_name = "DEBUG";
     debug_config.enabled = true;
-    debug_config.print_category = false;
-    debug_config.print_time = false;
-
-    info_config.category_name = "INFO";
-    info_config.enabled = true;
-    info_config.print_category = false;
-    info_config.print_time = false;
-
-    error_config.category_name = "ERROR";
-    error_config.enabled = true;
-    error_config.print_category = false;
-    error_config.print_time = false;
 #endif
+
     error_config.os = &std::cerr;
+}
+
+void Logger::set_output_file(const std::string& file_path)
+{
+    out_file = std::ofstream(file_path, std::ios::out | std::ios::app);
+
+    if (!out_file) {
+        FATAL_ERROR("Could not open logger output file ", file_path);
+    }
+
+    debug_config.os = &out_file;
+    info_config.os = &out_file;
+    error_config.os = &out_file;
 }
 
 void Logger::write_time(std::ostream& os)
@@ -83,22 +94,27 @@ void Logger::get(CategoryConfig& config, std::function<void(std::ostream&)> prin
     if (!config.enabled)
         return;
 
-    std::unique_lock lck(OStream::mutex);
+    std::unique_lock lck(mutex);
 
-    if (config.print_category) {
+    if (print_category) {
         *config.os << '[' << config.category_name << "]";
     }
 
-    if (config.print_time) {
+    if (print_time) {
         *config.os << '[';
         write_time(*config.os);
         *config.os << "]";
     }
 
-    *config.os << '\n';
+    std::stringstream stream;
+    stream << '\n';
+    print_function(stream);
 
-    print_function(*config.os);
+    std::string output = stream.str();
+    *config.os << output;
 
-    *config.os << '\n';
+    if (output.back() != '\n') { // output cannot be empty, always starts with '\n'
+        *config.os << '\n';
+    }
     *config.os << std::flush;
 }

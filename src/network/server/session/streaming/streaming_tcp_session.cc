@@ -86,7 +86,7 @@ void StreamingTCPSession::decode_chunk(std::size_t chunk_size)
         try {
             request_handler->handle(decoded_chunks.data(), decoded_chunks.size());
         } catch (const InterruptedException& e) {
-            close_with_error("Interruption exception: Query timed out");
+            close_with_error("Query timed out");
             return;
         } catch (const ProtocolException& e) {
             close_with_error("Protocol exception: " + std::string(e.what()));

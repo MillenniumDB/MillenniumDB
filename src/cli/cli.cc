@@ -1713,7 +1713,7 @@ void CLI::ProcessSPARQLQuery(std::ostream& os, const std::string& query) {
         query_return_status = ReturnStatus::Error;
         query_is_done = true;
         return;
-    } catch (InterruptedException& e) {
+    } catch (const InterruptedException& e) {
         query_result_count = -1;
         query_return_status = ReturnStatus::Interrupted;
         query_is_done = true;
@@ -1784,7 +1784,7 @@ void CLI::ProcessMQLQuery(std::ostream& os, const std::string& query) {
         query_return_status = ReturnStatus::Error;
         query_is_done = true;
         return;
-    } catch (InterruptedException& e) {
+    } catch (const InterruptedException& e) {
         query_result_count = -1;
         query_return_status = ReturnStatus::Interrupted;
         query_is_done = true;
@@ -1852,7 +1852,7 @@ void CLI::ProcessGQLQuery(std::ostream& os, const std::string& query) {
         query_return_status = ReturnStatus::Error;
         query_is_done = true;
         return;
-    } catch (InterruptedException& e) {
+    } catch (const InterruptedException& e) {
         query_result_count = -1;
         query_return_status = ReturnStatus::Interrupted;
         query_is_done = true;

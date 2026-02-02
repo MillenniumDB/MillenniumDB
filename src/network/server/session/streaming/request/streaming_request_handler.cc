@@ -19,7 +19,6 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
         logger.debug() << "Request received: QUERY";
         request_reader->check_datatype(Protocol::DataType::STRING);
         const auto query = request_reader->read_string();
-        logger.info() << "\nQuery:\n" << trim_string(query) << "\n";
         handle_run(query);
         break;
     }
@@ -47,8 +46,8 @@ void StreamingRequestHandler::handle_readonly_run()
         get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
-    logger.info() << "Cancellation: " << get_query_ctx().thread_info.worker_index << ' '
-                  << get_query_ctx().cancellation_token;
+    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
+                   << get_query_ctx().thread_info.worker_index << ')';
 
     // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
@@ -89,10 +88,12 @@ void StreamingRequestHandler::handle_readonly_run()
         executor->analyze(os, true);
     });
 
-    logger.info() << "Results             : " << result_count << "\n"
-                  << "Parser duration     : " << parser_duration.count() << " ms\n"
-                  << "Optimizer duration  : " << optimizer_duration.count() << " ms\n"
-                  << "Execution duration  : " << execution_duration.count() << " ms";
+    auto worker_index = get_query_ctx().thread_info.worker_index;
+    logger.info() << "Worker             : " << worker_index << "\n"
+                  << "Results            : " << result_count << "\n"
+                  << "Parser duration    : " << parser_duration.count() << " ms\n"
+                  << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
+                  << "Execution duration : " << execution_duration.count() << " ms";
 
     response_writer->write_records_success(
         result_count,
@@ -172,6 +173,8 @@ void StreamingRequestHandler::handle_update_run()
 
 void StreamingRequestHandler::handle_run(const std::string& query)
 {
+    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
+                  << trim_string(query);
     try {
         initial_parse(query);
 
@@ -185,18 +188,17 @@ void StreamingRequestHandler::handle_run(const std::string& query)
         logger.error() << msg;
         response_writer->write_error(msg);
         response_writer->flush();
-    } catch (const LogicException& e) {
-        const auto msg = std::string("Logic Exception: ") + e.what();
+    } catch (const QueryExecutionException& e) {
+        const auto msg = e.what();
         logger.error() << msg;
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (const InterruptedException& e) {
-        const auto msg = std::string("Interrupt Exception: ") + e.what();
-        logger.error() << msg;
-        response_writer->write_error(msg);
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out";
+        response_writer->write_error("Query timed out");
         response_writer->flush();
-    } catch (const QueryExecutionException& e) {
-        const auto msg = e.what();
+    } catch (const LogicException& e) {
+        const auto msg = std::string("Logic Exception: ") + e.what();
         logger.error() << msg;
         response_writer->write_error(msg);
         response_writer->flush();
@@ -206,9 +208,8 @@ void StreamingRequestHandler::handle_run(const std::string& query)
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (...) {
-        const auto msg = std::string("Unknown exception");
-        logger.error() << msg;
-        response_writer->write_error(msg);
+        logger.error() << "Unknown exception";
+        response_writer->write_error("Unknown exception");
         response_writer->flush();
     }
 }

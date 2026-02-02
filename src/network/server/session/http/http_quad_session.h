@@ -48,13 +48,8 @@ private:
     std::unique_ptr<QueryExecutor>
         create_query_executor(MQL::Op& logical_plan, MQL::ReturnType response_type);
 
-    void run_read_query(
-        const std::string& query,
-        MQL::QueryParser& parser,
-        std::ostream& os,
-        MQL::ReturnType response_type
-    );
+    void run_read_query(MQL::QueryParser& parser, std::ostream& os, MQL::ReturnType response_type);
 
-    void run_write_query(const std::string& query, MQL::QueryParser& parser, std::ostream& os);
+    void run_write_query(MQL::QueryParser& parser, std::ostream& os);
 };
 } // namespace MDBServer

@@ -9,9 +9,9 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "misc/fatal_error.h"
 #include "misc/logger.h"
+#include "query/optimizer/quad_model/executor_constructor.h"
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_update_parser.h"
-#include "query/update/mql/update_executor.h"
 #include "query/update/sparql/update_executor.h"
 #include "system/system.h"
 
@@ -23,8 +23,7 @@ void my_terminate_handler()
 {
     try {
         std::cerr << boost::stacktrace::stacktrace();
-    } catch (...) {
-    }
+    } catch (...) { }
     std::abort();
 }
 
@@ -93,26 +92,30 @@ int main(int argc, const char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = MQL::QueryParser::get_query_plan(query, {});
+                MQL::QueryParser parser(query);
+                auto logical_plan = parser.get_query_plan({});
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto execution_start = std::chrono::system_clock::now();
-                MQL::UpdateExecutor update_executor;
-                update_executor.execute(*logical_plan);
+
+                MQL::ExecutorConstructor executor_constructor(MQL::ReturnType::CSV);
+                logical_plan->accept_visitor(executor_constructor);
+                auto executor = std::move(executor_constructor.executor);
+
+                std::stringstream ss; // for now output is ignored
+                executor->execute(ss);
                 version_scope->commited = true;
                 auto execution_duration = std::chrono::system_clock::now() - execution_start;
 
-                logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
-                    update_executor.print_stats(os);
+                logger.info([&executor](std::ostream& os) {
+                    executor->analyze(os, true);
                 });
 
-                logger.info() << "Parser duration:    " << parser_duration.count()
-                                       << " ms\n"
-                                          "Execution duration: "
-                                       << execution_duration.count() << " ms";
+                logger.info() << "Parser duration:    " << parser_duration.count() << " ms\n"
+                              << "Execution duration: " << execution_duration.count() << " ms";
             } catch (const QueryParsingException& e) {
-                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
-                                        << ": " << e.what();
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
+                               << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {
@@ -151,13 +154,13 @@ int main(int argc, const char* argv[])
                 }
                 version_scope->commited = true;
 
-                logger.log(Category::ExecutionStats, [&update_executor](std::ostream& os) {
+                logger.info([&update_executor](std::ostream& os) {
                     os << "Update Stats\n";
                     update_executor.print_stats(os);
                 });
             } catch (const QueryParsingException& e) {
-                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column
-                                        << ": " << e.what();
+                logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
+                               << e.what();
 
                 std::cout << std::string(e.what());
             } catch (const QueryException& e) {

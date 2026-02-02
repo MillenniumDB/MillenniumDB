@@ -24,8 +24,7 @@ void my_terminate_handler()
 {
     try {
         std::cerr << boost::stacktrace::stacktrace();
-    } catch (...) {
-    }
+    } catch (...) { }
     std::abort();
 }
 
@@ -105,7 +104,8 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    auto logical_plan = MQL::QueryParser::get_query_plan(query);
+                    MQL::QueryParser parser(query);
+                    auto logical_plan = parser.get_query_plan({});
                     MQL::ExecutorConstructor query_optimizer(MQL::ReturnType::CSV);
                     logical_plan->accept_visitor(query_optimizer);
 
@@ -118,7 +118,8 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = MQL::QueryParser::get_query_plan(query);
+                MQL::QueryParser parser(query);
+                auto logical_plan = parser.get_query_plan({});
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
                 auto physical_plan = std::move(query_optimizer.executor);
                 auto execution_start = system_clock::now();
 
-                logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
+                logger.info([&physical_plan](std::ostream& os) {
                     physical_plan->analyze(os, true);
                     os << '\n';
                 });
@@ -178,7 +179,8 @@ int main(int argc, char* argv[])
                     auto version_scope = buffer_manager.init_version_readonly();
                     get_query_ctx().prepare(*version_scope, config.query_timeout);
 
-                    auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+                    SPARQL::QueryParser parser(query);
+                    auto logical_plan = parser.get_query_plan({});
                     SPARQL::ExecutorConstructor executor_constructor(SPARQL::ResponseType::TSV);
                     logical_plan->accept_visitor(executor_constructor);
 
@@ -191,7 +193,8 @@ int main(int argc, char* argv[])
                 get_query_ctx().prepare(*version_scope, config.query_timeout);
 
                 auto start_parser = system_clock::now();
-                auto logical_plan = SPARQL::QueryParser::get_query_plan(query);
+                SPARQL::QueryParser parser(query);
+                auto logical_plan = parser.get_query_plan({});
                 DurationMS parser_duration = system_clock::now() - start_parser;
 
                 auto start_optimizer = system_clock::now();
@@ -204,7 +207,7 @@ int main(int argc, char* argv[])
                 auto physical_plan = std::move(executor_constructor.executor);
                 auto execution_start = system_clock::now();
 
-                logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
+                logger.info([&physical_plan](std::ostream& os) {
                     physical_plan->analyze(os, false);
                     os << '\n';
                 });
@@ -212,7 +215,7 @@ int main(int argc, char* argv[])
                 auto result_count = physical_plan->execute(std::cout);
                 DurationMS execution_duration = system_clock::now() - execution_start;
 
-                logger.log(Category::ExecutionStats, [&physical_plan](std::ostream& os) {
+                logger.info([&physical_plan](std::ostream& os) {
                     physical_plan->analyze(os, true);
                     os << '\n';
                 });

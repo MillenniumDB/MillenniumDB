@@ -10,8 +10,6 @@
 struct CategoryConfig {
     std::ostream* os = &std::cout;
     bool enabled = true;
-    bool print_time = false;
-    bool print_category = false;
     std::string category_name;
 };
 
@@ -22,17 +20,11 @@ private:
     CategoryConfig* config;
     std::stringstream stream;
 
-    OStream() :
-        config(nullptr)
-    { }
+    OStream();
 
-    OStream(CategoryConfig& config) :
-        config(&config)
-    { }
+    OStream(CategoryConfig& config);
 
 public:
-    static inline std::mutex mutex;
-
     ~OStream();
 
     template<typename T>
@@ -59,12 +51,30 @@ static_assert(!std::is_copy_assignable<OStream>());
 
 class Logger {
 public:
-
     CategoryConfig debug_config;
     CategoryConfig error_config;
     CategoryConfig info_config;
 
+    // not used by default, can be enabled by options
+    std::ofstream out_file;
+
+    static inline bool print_time = false;
+    static inline bool print_category = false;
+    static inline std::mutex mutex;
+
     Logger();
+
+    void set_output_file(const std::string& file_path);
+
+    void set_print_time(bool b)
+    {
+        print_time = b;
+    }
+
+    void set_print_category(bool b)
+    {
+        print_category = b;
+    }
 
     void debug(std::function<void(std::ostream&)> f)
     {

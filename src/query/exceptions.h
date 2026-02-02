@@ -5,13 +5,16 @@
 
 // Used when the query execution has a timeout
 struct InterruptedException : public std::runtime_error {
-    InterruptedException() : std::runtime_error("Interruption request received.") { }
+    InterruptedException() :
+        std::runtime_error("Interrupted")
+    { }
 };
 
 // Used when the query received is not a valid query
 struct QueryException : public std::runtime_error {
     QueryException(std::string msg) :
-        std::runtime_error(msg) { }
+        std::runtime_error(msg)
+    { }
 };
 
 // Used when the query received is not a valid query (syntax error)
@@ -19,13 +22,17 @@ struct QueryParsingException : public QueryException {
     size_t line;
     size_t column;
     QueryParsingException(std::string msg, size_t line, size_t column) :
-        QueryException(msg), line(line), column(column) { }
+        QueryException(msg),
+        line(line),
+        column(column)
+    { }
 };
 
 // Used when the query received is not a valid query (semantic error)
 struct QuerySemanticException : public QueryException {
     QuerySemanticException(std::string msg) :
-        QueryException("Bad query semantic: `" + msg + "`.") { }
+        QueryException("Bad query semantic: `" + msg + "`.")
+    { }
 };
 
 // Used when the query is correct but something went wrong during the execution.
@@ -33,7 +40,8 @@ struct QuerySemanticException : public QueryException {
 // an expected border-case error. For example being out of available buffers.
 struct QueryExecutionException : public std::runtime_error {
     QueryExecutionException(std::string msg) :
-        std::runtime_error("Error in query execution: `" + msg + "`.") { }
+        std::runtime_error("Error in query execution: `" + msg + "`.")
+    { }
 };
 
 // Very similar to std::logic_error. It reports errors that are a consequence of faulty logic
@@ -41,12 +49,14 @@ struct QueryExecutionException : public std::runtime_error {
 // It is a clear sign of a bug in the implementation or corrupted data.
 struct LogicException : public std::logic_error {
     LogicException(std::string msg) :
-        std::logic_error("Logic Error: `" + msg + "`.") { }
+        std::logic_error("Logic Error: `" + msg + "`.")
+    { }
 };
 
 // Used when the query received needs a feature that is not supported yet, but may be supported
 // in the future
 struct NotSupportedException : public QueryException {
     NotSupportedException(std::string operation) :
-        QueryException("Operation `" + operation + "` not supported yet.") { }
+        QueryException("Operation `" + operation + "` not supported yet.")
+    { }
 };
