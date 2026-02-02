@@ -309,9 +309,10 @@ void Server::run(
     listener.run();
     work_guard.reset();
 
-    logger.info() << "MillenniumDB HTTP/WebSocket server listening on http://localhost:" << port;
+    logger.info() << "Server started";
+    std::cout << "\nMillenniumDB HTTP/WebSocket server listening on http://localhost:" << port << "\n";
     if (ssl_ctx.has_value()) {
-        logger.info() << "MillenniumDB HTTPS/WSS server listening on https://localhost:" << port;
+        std::cout << "MillenniumDB HTTPS/WSS server listening on https://localhost:" << port << "\n";
     }
 
     std::unique_ptr<asio::io_context> browser_io_context;
@@ -319,14 +320,14 @@ void Server::run(
         browser_io_context = std::make_unique<asio::io_context>(1);
         std::thread browser_listener_thread(browser_listener, browser_io_context.get(), browser_port);
         browser_listener_thread.detach();
-        logger.info() << "MillenniumDB browser interface is available at http://localhost:" << browser_port;
+        std::cout << "MillenniumDB browser interface available at http://localhost:" << browser_port << "\n";
     }
 
-    logger.info() << "To terminate the server, press Ctrl+C";
+    std::cout << "\nTo terminate the server, press Ctrl+C" << std::endl;
 
     execute_timeouts();
 
-    logger.info() << "Shutting down server...";
+    std::cout << "Shutting down server..." << std::endl;
     for (auto& query_ctx : query_contexts) {
         query_ctx.thread_info.interruption_requested = true;
     }
@@ -339,6 +340,8 @@ void Server::run(
     // Wait for all threads in the thread pool to exit
     for (auto& thread : threads)
         thread.join();
+
+    logger.info() << "Server shutdown";
 }
 
 void Server::signal_shutdown_server(int)

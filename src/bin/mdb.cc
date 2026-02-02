@@ -44,6 +44,9 @@ Server usage: mdb server <db_folder> [options]
     --log-path <path>                  Redirect logs to file instead of stdout
     --log-timestamp <bool>             Include timestamps in log output
     --log-category <bool>              Include category names in log output
+    --log-debug <bool>                 Include debug category in log
+    --log-error <bool>                 Include error category in log
+    --log-info <bool>                  Include info category in log
 )";
 }
 

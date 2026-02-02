@@ -91,6 +91,21 @@ public:
         return get(info_config, f);
     }
 
+    void enable_debug(bool b)
+    {
+        debug_config.enabled = b;
+    }
+
+    void enable_error(bool b)
+    {
+        error_config.enabled = b;
+    }
+
+    void enable_info(bool b)
+    {
+        info_config.enabled = b;
+    }
+
     OStream debug()
     {
         return get(debug_config);

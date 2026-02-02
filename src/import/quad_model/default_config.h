@@ -128,6 +128,14 @@ inline void create_default_params(const std::string& db_folder)
       << "private-buffer = " << private_pages_buffer_str << "\n"
       << "versioned-buffer = " << versioned_pages_buffer_str << "\n"
       << "tensors-static = " << tensors_static_buffer_str << "\n"
-      << "tensors-dynamic = " << tensors_dynamic_buffer_str << "\n";
+      << "tensors-dynamic = " << tensors_dynamic_buffer_str << "\n"
+      << "\n"
+      << "# logging:\n"
+      << "# log-path = ./server-log\n"
+      << "# log-timestamp = false\n"
+      << "# log-category = false\n"
+      << "# log-debug = false\n"
+      << "# log-error = true\n"
+      << "# log-info = true\n";
 }
 }} // namespace Import::QuadModel

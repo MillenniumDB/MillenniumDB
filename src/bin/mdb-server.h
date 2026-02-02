@@ -48,8 +48,11 @@ struct SystemConfig {
     std::string ssl_key_file;
 
     std::string log_file_path;
-    bool log_print_timestamp = false;
-    bool log_print_category = false;
+    std::optional<bool> log_print_timestamp;
+    std::optional<bool> log_print_category;
+    std::optional<bool> log_enable_debug;
+    std::optional<bool> log_enable_info;
+    std::optional<bool> log_enable_error;
 };
 
 struct SystemOptions {
@@ -75,6 +78,9 @@ struct SystemOptions {
     std::optional<std::string> log_file_path;
     std::optional<bool> log_print_timestamp;
     std::optional<bool> log_print_category;
+    std::optional<bool> log_enable_debug;
+    std::optional<bool> log_enable_info;
+    std::optional<bool> log_enable_error;
 };
 
 inline int mdb_server(const SystemConfig& conf)
@@ -94,8 +100,16 @@ inline int mdb_server(const SystemConfig& conf)
 
     if (!conf.log_file_path.empty())
         logger.set_output_file(conf.log_file_path);
-    logger.set_print_category(conf.log_print_category);
-    logger.set_print_time(conf.log_print_timestamp);
+    if (conf.log_print_category.has_value())
+        logger.set_print_category(conf.log_print_category.value());
+    if (conf.log_print_timestamp.has_value())
+        logger.set_print_time(conf.log_print_timestamp.value());
+    if (conf.log_enable_debug.has_value())
+        logger.enable_debug(conf.log_enable_debug.value());
+    if (conf.log_enable_error.has_value())
+        logger.enable_error(conf.log_enable_error.value());
+    if (conf.log_enable_info.has_value())
+        logger.enable_info(conf.log_enable_info.value());
 
     MDBServer::Server server;
 
@@ -111,43 +125,34 @@ inline int mdb_server(const SystemConfig& conf)
         std::unique_ptr<ModelDestroyer> model_destroyer;
         switch (model_id) {
         case Catalog::ModelID::QUAD: {
-            logger.info() << "Initializing Quad Model...";
+            std::cout << "Initializing Quad Model..." << std::endl;
             model_destroyer = QuadModel::init();
 
             quad_model.path_mode = conf.path_mode;
             if (conf.limit != 0) {
                 quad_model.MAX_LIMIT = conf.limit;
             }
-
-            logger.info([](std::ostream& os) {
-                quad_model.catalog.print(os);
-            });
-
+            quad_model.catalog.print(std::cout);
             server.model_id = MDBServer::Protocol::QUAD_MODEL_ID;
             break;
         }
         case Catalog::ModelID::RDF: {
-            logger.info() << "Initializing RDF Model...";
+            std::cout << "Initializing RDF Model..." << std::endl;
             model_destroyer = RdfModel::init();
 
             rdf_model.path_mode = conf.path_mode;
             if (conf.limit != 0) {
                 rdf_model.MAX_LIMIT = conf.limit;
             }
-
-            logger.info([](std::ostream& os) {
-                rdf_model.catalog.print(os);
-            });
+            rdf_model.catalog.print(std::cout);
             server.model_id = MDBServer::Protocol::RDF_MODEL_ID;
             break;
         }
         case Catalog::ModelID::GQL: {
-            logger.info() << "Initializing GQL Model...";
+            std::cout << "Initializing GQL Model..." << std::endl;
             model_destroyer = GQLModel::init();
 
-            logger.info([](std::ostream& os) {
-                gql_model.catalog.print(os);
-            });
+            gql_model.catalog.print(std::cout);
             server.model_id = MDBServer::Protocol::GQL_MODEL_ID;
             break;
         }
@@ -318,7 +323,7 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     } else if (value == "false") {
                         config.log_print_timestamp = false;
                     } else {
-                        return "invalid value for print-timestamp, expected true or false";
+                        return "invalid value for log-timestamp, expected true or false";
                     }
                     return "";
                 } });
@@ -329,16 +334,55 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     } else if (value == "false") {
                         config.log_print_category = false;
                     } else {
-                        return "invalid value for print-category, expected true or false";
+                        return "invalid value for log-category, expected true or false";
                     }
                     return "";
                 } });
-
+    opt.insert({ "log-error", [](SystemOptions& config, const std::string& value) {
+                    if (value == "true") {
+                        config.log_enable_error = true;
+                    } else if (value == "false") {
+                        config.log_enable_error = false;
+                    } else {
+                        return "invalid value for log-error, expected true or false";
+                    }
+                    return "";
+                } });
+    opt.insert({ "log-info", [](SystemOptions& config, const std::string& value) {
+                    if (value == "true") {
+                        config.log_enable_info = true;
+                    } else if (value == "false") {
+                        config.log_enable_info = false;
+                    } else {
+                        return "invalid value for log-info, expected true or false";
+                    }
+                    return "";
+                } });
+    opt.insert({ "log-debug", [](SystemOptions& config, const std::string& value) {
+                    if (value == "true") {
+                        config.log_enable_debug = true;
+                    } else if (value == "false") {
+                        config.log_enable_debug = false;
+                    } else {
+                        return "invalid value for log-debug, expected true or false";
+                    }
+                    return "";
+                } });
     return opt;
 }
 
 template<typename T>
 void try_replace(T& target, const std::optional<T>& opt1, const std::optional<T>& opt2)
+{
+    if (opt1.has_value()) {
+        target = opt1.value();
+    } else if (opt2.has_value()) {
+        target = opt2.value();
+    }
+}
+
+template<typename T>
+void try_replace(std::optional<T>& target, const std::optional<T>& opt1, const std::optional<T>& opt2)
 {
     if (opt1.has_value()) {
         target = opt1.value();
@@ -428,6 +472,9 @@ inline SystemConfig get_system_config(const std::string& db_directory, const Sys
     try_replace(res.log_file_path, args.log_file_path, db_config.log_file_path);
     try_replace(res.log_print_category, args.log_print_category, db_config.log_print_category);
     try_replace(res.log_print_timestamp, args.log_print_timestamp, db_config.log_print_timestamp);
+    try_replace(res.log_enable_debug, args.log_enable_debug, db_config.log_enable_debug);
+    try_replace(res.log_enable_error, args.log_enable_error, db_config.log_enable_error);
+    try_replace(res.log_enable_info, args.log_enable_info, db_config.log_enable_info);
 
     return res;
 }
