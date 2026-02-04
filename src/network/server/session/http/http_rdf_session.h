@@ -36,6 +36,8 @@ private:
 
     Server& server;
 
+    uint_fast32_t worker;
+
     stream_t stream;
 
     boost::beast::http::request<boost::beast::http::string_body> request;

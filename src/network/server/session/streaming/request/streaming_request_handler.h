@@ -46,9 +46,9 @@ protected:
 
     void handle_run(const std::string& query);
 
-    void handle_readonly_run();
+    void handle_readonly_run(const std::string& query);
 
-    void handle_update_run();
+    void handle_update_run(const std::string& query);
 
     // Send a catalog response to the client
     void handle_catalog();

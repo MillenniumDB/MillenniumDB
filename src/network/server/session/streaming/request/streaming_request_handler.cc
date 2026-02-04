@@ -38,7 +38,7 @@ void StreamingRequestHandler::handle(const uint8_t* request_bytes, std::size_t r
     }
 }
 
-void StreamingRequestHandler::handle_readonly_run()
+void StreamingRequestHandler::handle_readonly_run(const std::string& query)
 {
     auto version_scope = buffer_manager.init_version_readonly();
     {
@@ -46,19 +46,19 @@ void StreamingRequestHandler::handle_readonly_run()
         get_query_ctx().prepare(*version_scope, session.get_timeout());
     }
 
-    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
-                   << get_query_ctx().thread_info.worker_index << ')';
-
     // Request must be read here because query_ctx.prepare() clears all possible tmp that could come as parameters
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {
-        parameters_ss << "Parameters:\n";
+        parameters_ss << "\nparams:\n";
         for (const auto& [var_name, object_id] : input_parameters) {
             parameters_ss << var_name << " -> " << object_id << "\n";
         }
     }
-    logger.info() << parameters_ss.str();
+    auto worker_index = get_query_ctx().thread_info.worker_index;
+    logger.info() << "Query(worker " << worker_index << ", cancel "
+                  << get_query_ctx().cancellation_token << ")\n"
+                  << trim_string(query) << parameters_ss.str();
 
     auto parser_start = std::chrono::system_clock::now();
     create_logical_plan(input_parameters);
@@ -75,7 +75,7 @@ void StreamingRequestHandler::handle_readonly_run()
     // Send the variables
     response_writer->write_variables(
         executor->projection_vars,
-        get_query_ctx().thread_info.worker_index,
+        worker_index,
         get_query_ctx().cancellation_token
     );
     response_writer->flush();
@@ -88,12 +88,10 @@ void StreamingRequestHandler::handle_readonly_run()
         executor->analyze(os, true);
     });
 
-    auto worker_index = get_query_ctx().thread_info.worker_index;
-    logger.info() << "Worker             : " << worker_index << "\n"
-                  << "Results            : " << result_count << "\n"
-                  << "Parser duration    : " << parser_duration.count() << " ms\n"
-                  << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
-                  << "Execution duration : " << execution_duration.count() << " ms";
+    logger.info() << "Worker " << worker_index << " results: " << result_count << "\n"
+                  << "Parser    : " << parser_duration.count() << " ms\n"
+                  << "Optimizer : " << optimizer_duration.count() << " ms\n"
+                  << "Execution : " << execution_duration.count() << " ms";
 
     response_writer->write_records_success(
         result_count,
@@ -104,7 +102,7 @@ void StreamingRequestHandler::handle_readonly_run()
     response_writer->flush();
 }
 
-void StreamingRequestHandler::handle_update_run()
+void StreamingRequestHandler::handle_update_run(const std::string& query)
 {
     if (!session.write_authorized) {
         throw QueryException("Write not authorized in this session");
@@ -123,12 +121,15 @@ void StreamingRequestHandler::handle_update_run()
     const auto input_parameters = request_reader->read_parameters();
     std::stringstream parameters_ss;
     if (!input_parameters.empty()) {
-        parameters_ss << "Parameters:\n";
+        parameters_ss << "\nparams:\n";
         for (const auto& [var_name, object_id] : input_parameters) {
             parameters_ss << var_name << " -> " << object_id << "\n";
         }
     }
-    logger.info() << parameters_ss.str();
+
+    logger.info() << "Query(worker " << get_query_ctx().thread_info.worker_index << ", cancel "
+                  << get_query_ctx().cancellation_token << ")\n"
+                  << trim_string(query) << parameters_ss.str();
 
     auto parser_start = std::chrono::system_clock::now();
     create_logical_plan(input_parameters);
@@ -159,9 +160,10 @@ void StreamingRequestHandler::handle_update_run()
         executor->analyze(os, true);
     });
 
-    logger.info() << "Parser duration:    " << parser_duration.count() << " ms\n"
-                  << "Optimizer duration: " << optimizer_duration.count() << " ms\n"
-                  << "Execution duration: " << execution_duration.count() << " ms";
+    logger.info() << "Worker " << get_query_ctx().thread_info.worker_index << " update finished\n"
+                  << "Parser    : " << parser_duration.count() << " ms\n"
+                  << "Optimizer : " << optimizer_duration.count() << " ms\n"
+                  << "Execution : " << execution_duration.count() << " ms";
 
     response_writer->write_update_success(
         parser_duration.count(),
@@ -173,24 +175,22 @@ void StreamingRequestHandler::handle_update_run()
 
 void StreamingRequestHandler::handle_run(const std::string& query)
 {
-    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
-                  << trim_string(query);
     try {
         initial_parse(query);
 
         if (is_update()) {
-            handle_update_run();
+            handle_update_run(query);
         } else {
-            handle_readonly_run();
+            handle_readonly_run(query);
         }
     } catch (const QueryException& e) {
-        const auto msg = std::string("Query Exception: ") + e.what();
-        logger.error() << msg;
+        const auto msg = e.what();
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << ": " << msg;
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (const QueryExecutionException& e) {
         const auto msg = e.what();
-        logger.error() << msg;
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << ": " << msg;
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (const InterruptedException& e) {
@@ -198,17 +198,17 @@ void StreamingRequestHandler::handle_run(const std::string& query)
         response_writer->write_error("Query timed out");
         response_writer->flush();
     } catch (const LogicException& e) {
-        const auto msg = std::string("Logic Exception: ") + e.what();
-        logger.error() << msg;
+        const auto msg = e.what();
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << ": " << msg;
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (const std::exception& e) {
         const auto msg = std::string("Exception: ") + e.what();
-        logger.error() << msg;
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << ": " << msg;
         response_writer->write_error(msg);
         response_writer->flush();
     } catch (...) {
-        logger.error() << "Unknown exception";
+        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << ": Unknown Exception";
         response_writer->write_error("Unknown exception");
         response_writer->flush();
     }

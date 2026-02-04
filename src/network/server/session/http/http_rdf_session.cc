@@ -36,7 +36,9 @@ HttpRdfSession<stream_t>::HttpRdfSession(
     stream(std::move(stream)),
     request(std::move(request)),
     query_timeout(query_timeout)
-{ }
+{
+    worker = get_query_ctx().thread_info.worker_index;
+}
 
 template<typename stream_t>
 HttpRdfSession<stream_t>::~HttpRdfSession()
@@ -104,9 +106,6 @@ void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
         return;
     }
 
-    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
-                  << trim_string(query);
-
     if (request_type == Protocol::RequestType::UPDATE) {
         obj->execute_update_query(query, response_ostream);
     } else /* (request_type == Protocol::RequestType::QUERY) */ {
@@ -128,31 +127,32 @@ void HttpRdfSession<stream_t>::execute_readonly_query(
         std::lock_guard<std::mutex> lock(server.thread_info_vec_mutex);
         get_query_ctx().prepare(*version_scope, query_timeout);
     }
-    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
-                   << get_query_ctx().thread_info.worker_index << ')';
+    logger.info() << "Query(worker " << worker << ", cancel " << get_query_ctx().cancellation_token << ")\n"
+                  << trim_string(query);
 
     std::unique_ptr<QueryExecutor> current_physical_plan;
     try {
         auto current_logical_plan = create_readonly_logical_plan(query);
         current_physical_plan = create_readonly_physical_plan(*current_logical_plan, response_type);
     } catch (const QueryParsingException& e) {
-        logger.error() << "Query Parsing Exception. Line " << e.line << ", col: " << e.column << ": "
-                       << e.what();
+        std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
+                        + ", col: " + std::to_string(e.column) + ": " + e.what();
+        logger.error() << msg << "\nQuery:\n" << trim_string(query);
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
+           << std::string(msg);
         return;
     } catch (const QueryException& e) {
-        logger.error() << "Query Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
            << std::string(e.what());
     } catch (const LogicException& e) {
-        logger.error() << "Logic Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
@@ -167,15 +167,15 @@ void HttpRdfSession<stream_t>::execute_readonly_query(
     try {
         execute_readonly_query_plan(*current_physical_plan, os, response_type);
     } catch (const ConnectionException& e) {
-        logger.error() << "Connection Exception: " << e.what();
+        logger.error() << "Connection(" << worker << ") exception: " << e.what();
     } catch (const InterruptedException& e) {
         // Handled in execute_readonly_query_plan
     } catch (const QueryExecutionException& e) {
         // Handled in execute_readonly_query_plan
     } catch (const std::exception& e) {
-        logger.error() << "Unexpected Exception: " << e.what();
+        logger.error() << "Unexpected(" << worker << ") exception: " << e.what();
     } catch (...) {
-        logger.error() << "Unknown exception";
+        logger.error() << "Unknown(" << worker << ") exception";
     }
 }
 
@@ -254,12 +254,10 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        auto worker_index = get_query_ctx().thread_info.worker_index;
-        logger.info() << "Worker             : " << worker_index << "\n"
-                      << "Results            : " << result_count << "\n"
-                      << "Parser duration    : " << parser_duration.count() << " ms\n"
-                      << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
-                      << "Execution duration : " << execution_duration.count() << " ms";
+        logger.info() << "Worker " << worker << " results: " << result_count << "\n"
+                      << "Parser    : " << parser_duration.count() << " ms\n"
+                      << "Optimizer : " << optimizer_duration.count() << " ms\n"
+                      << "Execution : " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
 
@@ -267,12 +265,11 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
-                       << execution_duration.count() << " ms";
+        logger.error() << "Worker " << worker << " timed out after " << execution_duration.count() << " ms";
         throw e;
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
         throw e;
     }
 }
@@ -290,19 +287,24 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         get_query_ctx().prepare(*version_scope, query_timeout);
     }
 
+    logger.info() << "Query(worker " << worker << ", cancel " << get_query_ctx().cancellation_token << ")\n"
+                  << trim_string(query);
+
     std::unique_ptr<SPARQL::OpUpdate> current_logical_plan;
     try {
         current_logical_plan = create_update_logical_plan(query);
     } catch (const QueryParsingException& e) {
-        logger.error() << "Query Parsing Error. Line " << e.line << ", col: " << e.column << ": " << e.what();
+        std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
+                        + ", col: " + std::to_string(e.column) + ": " + e.what();
+        logger.error() << msg << "\nQuery:\n" << trim_string(query);
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
+           << std::string(msg);
         return;
     } catch (const QueryException& e) {
-        logger.error() << "Query Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
@@ -310,7 +312,7 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
            << std::string(e.what());
         return;
     } catch (const LogicException& e) {
-        logger.error() << "Logic Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
@@ -334,29 +336,29 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
             update_executor.print_stats(os);
         });
     } catch (const ConnectionException& e) {
-        logger.error() << "Connection Exception: " << e.what();
+        logger.error() << "Connection(" << worker << ") exception: " << e.what();
         return;
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
-                       << execution_duration.count() << " ms";
+        logger.error() << "Worker " << worker << " timed out after " << execution_duration.count() << " ms";
 
         os << "HTTP/1.1 408 Request Timeout\r\n";
         return;
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
-           << std::string(e.what());
+           << e.what();
         return;
     }
 
     os << "HTTP/1.1 204 No Content\r\n\r\n";
-    logger.info() << "Parser duration: " << parser_duration.count() << "ms\n"
-                  << "Execution duration:" << execution_duration.count() << "ms";
+    logger.info() << "Worker " << worker << " update finished\n"
+                  << "Parser    : " << parser_duration.count() << " ms\n"
+                  << "Execution : " << execution_duration.count() << " ms";
 }
 
 template<typename stream_t>

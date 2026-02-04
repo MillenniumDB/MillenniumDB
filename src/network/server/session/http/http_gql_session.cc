@@ -29,7 +29,9 @@ HttpGQLSession<stream_t>::HttpGQLSession(
     stream(std::move(stream)),
     request(std::move(request)),
     query_timeout(query_timeout)
-{ }
+{
+    worker = get_query_ctx().thread_info.worker_index;
+}
 
 template<typename stream_t>
 HttpGQLSession<stream_t>::~HttpGQLSession()
@@ -88,9 +90,6 @@ void HttpGQLSession<stream_t>::run(std::unique_ptr<HttpGQLSession> obj)
 
     auto&& [query, response_type] = GQL::RequestParser::parse_query(obj->request);
 
-    logger.info() << "Query received (worker " << get_query_ctx().thread_info.worker_index << ")\n"
-                  << trim_string(query);
-
     if (!obj->server.authorize(request_type, auth_token)) {
         response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
         return;
@@ -118,17 +117,14 @@ void HttpGQLSession<stream_t>::execute_readonly_query(
         get_query_ctx().prepare(*read_only_version_scope, query_timeout);
     }
 
-    logger.debug() << "Cancel: `" << get_query_ctx().cancellation_token << "` (worker "
-                   << get_query_ctx().thread_info.worker_index << ')';
-
     std::unique_ptr<QueryExecutor> physical_plan;
     try {
         auto logical_plan = create_readonly_logical_plan(query);
         physical_plan = create_readonly_physical_plan(*logical_plan, response_type);
     } catch (const QueryParsingException& e) {
-        std::string msg = "Query Parsing Exception. Line " + std::to_string(e.line)
+        std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
                         + ", col: " + std::to_string(e.column) + ": " + e.what();
-        logger.error() << msg;
+        logger.error() << msg << "\nQuery:\n" << trim_string(query);
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
@@ -136,14 +132,14 @@ void HttpGQLSession<stream_t>::execute_readonly_query(
            << std::string(msg);
         return;
     } catch (const QueryException& e) {
-        logger.error() << "Query Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
               "\r\n"
            << std::string(e.what());
     } catch (const LogicException& e) {
-        logger.error() << "Logic Exception: " << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
 
         os << "HTTP/1.1 500 Internal Server Error\r\n"
               "Content-Type: text/plain\r\n"
@@ -158,7 +154,7 @@ void HttpGQLSession<stream_t>::execute_readonly_query(
     try {
         execute_readonly_query_plan(*physical_plan, os, response_type);
     } catch (const ConnectionException& e) {
-        logger.error() << "Connection Exception: " << e.what();
+        logger.error() << "Connection(" << worker << ") exception: " << e.what();
     } catch (const InterruptedException& e) {
         // Handled in execute_readonly_query_plan
     } catch (const QueryExecutionException& e) {
@@ -231,23 +227,20 @@ void HttpGQLSession<stream_t>::execute_readonly_query_plan(
             physical_plan.analyze(os, true);
         });
 
-        auto worker_index = get_query_ctx().thread_info.worker_index;
-        logger.info() << "Worker             : " << worker_index << "\n"
-                      << "Results            : " << result_count << "\n"
-                      << "Parser duration    : " << parser_duration.count() << " ms\n"
-                      << "Optimizer duration : " << optimizer_duration.count() << " ms\n"
-                      << "Execution duration : " << execution_duration.count() << " ms";
+        logger.info() << "Worker " << worker << " results: " << result_count << "\n"
+                      << "Parser    : " << parser_duration.count() << " ms\n"
+                      << "Optimizer : " << optimizer_duration.count() << " ms\n"
+                      << "Execution : " << execution_duration.count() << " ms";
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << "Worker " << get_query_ctx().thread_info.worker_index << " timed out after "
-                       << execution_duration.count() << " ms";
+        logger.error() << "Worker " << worker << " timed out after " << execution_duration.count() << " ms";
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << e.what();
+        logger.error() << "Worker " << worker << ": " << e.what();
     } catch (const std::exception& e) {
-        logger.error() << "Unexpected Exception: " << e.what();
+        logger.error() << "Worker " << worker << " Unexpected Exception: " << e.what();
     } catch (...) {
-        logger.error() << "Unknown exception";
+        logger.error() << "Worker " << worker << " Unknown exception";
     }
 }
 
