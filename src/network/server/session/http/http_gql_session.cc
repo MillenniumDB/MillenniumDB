@@ -124,7 +124,7 @@ void HttpGQLSession<stream_t>::execute_readonly_query(
     } catch (const QueryParsingException& e) {
         std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
                         + ", col: " + std::to_string(e.column) + ": " + e.what();
-        logger.error() << msg << "\nQuery:\n" << trim_string(query);
+        logger.error() << msg << "\nQuery:\n" << query;
 
         os << "HTTP/1.1 400 Bad Request\r\n"
               "Content-Type: text/plain\r\n"
