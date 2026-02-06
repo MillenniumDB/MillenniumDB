@@ -3,22 +3,21 @@
 #include <boost/beast.hpp>
 
 #include "network/server/protocol.h"
-#include "network/sparql/response_type.h"
 #include "query/executor/query_executor/gql/return_executor.h"
 
 namespace GQL { namespace RequestParser {
 
-inline MDBServer::Protocol::RequestType get_request_type(const std::string_view& /* str */)
+inline MDBServer::Protocol::RequestType get_request_type(std::string_view str)
 {
-    // if (str.find("/update") != std::string::npos) {
-    //     return MDBServer::Protocol::RequestType::UPDATE;
-    // }
-    // if (str.find("/cancel") != std::string::npos) {
-    //     return MDBServer::Protocol::RequestType::CANCEL;
-    // }
-    // if (str.find("/auth") != std::string::npos) {
-    //     return MDBServer::Protocol::RequestType::AUTH;
-    // }
+    if (str.find("/cancel") == 0) {
+        return MDBServer::Protocol::RequestType::CANCEL;
+    }
+    if (str.find("/auth") == 0) {
+        return MDBServer::Protocol::RequestType::AUTH;
+    }
+    if (str.find("/health") == 0) {
+        return MDBServer::Protocol::RequestType::HEALTH_CHECK;
+    }
     return MDBServer::Protocol::RequestType::QUERY;
 }
 

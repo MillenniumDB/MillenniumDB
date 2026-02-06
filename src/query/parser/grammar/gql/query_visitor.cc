@@ -1,12 +1,12 @@
 #include "query_visitor.h"
 
-#include <iomanip>
 #include <list>
 #include <memory>
 
 #include "graph_models/common/conversions.h"
 #include "graph_models/gql/conversions.h"
 #include "graph_models/rdf_model/conversions.h"
+#include "macros/time.h"
 #include "query/parser/expr/gql/exprs.h"
 #include "query/parser/op/gql/ops.h"
 
@@ -1893,23 +1893,18 @@ std::any QueryVisitor::visitListLiteral(GQLParser::ListLiteralContext* ctx)
 
 std::any QueryVisitor::visitDateFunction(GQLParser::DateFunctionContext* ctx)
 {
-    // DATE
-    auto dateFunctionParameters = ctx->dateFunctionParameters();
-    if (dateFunctionParameters) {
+    if (auto dateFunctionParameters = ctx->dateFunctionParameters()) {
+        // DATE
         if (dateFunctionParameters->dateString()) {
             std::string date_str = dateFunctionParameters->getText();
             date_str = date_str.substr(1, date_str.size() - 2);
             auto date = DateTime::from_date(date_str);
             current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
         }
-    }
-    // CURRENT_DATE
-    else
-    {
-        std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&t), "%Y-%m-%d");
-        ObjectId oid(DateTime::from_date(ss.str()));
+    } else {
+        // CURRENT_DATE
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%Y-%m-%d");
+        ObjectId oid(DateTime::from_date(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
     return 0;
@@ -1917,21 +1912,16 @@ std::any QueryVisitor::visitDateFunction(GQLParser::DateFunctionContext* ctx)
 
 std::any QueryVisitor::visitTimeFunction(GQLParser::TimeFunctionContext* ctx)
 {
-    // ZONED_TIME
-    auto timeFunctionParameters = ctx->timeFunctionParameters();
-    if (timeFunctionParameters) {
+    if (auto timeFunctionParameters = ctx->timeFunctionParameters()) {
+        // ZONED_TIME
         std::string date_str = timeFunctionParameters->getText();
         date_str = date_str.substr(1, date_str.size() - 2);
         auto date = DateTime::from_zoned_time(date_str);
         current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
-    }
-    // CURRENT_TIME
-    else
-    {
-        std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&t), "%H:%M:%S");
-        ObjectId oid(DateTime::from_zoned_time(ss.str()));
+    } else {
+        // CURRENT_TIME
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%H:%M:%S");
+        ObjectId oid(DateTime::from_zoned_time(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
     return 0;
@@ -1939,18 +1929,15 @@ std::any QueryVisitor::visitTimeFunction(GQLParser::TimeFunctionContext* ctx)
 
 std::any QueryVisitor::visitLocalTimeFunction(GQLParser::LocalTimeFunctionContext* ctx)
 {
-    // LOCAL_TIME
-    auto timeFunctionParameters = ctx->timeFunctionParameters();
-    if (timeFunctionParameters) {
+    if (auto timeFunctionParameters = ctx->timeFunctionParameters()) {
+        // LOCAL_TIME
         std::string date_str = timeFunctionParameters->getText();
         date_str = date_str.substr(1, date_str.size() - 2);
         auto date = DateTime::from_local_time(date_str);
         current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
     } else {
-        std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&t), "%H:%M:%S");
-        ObjectId oid(DateTime::from_local_time(ss.str()));
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%H:%M:%S");
+        ObjectId oid(DateTime::from_local_time(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
     return 0;
@@ -1958,22 +1945,16 @@ std::any QueryVisitor::visitLocalTimeFunction(GQLParser::LocalTimeFunctionContex
 
 std::any QueryVisitor::visitDatetimeFunction(GQLParser::DatetimeFunctionContext* ctx)
 {
-    // ZONED_DATETIME
-    auto datetimeFunctionParameters = ctx->datetimeFunctionParameters();
-    if (datetimeFunctionParameters) {
+    if (auto datetimeFunctionParameters = ctx->datetimeFunctionParameters()) {
+        // ZONED_DATETIME
         std::string date_str = datetimeFunctionParameters->getText();
         date_str = date_str.substr(1, date_str.size() - 2);
         auto date = DateTime::from_zoned_datetime(date_str);
         current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
-    }
-    // CURRENT_TIMESTAMP
-    else
-    {
-        std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&t), "%Y-%m-%dT%H:%M:%SZ");
-        std::cout << ss.str() << std::endl;
-        ObjectId oid(DateTime::from_zoned_datetime(ss.str()));
+    } else {
+        // CURRENT_TIMESTAMP
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%Y-%m-%dT%H:%M:%SZ");
+        ObjectId oid(DateTime::from_zoned_datetime(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
     return 0;
@@ -1981,21 +1962,16 @@ std::any QueryVisitor::visitDatetimeFunction(GQLParser::DatetimeFunctionContext*
 
 std::any QueryVisitor::visitLocalDatetimeFunction(GQLParser::LocalDatetimeFunctionContext* ctx)
 {
-    // LOCAL_DATETIME
-    auto datetimeFunctionParameters = ctx->datetimeFunctionParameters();
-    if (datetimeFunctionParameters) {
+    if (auto datetimeFunctionParameters = ctx->datetimeFunctionParameters()) {
+        // LOCAL_DATETIME
         std::string date_str = datetimeFunctionParameters->getText();
         date_str = date_str.substr(1, date_str.size() - 2);
         auto date = DateTime::from_local_datetime(date_str);
         current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
-    }
-    // LOCAL_TIMESTAMP
-    else
-    {
-        std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&t), "%Y-%m-%dT%H:%M:%S");
-        ObjectId oid(DateTime::from_local_datetime(ss.str()));
+    } else {
+        // LOCAL_TIMESTAMP
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%Y-%m-%dT%H:%M:%S");
+        ObjectId oid(DateTime::from_local_datetime(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
     return 0;

@@ -163,7 +163,7 @@ void SessionDispatcher<stream_t>::dispatch_http()
     }
 }
 
-template <typename stream_t>
+template<typename stream_t>
 void SessionDispatcher<stream_t>::close_stream(stream_t& stream)
 {
     if constexpr (std::is_same_v<stream_t, asio::ip::tcp::socket>) {

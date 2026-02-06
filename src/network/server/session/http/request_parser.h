@@ -2,14 +2,9 @@
 
 #include <boost/beast.hpp>
 
-#include "network/server/protocol.h"
-#include "network/sparql/response_type.h"
+namespace Common { namespace RequestParser {
 
-namespace Common {
-namespace RequestParser {
-
-inline std::string
-get_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
+inline std::string get_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
 {
     for (auto& header : req) {
         if (header.name_string() == "Authorization") {
@@ -22,7 +17,8 @@ get_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
             while (*ptr != '\0' && *ptr != ' ')
                 ptr++;
 
-            if (*ptr == '\0') return "";
+            if (*ptr == '\0')
+                return "";
 
             auto end_ptr = ptr;
 
@@ -35,9 +31,8 @@ get_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
     return "";
 }
 
-
 inline std::tuple<std::string, std::string>
-parse_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
+    parse_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
 {
     // Expect body to be like:
     // "user:password"
@@ -61,9 +56,8 @@ parse_auth(boost::beast::http::request<boost::beast::http::string_body>& req)
     );
 }
 
-
 inline std::tuple<uint_fast32_t, std::string>
-parse_cancel(boost::beast::http::request<boost::beast::http::string_body>& req)
+    parse_cancel(boost::beast::http::request<boost::beast::http::string_body>& req)
 {
     // Expect body to be like:
     // "worker_id:token"

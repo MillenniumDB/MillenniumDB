@@ -3,31 +3,26 @@
 #include <boost/beast.hpp>
 
 #include "network/server/protocol.h"
-#include "network/sparql/response_type.h"
-#include "query/executor/query_executor/mql/return_executor.h"
+#include "query/executor/query_executor/mql/return_type.h"
 
+namespace MQL { namespace RequestParser {
 
-namespace MQL {
-namespace RequestParser {
-
-inline MDBServer::Protocol::RequestType get_request_type(const std::string_view& str) {
-    // if (str.find("/sparql") != std::string::npos) {
-    //     return MDBServer::Protocol::RequestType::QUERY;
-    // }
-    if (str.find("/update") != std::string::npos) {
-        return MDBServer::Protocol::RequestType::UPDATE;
-    }
-    if (str.find("/cancel") != std::string::npos) {
+inline MDBServer::Protocol::RequestType get_request_type(std::string_view str)
+{
+    if (str.find("/cancel") == 0) {
         return MDBServer::Protocol::RequestType::CANCEL;
     }
-    if (str.find("/auth") != std::string::npos) {
+    if (str.find("/auth") == 0) {
         return MDBServer::Protocol::RequestType::AUTH;
+    }
+    if (str.find("/health") == 0) {
+        return MDBServer::Protocol::RequestType::HEALTH_CHECK;
     }
     return MDBServer::Protocol::RequestType::QUERY;
 }
 
 inline std::pair<std::string, ReturnType>
-parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
+    parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
 {
     ReturnType response_type = ReturnType::CSV;
 
@@ -40,7 +35,6 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
         }
         // else CSV by default
     }
-
 
     // We assume that the post body contains the query, otherwise ignore contents
     if (req.method() != boost::beast::http::verb::post) {

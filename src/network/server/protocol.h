@@ -140,6 +140,7 @@ enum class RequestType : uint8_t {
     CANCEL,
     UPDATE,
     AUTH,
+    HEALTH_CHECK,
     INVALID,
 
     TOTAL,

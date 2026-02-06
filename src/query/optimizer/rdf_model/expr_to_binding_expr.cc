@@ -4,6 +4,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include "macros/time.h"
 #include "query/executor/binding_iter/aggregation/sparql/aggs.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
@@ -565,14 +566,12 @@ void ExprToBindingExpr::visit(ExprMonth& expr_month) {
     tmp = make_unique<BindingExprMonth>(std::move(expr));
 }
 
-void ExprToBindingExpr::visit(ExprNow&) {
+void ExprToBindingExpr::visit(ExprNow&)
+{
     at_root = false;
     // Each invocation of the NOW function returns exactly the same value.
-    std::time_t t = std::chrono::system_clock::to_time_t(get_query_ctx().thread_info.time_start);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&t), "%Y-%m-%dT%H:%M:%SZ");
-    // Pack the datetime into an ObjectId
-    ObjectId oid(DateTime::from_dateTime(ss.str()));
+    auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%Y-%m-%dT%H:%M:%SZ");
+    ObjectId oid(DateTime::from_dateTime(time_str));
 
     tmp = make_unique<BindingExprTerm>(oid);
 }

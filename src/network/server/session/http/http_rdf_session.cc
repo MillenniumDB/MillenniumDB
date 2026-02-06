@@ -1,7 +1,5 @@
 #include "http_rdf_session.h"
 
-#include <iomanip>
-
 #include <boost/beast/ssl.hpp>
 
 #include "misc/logger.h"
@@ -10,6 +8,7 @@
 #include "network/server/server.h"
 #include "network/server/session/http/request_parser.h"
 #include "network/server/session/http/response/http_response_buffer.h"
+#include "network/server/session/http/response/return_codes_helper.h"
 #include "network/server/session/http/sparql_request_parser.h"
 #include "query/executor/query_executor/query_executor.h"
 #include "query/optimizer/rdf_model/executor_constructor.h"
@@ -66,24 +65,20 @@ void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
 
     auto request_type = SPARQL::RequestParser::get_request_type(obj->request.target());
     if (request_type == Protocol::RequestType::INVALID) {
-        response_ostream << "HTTP/1.1 404 Not Found\r\n\r\n";
-        return;
+        return send_not_found(response_ostream);
+    }
+    if (request_type == Protocol::RequestType::HEALTH_CHECK) {
+        return send_ok(response_ostream);
     }
 
     if (request_type == Protocol::RequestType::AUTH) {
         auto&& [user, pass] = Common::RequestParser::parse_auth(obj->request);
         auto&& [auth_token, valid_until] = obj->server.create_auth_token(user, pass);
         if (auth_token.empty()) {
-            response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
+            return send_unauthorized(response_ostream);
         } else {
-            auto valid_until_t = chrono::system_clock::to_time_t(valid_until);
-            response_ostream << "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: application/json; charset=utf-8\r\n"
-                                "{\"token\":\""
-                             << auth_token << "\",\"valid_until\":\""
-                             << std::put_time(std::localtime(&valid_until_t), "%Y-%m-%d %T") << "\"}";
+            return send_token_authorized(response_ostream, auth_token, valid_until);
         }
-        return;
     }
 
     auto auth_token = Common::RequestParser::get_auth(obj->request);
@@ -92,18 +87,16 @@ void HttpRdfSession<stream_t>::run(std::unique_ptr<HttpRdfSession> obj)
         auto&& [worker_id, cancel_token] = Common::RequestParser::parse_cancel(obj->request);
         auto cancel_res = obj->server.try_cancel(worker_id, cancel_token);
         if (cancel_res) {
-            response_ostream << "HTTP/1.1 200 OK\r\n\r\n";
+            return send_ok(response_ostream);
         } else {
-            response_ostream << "HTTP/1.1 400 Bad Request\r\n\r\n";
+            return send_bad_request(response_ostream, "Not Canceled");
         }
-        return;
     }
 
     auto&& [query, response_type] = SPARQL::RequestParser::parse_query(obj->request);
 
     if (!obj->server.authorize(request_type, auth_token)) {
-        response_ostream << "HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer\r\n\r\n";
-        return;
+        return send_unauthorized(response_ostream);
     }
 
     if (request_type == Protocol::RequestType::UPDATE) {
@@ -137,27 +130,17 @@ void HttpRdfSession<stream_t>::execute_readonly_query(
     } catch (const QueryParsingException& e) {
         std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
                         + ", col: " + std::to_string(e.column) + ": " + e.what();
+
         logger.error() << msg << "\nQuery:\n" << query;
-
-        os << "HTTP/1.1 400 Bad Request\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(msg);
-        return;
+        return send_bad_request(os, msg);
     } catch (const QueryException& e) {
-        logger.error() << "Worker " << worker << ": " << e.what();
-
-        os << "HTTP/1.1 400 Bad Request\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(e.what());
+        std::string msg = e.what();
+        logger.error() << "Worker " << worker << ": " << msg;
+        return send_bad_request(os, msg);
     } catch (const LogicException& e) {
-        logger.error() << "Worker " << worker << ": " << e.what();
-
-        os << "HTTP/1.1 500 Internal Server Error\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(e.what());
+        std::string msg = e.what();
+        logger.error() << "Worker " << worker << ": " << msg;
+        return send_internal_error(os, msg);
     }
 
     if (current_physical_plan == nullptr) {
@@ -213,35 +196,7 @@ void HttpRdfSession<stream_t>::execute_readonly_query_plan(
 {
     const auto execution_start = chrono::system_clock::now();
     try {
-        os << "HTTP/1.1 200 OK\r\n"
-           << "Server: MillenniumDB\r\n";
-
-        switch (response_type) {
-        case SPARQL::ResponseType::CSV:
-            os << "Content-Type: text/csv; charset=utf-8\r\n";
-            break;
-        case SPARQL::ResponseType::TSV:
-            os << "Content-Type: text/tab-separated-values; charset=utf-8\r\n";
-            break;
-        case SPARQL::ResponseType::JSON:
-            os << "Content-Type: application/json; charset=utf-8\r\n";
-            break;
-        case SPARQL::ResponseType::XML:
-            os << "Content-Type: application/sparql-results+xml; charset=utf-8\r\n";
-            break;
-        case SPARQL::ResponseType::TURTLE:
-            os << "Content-Type: application/turtle; charset=utf-8\r\n";
-            break;
-        default:
-            throw LogicException(
-                "Response type not implemented: " + SPARQL::response_type_to_string(response_type)
-            );
-        }
-        os << "Access-Control-Allow-Origin: *\r\n"
-              "Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, "
-              "Authorization\r\n"
-              "Access-Control-Allow-Methods: GET, POST\r\n"
-              "\r\n";
+        send_query_header(os, get_content_type(response_type));
 
         logger.debug([&physical_plan](std::ostream& os) {
             physical_plan.analyze(os, false);
@@ -296,29 +251,17 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
     } catch (const QueryParsingException& e) {
         std::string msg = "Parsing Exception. Line " + std::to_string(e.line)
                         + ", col: " + std::to_string(e.column) + ": " + e.what();
+
         logger.error() << msg << "\nQuery:\n" << query;
-
-        os << "HTTP/1.1 400 Bad Request\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(msg);
-        return;
+        return send_bad_request(os, msg);
     } catch (const QueryException& e) {
-        logger.error() << "Worker " << worker << ": " << e.what();
-
-        os << "HTTP/1.1 400 Bad Request\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(e.what());
-        return;
+        std::string msg = e.what();
+        logger.error() << "Worker " << worker << ": " << msg;
+        return send_bad_request(os, msg);
     } catch (const LogicException& e) {
-        logger.error() << "Worker " << worker << ": " << e.what();
-
-        os << "HTTP/1.1 500 Internal Server Error\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << std::string(e.what());
-        return;
+        std::string msg = e.what();
+        logger.error() << "Worker " << worker << ": " << msg;
+        return send_internal_error(os, msg);
     }
 
     const auto execution_start = chrono::system_clock::now();
@@ -340,19 +283,14 @@ void HttpRdfSession<stream_t>::execute_update_query(const std::string& query, st
         return;
     } catch (const InterruptedException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << "Worker " << worker << " timed out after " << execution_duration.count() << " ms";
 
-        os << "HTTP/1.1 408 Request Timeout\r\n";
-        return;
+        logger.error() << "Worker " << worker << " timed out after " << execution_duration.count() << " ms";
+        return send_timeout(os);
     } catch (const QueryExecutionException& e) {
         execution_duration = chrono::system_clock::now() - execution_start;
-        logger.error() << "Worker " << worker << ": " << e.what();
-
-        os << "HTTP/1.1 500 Internal Server Error\r\n"
-              "Content-Type: text/plain\r\n"
-              "\r\n"
-           << e.what();
-        return;
+        std::string msg = e.what();
+        logger.error() << msg;
+        return send_internal_error(os, msg);
     }
 
     os << "HTTP/1.1 204 No Content\r\n\r\n";

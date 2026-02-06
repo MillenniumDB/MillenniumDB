@@ -6,11 +6,10 @@
 #include "network/sparql/response_type.h"
 #include "network/sparql/url_helper.h"
 
-namespace SPARQL {
+namespace SPARQL { namespace RequestParser {
 
-namespace RequestParser {
-
-inline MDBServer::Protocol::RequestType get_request_type(const std::string_view& str) {
+inline MDBServer::Protocol::RequestType get_request_type(std::string_view str)
+{
     if (str.find("/sparql") != std::string::npos) {
         return MDBServer::Protocol::RequestType::QUERY;
     }
@@ -23,12 +22,14 @@ inline MDBServer::Protocol::RequestType get_request_type(const std::string_view&
     if (str.find("/auth") != std::string::npos) {
         return MDBServer::Protocol::RequestType::AUTH;
     }
+    if (str.find("/health") == 0) {
+        return MDBServer::Protocol::RequestType::HEALTH_CHECK;
+    }
     return MDBServer::Protocol::RequestType::INVALID;
 }
 
-
 inline std::pair<std::string, ResponseType>
-parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
+    parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
 {
     std::string sparql_query;
     ResponseType response_type = ResponseType::JSON;
@@ -41,8 +42,7 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
         auto header_name = header.name_string();
         if (header_name == "Content-Type") {
             content_type = header.value();
-        }
-        else if (header_name == "Accept") {
+        } else if (header_name == "Accept") {
             std::string accept_value = header.value();
             if (accept_value.find("text/csv") != std::string::npos) {
                 response_type = ResponseType::CSV;
@@ -50,9 +50,10 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
                 response_type = ResponseType::TSV;
             } else if (accept_value.find("application/sparql-results+xml") != std::string::npos) {
                 response_type = ResponseType::XML;
-            } else if (accept_value.find("application/turtle")    != std::string::npos
-                    || accept_value.find("application/n-triples") != std::string::npos
-                    || accept_value.find("text/turtle")           != std::string::npos) {
+            } else if (accept_value.find("application/turtle") != std::string::npos
+                       || accept_value.find("application/n-triples") != std::string::npos
+                       || accept_value.find("text/turtle") != std::string::npos)
+            {
                 response_type = ResponseType::TURTLE;
             }
             // else JSON by default
@@ -64,13 +65,11 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
     if (req.method() == boost::beast::http::verb::post) {
         if (content_type == "application/x-www-form-urlencoded") {
             url_encoded = req.body();
-        } else if (content_type != "application/sparql-query" &&
-                    content_type != "application/sparql-update")
+        } else if (content_type != "application/sparql-query" && content_type != "application/sparql-update")
         {
             // This case is invalid according to the SPARQL standard. Try to guess
             std::string req_body = req.body();
-            if (req_body.find("query=") != std::string::npos ||
-                req_body.find("update=") != std::string::npos)
+            if (req_body.find("query=") != std::string::npos || req_body.find("update=") != std::string::npos)
             {
                 url_encoded = req.body();
             }
@@ -90,7 +89,8 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
             while (*ptr != '?' && *ptr != '\0') {
                 ptr++;
             }
-            if (*ptr != '\0') ptr++;
+            if (*ptr != '\0')
+                ptr++;
         }
 
         // new *ptr is something like "query=SELECT+%2A+WHERE+%7B+%3Fs+%3Fp+%3Fo+.+%7D+LIMIT+1000&format=json&output=json&results=json"
@@ -103,7 +103,8 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
                 ptr++;
                 len_key++;
             }
-            if (*ptr != '\0') ptr++;
+            if (*ptr != '\0')
+                ptr++;
 
             auto beg_value = ptr;
             size_t len_value = 0;
@@ -114,7 +115,8 @@ parse_query(boost::beast::http::request<boost::beast::http::string_body>& req)
             std::string key(beg_key, len_key);
             std::string val(beg_value, len_value);
 
-            if (*ptr != '\0') ptr++;
+            if (*ptr != '\0')
+                ptr++;
 
             // process key/value
             if (key == "query" || key == "update") {
