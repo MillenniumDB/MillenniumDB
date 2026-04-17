@@ -38,14 +38,14 @@ public:
 
         for (auto& expr : exprs) {
             auto expr_oid = expr->eval(binding);
-            switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-            case RDF_OID::GenericSubType::STRING_SIMPLE: {
+            switch (expr_oid.subtype()) {
+            case ObjectSubType::String: {
                 auto str = Conversions::unpack_string(expr_oid);
                 res += str;
                 status = ConcatStatus::SIMPLE;
                 break;
             }
-            case RDF_OID::GenericSubType::STRING_XSD: {
+            case ObjectSubType::StringXsd: {
                 auto str = Conversions::unpack_string(expr_oid);
                 res += str;
                 if (status == ConcatStatus::UNSET || status == ConcatStatus::XSD) {
@@ -55,7 +55,7 @@ public:
                 }
                 break;
             }
-            case RDF_OID::GenericSubType::STRING_LANG: {
+            case ObjectSubType::StringLang: {
                 auto&& [lang, str] = Conversions::unpack_string_lang(expr_oid);
                 res += str;
                 if (status == ConcatStatus::UNSET) {

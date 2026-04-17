@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "misc/transliterator.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprSubStr : public BindingExpr {
@@ -42,7 +42,7 @@ public:
 
         // Start must be a positive integer
         auto start_oid = expr_start->eval(binding);
-        if (RDF_OID::get_generic_sub_type(start_oid) != RDF_OID::GenericSubType::INTEGER) {
+        if (start_oid.subtype() != ObjectSubType::Int) {
             return ObjectId::get_null();
         }
         start = Conversions::unpack_int(start_oid);
@@ -54,7 +54,7 @@ public:
         ObjectId length_oid = ObjectId::get_null();
         if (expr_length != nullptr) {
             length_oid = expr_length->eval(binding);
-            if (RDF_OID::get_generic_sub_type(length_oid) != RDF_OID::GenericSubType::INTEGER) {
+            if (length_oid.subtype() != ObjectSubType::Int) {
                 return ObjectId::get_null();
             }
             // dont't use directly length because is unsigned
@@ -73,18 +73,18 @@ public:
             length--;
 
         auto str_oid = expr_str->eval(binding);
-        switch (RDF_OID::get_generic_sub_type(str_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        switch (str_oid.subtype()) {
+        case ObjectSubType::String: {
             std::string str = Conversions::unpack_string(str_oid);
             auto s = Transliterator::substr(str, start, length);
             return Conversions::pack_string_simple(s);
         }
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        case ObjectSubType::StringXsd: {
             std::string str = Conversions::unpack_string(str_oid);
             auto s = Transliterator::substr(str, start, length);
             return Conversions::pack_string_xsd(s);
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto [lang, str] = Conversions::unpack_string_lang(str_oid);
             auto s = Transliterator::substr(str, start, length);
             return Conversions::pack_string_lang(lang, s);

@@ -531,10 +531,9 @@ Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
         visit(ctx);
         if (current_sparql_element.is_OID()) {
             const auto oid = current_sparql_element.get_OID();
-            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
-            switch (gen_sub_t) {
-            case RDF_OID::GenericSubType::STRING_SIMPLE:
-            case RDF_OID::GenericSubType::STRING_XSD:
+            switch (oid.subtype()) {
+            case ObjectSubType::String:
+            case ObjectSubType::StringXsd:
                 return SPARQL::Conversions::unpack_string(oid);
             default:
                 break;
@@ -548,9 +547,8 @@ Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
         visit(ctx);
         if (current_sparql_element.is_OID()) {
             const auto oid = current_sparql_element.get_OID();
-            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
-            switch (gen_sub_t) {
-            case RDF_OID::GenericSubType::IRI:
+            switch (oid.subtype()) {
+            case ObjectSubType::Iri:
                 return SPARQL::Conversions::unpack_iri(oid);
             default:
                 break;
@@ -564,9 +562,8 @@ Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
         visit(ctx);
         if (current_sparql_element.is_OID()) {
             const auto oid = current_sparql_element.get_OID();
-            const auto gen_sub_t = RDF_OID::get_generic_sub_type(oid);
-            switch (gen_sub_t) {
-            case RDF_OID::GenericSubType::INTEGER: {
+            switch (oid.subtype()) {
+            case ObjectSubType::Int: {
                 const auto i = SPARQL::Conversions::unpack_int(oid);
                 if (i >= 0) {
                     return static_cast<uint64_t>(i);
@@ -625,12 +622,14 @@ Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
             tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
 
-        op_update->updates.emplace_back(std::make_unique<OpCreateTextIndex>(
-            std::move(index_name),
-            std::move(text_index_opts.predicate),
-            normalize_type,
-            tokenize_type
-        ));
+        op_update->updates.emplace_back(
+            std::make_unique<OpCreateTextIndex>(
+                std::move(index_name),
+                std::move(text_index_opts.predicate),
+                normalize_type,
+                tokenize_type
+            )
+        );
     } else if (index_type_lowercased == "hnsw") {
         // Check if hnsw index existed before
         if (rdf_model.catalog.hnsw_index_manager.get_hnsw_index(index_name) != nullptr) {
@@ -669,14 +668,16 @@ Any UpdateVisitor::visitCreateIndexQuery(SUP::CreateIndexQueryContext* ctx)
             metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
         }
 
-        op_update->updates.emplace_back(std::make_unique<OpCreateHNSWIndex>(
-            std::move(index_name),
-            std::move(hnsw_index_opts.predicate),
-            hnsw_index_opts.dimension,
-            hnsw_index_opts.max_edges,
-            hnsw_index_opts.max_candidates,
-            metric_type
-        ));
+        op_update->updates.emplace_back(
+            std::make_unique<OpCreateHNSWIndex>(
+                std::move(index_name),
+                std::move(hnsw_index_opts.predicate),
+                hnsw_index_opts.dimension,
+                hnsw_index_opts.max_edges,
+                hnsw_index_opts.max_candidates,
+                metric_type
+            )
+        );
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }

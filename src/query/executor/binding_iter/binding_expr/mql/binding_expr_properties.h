@@ -17,14 +17,14 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        const auto gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
-        if ((gen_t != ObjectId::MASK_NAMED_NODE) && (gen_t != ObjectId::MASK_EDGE)) {
+        const auto gen_t = oid.generic_type();
+        if (gen_t != ObjectGenType::NamedNode && gen_t != ObjectGenType::Edge) {
             return ObjectId::get_null();
         }
 
         bool interruption = false;
-        BptIter<3> it = quad_model.object_key_value
-                            ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
+        auto it = quad_model.object_key_value
+                      ->get_range(&interruption, { oid.id, 0, 0 }, { oid.id, UINT64_MAX, UINT64_MAX });
 
         auto record = it.next();
         std::map<ObjectId, std::unique_ptr<DictionaryItem>> properties_map;

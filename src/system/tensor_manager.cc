@@ -1,6 +1,6 @@
 #include "tensor_manager.h"
 
-#include "graph_models/rdf_model/rdf_object_id.h"
+#include "graph_models/object_id.h"
 #include "macros/aligned_alloc.h"
 #include "misc/bytes_encoder.h"
 #include "misc/fatal_error.h"
@@ -23,13 +23,13 @@ void TensorManager::init(uint64_t static_buffer_size, uint64_t dynamic_buffer_si
 }
 
 TensorManager::TensorManager(uint64_t aligned_static_buffer_size, uint64_t aligned_dynamic_buffer_size) :
-    static_buffer_size (aligned_static_buffer_size),
-    dynamic_buffer_size (aligned_dynamic_buffer_size),
-    num_frames (dynamic_buffer_size / BLOCK_SIZE),
-    tensor_file_id (file_manager.get_file_id(TensorManager::TENSORS_FILENAME)),
-    static_buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(static_buffer_size))),
-    dynamic_buffer (reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(dynamic_buffer_size))),
-    frames (new TensorManager::Frame[num_frames]),
+    static_buffer_size(aligned_static_buffer_size),
+    dynamic_buffer_size(aligned_dynamic_buffer_size),
+    num_frames(dynamic_buffer_size / BLOCK_SIZE),
+    tensor_file_id(file_manager.get_file_id(TensorManager::TENSORS_FILENAME)),
+    static_buffer(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(static_buffer_size))),
+    dynamic_buffer(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(dynamic_buffer_size))),
+    frames(new TensorManager::Frame[num_frames]),
     tensors_hash("tensor_hash")
 {
     if (static_buffer == nullptr || dynamic_buffer == nullptr || frames == nullptr) {
@@ -103,14 +103,14 @@ template<typename T>
 tensor::Tensor<T> TensorManager::get_tensor(ObjectId tensor_oid)
 {
 #ifndef NDEBUG
-    const auto sub_t = RDF_OID::get_generic_sub_type(tensor_oid);
+    const auto sub_t = tensor_oid.subtype();
     switch (sub_t) {
-    case RDF_OID::GenericSubType::TENSOR_FLOAT: {
-        assert((std::is_same_v<T, float>) &&"T must be float");
+    case ObjectSubType::TensorFloat: {
+        assert((std::is_same_v<T, float>) && "T must be float");
         break;
     }
-    case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
-        assert((std::is_same_v<T, double>) &&"T must be double");
+    case ObjectSubType::TensorDouble: {
+        assert((std::is_same_v<T, double>) && "T must be double");
         break;
     }
     default: {
@@ -314,7 +314,7 @@ uint64_t TensorManager::create_bytes_id(const char* bytes, uint64_t num_bytes)
     const std::size_t remaining_in_block = BLOCK_SIZE - (old_file_size % BLOCK_SIZE);
 
     if (remaining_in_block < MIN_PAGE_REMAINING_BYTES) {
-        // there is not enought space in current page, just fill it up to next page
+        // there is not enough space in current page, just fill it up to next page
         const auto write_res = write(tensor_file_id.id, size_buf, remaining_in_block);
         if (write_res == -1) {
             throw std::runtime_error("Could not write into tensor file");
@@ -396,7 +396,6 @@ void TensorManager::rollback(uint64_t original_end)
 {
     ftruncate(tensor_file_id.id, original_end);
 }
-
 
 template tensor::Tensor<float> TensorManager::get_tensor<float>(ObjectId);
 template tensor::Tensor<double> TensorManager::get_tensor<double>(ObjectId);

@@ -254,7 +254,7 @@ public:
             }
         }
 
-        if (ObjectId(obj).get_type() == ObjectId::MASK_EDGE) {
+        if (ObjectId(obj).type() == ObjectType::Edge) {
             auto iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
 
             if (auto existing_record = iter.next()) {

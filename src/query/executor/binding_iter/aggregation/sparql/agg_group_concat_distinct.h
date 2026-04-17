@@ -40,14 +40,14 @@ public:
         }
 
         // at this point type may be UNSET, SIMPLE, XSD or LANG
-        switch (RDF_OID::get_generic_sub_type(oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        switch (oid.subtype()) {
+        case ObjectSubType::String: {
             auto str = Conversions::unpack_string(oid);
             res += str;
             type = GroupConcatType::SIMPLE;
             break;
         }
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        case ObjectSubType::StringXsd: {
             auto str = Conversions::unpack_string(oid);
             res += str;
             if (type == GroupConcatType::UNSET) {
@@ -58,7 +58,7 @@ public:
             // else type remains GroupConcatType::XSD
             break;
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto&& [l, str] = Conversions::unpack_string_lang(oid);
             res += str;
             if (type == GroupConcatType::UNSET) {

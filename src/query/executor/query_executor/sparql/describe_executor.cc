@@ -1,6 +1,5 @@
 #include "describe_executor.h"
 
-#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/query_executor/sparql/ttl_writer.h"
 #include "query/optimizer/rdf_model/plan/triple_plan.h"
 
@@ -8,17 +7,18 @@ using namespace SPARQL;
 
 DescribeExecutor::DescribeExecutor(
     std::unique_ptr<BindingIter> child_iter,
-    std::vector<VarId>           vars,
-    std::vector<ObjectId>        iris
+    std::vector<VarId> vars,
+    std::vector<ObjectId> iris
 ) :
-    child_iter       (std::move(child_iter)),
-    vars             (std::move(vars)),
-    iris             (std::move(iris)),
-    extendable_table (DistinctBindingHash(3)),
-    current_triple   (std::vector<ObjectId>(3)) { }
+    child_iter(std::move(child_iter)),
+    vars(std::move(vars)),
+    iris(std::move(iris)),
+    extendable_table(DistinctBindingHash(3)),
+    current_triple(std::vector<ObjectId>(3))
+{ }
 
-
-uint64_t DescribeExecutor::execute(std::ostream& os) {
+uint64_t DescribeExecutor::execute(std::ostream& os)
+{
     auto var0 = VarId(0);
     auto var1 = VarId(1);
 
@@ -29,16 +29,14 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
         auto child_binding = std::make_unique<Binding>(get_query_ctx().get_var_size());
         child_iter->begin(*child_binding);
 
-        while(child_iter->next()) {
-            for (auto var: vars) {
+        while (child_iter->next()) {
+            for (auto var : vars) {
                 auto oid = (*child_binding)[var];
 
-                auto gen_type = RDF_OID::get_generic_type(oid);
+                auto gen_type = oid.generic_type();
                 // We only describe blank nodes and iris, if we want to describe literals
                 // this check has to be changed.
-                if (gen_type == RDF_OID::GenericType::BLANK ||
-                    gen_type == RDF_OID::GenericType::IRI)
-                {
+                if (gen_type == ObjectGenType::Anon || gen_type == ObjectGenType::Iri) {
                     triple_count += output_triples(os, oid, var0, var1);
                     triple_count += output_triples(os, var0, var1, oid);
                 }
@@ -46,8 +44,8 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
         }
     }
 
-    for (auto iri: iris) {
-        if (RDF_OID::get_generic_type(iri) != RDF_OID::GenericType::IRI) {
+    for (auto iri : iris) {
+        if (iri.generic_type() != ObjectGenType::Iri) {
             continue;
         }
         triple_count += output_triples(os, iri, var0, var1);
@@ -57,8 +55,8 @@ uint64_t DescribeExecutor::execute(std::ostream& os) {
     return triple_count;
 }
 
-
-uint64_t DescribeExecutor::output_triples(std::ostream& os, Id subject, Id predicate, Id object) {
+uint64_t DescribeExecutor::output_triples(std::ostream& os, Id subject, Id predicate, Id object)
+{
     auto describe_binding = std::make_unique<Binding>(2);
 
     auto plan = std::make_unique<TriplePlan>(subject, predicate, object);
@@ -76,27 +74,21 @@ uint64_t DescribeExecutor::output_triples(std::ostream& os, Id subject, Id predi
     // If we want to describe something else we have to update these checks.
     if (!subject.is_var()) {
         auto oid = subject.get_OID();
-        if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI &&
-            RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::BLANK)
-        {
+        if (auto t = oid.generic_type(); t != ObjectGenType::Iri && t != ObjectGenType::Anon) {
             return 0;
         }
         current_triple[0] = oid;
     }
     if (!predicate.is_var()) {
         auto oid = predicate.get_OID();
-        if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI &&
-            RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::BLANK)
-        {
+        if (auto t = oid.generic_type(); t != ObjectGenType::Iri && t != ObjectGenType::Anon) {
             return 0;
         }
         current_triple[1] = oid;
     }
     if (!object.is_var()) {
         auto oid = object.get_OID();
-        if (RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::IRI &&
-            RDF_OID::get_generic_type(oid) != RDF_OID::GenericType::BLANK)
-        {
+        if (auto t = oid.generic_type(); t != ObjectGenType::Iri && t != ObjectGenType::Anon) {
             return 0;
         }
         current_triple[2] = oid;
@@ -134,14 +126,14 @@ uint64_t DescribeExecutor::output_triples(std::ostream& os, Id subject, Id predi
     return result_count;
 }
 
-
-bool DescribeExecutor::current_triple_distinct() {
+bool DescribeExecutor::current_triple_distinct()
+{
     bool is_new_tuple = !extendable_table.is_in_or_insert(current_triple);
     return is_new_tuple;
 }
 
-
-void DescribeExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
+void DescribeExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
+{
     os << std::string(indent, ' ') << "DescribeExecutor(";
 
     os << triple_count << " triples; ";

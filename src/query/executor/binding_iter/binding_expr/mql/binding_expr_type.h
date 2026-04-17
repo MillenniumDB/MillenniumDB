@@ -16,7 +16,7 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        if (oid.get_type() != ObjectId::MASK_EDGE) {
+        if (oid.type() != ObjectType::Edge) {
             return ObjectId::get_null();
         }
 

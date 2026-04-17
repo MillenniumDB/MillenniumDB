@@ -1,10 +1,5 @@
 #pragma once
 
-#include <cctype>
-#include <fstream>
-#include <iostream>
-#include <string>
-
 #include "bin/common.h"
 #include "graph_models/exceptions.h"
 #include "graph_models/gql/gql_model.h"
@@ -12,7 +7,6 @@
 #include "graph_models/quad_model/quad_model.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "misc/fatal_error.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/not_exists.h"
@@ -25,6 +19,10 @@
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "system/system.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
+
+#include <fstream>
+#include <iostream>
+#include <string>
 
 namespace MdbBin {
 
@@ -80,17 +78,12 @@ static std::string oid2json_str(uint64_t oid)
 
     bool need_quote;
 
-    const auto mask = oid & ObjectId::TYPE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_NULL:
-    case ObjectId::MASK_NEGATIVE_INT:
-    case ObjectId::MASK_POSITIVE_INT:
-    case ObjectId::MASK_FLOAT:
-    case ObjectId::MASK_BOOL:
+    const auto type = ObjectId(oid).generic_type();
+    switch (type) {
+    case ObjectGenType::Null:
+    case ObjectGenType::Numeric:
     // strings already come with double quotes
-    case ObjectId::MASK_STRING_SIMPLE_INLINED:
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
-    case ObjectId::MASK_STRING_SIMPLE_TMP:
+    case ObjectGenType::String:
         need_quote = false;
         break;
     default:
@@ -362,23 +355,19 @@ inline void dump_graph_quad_model(const std::string& path)
 template<bool IS_TTL>
 inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    switch (RDF_OID::get_type(oid)) {
-    case RDF_OID::Type::BLANK_INLINED: {
+    switch (oid.subtype()) {
+    case ObjectSubType::Anon: {
         os << "_:b";
         os << SPARQL::Conversions::unpack_blank(oid);
         break;
     }
-    case RDF_OID::Type::STRING_SIMPLE_INLINE:
-    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
-    case RDF_OID::Type::STRING_SIMPLE_TMP: {
+    case ObjectSubType::String: {
         os << '"';
         SPARQL::Conversions::print_string(oid, escaped_os);
         os << '"';
         break;
     }
-    case RDF_OID::Type::STRING_XSD_INLINE:
-    case RDF_OID::Type::STRING_XSD_EXTERN:
-    case RDF_OID::Type::STRING_XSD_TMP: {
+    case ObjectSubType::StringXsd: {
         os << '"';
         SPARQL::Conversions::print_string(oid, escaped_os);
 
@@ -389,13 +378,11 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         }
         break;
     }
-    case RDF_OID::Type::INT56_INLINE:
-    case RDF_OID::Type::INT64_EXTERN:
-    case RDF_OID::Type::INT64_TMP: {
+    case ObjectSubType::Int: {
         os << SPARQL::Conversions::unpack_int(oid);
         break;
     }
-    case RDF_OID::Type::FLOAT32: {
+    case ObjectSubType::Float: {
         float f = SPARQL::Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -410,8 +397,7 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         }
         break;
     }
-    case RDF_OID::Type::DOUBLE64_EXTERN:
-    case RDF_OID::Type::DOUBLE64_TMP: {
+    case ObjectSubType::Double: {
         double d = SPARQL::Conversions::unpack_double(oid);
 
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
@@ -426,30 +412,17 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         }
         break;
     }
-    case RDF_OID::Type::BOOL: {
+    case ObjectSubType::Bool: {
         os << (SPARQL::Conversions::unpack_bool(oid) ? "true" : "false");
         break;
     }
-    case RDF_OID::Type::IRI_INLINE:
-    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
-    case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP:
-    case RDF_OID::Type::IRI_UUID_LOWER:
-    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
-    case RDF_OID::Type::IRI_UUID_UPPER:
-    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
-    case RDF_OID::Type::IRI_HEX_LOWER:
-    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
-    case RDF_OID::Type::IRI_HEX_UPPER:
-    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
+    case ObjectSubType::Iri: {
         os << '<';
         SPARQL::Conversions::print_iri(oid, os);
         os << '>';
         break;
     }
-    case RDF_OID::Type::STRING_DATATYPE_INLINE:
-    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
-    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+    case ObjectSubType::StringDatatype: {
         auto&& [datatype, str] = SPARQL::Conversions::unpack_string_datatype(oid);
         os << '"';
         escaped_os << str;
@@ -458,9 +431,7 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         os << ">";
         break;
     }
-    case RDF_OID::Type::STRING_LANG_INLINE:
-    case RDF_OID::Type::STRING_LANG_EXTERN:
-    case RDF_OID::Type::STRING_LANG_TMP: {
+    case ObjectSubType::StringLang: {
         auto&& [lang, str] = SPARQL::Conversions::unpack_string_lang(oid);
         os << '"';
         escaped_os << str;
@@ -468,19 +439,14 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         os << lang;
         break;
     }
-    case RDF_OID::Type::DATE:
-    case RDF_OID::Type::DATETIME:
-    case RDF_OID::Type::TIME:
-    case RDF_OID::Type::DATETIMESTAMP: {
+    case ObjectSubType::TemporalLiteral: {
         DateTime datetime = SPARQL::Conversions::unpack_date(oid);
 
         os << '"' << datetime.get_value_string();
         os << "\"^^<" << datetime.get_datatype_string() << ">";
         break;
     }
-    case RDF_OID::Type::DECIMAL_INLINE:
-    case RDF_OID::Type::DECIMAL_EXTERN:
-    case RDF_OID::Type::DECIMAL_TMP: {
+    case ObjectSubType::Decimal: {
         auto decimal = SPARQL::Conversions::unpack_decimal(oid);
         os << '"' << decimal << '"';
 
@@ -492,9 +458,7 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
 
         break;
     }
-    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
-    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
-    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+    case ObjectSubType::TensorFloat: {
         const auto tensor = SPARQL::Conversions::unpack_tensor<float>(oid);
         os << '"' << tensor.to_string() << '"';
         if constexpr (IS_TTL) {
@@ -504,9 +468,7 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         }
         break;
     }
-    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
-    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
-    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+    case ObjectSubType::TensorDouble: {
         const auto tensor = SPARQL::Conversions::unpack_tensor<double>(oid);
         os << '"' << tensor.to_string() << '"';
         if constexpr (IS_TTL) {
@@ -516,9 +478,14 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
         }
         break;
     }
-    case RDF_OID::Type::NULL_ID:
-    case RDF_OID::Type::PATH:
-    case RDF_OID::Type::BLANK_TMP: {
+    case ObjectSubType::Null:
+    case ObjectSubType::Path:
+    case ObjectSubType::NamedNode:
+    case ObjectSubType::Dictionary:
+    case ObjectSubType::List:
+    case ObjectSubType::Edge:
+    case ObjectSubType::NotFound:
+    case ObjectSubType::Invalid: {
         // not possible
         break;
     }

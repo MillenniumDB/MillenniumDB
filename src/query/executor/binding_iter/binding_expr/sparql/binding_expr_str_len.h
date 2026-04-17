@@ -1,11 +1,11 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <memory>
 
 #include <unicode/unistr.h>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprStrLen : public BindingExpr {
@@ -21,14 +21,14 @@ public:
         auto oid = expr->eval(binding);
         size_t len;
 
-        switch (RDF_OID::get_generic_sub_type(oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        switch (oid.subtype()) {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             auto str = Conversions::to_lexical_str(oid);
             len = get_string_length(str);
             break;
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto [lang_id, str] = Conversions::unpack_string_lang(oid);
             len = get_string_length(str);
             break;

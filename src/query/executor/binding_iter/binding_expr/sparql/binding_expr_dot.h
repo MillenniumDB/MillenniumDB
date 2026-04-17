@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cassert>
+#include <memory>
 
 namespace SPARQL {
 class BindingExprDot : public BindingExpr {
@@ -23,13 +23,11 @@ public:
         const auto lhs_oid = lhs->eval(binding);
         const auto rhs_oid = rhs->eval(binding);
 
-        const auto lhs_gen_t = RDF_OID::get_generic_type(lhs_oid);
-        if (lhs_gen_t != RDF_OID::GenericType::TENSOR) {
+        if (lhs_oid.generic_type() != ObjectGenType::Tensor) {
             return ObjectId::get_null();
         }
 
-        const auto rhs_gen_t = RDF_OID::get_generic_type(rhs_oid);
-        if (lhs_gen_t != rhs_gen_t) {
+        if (rhs_oid.generic_type() != ObjectGenType::Tensor) {
             return ObjectId::get_null();
         }
 

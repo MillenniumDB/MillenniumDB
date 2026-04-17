@@ -1,9 +1,8 @@
 #pragma once
 
-#include <memory>
-
-#include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprUnaryPlus : public BindingExpr {
@@ -18,9 +17,9 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_type(expr_oid)) {
-        case RDF_OID::GenericType::NUMERIC:
-        case RDF_OID::GenericType::TENSOR:
+        switch (expr_oid.generic_type()) {
+        case ObjectGenType::Numeric:
+        case ObjectGenType::Tensor:
             return expr_oid;
         default:
             return ObjectId::get_null();

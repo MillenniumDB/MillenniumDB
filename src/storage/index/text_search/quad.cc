@@ -55,8 +55,7 @@ uint_fast32_t index_single(
     ObjectId property_oid
 )
 {
-    const auto gen_t = property_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (gen_t != ObjectId::MASK_STRING) {
+    if (property_oid.generic_type() != ObjectGenType::String) {
         return 0;
     }
 
@@ -99,8 +98,7 @@ uint_fast32_t remove_single(
     ObjectId property_oid
 )
 {
-    const auto gen_t = property_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (gen_t != ObjectId::MASK_STRING) {
+    if (property_oid.generic_type() != ObjectGenType::String) {
         return 0;
     }
 

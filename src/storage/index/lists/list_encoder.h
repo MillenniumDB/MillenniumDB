@@ -2,9 +2,9 @@
 
 #include "graph_models/object_id.h"
 #include "misc/bytes_encoder.h"
+
 #include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 class ListEncoder {

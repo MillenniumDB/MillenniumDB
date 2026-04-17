@@ -8,7 +8,6 @@
 #include "graph_models/gql/gql_model.h"
 #include "graph_models/gql/gql_object_id.h"
 #include "graph_models/inliner.h"
-#include "storage/index/lists/list_encoder.h"
 #include "system/path_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
@@ -18,17 +17,17 @@ using namespace GQL;
 
 std::string Conversions::unpack_string(ObjectId oid)
 {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    switch (oid.type()) {
+    case ObjectType::StringInl: {
         return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         std::stringstream ss;
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         string_manager.print(ss, external_id);
         return ss.str();
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         std::stringstream ss;
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(ss, external_id);
@@ -100,17 +99,17 @@ void Conversions::print_path(std::ostream& os, ObjectId oid)
 
 void Conversions::print_string(ObjectId oid, std::ostream& os)
 {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    switch (oid.type()) {
+    case ObjectType::StringInl: {
         Inliner::print_string_inlined<7>(os, oid.id);
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         string_manager.print(os, external_id);
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(os, external_id);
         break;
@@ -122,15 +121,15 @@ void Conversions::print_string(ObjectId oid, std::ostream& os)
 
 size_t Conversions::print_string(ObjectId oid, char* out)
 {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    switch (oid.type()) {
+    case ObjectType::StringInl: {
         return Inliner::print_string_inlined<7>(out, oid.id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         return string_manager.print_to_buffer(out, external_id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         return tmp_manager.print_to_buffer(out, external_id);
     }
@@ -272,51 +271,15 @@ ObjectId Conversions::pack_edge_property(const std::string& property)
     return ObjectId::get_null();
 }
 
-ObjectId Conversions::pack_list(const std::vector<ObjectId>& list)
-{
-    TmpLists& tmp_list = tmp_manager.get_tmp_list();
-    uint32_t file_id = tmp_list.get_file_id();
-    uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST_TMP | (uint64_t(file_id) << 40) | list_offset);
-}
-
-void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
-{
-    switch (list_id.get_type()) {
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_TMP: {
-        auto& lists = tmp_manager.get_tmp_list();
-        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
-        lists.get(out, list_id.id & LIST_OFFSET_MASK);
-        break;
-    }
-    case ObjectId::MASK_LIST_EXTERN: {
-        char* buffer = get_query_ctx().get_buffer1();
-
-        auto external_id = list_id.get_value();
-        string_manager.print_to_buffer(buffer, external_id);
-        out = ListEncoder::decode(buffer);
-        break;
-    }
-    }
-}
-
-std::vector<ObjectId> Conversions::unpack_list(ObjectId list_id)
-{
-    std::vector<ObjectId> list;
-    unpack_list(list_id, list);
-    return list;
-}
-
 ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
 {
     ObjectId path_oid = pack_list(oid_list);
-    return ObjectId((path_oid.id & ~ObjectId::TYPE_MASK) | ObjectId::MASK_GQL_PATH);
+    return ObjectId((path_oid.id & ObjectId::VALUE_MASK) | ObjectId::MASK_GQL_PATH);
 }
 
 void Conversions::unpack_path(ObjectId oid, std::vector<ObjectId>& out)
 {
-    oid = ObjectId((oid.id & ~ObjectId::TYPE_MASK) | ObjectId::MASK_LIST_TMP);
+    oid = ObjectId((oid.id & ObjectId::VALUE_MASK) | ObjectId::MASK_LIST_TMP);
     unpack_list(oid, out);
 }
 
@@ -451,36 +414,31 @@ ObjectId Conversions::to_boolean(ObjectId oid)
 {
     uint64_t value = oid.get_value();
 
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_BOOL:
+    switch (oid.subtype()) {
+    case ObjectSubType::Bool:
         return oid;
     // String
     // Note: Extern strings will never be empty
-    case ObjectId::MASK_STRING_SIMPLE_INLINED:
+    case ObjectSubType::String:
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
-        return ObjectId(ObjectId::BOOL_TRUE);
     // Integer
-    case ObjectId::MASK_NEGATIVE_INT:
-    case ObjectId::MASK_POSITIVE_INT:
+    case ObjectSubType::Int:
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Float
-    case ObjectId::MASK_FLOAT: {
+    case ObjectSubType::Float: {
         auto f = unpack_float(oid);
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(f != 0 && !std::isnan(f)));
     }
     // Double
-    case ObjectId::MASK_DOUBLE: {
+    case ObjectSubType::Double: {
         auto d = unpack_double(oid);
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(d != 0 && !std::isnan(d)));
     }
     // Decimal
     // Note: This assumes 0 is never represented as 0.0, 0.00, etc
-    case ObjectId::MASK_DECIMAL_INLINED:
-        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Note: Extern decimals will never be zero
-    case ObjectId::MASK_DECIMAL_EXTERN:
-        return ObjectId(ObjectId::BOOL_TRUE);
+    case ObjectSubType::Decimal:
+        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
     // Can not be converted to boolean
     default:
         return ObjectId::get_null();

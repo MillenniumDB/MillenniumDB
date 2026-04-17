@@ -1,7 +1,6 @@
 #include "json_select_executor.h"
 
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/rdf_model.h"
 #include "query/executor/query_executor/json_ostream_escape.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
 #include "system/path_manager.h"
@@ -9,7 +8,8 @@
 
 using namespace SPARQL;
 
-uint64_t JsonSelectExecutor::execute_empty_binding(std::ostream& os) {
+uint64_t JsonSelectExecutor::execute_empty_binding(std::ostream& os)
+{
     uint64_t result_count = 0;
     os << "{\"head\":{\"vars\":[]},\"results\":{\"bindings\":[";
     if (root->next()) { // first case without comma
@@ -28,8 +28,8 @@ uint64_t JsonSelectExecutor::execute_empty_binding(std::ostream& os) {
     return result_count;
 }
 
-
-uint64_t JsonSelectExecutor::execute(std::ostream& os) {
+uint64_t JsonSelectExecutor::execute(std::ostream& os)
+{
     JsonOstreamEscape json_ostream_escape(os);
     std::ostream escaped_os(&json_ostream_escape);
 
@@ -87,45 +87,38 @@ void JsonSelectExecutor::print_path_edge(ObjectId edge_id, bool inverse, std::os
     os << ",\"inverse\":" << (inverse ? "true" : "false") << "},";
 }
 
-void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid) {
-    switch (RDF_OID::get_type(oid)) {
-    case RDF_OID::Type::BLANK_INLINED: {
-        os << "{\"type\":\"bnode\",\"value\":\"_:b";
+void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
+{
+    switch (oid.subtype()) {
+    case ObjectSubType::Anon: {
+        if (oid.type() == ObjectType::AnonInl) {
+            os << "{\"type\":\"bnode\",\"value\":\"_:b";
+        } else {
+            os << "{\"type\":\"bnode\",\"value\":\"_:c";
+        }
         os << Conversions::unpack_blank(oid);
         os << "\"}";
         break;
     }
-    case RDF_OID::Type::BLANK_TMP: {
-        os << "{\"type\":\"bnode\",\"value\":\"_:c";
-        os << Conversions::unpack_blank(oid);
-        os << "\"}";
-        break;
-    }
-    case RDF_OID::Type::STRING_SIMPLE_INLINE:
-    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
-    case RDF_OID::Type::STRING_SIMPLE_TMP: {
+    case ObjectSubType::String: {
         os << "{\"type\":\"literal\",\"value\":\"";
         Conversions::print_string(oid, escaped_os);
         os << "\"}";
         break;
     }
-    case RDF_OID::Type::STRING_XSD_INLINE:
-    case RDF_OID::Type::STRING_XSD_EXTERN:
-    case RDF_OID::Type::STRING_XSD_TMP: {
+    case ObjectSubType::StringXsd: {
         os << "{\"type\":\"literal\",\"value\":\"";
         Conversions::print_string(oid, escaped_os);
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#string\"}";
         break;
     }
-    case RDF_OID::Type::INT56_INLINE:
-    case RDF_OID::Type::INT64_EXTERN:
-    case RDF_OID::Type::INT64_TMP: {
+    case ObjectSubType::Int: {
         os << "{\"type\":\"literal\",\"value\":\"";
         os << Conversions::unpack_int(oid);
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#integer\"}";
         break;
     }
-    case RDF_OID::Type::FLOAT32: {
+    case ObjectSubType::Float: {
         float f = Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -136,8 +129,7 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#float\"}";
         break;
     }
-    case RDF_OID::Type::DOUBLE64_EXTERN:
-    case RDF_OID::Type::DOUBLE64_TMP: {
+    case ObjectSubType::Double: {
         double d = Conversions::unpack_double(oid);
 
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
@@ -148,43 +140,33 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#double\"}";
         break;
     }
-    case RDF_OID::Type::BOOL: {
-        os << "{\"type\":\"literal\",\"value\":\""
-           << (Conversions::unpack_bool(oid) ? "true" : "false")
+    case ObjectSubType::Bool: {
+        os << "{\"type\":\"literal\",\"value\":\"" << (Conversions::unpack_bool(oid) ? "true" : "false")
            << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#boolean\"}";
         break;
     }
-    case RDF_OID::Type::PATH: {
+    case ObjectSubType::Path: {
         using namespace std::placeholders;
         os << "{\"type\":\"path\",\"value\":[";
         path_manager.for_each(
             Conversions::get_path_id(oid),
-            [&](ObjectId oid) { print_path_node(oid, os); },
-            [&](ObjectId oid, bool reverse) { print_path_edge(oid, reverse, os); }
+            [&](ObjectId oid) {
+                print_path_node(oid, os);
+            },
+            [&](ObjectId oid, bool reverse) {
+                print_path_edge(oid, reverse, os);
+            }
         );
         os << "]}";
         break;
     }
-    case RDF_OID::Type::IRI_INLINE:
-    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
-    case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP:
-    case RDF_OID::Type::IRI_UUID_LOWER:
-    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
-    case RDF_OID::Type::IRI_UUID_UPPER:
-    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
-    case RDF_OID::Type::IRI_HEX_LOWER:
-    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
-    case RDF_OID::Type::IRI_HEX_UPPER:
-    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
+    case ObjectSubType::Iri: {
         os << "{\"type\":\"uri\",\"value\":\"";
         Conversions::print_iri(oid, os);
         os << "\"}";
         break;
     }
-    case RDF_OID::Type::STRING_DATATYPE_INLINE:
-    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
-    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+    case ObjectSubType::StringDatatype: {
         auto&& [datatype, str] = Conversions::unpack_string_datatype(oid);
         os << "{\"type\":\"literal\",\"value\":\"";
         escaped_os << str;
@@ -193,9 +175,7 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\"}";
         break;
     }
-    case RDF_OID::Type::STRING_LANG_INLINE:
-    case RDF_OID::Type::STRING_LANG_EXTERN:
-    case RDF_OID::Type::STRING_LANG_TMP: {
+    case ObjectSubType::StringLang: {
         auto&& [lang, str] = Conversions::unpack_string_lang(oid);
         os << "{\"type\":\"literal\",\"value\":\"";
         escaped_os << str;
@@ -204,10 +184,7 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\"}";
         break;
     }
-    case RDF_OID::Type::DATE:
-    case RDF_OID::Type::DATETIME:
-    case RDF_OID::Type::TIME:
-    case RDF_OID::Type::DATETIMESTAMP: {
+    case ObjectSubType::TemporalLiteral: {
         DateTime datetime = Conversions::unpack_date(oid);
 
         os << "{\"type\":\"literal\",\"value\":\"";
@@ -215,9 +192,7 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\",\"datatype\":\"" << datetime.get_datatype_string() << "\"}";
         break;
     }
-    case RDF_OID::Type::DECIMAL_INLINE:
-    case RDF_OID::Type::DECIMAL_EXTERN:
-    case RDF_OID::Type::DECIMAL_TMP: {
+    case ObjectSubType::Decimal: {
         auto decimal = Conversions::unpack_decimal(oid);
 
         os << "{\"type\":\"literal\",\"value\":\"";
@@ -225,31 +200,35 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
         os << "\",\"datatype\":\"http://www.w3.org/2001/XMLSchema#decimal\"}";
         break;
     }
-    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
-    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
-    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+    case ObjectSubType::TensorFloat: {
         os << "{\"type\":\"literal\",\"value\":\"";
         os << Conversions::unpack_tensor<float>(oid);
         os << "\",\"datatype\":\"" << MDBExtensions::Type::TENSOR_FLOAT_IRI << "\"}";
         break;
     }
-    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
-    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
-    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+    case ObjectSubType::TensorDouble: {
         os << "{\"type\":\"literal\",\"value\":\"";
         os << Conversions::unpack_tensor<double>(oid);
         os << "\",\"datatype\":\"" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << "\"}";
         break;
     }
-    case RDF_OID::Type::NULL_ID: {
+    case ObjectSubType::Null: {
         // executor should not call print with NULL
         break;
     }
+    // Not expected in RDF Model
+    case ObjectSubType::NamedNode:
+    case ObjectSubType::Dictionary:
+    case ObjectSubType::List:
+    case ObjectSubType::Edge:
+    case ObjectSubType::NotFound:
+    case ObjectSubType::Invalid:
+        break;
     }
 }
 
-
-void JsonSelectExecutor::analyze(std::ostream& os, bool print_stats, int indent) const {
+void JsonSelectExecutor::analyze(std::ostream& os, bool print_stats, int indent) const
+{
     os << std::string(indent, ' ');
     os << "JsonSelectExecutor(";
     for (size_t i = 0; i < projection_vars.size(); i++) {

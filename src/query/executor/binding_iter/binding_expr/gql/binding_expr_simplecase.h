@@ -158,10 +158,7 @@ public:
                     case GQL_OID::GenericType::DATE: {
                         bool error;
                         is_match = DateTime(case_value)
-                                       .compare<DateTimeComparisonMode::StrictEquality>(
-                                           DateTime(when_value),
-                                           &error
-                                       )
+                                       .compare<DTCompare::StrictEq>(DateTime(when_value), &error)
                                 == 0;
                         break;
                     }

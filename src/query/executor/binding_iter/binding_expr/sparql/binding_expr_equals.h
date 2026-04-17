@@ -1,14 +1,14 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/parser/grammar/sparql/mdb_extensions.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <memory>
 #include <set>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/parser/grammar/sparql/mdb_extensions.h"
 
 namespace SPARQL {
 
@@ -71,11 +71,11 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_subtype = RDF_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_subtype = RDF_OID::get_generic_sub_type(rhs_oid);
+        auto lhs_subtype = lhs_oid.subtype();
+        auto rhs_subtype = rhs_oid.subtype();
 
-        auto lhs_generic_type = RDF_OID::get_generic_type(lhs_oid);
-        auto rhs_generic_type = RDF_OID::get_generic_type(rhs_oid);
+        auto lhs_generic_type = lhs_oid.generic_type();
+        auto rhs_generic_type = rhs_oid.generic_type();
 
         // Nulls are not equal to anything, including other nulls.
         if (lhs_oid.is_null() || rhs_oid.is_null()) {
@@ -85,12 +85,12 @@ public:
         // Check if the ids are equal
         if (lhs_oid == rhs_oid) {
             // For floats NaN != NaN, so we have to check for that case.
-            if (lhs_subtype == RDF_OID::GenericSubType::FLOAT) {
+            if (lhs_subtype == ObjectSubType::Float) {
                 auto f = Conversions::unpack_float(lhs_oid);
                 if (std::isnan(f)) {
                     return SPARQL::Conversions::pack_bool(false);
                 }
-            } else if (lhs_subtype == RDF_OID::GenericSubType::DOUBLE) {
+            } else if (lhs_subtype == ObjectSubType::Double) {
                 auto d = Conversions::unpack_double(lhs_oid);
                 if (std::isnan(d)) {
                     return SPARQL::Conversions::pack_bool(false);
@@ -100,9 +100,7 @@ public:
         }
 
         // If both types are numeric we need to do a numeric comparison
-        if (lhs_generic_type == RDF_OID::GenericType::NUMERIC
-            && rhs_generic_type == RDF_OID::GenericType::NUMERIC)
-        {
+        if (lhs_generic_type == ObjectGenType::Numeric && rhs_generic_type == ObjectGenType::Numeric) {
             auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
             case Conversions::OpType::INTEGER: {
@@ -134,12 +132,9 @@ public:
         }
 
         // Handle date, time, dateTime and dateTimeStamp
-        if (lhs_generic_type == RDF_OID::GenericType::DATE && rhs_generic_type == RDF_OID::GenericType::DATE)
-        {
+        if (lhs_generic_type == ObjectGenType::TemporalLiteral && rhs_generic_type == ObjectGenType::TemporalLiteral) {
             bool error;
-            auto res = DateTime(lhs_oid.id)
-                           .compare<DateTimeComparisonMode::StrictEquality>(DateTime(rhs_oid.id), &error)
-                    == 0;
+            auto res = DateTime(lhs_oid.id).compare<DTCompare::StrictEq>(DateTime(rhs_oid.id), &error) == 0;
             if (error) {
                 return ObjectId::get_null();
             }
@@ -147,9 +142,7 @@ public:
         }
 
         // Handle tensors
-        if (lhs_generic_type == RDF_OID::GenericType::TENSOR
-            && rhs_generic_type == RDF_OID::GenericType::TENSOR)
-        {
+        if (lhs_generic_type == ObjectGenType::Tensor && rhs_generic_type == ObjectGenType::Tensor) {
             const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
             case Conversions::OpType::TENSOR_FLOAT: {
@@ -174,7 +167,7 @@ public:
             // already have returned earlier.
 
             // We have to datatype with unknown semantics specially
-            if (lhs_subtype == RDF_OID::GenericSubType::STRING_DATATYPE) {
+            if (lhs_subtype == ObjectSubType::StringDatatype) {
                 auto&& [lhs_datatype, lhs_str] = Conversions::unpack_string_datatype(lhs_oid);
                 auto&& [rhs_datatype, rhs_str] = Conversions::unpack_string_datatype(rhs_oid);
                 // Check for ill-typed literals
@@ -193,7 +186,7 @@ public:
             }
 
             // We have to handle possible case difference of language tags
-            if (lhs_subtype == RDF_OID::GenericSubType::STRING_LANG) {
+            if (lhs_subtype == ObjectSubType::StringLang) {
                 auto&& [lhs_lang, lhs_str] = Conversions::unpack_string_lang(lhs_oid);
                 auto&& [rhs_lang, rhs_str] = Conversions::unpack_string_lang(rhs_oid);
 
@@ -211,22 +204,20 @@ public:
         }
 
         // We have to handle simple literals and xsd:string specially
-        if ((lhs_subtype == RDF_OID::GenericSubType::STRING_XSD
-             || lhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE)
-            && (rhs_subtype == RDF_OID::GenericSubType::STRING_XSD
-                || rhs_subtype == RDF_OID::GenericSubType::STRING_SIMPLE))
+        if ((lhs_subtype == ObjectSubType::StringXsd || lhs_subtype == ObjectSubType::String)
+            && (rhs_subtype == ObjectSubType::StringXsd || rhs_subtype == ObjectSubType::String))
         {
             auto equals = Conversions::to_lexical_str(lhs_oid) == Conversions::to_lexical_str(rhs_oid);
             return SPARQL::Conversions::pack_bool(equals);
         }
 
-        if (lhs_subtype == RDF_OID::GenericSubType::BLANK || lhs_subtype == RDF_OID::GenericSubType::IRI
-            || lhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_subtype == ObjectSubType::Anon || lhs_subtype == ObjectSubType::Iri
+            || lhs_subtype == ObjectSubType::StringLang)
         {
             return SPARQL::Conversions::pack_bool(false);
         }
-        if (rhs_subtype == RDF_OID::GenericSubType::BLANK || rhs_subtype == RDF_OID::GenericSubType::IRI
-            || rhs_subtype == RDF_OID::GenericSubType::STRING_LANG)
+        if (rhs_subtype == ObjectSubType::Anon || rhs_subtype == ObjectSubType::Iri
+            || rhs_subtype == ObjectSubType::StringLang)
         {
             return SPARQL::Conversions::pack_bool(false);
         }

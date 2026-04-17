@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprStrLang : public BindingExpr {
@@ -21,15 +21,13 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto expr1_subtype = RDF_OID::get_generic_sub_type(lhs_oid);
-        if (expr1_subtype != RDF_OID::GenericSubType::STRING_SIMPLE
-            && expr1_subtype != RDF_OID::GenericSubType::STRING_XSD)
-        {
+        auto expr1_subtype = lhs_oid.subtype();
+        if (expr1_subtype != ObjectSubType::String && expr1_subtype != ObjectSubType::StringXsd) {
             return ObjectId::get_null();
         }
 
-        auto expr2_subtype = RDF_OID::get_generic_sub_type(rhs_oid);
-        if (expr2_subtype != RDF_OID::GenericSubType::STRING_SIMPLE) {
+        auto expr2_subtype = rhs_oid.subtype();
+        if (expr2_subtype != ObjectSubType::String) {
             return ObjectId::get_null();
         }
 

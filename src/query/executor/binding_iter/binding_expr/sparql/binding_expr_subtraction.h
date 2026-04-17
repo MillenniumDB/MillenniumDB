@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "misc/tensor_oid_op.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprSubtraction : public BindingExpr {

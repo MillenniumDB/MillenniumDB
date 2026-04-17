@@ -20,14 +20,9 @@ void ReturnExecutor<ret>::print(std::ostream& os, ObjectId oid)
 template<ReturnType ret>
 void ReturnExecutor<ret>::print_handle_escape(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    const auto mask = oid.id & ObjectId::TYPE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_DICTIONARY:
-    case ObjectId::MASK_DICTIONARY_EXTERN:
-    case ObjectId::MASK_DICTIONARY_TMP:
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_EXTERN:
-    case ObjectId::MASK_LIST_TMP:
+    switch (oid.generic_type()) {
+    case ObjectGenType::Dict:
+    case ObjectGenType::List:
         os << '"';
         print(os, escaped_os, oid);
         os << '"';
@@ -77,67 +72,71 @@ void ReturnExecutor<ret>::print_list(std::ostream& os, std::ostream& escaped_os,
 template<ReturnType ret>
 void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    const auto mask = oid.id & ObjectId::TYPE_MASK;
+    const auto type = oid.type();
     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_NULL: {
+    switch (type) {
+    case ObjectType::Null: {
         os << "null";
         break;
     }
-    case ObjectId::MASK_ANON_INLINED: {
+    case ObjectType::AnonInl: {
         os << "_a" << unmasked_id;
         break;
     }
-    case ObjectId::MASK_NAMED_NODE_INLINED: {
+    case ObjectType::AnonTmp: {
+        os << "_t" << unmasked_id;
+        break;
+    }
+    case ObjectType::NamedNodeInl: {
         Inliner::print_string_inlined<7>(os, unmasked_id);
         break;
     }
-    case ObjectId::MASK_NAMED_NODE_EXTERN: {
+    case ObjectType::NamedNodeExt: {
         string_manager.print(os, unmasked_id);
         break;
     }
-    case ObjectId::MASK_NAMED_NODE_TMP: {
+    case ObjectType::NamedNodeTmp: {
         tmp_manager.print_str(os, unmasked_id);
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    case ObjectType::StringInl: {
         os << '"';
         Inliner::print_string_inlined<7>(escaped_os, unmasked_id);
         os << '"';
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         os << '"';
         string_manager.print(escaped_os, unmasked_id);
         os << '"';
         break;
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         os << '"';
         tmp_manager.print_str(escaped_os, unmasked_id);
         os << '"';
         break;
     }
-    case ObjectId::MASK_NEGATIVE_INT:
-    case ObjectId::MASK_POSITIVE_INT: {
+    case ObjectType::NegativeInt56:
+    case ObjectType::PositiveInt56: {
         int64_t i = Conversions::unpack_int(oid);
         os << i;
         break;
     }
-    case ObjectId::MASK_FLOAT: {
+    case ObjectType::Float: {
         float f = Conversions::unpack_float(oid);
         os << f;
         break;
     }
-    case ObjectId::MASK_BOOL: {
+    case ObjectType::Bool: {
         os << (unmasked_id == 0 ? "false" : "true");
         break;
     }
-    case ObjectId::MASK_EDGE: {
+    case ObjectType::Edge: {
         os << "_e" << unmasked_id;
         break;
     }
-    case ObjectId::MASK_PATH: {
+    case ObjectType::Path: {
         using namespace std::placeholders;
         os << '[';
         path_manager.for_each(
@@ -148,54 +147,53 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << ']';
         break;
     }
-    case ObjectId::MASK_DT_DATE: {
+    case ObjectType::Date: {
         DateTime datetime = SPARQL::Conversions::unpack_date(oid);
         os << "date(\"" << datetime.get_value_string() << "\")";
         break;
     }
-    case ObjectId::MASK_DT_DATETIME: {
+    case ObjectType::Datetime: {
         DateTime datetime = SPARQL::Conversions::unpack_date(oid);
         os << "dateTime(\"" << datetime.get_value_string() << "\")";
         break;
     }
-    case ObjectId::MASK_DT_DATETIMESTAMP: {
+    case ObjectType::Datetimestamp: {
         DateTime datetime = SPARQL::Conversions::unpack_date(oid);
         os << "dateTimeStamp(\"" << datetime.get_value_string() << "\")";
         break;
     }
-    case ObjectId::MASK_DT_TIME: {
+    case ObjectType::Time: {
         DateTime datetime = SPARQL::Conversions::unpack_date(oid);
         os << "time(\"" << datetime.get_value_string() << "\")";
         break;
     }
-    case ObjectId::MASK_TENSOR_FLOAT_INLINED:
-    case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
-    case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+    case ObjectType::TensorFloatInl:
+    case ObjectType::TensorFloatExt:
+    case ObjectType::TensorFloatTmp: {
         const auto tensor = Conversions::unpack_tensor<float>(oid);
         os << "tensorFloat(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
-    case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
-    case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+    case ObjectType::TensorDoubleInl:
+    case ObjectType::TensorDoubleExt:
+    case ObjectType::TensorDoubleTmp: {
         const auto tensor = Conversions::unpack_tensor<double>(oid);
         os << "tensorDouble(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_EXTERN:
-    case ObjectId::MASK_LIST_TMP: {
+    case ObjectType::ListExt:
+    case ObjectType::ListTmp: {
         print_list(os, escaped_os, oid);
         break;
     }
-    case ObjectId::MASK_DICTIONARY:
-    case ObjectId::MASK_DICTIONARY_TMP: {
+    case ObjectType::DictionaryExt:
+    case ObjectType::DictionaryTmp: {
         std::unique_ptr<Dictionary> dict = Common::Conversions::unpack_dictionary(oid);
         dict->to_string(escaped_os);
         break;
     }
     default:
-        throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + std::to_string(mask));
+        throw std::logic_error("Unmanaged mask in ReturnExecutor print: " + to_string(type));
     }
 }
 

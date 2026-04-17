@@ -1,12 +1,12 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <cstdio>
 #include <memory>
 
 #include <openssl/sha.h>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprSHA384 : public BindingExpr {
@@ -21,8 +21,8 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::String: {
             auto str = Conversions::unpack_string(expr_oid);
             unsigned char hash_bytes_buffer[SHA384_DIGEST_LENGTH + 1];
             auto hash_bytes = SHA384((const unsigned char*) str.data(), str.size(), hash_bytes_buffer);

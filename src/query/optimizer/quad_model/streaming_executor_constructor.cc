@@ -26,7 +26,7 @@ void StreamingExecutorConstructor::visit(OpDescribe& op_describe)
     auto var1 = get_query_ctx().get_internal_var();
     auto var2 = get_query_ctx().get_internal_var();
 
-    const bool is_edge = object_id.get_type() & ObjectId::MASK_EDGE;
+    const bool is_edge = object_id.type() == ObjectType::Edge;
 
     if (is_edge) {
         std::vector<VarId> virtual_vars = { var0, var1 };

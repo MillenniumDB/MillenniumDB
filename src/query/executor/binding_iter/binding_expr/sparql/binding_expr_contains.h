@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <string>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
+#include <string>
 
 namespace SPARQL {
 class BindingExprContains : public BindingExpr {
@@ -22,35 +22,29 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_sub = RDF_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_sub = RDF_OID::get_generic_sub_type(rhs_oid);
+        auto lhs_sub = lhs_oid.subtype();
+        auto rhs_sub = rhs_oid.subtype();
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
-            && lhs_sub != RDF_OID::GenericSubType::STRING_XSD
-            && lhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_sub != ObjectSubType::String && lhs_sub != ObjectSubType::StringXsd
+            && lhs_sub != ObjectSubType::StringLang)
         {
             return ObjectId::get_null();
         }
 
-        if (rhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
-            && rhs_sub != RDF_OID::GenericSubType::STRING_XSD
-            && rhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (rhs_sub != ObjectSubType::String && rhs_sub != ObjectSubType::StringXsd
+            && rhs_sub != ObjectSubType::StringLang)
         {
             return ObjectId::get_null();
         }
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_LANG
-            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
-        {
+        if (lhs_sub != ObjectSubType::StringLang && rhs_sub == ObjectSubType::StringLang) {
             return ObjectId::get_null();
         }
 
         std::string lhs_str;
         std::string rhs_str;
 
-        if (lhs_sub == RDF_OID::GenericSubType::STRING_LANG
-            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
-        {
+        if (lhs_sub == ObjectSubType::StringLang && rhs_sub == ObjectSubType::StringLang) {
             auto [lhs_l, lhs_s] = Conversions::unpack_string_lang(lhs_oid);
             auto [rhs_l, rhs_s] = Conversions::unpack_string_lang(rhs_oid);
             if (lhs_l != rhs_l) {

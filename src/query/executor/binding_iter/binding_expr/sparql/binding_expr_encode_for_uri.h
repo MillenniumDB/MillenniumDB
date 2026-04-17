@@ -1,12 +1,12 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <iomanip>
 #include <memory>
 #include <sstream>
 #include <string>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprEncodeForUri : public BindingExpr {
@@ -23,13 +23,13 @@ public:
 
         std::string str;
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             str = Conversions::unpack_string(expr_oid);
             break;
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto&& [l, s] = Conversions::unpack_string_lang(expr_oid);
             str = s;
             break;

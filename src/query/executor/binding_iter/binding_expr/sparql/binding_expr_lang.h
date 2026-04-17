@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprLang : public BindingExpr {
@@ -18,28 +18,28 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::StringLang: {
             auto&& [lang, str] = Conversions::unpack_string_lang(expr_oid);
             return Conversions::pack_string_simple(lang);
         }
-        case RDF_OID::GenericSubType::INTEGER:
-        case RDF_OID::GenericSubType::FLOAT:
-        case RDF_OID::GenericSubType::DOUBLE:
-        case RDF_OID::GenericSubType::DECIMAL:
-        case RDF_OID::GenericSubType::DATE:
-        case RDF_OID::GenericSubType::BOOL:
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD:
-        case RDF_OID::GenericSubType::STRING_DATATYPE: {
+        case ObjectSubType::Int:
+        case ObjectSubType::Float:
+        case ObjectSubType::Double:
+        case ObjectSubType::Decimal:
+        case ObjectSubType::TemporalLiteral:
+        case ObjectSubType::Bool:
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd:
+        case ObjectSubType::StringDatatype: {
             return Conversions::pack_empty_string();
         }
-        case RDF_OID::GenericSubType::NULL_ID:
-        case RDF_OID::GenericSubType::BLANK:
-        case RDF_OID::GenericSubType::IRI:
-        case RDF_OID::GenericSubType::PATH:
-        case RDF_OID::GenericSubType::TENSOR_DOUBLE:
-        case RDF_OID::GenericSubType::TENSOR_FLOAT:
+        case ObjectSubType::Null:
+        case ObjectSubType::Anon:
+        case ObjectSubType::Iri:
+        case ObjectSubType::Path:
+        case ObjectSubType::TensorDouble:
+        case ObjectSubType::TensorFloat:
             return ObjectId::get_null();
         default:
             assert(false);

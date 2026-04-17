@@ -24,57 +24,39 @@ void escape(std::ostream& os, const std::string& string) {
 }
 
 void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
-    switch (RDF_OID::get_type(oid)) {
-    case RDF_OID::Type::NULL_ID: {
+    switch (oid.subtype()) {
+    case ObjectSubType::Null: {
         os << "null";
         break;
     }
-    case RDF_OID::Type::BLANK_INLINED: {
-        os << "_:b";
+    case ObjectSubType::Anon: {
+        if (oid.type() == ObjectType::AnonInl) {
+            os << "_:b";
+        } else {
+            os << "_:c";
+        }
         os << Conversions::unpack_blank(oid);
         break;
     }
-    case RDF_OID::Type::BLANK_TMP: {
-        os << "_:c";
-        os << Conversions::unpack_blank(oid);
-        break;
-    }
-    case RDF_OID::Type::IRI_INLINE:
-    case RDF_OID::Type::IRI_INLINE_INT_SUFFIX:
-    case RDF_OID::Type::IRI_EXTERN:
-    case RDF_OID::Type::IRI_TMP:
-    case RDF_OID::Type::IRI_UUID_LOWER:
-    case RDF_OID::Type::IRI_UUID_LOWER_TMP:
-    case RDF_OID::Type::IRI_UUID_UPPER:
-    case RDF_OID::Type::IRI_UUID_UPPER_TMP:
-    case RDF_OID::Type::IRI_HEX_LOWER:
-    case RDF_OID::Type::IRI_HEX_LOWER_TMP:
-    case RDF_OID::Type::IRI_HEX_UPPER:
-    case RDF_OID::Type::IRI_HEX_UPPER_TMP: {
+    case ObjectSubType::Iri: {
         os << '<';
         escape(os, Conversions::unpack_iri(oid));
         os << '>';
         break;
     }
-    case RDF_OID::Type::STRING_SIMPLE_INLINE:
-    case RDF_OID::Type::STRING_SIMPLE_EXTERN:
-    case RDF_OID::Type::STRING_SIMPLE_TMP: {
+    case ObjectSubType::String: {
         os << '"';
         escape(os, Conversions::unpack_string(oid));
         os << '"';
         break;
     }
-    case RDF_OID::Type::STRING_XSD_INLINE:
-    case RDF_OID::Type::STRING_XSD_EXTERN:
-    case RDF_OID::Type::STRING_XSD_TMP:{
+    case ObjectSubType::StringXsd:{
         os << '"';
         escape(os, Conversions::unpack_string(oid));
         os << "\"^^<http://www.w3.org/2001/XMLSchema#string>";
         break;
     }
-    case RDF_OID::Type::STRING_DATATYPE_INLINE:
-    case RDF_OID::Type::STRING_DATATYPE_EXTERN:
-    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+    case ObjectSubType::StringDatatype: {
         auto&& [dtt, str] = Conversions::unpack_string_datatype(oid);
 
         os << '"';
@@ -84,9 +66,7 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
         os << '>';
         break;
     }
-    case RDF_OID::Type::STRING_LANG_INLINE:
-    case RDF_OID::Type::STRING_LANG_EXTERN:
-    case RDF_OID::Type::STRING_LANG_TMP: {
+    case ObjectSubType::StringLang: {
         auto&& [lang, str] = Conversions::unpack_string_lang(oid);
         os << '"';
         escape(os, str);
@@ -94,20 +74,16 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
         os << lang;
         break;
     }
-    case RDF_OID::Type::INT56_INLINE:
-    case RDF_OID::Type::INT64_EXTERN:
-    case RDF_OID::Type::INT64_TMP: {
+    case ObjectSubType::Int: {
         os << Conversions::unpack_int(oid);
         break;
     }
-    case RDF_OID::Type::DECIMAL_INLINE:
-    case RDF_OID::Type::DECIMAL_EXTERN:
-    case RDF_OID::Type::DECIMAL_TMP: {
+    case ObjectSubType::Decimal: {
         auto decimal = Conversions::unpack_decimal(oid);
         os << decimal;
         break;
     }
-    case RDF_OID::Type::FLOAT32: {
+    case ObjectSubType::Float: {
         float f = Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -116,8 +92,7 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
         os << '"' << float_buffer <<"\"^^<http://www.w3.org/2001/XMLSchema#float>";
         break;
     }
-    case RDF_OID::Type::DOUBLE64_EXTERN:
-    case RDF_OID::Type::DOUBLE64_TMP: {
+    case ObjectSubType::Double: {
         double d = Conversions::unpack_double(oid);
 
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
@@ -126,36 +101,35 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
         os << double_buffer;
         break;
     }
-    case RDF_OID::Type::DATE:
-    case RDF_OID::Type::DATETIME:
-    case RDF_OID::Type::TIME:
-    case RDF_OID::Type::DATETIMESTAMP: {
+    case ObjectSubType::TemporalLiteral: {
         DateTime datetime = Conversions::unpack_date(oid);
 
         os << '"' << datetime.get_value_string();
         os << "\"^^<" << datetime.get_datatype_string() << ">";
         break;
     }
-    case RDF_OID::Type::BOOL: {
+    case ObjectSubType::Bool: {
         os << (Conversions::unpack_bool(oid) ? "true" : "false");
         break;
     }
-    case RDF_OID::Type::TENSOR_FLOAT_INLINE:
-    case RDF_OID::Type::TENSOR_FLOAT_EXTERN:
-    case RDF_OID::Type::TENSOR_FLOAT_TMP: {
+    case ObjectSubType::TensorFloat: {
         os << '"' << Conversions::unpack_tensor<float>(oid);
         os << "\"^^<" << MDBExtensions::Type::TENSOR_FLOAT_IRI << ">";
         break;
     }
-    case RDF_OID::Type::TENSOR_DOUBLE_INLINE:
-    case RDF_OID::Type::TENSOR_DOUBLE_EXTERN:
-    case RDF_OID::Type::TENSOR_DOUBLE_TMP: {
+    case ObjectSubType::TensorDouble: {
         os << '"' << Conversions::unpack_tensor<double>(oid);
         os << "\"^^<" << MDBExtensions::Type::TENSOR_DOUBLE_IRI << ">";
         break;
     }
-    case RDF_OID::Type::PATH:
+    case ObjectSubType::Path:
         // paths are not defined in TTL
+    case ObjectSubType::Dictionary:
+    case ObjectSubType::List:
+    case ObjectSubType::NamedNode:
+    case ObjectSubType::Edge:
+    case ObjectSubType::NotFound:
+    case ObjectSubType::Invalid:
         break;
     }
 }

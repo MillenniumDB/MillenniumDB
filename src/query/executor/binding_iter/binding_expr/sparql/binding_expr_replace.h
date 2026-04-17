@@ -1,11 +1,11 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <codecvt>
 #include <memory>
 #include <regex>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace SPARQL {
 class BindingExprReplace : public BindingExpr {
@@ -46,14 +46,10 @@ public:
         std::string expr3_str;
         std::string expr4_str;
 
-        if (RDF_OID::get_generic_sub_type(expr2_oid) != RDF_OID::GenericSubType::STRING_SIMPLE
-            || RDF_OID::get_generic_sub_type(expr3_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
-        {
+        if (expr2_oid.subtype() != ObjectSubType::String || expr3_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
-        if (expr4 != nullptr
-            && RDF_OID::get_generic_sub_type(expr4_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
-        {
+        if (expr4 != nullptr && expr4_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
 
@@ -88,14 +84,14 @@ public:
         std::wstring key = std_string_to_wstring(expr2_str);
         std::wregex reg(key, flags);
 
-        switch (RDF_OID::get_generic_sub_type(expr1_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        switch (expr1_oid.subtype()) {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             auto expr1_str = Conversions::unpack_string(expr1_oid);
             auto res = replace(expr1_str, reg, expr3_str);
             return Conversions::pack_string_simple(res);
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto&& [lang, expr1_str] = Conversions::unpack_string_lang(expr1_oid);
             auto res = replace(expr1_str, reg, expr3_str);
             return Conversions::pack_string_lang(lang, res);

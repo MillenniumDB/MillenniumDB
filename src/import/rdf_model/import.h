@@ -1,13 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-
-#include <boost/unordered/unordered_flat_set.hpp>
-#include <boost/unordered/unordered_map.hpp>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/iri_compression.h"
 #include "graph_models/rdf_model/iri_prefixes.h"
@@ -19,6 +11,14 @@
 
 #include "third_party/serd/reader.h"
 #include "third_party/serd/serd.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+
+#include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/unordered/unordered_map.hpp>
 
 namespace Import { namespace Rdf {
 using namespace SPARQL;
@@ -179,7 +179,7 @@ private:
         auto object_str = reinterpret_cast<const char*>(object->buf);
         auto size = object->n_bytes;
 
-        if (size <= RDF_OID::MAX_INLINE_LEN_STRING) {
+        if (size <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = Conversions::pack_string_simple_inline(object_str);
         } else {
             object_id.id = external_helper->get_or_create_external_string_id(object_str, size)
@@ -282,7 +282,7 @@ private:
         // String: xsd:string
         else if (strcmp(xsd_suffix, "string") == 0)
         {
-            if (str_size <= RDF_OID::MAX_INLINE_LEN_STRING) {
+            if (str_size <= ObjectId::MAX_LEN_INLINE_STRING) {
                 object_id = Conversions::pack_string_xsd_inline(str);
             } else {
                 object_id.id = external_helper->get_or_create_external_string_id(str, str_size)
@@ -411,7 +411,7 @@ private:
         auto lang_str = reinterpret_cast<const char*>(lang->buf);
         auto lang_id = get_lang_id(lang_str);
 
-        if (object_size <= RDF_OID::MAX_INLINE_LEN_STRING_LANG) {
+        if (object_size <= ObjectId::MAX_LEN_INLINE_STRING_LANG) {
             object_id = Conversions::pack_string_lang_inline(lang_id, object_str);
         } else {
             object_id.id = external_helper->get_or_create_external_string_id(object_str, object_size)
@@ -467,7 +467,7 @@ private:
             }
         }
 
-        if (str_len <= RDF_OID::MAX_INLINE_LEN_IRI) {
+        if (str_len <= ObjectId::MAX_LEN_INLINE_IRI) {
             return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
         } else {
             return ObjectId(

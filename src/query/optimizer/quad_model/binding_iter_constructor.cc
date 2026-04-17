@@ -568,7 +568,7 @@ bool BindingIterConstructor::term_exists(ObjectId term) const
     bool interruption_requested = false;
     if (term.is_not_found()) {
         return false;
-    } else if ((term.id & ObjectId::TYPE_MASK) == ObjectId::MASK_EDGE) {
+    } else if (term.type() == ObjectType::Edge) {
         Record<4> max = { term.id, 0, 0, 0 };
         Record<4> min = { term.id, UINT64_MAX, UINT64_MAX, UINT64_MAX };
         auto it = quad_model.edge_from_to_type->get_range(&interruption_requested, min, max);

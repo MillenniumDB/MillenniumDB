@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprIRI : public BindingExpr {
@@ -21,12 +21,12 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::IRI: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::Iri: {
             // IRIs remain unchanged
             return expr_oid;
         }
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        case ObjectSubType::String: {
             // Strings are converted to IRIs
             std::string str = Conversions::unpack_string(expr_oid);
             if (str.find(':') == std::string::npos) {

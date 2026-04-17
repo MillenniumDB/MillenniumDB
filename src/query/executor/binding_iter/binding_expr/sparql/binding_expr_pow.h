@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cmath>
-#include <memory>
-
 #include "graph_models/common/conversions.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cmath>
+#include <memory>
 
 namespace SPARQL {
 class BindingExprPow : public BindingExpr {
@@ -21,8 +21,8 @@ public:
     template<typename T>
     inline ObjectId handle_pow_tensors(ObjectId lhs_oid, ObjectId rhs_oid)
     {
-        if (RDF_OID::get_generic_type(lhs_oid) != RDF_OID::GenericType::TENSOR
-            || RDF_OID::get_generic_type(rhs_oid) != RDF_OID::GenericType::NUMERIC)
+        if (lhs_oid.generic_type() != ObjectGenType::Tensor
+            || rhs_oid.generic_type() != ObjectGenType::Numeric)
         {
             // Only tensor to the power of a scalar is allowed
             return ObjectId::get_null();

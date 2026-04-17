@@ -95,22 +95,19 @@ void TextSearchMultiScan::eval_arguments()
 {
     valid_arguments = false;
     const auto name_oid = argument_binding_exprs[0]->eval(*parent_binding);
-    const auto name_gen_t = name_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (name_gen_t != ObjectId::MASK_STRING) {
+    if (name_oid.generic_type() != ObjectGenType::String) {
         return;
     }
     index_name = unpack_string_func_ptr(name_oid);
 
     const auto query_oid = argument_binding_exprs[1]->eval(*parent_binding);
-    const auto query_gen_t = query_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (query_gen_t != ObjectId::MASK_STRING) {
+    if (query_oid.generic_type() != ObjectGenType::String) {
         return;
     }
     query = unpack_string_func_ptr(query_oid);
 
     const auto search_type_oid = argument_binding_exprs[2]->eval(*parent_binding);
-    const auto search_type_gen_t = search_type_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (search_type_gen_t != ObjectId::MASK_STRING) {
+    if (search_type_oid.generic_type() != ObjectGenType::String) {
         return;
     }
     const std::string search_type_str = unpack_string_func_ptr(search_type_oid);

@@ -4,20 +4,151 @@
 #include <ostream>
 #include <type_traits>
 
+enum class ObjectGenType {
+    Null,
+    Bool,
+    TemporalLiteral,
+    String,
+    Numeric,
+    Tensor,
+    List,
+    Dict,
+
+    // MQL
+    Anon, // TODO: maybe just use Node as NamedNode, Anon
+    NamedNode,
+    Edge,
+    Path,
+
+    // RDF
+    Iri,
+
+    NotFound,
+    Invalid
+};
+
+
+enum class ObjectSubType {
+    Null,
+    Bool,
+    Int,
+    Float,
+    Double,
+    Decimal,
+    TemporalLiteral, // Time, Date, DateTime, DateTimestamp,
+    String,
+    StringXsd,
+    StringLang,
+    StringDatatype,
+    TensorFloat,
+    TensorDouble,
+    Dictionary,
+    List,
+
+    // MQL
+    Anon,
+    NamedNode,
+    Edge,
+    Path,
+
+    // RDF
+    Iri,
+
+    NotFound,
+    Invalid
+};
+
+enum class ObjectType {
+    Null,
+
+    AnonInl, // also represents blank inlined in RDF, or node in GQL
+    AnonTmp, // TODO: decide on how to print in quad model?
+
+    Bool,
+    NegativeInt56,
+    PositiveInt56,
+    Float,
+
+    DoubleExt,
+    DoubleTmp,
+
+    DecimalInl,
+    DecimalExt,
+    DecimalTmp,
+
+    StringInl,
+    StringExt,
+    StringTmp,
+
+    StringXsdInl,
+    StringXsdExt,
+    StringXsdTmp,
+
+    StringLangInl,
+    StringLangExt,
+    StringLangTmp,
+
+    StringDatatypeInl,
+    StringDatatypeExt,
+    StringDatatypeTmp,
+
+    IriInl,
+    IriExt,
+    IriTmp,
+
+    IriUuidLowerTmp,
+    IriUuidLowerExt,
+    IriUuidUpperTmp,
+    IriUuidUpperExt,
+
+    IriHexLowerTmp,
+    IriHexLowerExt,
+    IriHexUpperTmp,
+    IriHexUpperExt,
+
+    NamedNodeInl,
+    NamedNodeExt,
+    NamedNodeTmp,
+
+    Time,
+    Date,
+    Datetime,
+    Datetimestamp,
+
+    TensorFloatInl,
+    TensorFloatExt,
+    TensorFloatTmp,
+
+    TensorDoubleInl,
+    TensorDoubleExt,
+    TensorDoubleTmp,
+
+    DictionaryExt,
+    DictionaryTmp,
+
+    ListExt,
+    ListTmp,
+
+    Edge,
+    Path,
+
+    NotFound,
+    Invalid,
+};
+
+std::string to_string(ObjectType type);
+std::string to_string(ObjectSubType type);
+std::string to_string(ObjectGenType type);
+
 class ObjectId {
 public:
-    // [4 bits generic type][2 bits sub type][2 bits mod]
-    // MOD:
-    // inline   0b00
-    // external 0b01
-    // tmp      0b10
-    // or sub-type differentiation
+    static constexpr int MAX_LEN_INLINE_STRING = 7;
+    static constexpr int MAX_LEN_INLINE_STRING_DATATYPE = 5;
+    static constexpr int MAX_LEN_INLINE_STRING_LANG = 5;
+    static constexpr int MAX_LEN_INLINE_IRI = 6;
 
     static constexpr uint64_t VALUE_MASK        = 0x00'FFFFFFFFFFFFFFUL;
-
     static constexpr uint64_t TYPE_MASK         = 0xFF'00000000000000UL; // 0b1111'11'11
-    static constexpr uint64_t SUB_TYPE_MASK     = 0xFC'00000000000000UL; // 0b1111'11'00
-    static constexpr uint64_t GENERIC_TYPE_MASK = 0xF0'00000000000000UL; // 0b1111'00'00
 
     static constexpr uint64_t MOD_MASK          = 0x03'00000000000000UL; // 0b0000'00'11
     static constexpr uint64_t MOD_INLINE        = 0x00'00000000000000UL; // 0b0000'00'00
@@ -36,9 +167,6 @@ public:
     static constexpr int STR_DT_INLINE_BYTES     = 5; // Number of bytes of string, excluding datatype id, stored inline
     static constexpr int STR_LANG_INLINE_BYTES   = 5; // Number of bytes of string, excluding language id, stored inline
 
-
-    //                                                               Indicates mask to apply before comparing
-    //                                                                                                  V
     static constexpr uint64_t MASK_NULL                    = 0x00'00000000000000UL; // 0b0000'00'00  GENERIC
 
     static constexpr uint64_t MASK_ANON                    = 0x10'00000000000000UL; // 0b0001'00'00  GENERIC/SUBTYPE
@@ -49,6 +177,9 @@ public:
     static constexpr uint64_t MASK_NAMED_NODE_INLINED      = 0x20'00000000000000UL; // 0b0010'00'00    TYPE
     static constexpr uint64_t MASK_NAMED_NODE_EXTERN       = 0x21'00000000000000UL; // 0b0010'00'01    TYPE
     static constexpr uint64_t MASK_NAMED_NODE_TMP          = 0x22'00000000000000UL; // 0b0010'00'10    TYPE
+
+    static constexpr uint64_t MASK_NAMED_NODE_HEX_EXTERN   = 0x25'00000000000000UL; // 0b0010'01'01    TYPE
+    static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP      = 0x26'00000000000000UL; // 0b0010'01'10    TYPE
 
     static constexpr uint64_t MASK_IRI                     = 0x30'00000000000000UL; // 0b0011'00'00  GENERIC
     static constexpr uint64_t MASK_IRI_INLINED             = 0x30'00000000000000UL; // 0b0011'00'00    TYPE
@@ -172,12 +303,24 @@ public:
         return ObjectId(MASK_NOT_FOUND);
     }
 
-    inline uint64_t get_type() const noexcept {
-        return id & TYPE_MASK;
+    inline ObjectType type() const noexcept {
+        // TODO:
+        return ObjectType::Invalid;
+        // return id & TYPE_MASK;
     }
 
-    inline uint64_t get_sub_type() const noexcept {
-        return id & SUB_TYPE_MASK;
+    inline ObjectGenType generic_type() const noexcept {
+        // return id & SUB_TYPE_MASK;
+        // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
+        // TODO:
+        return ObjectGenType::Invalid;
+    }
+
+    inline ObjectSubType subtype() const noexcept {
+        // return id & SUB_TYPE_MASK;
+        // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
+        // TODO:
+        return ObjectSubType::Invalid;
     }
 
     inline uint64_t get_mod() const noexcept {
@@ -212,8 +355,8 @@ public:
         // Any other future "invalid" types should be added here.
         // Invalid types are those that should be skipped in contexts
         // such as aggregation functions.
-        auto type = id & GENERIC_TYPE_MASK;
-        return (type != MASK_NULL && type != MASK_NOT_FOUND);
+        auto generic_type = this->generic_type();
+        return (generic_type != ObjectGenType::Null && generic_type != ObjectGenType::NotFound);
     }
 
     inline bool operator==(const ObjectId& rhs) const noexcept {

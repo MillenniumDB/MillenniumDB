@@ -1,15 +1,15 @@
 #pragma once
 
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+#include "query/parser/expr/sparql/builtin_call/expr_cast.h"
+
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
-
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
-#include "query/parser/expr/sparql/builtin_call/expr_cast.h"
 
 // https://www.w3.org/TR/sparql11-query/#FunctionMapping
 
@@ -30,15 +30,13 @@ public:
         if (oid.is_null()) {
             return oid;
         }
-
-        auto subtype = RDF_OID::get_generic_sub_type(oid);
-
+        auto subtype = oid.subtype();
         switch (subtype) {
-        case RDF_OID::GenericSubType::STRING_XSD:
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             switch (cast_type) {
             case CastType::xsd_string: {
-                if (subtype == RDF_OID::GenericSubType::STRING_XSD) {
+                if (subtype == ObjectSubType::StringXsd) {
                     return oid;
                 }
                 return Conversions::string_simple_to_xsd(oid);
@@ -132,7 +130,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::FLOAT: {
+        case ObjectSubType::Float: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -177,7 +175,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::DOUBLE: {
+        case ObjectSubType::Double: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -222,7 +220,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::DECIMAL: {
+        case ObjectSubType::Decimal: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -251,7 +249,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::INTEGER: {
+        case ObjectSubType::Int: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -276,7 +274,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::DATE: {
+        case ObjectSubType::TemporalLiteral: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -286,7 +284,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::BOOL: {
+        case ObjectSubType::Bool: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_simple(Conversions::to_lexical_str(oid));
@@ -315,7 +313,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::IRI: {
+        case ObjectSubType::Iri: {
             switch (cast_type) {
             case CastType::xsd_string:
                 return Conversions::pack_string_xsd(Conversions::to_lexical_str(oid));
@@ -323,7 +321,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::TENSOR_FLOAT: {
+        case ObjectSubType::TensorFloat: {
             switch (cast_type) {
             case CastType::xsd_boolean:
                 return Conversions::to_boolean(oid);
@@ -339,7 +337,7 @@ public:
                 return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::TENSOR_DOUBLE: {
+        case ObjectSubType::TensorDouble: {
             switch (cast_type) {
             case CastType::xsd_boolean:
                 return Conversions::to_boolean(oid);

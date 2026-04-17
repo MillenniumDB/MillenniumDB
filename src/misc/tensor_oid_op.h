@@ -22,12 +22,12 @@ inline ObjectId op_oid_tensor(
     ScalarTensorOp scalar_tensor_op
 )
 {
-    const auto lhs_generic_type = lhs_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    const auto rhs_generic_type = rhs_oid.id & ObjectId::GENERIC_TYPE_MASK;
+    const auto lhs_generic_type = lhs_oid.generic_type();
+    const auto rhs_generic_type = rhs_oid.generic_type();
 
-    if (lhs_generic_type == ObjectId::MASK_TENSOR) {
+    if (lhs_generic_type == ObjectGenType::Tensor) {
         auto lhs = Common::Conversions::to_tensor<T>(lhs_oid);
-        if (rhs_generic_type == ObjectId::MASK_TENSOR) {
+        if (rhs_generic_type == ObjectGenType::Tensor) {
             auto rhs = Common::Conversions::to_tensor<T>(rhs_oid);
             tensor_tensor_op(lhs, rhs);
         } else {
@@ -51,9 +51,15 @@ inline ObjectId add_oid_tensor(ObjectId lhs, ObjectId rhs, ToScalarFunc to_scala
         lhs,
         rhs,
         to_scalar_func,
-        [](auto& lhs_tensor, const auto& rhs_tensor) { lhs_tensor.inplace_add_tensor(rhs_tensor); },
-        [](auto& lhs_tensor, T rhs_scalar) { lhs_tensor.inplace_add_scalar(rhs_scalar); },
-        [](T lhs_scalar, auto& rhs_tensor) { rhs_tensor.inplace_add_scalar(lhs_scalar); }
+        [](auto& lhs_tensor, const auto& rhs_tensor) {
+            lhs_tensor.inplace_add_tensor(rhs_tensor);
+        },
+        [](auto& lhs_tensor, T rhs_scalar) {
+            lhs_tensor.inplace_add_scalar(rhs_scalar);
+        },
+        [](T lhs_scalar, auto& rhs_tensor) {
+            rhs_tensor.inplace_add_scalar(lhs_scalar);
+        }
     );
 }
 
@@ -64,9 +70,15 @@ inline ObjectId sub_oid_tensor(ObjectId lhs, ObjectId rhs, ToScalarFunc to_scala
         lhs,
         rhs,
         to_scalar_func,
-        [](auto& lhs_tensor, const auto& rhs_tensor) { lhs_tensor.inplace_sub_tensor(rhs_tensor); },
-        [](auto& lhs_tensor, T rhs_scalar) { lhs_tensor.inplace_sub_scalar_rhs(rhs_scalar); },
-        [](T lhs_scalar, auto& rhs_tensor) { rhs_tensor.inplace_sub_scalar_lhs(lhs_scalar); }
+        [](auto& lhs_tensor, const auto& rhs_tensor) {
+            lhs_tensor.inplace_sub_tensor(rhs_tensor);
+        },
+        [](auto& lhs_tensor, T rhs_scalar) {
+            lhs_tensor.inplace_sub_scalar_rhs(rhs_scalar);
+        },
+        [](T lhs_scalar, auto& rhs_tensor) {
+            rhs_tensor.inplace_sub_scalar_lhs(lhs_scalar);
+        }
     );
 }
 
@@ -77,9 +89,15 @@ inline ObjectId mul_oid_tensor(ObjectId lhs, ObjectId rhs, ToScalarFunc to_scala
         lhs,
         rhs,
         to_scalar_func,
-        [](auto& lhs_tensor, const auto& rhs_tensor) { lhs_tensor.inplace_mul_tensor(rhs_tensor); },
-        [](auto& lhs_tensor, T rhs_scalar) { lhs_tensor.inplace_mul_scalar(rhs_scalar); },
-        [](T lhs_scalar, auto& rhs_tensor) { rhs_tensor.inplace_mul_scalar(lhs_scalar); }
+        [](auto& lhs_tensor, const auto& rhs_tensor) {
+            lhs_tensor.inplace_mul_tensor(rhs_tensor);
+        },
+        [](auto& lhs_tensor, T rhs_scalar) {
+            lhs_tensor.inplace_mul_scalar(rhs_scalar);
+        },
+        [](T lhs_scalar, auto& rhs_tensor) {
+            rhs_tensor.inplace_mul_scalar(lhs_scalar);
+        }
     );
 }
 
@@ -90,9 +108,15 @@ inline ObjectId div_oid_tensor(ObjectId lhs, ObjectId rhs, ToScalarFunc to_scala
         lhs,
         rhs,
         to_scalar_func,
-        [](auto& lhs_tensor, const auto& rhs_tensor) { lhs_tensor.inplace_div_tensor(rhs_tensor); },
-        [](auto& lhs_tensor, T rhs_scalar) { lhs_tensor.inplace_div_scalar_rhs(rhs_scalar); },
-        [](T lhs_scalar, auto& rhs_tensor) { rhs_tensor.inplace_div_scalar_lhs(lhs_scalar); }
+        [](auto& lhs_tensor, const auto& rhs_tensor) {
+            lhs_tensor.inplace_div_tensor(rhs_tensor);
+        },
+        [](auto& lhs_tensor, T rhs_scalar) {
+            lhs_tensor.inplace_div_scalar_rhs(rhs_scalar);
+        },
+        [](T lhs_scalar, auto& rhs_tensor) {
+            rhs_tensor.inplace_div_scalar_lhs(lhs_scalar);
+        }
     );
 }
 

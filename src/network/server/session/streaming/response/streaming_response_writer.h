@@ -1,10 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <ostream>
-#include <string>
-#include <vector>
-
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/object_id.h"
@@ -13,6 +8,11 @@
 #include "query/executor/binding.h"
 #include "query/var_id.h"
 #include "storage/dictionary/dictionary.h"
+
+#include <cstdint>
+#include <ostream>
+#include <string>
+#include <vector>
 
 namespace MDBServer {
 
@@ -23,7 +23,7 @@ namespace MDBServer {
 class StreamingResponseWriter {
 public:
     // Write any object id to the response_ostream
-    virtual void write_object_id(const ObjectId& oid) = 0;
+    virtual void write_object_id(ObjectId oid) = 0;
 
     virtual uint64_t get_model_id() const = 0;
 

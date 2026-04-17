@@ -1,4 +1,6 @@
 #ifndef NO_MDB_CLI
+#define _XOPEN_SOURCE 700
+
 #include "cli.h"
 
 #include <codecvt>
@@ -17,7 +19,6 @@
 #include "query/parser/mql_query_parser.h"
 #include "query/parser/sparql_query_parser.h"
 
-#define _XOPEN_SOURCE 700
 #ifdef __APPLE__
 #include <curses.h>
 #elif __linux

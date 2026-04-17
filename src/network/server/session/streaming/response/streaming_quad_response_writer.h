@@ -28,111 +28,105 @@ public:
         write_typed_string(str, Protocol::DataType::STRING);
     }
 
-    void write_object_id(const ObjectId& oid) override
+    void write_object_id(ObjectId oid) override
     {
-        const auto type = oid.get_type();
         const auto value = oid.get_value();
-        switch (type) {
-        case ObjectId::MASK_NULL: {
+        switch (oid.subtype()) {
+        case ObjectSubType::Null: {
             write_null();
             break;
         }
-        case ObjectId::MASK_ANON_INLINED:
-        case ObjectId::MASK_ANON_TMP: {
-            const auto anon_id = MQL::Conversions::unpack_blank(oid);
+        case ObjectSubType::Anon: {
+            const auto anon_id = MQL::Conversions::unpack_anon(oid);
             write_anon(anon_id);
             break;
         }
-        case ObjectId::MASK_NAMED_NODE_INLINED:
-        case ObjectId::MASK_NAMED_NODE_EXTERN:
-        case ObjectId::MASK_NAMED_NODE_TMP: {
+        case ObjectSubType::NamedNode: {
             const auto str = MQL::Conversions::unpack_named_node(oid);
             write_typed_string(str, Protocol::DataType::NAMED_NODE);
             break;
         }
-        case ObjectId::MASK_STRING_SIMPLE_INLINED:
-        case ObjectId::MASK_STRING_SIMPLE_EXTERN:
-        case ObjectId::MASK_STRING_SIMPLE_TMP: {
+        case ObjectSubType::String: {
             const auto str = MQL::Conversions::unpack_string(oid);
             write_typed_string(str, Protocol::DataType::STRING);
             break;
         }
-        case ObjectId::MASK_NEGATIVE_INT:
-        case ObjectId::MASK_POSITIVE_INT: {
+        case ObjectSubType::Int: {
             const int64_t i = MQL::Conversions::unpack_int(oid);
             write_int64(i);
             break;
         }
-        case ObjectId::MASK_DECIMAL_INLINED:
-        case ObjectId::MASK_DECIMAL_EXTERN:
-        case ObjectId::MASK_DECIMAL_TMP: {
+        case ObjectSubType::Decimal: {
             const Decimal dec = SPARQL::Conversions::unpack_decimal(oid);
             write_typed_string(dec.to_string(), Protocol::DataType::DECIMAL);
             break;
         }
-        case ObjectId::MASK_FLOAT: {
-            const float f = MQL::Conversions::unpack_float(oid);
-            write_float(f);
+        case ObjectSubType::Float: {
+            write_float(MQL::Conversions::unpack_float(oid));
             break;
         }
-        case ObjectId::MASK_BOOL: {
+        case ObjectSubType::Double: {
+            write_double(MQL::Conversions::unpack_double(oid));
+            break;
+        }
+
+        case ObjectSubType::Bool: {
             write_bool(value != 0);
             break;
         }
-        case ObjectId::MASK_EDGE: {
-            const auto edge_id = MQL::Conversions::unpack_edge(oid);
-            write_edge(edge_id);
+        case ObjectSubType::Edge: {
+            write_edge(MQL::Conversions::unpack_edge(oid));
             break;
         }
-        case ObjectId::MASK_DT_DATE: {
+        case ObjectSubType::TemporalLiteral: {
             const DateTime datetime = MQL::Conversions::unpack_datetime(oid);
-            write_date(datetime);
+            switch (oid.type()) {
+            case ObjectType::Date:
+                write_date(datetime);
+                break;
+            case ObjectType::Datetime:
+            case ObjectType::Datetimestamp:
+                write_datetime(datetime);
+                break;
+            case ObjectType::Time:
+                write_time(datetime);
+                break;
+            default:
+                assert(false);
+                break;
+            }
             break;
         }
-        case ObjectId::MASK_DT_TIME: {
-            const DateTime datetime = MQL::Conversions::unpack_datetime(oid);
-            write_time(datetime);
-            break;
-        }
-        case ObjectId::MASK_DT_DATETIME:
-        case ObjectId::MASK_DT_DATETIMESTAMP: {
-            const DateTime datetime = MQL::Conversions::unpack_datetime(oid);
-            write_datetime(datetime);
-            break;
-        }
-        case ObjectId::MASK_PATH: {
+        case ObjectSubType::Path: {
             write_path(value);
             break;
         }
-        case ObjectId::MASK_TENSOR_FLOAT_INLINED:
-        case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
-        case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+        case ObjectSubType::TensorFloat: {
             const auto tensor = Common::Conversions::unpack_tensor<float>(oid);
             write_tensor<float>(tensor);
             break;
         }
-        case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
-        case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
-        case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+        case ObjectSubType::TensorDouble: {
             const auto tensor = Common::Conversions::unpack_tensor<double>(oid);
             write_tensor<double>(tensor);
             break;
         }
-        case ObjectId::MASK_DICTIONARY:
-        case ObjectId::MASK_DICTIONARY_TMP: {
+        case ObjectSubType::Dictionary: {
             const auto dictionary = Common::Conversions::unpack_dictionary(oid);
             return write_dictionary(*dictionary);
         }
-        case ObjectId::MASK_LIST:
-        case ObjectId::MASK_LIST_EXTERN:
-        case ObjectId::MASK_LIST_TMP: {
+        case ObjectSubType::List: {
             const auto list = MQL::Conversions::unpack_list(oid);
             return write_list(list);
         }
-        default:
-            throw std::logic_error(
-                "Unmanaged type in StreamingQuadResponseWriter::encode_object_id: " + std::to_string(type)
-            );
+        case ObjectSubType::StringXsd:
+        case ObjectSubType::StringLang:
+        case ObjectSubType::StringDatatype:
+        case ObjectSubType::Iri:
+        case ObjectSubType::NotFound:
+        case ObjectSubType::Invalid:
+            assert(false);
+            break;
         }
     }
 };

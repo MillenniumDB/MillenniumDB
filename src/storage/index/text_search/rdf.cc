@@ -1,12 +1,11 @@
 #include "rdf.h"
 
-#include <unordered_set>
-
 #include "graph_models/rdf_model/conversions.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "query/optimizer/rdf_model/plan/triple_plan.h"
 #include "query/query_context.h"
 #include "storage/index/text_search/utils.h"
+
+#include <unordered_set>
 
 namespace TextSearch { namespace RDF {
 
@@ -55,8 +54,7 @@ uint_fast32_t index_single(
     ObjectId object_oid
 )
 {
-    const auto gen_t = RDF_OID::get_generic_type(object_oid);
-    if (gen_t != RDF_OID::GenericType::STRING) {
+    if (object_oid.generic_type() != ObjectGenType::String) {
         return 0;
     }
 
@@ -98,8 +96,7 @@ uint_fast32_t remove_single(
     ObjectId object_oid
 )
 {
-    const auto gen_t = RDF_OID::get_generic_type(object_oid);
-    if (gen_t != RDF_OID::GenericType::STRING) {
+    if (object_oid.generic_type() != ObjectGenType::String) {
         return 0;
     }
 

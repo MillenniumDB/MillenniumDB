@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprDay : public BindingExpr {
@@ -17,8 +17,8 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto expr_oid = expr->eval(binding);
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::DATE: {
+        switch (expr_oid.generic_type()) {
+        case ObjectGenType::TemporalLiteral: {
             bool error;
             auto res = DateTime(expr_oid).get_day(&error);
             if (error) {

@@ -38,10 +38,8 @@ protected:
             const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
             const auto& tmp_str = tmp_manager.get_str(tmp_id);
 
-            const uint64_t gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
-
             uint64_t new_external_id;
-            if (gen_t == ObjectId::MASK_TENSOR) {
+            if (oid.generic_type() == ObjectGenType::Tensor) {
                 new_external_id = tensor_manager.get_or_create_id(tmp_str.data(), tmp_str.size());
             } else {
                 new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
@@ -72,7 +70,7 @@ public:
             throw QueryExecutionException("cannot insert a null node");
         }
 
-        if (node_.get_type() == ObjectId::MASK_EDGE) {
+        if (node_.generic_type() == ObjectGenType::Edge) {
             return;
         }
 
@@ -121,7 +119,7 @@ public:
             throw QueryExecutionException("cannot set label null label");
         }
 
-        if (node_.get_type() == ObjectId::MASK_EDGE) {
+        if (node_.generic_type() == ObjectGenType::Edge) {
             throw QueryExecutionException("cannot insert label to an edge");
         }
 
@@ -174,7 +172,7 @@ public:
 
         auto obj_id = transform_if_tmp(obj_).id;
         auto label_id = transform_if_tmp(label).id;
-        if (obj_.get_type() == ObjectId::MASK_EDGE) {
+        if (obj_.generic_type() == ObjectGenType::Edge) {
             ctx.set_edge_type(obj_id, label_id);
         } else {
             ctx.insert_label(obj_id, label_id);
@@ -363,7 +361,7 @@ public:
     {
         ObjectId node_ = node.is_var() ? binding[node.get_var()] : node.get_OID();
 
-        if (node_.is_null() || node_.get_type() == ObjectId::MASK_EDGE) {
+        if (node_.is_null() || node_.generic_type() == ObjectGenType::Edge) {
             return;
         }
 

@@ -1,15 +1,14 @@
 #pragma once
 
-#include <cstdint>
-#include <sstream>
-#include <string>
-
 #include "graph_models/common/conversions.h" // IWYU pragma: export
 #include "graph_models/inliner.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
-#include "storage/index/lists/list_encoder.h"
+
+#include <cstdint>
+#include <sstream>
+#include <string>
 
 namespace MQL { namespace Conversions {
 using namespace Common::Conversions;
@@ -20,9 +19,8 @@ constexpr uint8_t OPTYPE_FLOAT = 0x02;
 constexpr uint8_t OPTYPE_INVALID = 0x03;
 
 constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
-constexpr uint64_t LIST_OFFSET_MASK = 0x0000'00FF'FFFF'FFFFUL;
 
-inline uint64_t unpack_blank(ObjectId oid)
+inline uint64_t unpack_anon(ObjectId oid)
 {
     return oid.get_value();
 }
@@ -34,17 +32,17 @@ inline uint64_t unpack_edge(ObjectId oid)
 
 inline std::string unpack_string(ObjectId oid)
 {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    switch (oid.type()) {
+    case ObjectType::StringInl: {
         return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.get_value());
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         std::stringstream ss;
         const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         string_manager.print(ss, external_id);
         return ss.str();
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         std::stringstream ss;
         const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(ss, external_id);
@@ -76,53 +74,55 @@ inline ObjectId pack_string(const std::string& str)
 
 inline std::string unpack_named_node(ObjectId oid)
 {
-    switch (oid.get_type()) {
-    case ObjectId::MASK_NAMED_NODE_INLINED: {
+    switch (oid.type()) {
+    case ObjectType::NamedNodeInl: {
         return Inliner::get_string_inlined<ObjectId::NAMED_NODE_INLINE_BYTES>(oid.get_value());
     }
-    case ObjectId::MASK_NAMED_NODE_EXTERN: {
+    case ObjectType::NamedNodeExt: {
         std::stringstream ss;
         const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         string_manager.print(ss, external_id);
         return ss.str();
     }
-    case ObjectId::MASK_NAMED_NODE_TMP: {
+    case ObjectType::NamedNodeTmp: {
         std::stringstream ss;
         const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
         tmp_manager.print_str(ss, external_id);
         return ss.str();
     }
     default: {
-        throw LogicException("Called unpack_named_node with incorrect ObjectId type, this should never happen"
+        throw LogicException(
+            "Called unpack_named_node with incorrect ObjectId type, this should never happen"
         );
     }
     }
 }
 
-    inline ObjectId pack_named_node(const std::string& str)
-    {
-        uint64_t oid;
-        if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
-            oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+inline ObjectId pack_named_node(const std::string& str)
+{
+    uint64_t oid;
+    if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
+        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+    } else {
+        const auto str_id = string_manager.get_str_id(str);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
         } else {
-            const auto str_id = string_manager.get_str_id(str);
-            if (str_id != ObjectId::MASK_NOT_FOUND) {
-                oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
-            } else {
-                oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
-            }
+            oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
         }
-        return ObjectId(oid);
     }
+    return ObjectId(oid);
+}
 
-    inline ObjectId pack_edge(uint64_t edge_id) {
-        return ObjectId(ObjectId::MASK_EDGE | edge_id);
-    }
+inline ObjectId pack_edge(uint64_t edge_id)
+{
+    return ObjectId(ObjectId::MASK_EDGE | edge_id);
+}
 
-    inline ObjectId pack_anon_tmp(uint64_t anon_id)
-    {
-        return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
-    }
+inline ObjectId pack_anon_tmp(uint64_t anon_id)
+{
+    return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
+}
 
 inline DateTime unpack_datetime(ObjectId oid)
 {
@@ -131,76 +131,40 @@ inline DateTime unpack_datetime(ObjectId oid)
 
 inline float to_float(ObjectId oid)
 {
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_INT:
+    switch (oid.subtype()) {
+    case ObjectSubType::Int:
         return unpack_int(oid);
-    case ObjectId::MASK_FLOAT:
+    case ObjectSubType::Float:
         return unpack_float(oid);
+    case ObjectSubType::Double:
+        return unpack_double(oid);
     default:
         throw LogicException("Called to_float with incorrect ObjectId type, this should never happen");
     }
 }
 
-inline ObjectId pack_list(const std::vector<ObjectId>& list)
-{
-    TmpLists& tmp_list = tmp_manager.get_tmp_list();
-    uint32_t file_id = tmp_list.get_file_id();
-    uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
-}
-
-inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
-{
-    switch (list_id.get_type()) {
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_TMP: {
-        auto& lists = tmp_manager.get_tmp_list();
-        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
-        lists.get(out, list_id.id & LIST_OFFSET_MASK);
-        break;
-    }
-    case ObjectId::MASK_LIST_EXTERN: {
-        char* buffer = get_query_ctx().get_buffer1();
-
-        auto external_id = list_id.get_value();
-        string_manager.print_to_buffer(buffer, external_id);
-        out = ListEncoder::decode(buffer);
-        break;
-    }
-    }
-}
-
-inline std::vector<ObjectId> unpack_list(ObjectId list_id)
-{
-    std::vector<ObjectId> list;
-    unpack_list(list_id, list);
-    return list;
-}
-
 // Returns a string with the lexical representation of the value
 inline std::string to_lexical_str(ObjectId oid)
 {
-    const auto type = oid.id & ObjectId::TYPE_MASK;
-
-    switch (type) {
-    case ObjectId::MASK_ANON_INLINED:
-        return "_:b" + std::to_string(unpack_blank(oid));
-    case ObjectId::MASK_ANON_TMP:
-        return "_:c" + std::to_string(unpack_blank(oid));
-    case ObjectId::MASK_NAMED_NODE_INLINED:
-    case ObjectId::MASK_NAMED_NODE_EXTERN:
-    case ObjectId::MASK_NAMED_NODE_TMP:
+    switch (oid.type()) {
+    case ObjectType::AnonInl:
+        return "_a" + std::to_string(unpack_anon(oid));
+    case ObjectType::AnonTmp:
+        return "_t" + std::to_string(unpack_anon(oid));
+    case ObjectType::NamedNodeInl:
+    case ObjectType::NamedNodeExt:
+    case ObjectType::NamedNodeTmp:
         return unpack_named_node(oid);
-    case ObjectId::MASK_STRING_SIMPLE_INLINED:
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
-    case ObjectId::MASK_STRING_SIMPLE_TMP:
+    case ObjectType::StringInl:
+    case ObjectType::StringExt:
+    case ObjectType::StringTmp:
         return unpack_string(oid);
-    case ObjectId::MASK_NEGATIVE_INT:
-    case ObjectId::MASK_POSITIVE_INT: {
+    case ObjectType::NegativeInt56:
+    case ObjectType::PositiveInt56: {
         const int64_t i = unpack_int(oid);
         return std::to_string(i);
     }
-    case ObjectId::MASK_FLOAT: {
+    case ObjectType::Float: {
         const float f = unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -208,40 +172,41 @@ inline std::string to_lexical_str(ObjectId oid)
 
         return std::string(float_buffer);
     }
-    case ObjectId::MASK_DT_DATE: {
+    case ObjectType::Date: {
         const DateTime datetime = unpack_date(oid);
         return "date(\"" + datetime.get_value_string() + "\")";
     }
-    case ObjectId::MASK_DT_DATETIME: {
+    case ObjectType::Datetime: {
         const DateTime datetime = unpack_date(oid);
         return "dateTime(\"" + datetime.get_value_string() + "\")";
     }
-    case ObjectId::MASK_DT_DATETIMESTAMP: {
+    case ObjectType::Datetimestamp: {
         const DateTime datetime = unpack_date(oid);
         return "dateTimeStamp(\"" + datetime.get_value_string() + "\")";
     }
-    case ObjectId::MASK_DT_TIME: {
+    case ObjectType::Time: {
         const DateTime datetime = unpack_date(oid);
         return "time(\"" + datetime.get_value_string() + "\")";
     }
-    case ObjectId::MASK_BOOL:
+    case ObjectType::Bool:
         return unpack_bool(oid) ? "true" : "false";
-    case ObjectId::MASK_EDGE:
+    case ObjectType::Edge:
         return "_e" + std::to_string(unpack_edge(oid));
 
-    case ObjectId::MASK_TENSOR_FLOAT_INLINED:
-    case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
-    case ObjectId::MASK_TENSOR_FLOAT_TMP: {
+    case ObjectType::TensorFloatInl:
+    case ObjectType::TensorFloatExt:
+    case ObjectType::TensorFloatTmp: {
         const auto tensor = unpack_tensor<float>(oid);
         return tensor.to_string();
     }
-    case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
-    case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
-    case ObjectId::MASK_TENSOR_DOUBLE_TMP: {
+    case ObjectType::TensorDoubleInl:
+    case ObjectType::TensorDoubleExt:
+    case ObjectType::TensorDoubleTmp: {
         const auto tensor = unpack_tensor<double>(oid);
         return tensor.to_string();
     }
-    case ObjectId::MASK_LIST: {
+    case ObjectType::ListExt:
+    case ObjectType::ListTmp: {
         auto list = unpack_list(oid);
         std::stringstream ss;
         ss << "[";
@@ -254,8 +219,8 @@ inline std::string to_lexical_str(ObjectId oid)
         ss << "]";
         return ss.str();
     }
-    case ObjectId::MASK_DICTIONARY:
-    case ObjectId::MASK_DICTIONARY_TMP: {
+    case ObjectType::DictionaryExt:
+    case ObjectType::DictionaryTmp: {
         std::unique_ptr<Dictionary> dict = unpack_dictionary(oid);
         std::stringstream ss;
         dict->to_string(ss);
@@ -271,46 +236,30 @@ inline ObjectId to_boolean(ObjectId oid)
 {
     uint64_t value = oid.get_value();
 
-    switch (oid.get_sub_type()) {
-    case ObjectId::MASK_BOOL:
+    switch (oid.subtype()) {
+    case ObjectSubType::Bool:
         return oid;
-    // String
     // Note: Extern strings will never be empty
-    case ObjectId::MASK_STRING_SIMPLE_INLINED:
+    // Note: This assumes 0 is never represented as 0.0, 0.00, etc
+    // Note: Extern decimals will never be zero
+    case ObjectSubType::Decimal:
+    case ObjectSubType::String:
+    case ObjectSubType::Int:
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN:
-        return ObjectId(ObjectId::BOOL_TRUE);
-    // Integer
-    case ObjectId::MASK_NEGATIVE_INT:
-    case ObjectId::MASK_POSITIVE_INT:
-        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
-    // Float
-    case ObjectId::MASK_FLOAT: {
+    case ObjectSubType::Float: {
         auto f = unpack_float(oid);
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(f != 0 && !std::isnan(f)));
     }
-    // Double
-    case ObjectId::MASK_DOUBLE: {
+    case ObjectSubType::Double: {
         auto d = unpack_double(oid);
         return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(d != 0 && !std::isnan(d)));
     }
-    // Decimal
-    // Note: This assumes 0 is never represented as 0.0, 0.00, etc
-    case ObjectId::MASK_DECIMAL_INLINED:
-        return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
-    // Note: Extern decimals will never be zero
-    case ObjectId::MASK_DECIMAL_EXTERN:
-        return ObjectId(ObjectId::BOOL_TRUE);
-        // Note: This assumes empty tensors will never be extern/tmp
-    case ObjectId::MASK_TENSOR_FLOAT_INLINED:
-    case ObjectId::MASK_TENSOR_DOUBLE_INLINED:
-        return ObjectId(ObjectId::BOOL_FALSE);
-    // Note: extern/tmp tensors will never be empty
-    case ObjectId::MASK_TENSOR_FLOAT_EXTERN:
-    case ObjectId::MASK_TENSOR_FLOAT_TMP:
-    case ObjectId::MASK_TENSOR_DOUBLE_EXTERN:
-    case ObjectId::MASK_TENSOR_DOUBLE_TMP:
-        return ObjectId(ObjectId::BOOL_TRUE);
+
+    // Note: This assumes empty tensors will never be extern/tmp
+    // case ObjectSubType::TensorFloat:
+    // case ObjectSubType::TensorDouble:
+    //     return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
+    //     return ObjectId(ObjectId::BOOL_TRUE);
     // Can not be converted to boolean
     default:
         return ObjectId::get_null();
@@ -320,29 +269,29 @@ inline ObjectId to_boolean(ObjectId oid)
 // works for named nodes and strings
 inline size_t print_string(ObjectId oid, char* out)
 {
-    const auto mask = oid.id & ObjectId::TYPE_MASK;
+    const auto type = oid.type();
     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_NAMED_NODE_INLINED: {
+    switch (type) {
+    case ObjectType::NamedNodeInl: {
         return Inliner::print_string_inlined<7>(out, unmasked_id);
     }
-    case ObjectId::MASK_NAMED_NODE_EXTERN: {
+    case ObjectType::NamedNodeExt: {
         return string_manager.print_to_buffer(out, unmasked_id);
     }
-    case ObjectId::MASK_NAMED_NODE_TMP: {
+    case ObjectType::NamedNodeTmp: {
         return tmp_manager.print_to_buffer(out, unmasked_id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_INLINED: {
+    case ObjectType::StringInl: {
         return Inliner::print_string_inlined<7>(out, unmasked_id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_EXTERN: {
+    case ObjectType::StringExt: {
         return string_manager.print_to_buffer(out, unmasked_id);
     }
-    case ObjectId::MASK_STRING_SIMPLE_TMP: {
+    case ObjectType::StringTmp: {
         return tmp_manager.print_to_buffer(out, unmasked_id);
     }
     default:
-        throw std::logic_error("Unmanaged mask in MQL::Conversions::print_string: " + std::to_string(mask));
+        throw std::logic_error("Unmanaged mask in MQL::Conversions::print_string: " + to_string(type));
     }
 }
 

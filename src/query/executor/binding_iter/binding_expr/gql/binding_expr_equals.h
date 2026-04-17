@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cmath>
-#include <memory>
-#include <set>
-
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cmath>
+#include <memory>
 
 namespace GQL {
 
@@ -97,9 +96,7 @@ public:
         if (lhs_generic_type == GQL_OID::GenericType::DATE && rhs_generic_type == GQL_OID::GenericType::DATE)
         {
             bool error;
-            auto res = DateTime(lhs_oid.id)
-                           .compare<DateTimeComparisonMode::StrictEquality>(DateTime(rhs_oid.id), &error)
-                    == 0;
+            auto res = DateTime(lhs_oid.id).compare<DTCompare::StrictEq>(DateTime(rhs_oid.id), &error) == 0;
             if (error) {
                 return ObjectId::get_null();
             }

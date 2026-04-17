@@ -1,10 +1,10 @@
 #pragma once
 
-#include <algorithm>
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <algorithm>
+#include <memory>
 
 namespace SPARQL {
 class BindingExprLangMatches : public BindingExpr {
@@ -25,10 +25,10 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        if (RDF_OID::get_generic_sub_type(lhs_oid) != RDF_OID::GenericSubType::STRING_SIMPLE) {
+        if (lhs_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
-        if (RDF_OID::get_generic_sub_type(rhs_oid) != RDF_OID::GenericSubType::STRING_SIMPLE) {
+        if (rhs_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
 

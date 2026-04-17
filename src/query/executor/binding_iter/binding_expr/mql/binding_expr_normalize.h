@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/quad_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "misc/transliterator.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace MQL {
 class BindingExprNormalize : public BindingExpr {
@@ -19,7 +19,7 @@ public:
     {
         const auto expr_oid = expr->eval(binding);
 
-        if ((expr_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE) {
+        if (expr_oid.generic_type() != ObjectGenType::String) {
             return ObjectId::get_null();
         }
 

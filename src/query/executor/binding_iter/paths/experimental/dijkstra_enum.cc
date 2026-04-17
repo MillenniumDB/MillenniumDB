@@ -1,12 +1,12 @@
 #include "dijkstra_enum.h"
 
-#include <cassert>
-
+#include "graph_models/common/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
-#include "query/exceptions.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/record.h"
 #include "system/path_manager.h"
+
+#include <cassert>
 
 using namespace std;
 using namespace Paths::Any;
@@ -146,19 +146,9 @@ bool DijkstraEnum::_next()
     return false;
 }
 
-inline int64_t parse_cost(uint64_t oid)
+inline int64_t parse_cost(uint64_t id)
 {
-    auto mask = oid & ObjectId::TYPE_MASK;
-    // auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
-    switch (mask) {
-    case ObjectId::MASK_POSITIVE_INT: {
-        int64_t i = oid & 0x00FF'FFFF'FFFF'FFFFUL;
-        return i;
-    }
-    default: {
-        throw LogicException("Assuming non-negative costs.");
-    }
-    }
+    return Common::Conversions::unpack_int(ObjectId(id));
 }
 
 boost::unordered_node_set<SearchStateDijkstra, std::hash<SearchStateDijkstra>>::iterator

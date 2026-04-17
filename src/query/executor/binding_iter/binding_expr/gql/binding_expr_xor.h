@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory>
-
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace GQL {
 
@@ -21,17 +21,12 @@ public:
         ObjectId lhs_oid = lhs->eval(binding);
         ObjectId rhs_oid = rhs->eval(binding);
 
-        if ((lhs_oid.id & ObjectId::TYPE_MASK) != ObjectId::MASK_BOOL
-            || (rhs_oid.id & ObjectId::TYPE_MASK) != ObjectId::MASK_BOOL)
-        {
+        if (lhs_oid.type() != ObjectType::Bool || rhs_oid.type() != ObjectType::Bool) {
             return ObjectId::get_null();
         }
+        bool res = (lhs_oid.is_true() && rhs_oid.is_false()) || (lhs_oid.is_false() && rhs_oid.is_true());
 
-        if ((lhs_oid.is_true() && rhs_oid.is_false()) || (lhs_oid.is_false() && rhs_oid.is_true())) {
-            return ObjectId(ObjectId::BOOL_TRUE);
-        }
-
-        return ObjectId(ObjectId::BOOL_FALSE);
+        return ObjectId(static_cast<uint64_t>(res));
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

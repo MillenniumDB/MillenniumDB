@@ -12,9 +12,11 @@ ExternalHelper::ExternalHelper(
     std::size_t tensors_buffer_capacity
 ) :
     db_folder(db_folder),
-    pending_buffer(reinterpret_cast<char*>(
-        MDB_ALIGNED_ALLOC(std::max(StringManager::MAX_STRING_SIZE, TensorManager::MAX_TENSOR_BYTES))
-    )),
+    pending_buffer(
+        reinterpret_cast<char*>(
+            MDB_ALIGNED_ALLOC(std::max(StringManager::MAX_STRING_SIZE, TensorManager::MAX_TENSOR_BYTES))
+        )
+    ),
     buffer_size(strings_buffer_capacity + tensors_buffer_capacity),
     buffer(reinterpret_cast<char*>(MDB_ALIGNED_ALLOC(buffer_size))),
     strings_external_data(
@@ -71,16 +73,15 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
     assert(strings_external_data.old_pending_fs != nullptr);
     assert(tensors_external_data.old_pending_fs != nullptr);
 
-    constexpr uint64_t ORIGINAL_DATA_MASK = ObjectId::SUB_TYPE_MASK | ObjectId::MASK_LITERAL_TAG;
+    constexpr uint64_t ORIGINAL_DATA_MASK = ~(ObjectId::MOD_MASK | ObjectId::MASK_EXTERNAL_ID);
     if ((id & ObjectId::MOD_MASK) != ObjectId::MOD_TMP) {
         // nothing to do
         return id;
     }
 
     const uint64_t mask = id & ORIGINAL_DATA_MASK;
-    const uint64_t gen_t = id & ObjectId::GENERIC_TYPE_MASK;
 
-    if (gen_t == ObjectId::MASK_TENSOR) {
+    if (ObjectId(id).generic_type() == ObjectGenType::Tensor) {
         // handle tensor
         tensors_external_data.old_pending_fs->seekg(id & ObjectId::MASK_EXTERNAL_ID);
         const auto num_bytes = BytesEncoder::read_bytes(
@@ -91,9 +92,7 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
     }
 
     // handle lists
-    const uint64_t type_mask = id & ObjectId::TYPE_MASK;
-
-    if (type_mask == ObjectId::MASK_LIST_TMP) {
+    if (ObjectId(id).type() == ObjectType::ListTmp) {
         strings_external_data.old_pending_fs->seekg(id & ObjectId::MASK_EXTERNAL_ID);
         const auto str_len = BytesEncoder::read_bytes(*strings_external_data.old_pending_fs, pending_buffer);
         std::vector<ObjectId> list = ListEncoder::decode(pending_buffer);

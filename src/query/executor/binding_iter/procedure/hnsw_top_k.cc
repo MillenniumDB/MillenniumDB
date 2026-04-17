@@ -82,8 +82,7 @@ void HNSWTopK::eval_arguments()
 {
     valid_arguments = false;
     const auto name_oid = argument_binding_exprs[0]->eval(*parent_binding);
-    const auto name_gen_t = name_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (name_gen_t != ObjectId::MASK_STRING) {
+    if (name_oid.generic_type() != ObjectGenType::String) {
         return;
     }
     const std::string name = unpack_string_func_ptr(name_oid);
@@ -94,8 +93,7 @@ void HNSWTopK::eval_arguments()
     }
 
     const auto query_oid = argument_binding_exprs[1]->eval(*parent_binding);
-    const auto query_gen_t = query_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (query_gen_t != ObjectId::MASK_TENSOR) {
+    if (query_oid.generic_type() != ObjectGenType::Tensor) {
         return;
     }
     query = Common::Conversions::to_tensor<float>(query_oid);
@@ -105,15 +103,13 @@ void HNSWTopK::eval_arguments()
     }
 
     const auto num_neighbors_oid = argument_binding_exprs[2]->eval(*parent_binding);
-    const auto num_neighbors_gen_t = num_neighbors_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (num_neighbors_gen_t != ObjectId::MASK_INT) {
+    if (num_neighbors_oid.subtype() != ObjectSubType::Int) {
         return;
     }
     num_neighbors = unpack_int_func_ptr(num_neighbors_oid);
 
     const auto num_candidates_oid = argument_binding_exprs[3]->eval(*parent_binding);
-    const auto num_candidates_gen_t = num_candidates_oid.id & ObjectId::GENERIC_TYPE_MASK;
-    if (num_candidates_gen_t != ObjectId::MASK_INT) {
+    if (num_candidates_oid.subtype() != ObjectSubType::Int) {
         return;
     }
     num_candidates = unpack_int_func_ptr(num_candidates_oid);

@@ -1,13 +1,12 @@
 #include "comparisons.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "query/query_context.h"
 #include "system/string_manager.h"
+
+#include <algorithm>
+#include <cassert>
 
 using namespace SPARQL;
 
@@ -16,9 +15,10 @@ using namespace SPARQL;
 // returns positive number if lhs > rhs
 // For operators use Normal mode (default).
 // For expressions use Strict mode.
-template<Comparisons::Mode mode>
-int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
-    if constexpr (mode == Comparisons::Mode::Strict) {
+template<CompMode mode>
+int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
+{
+    if constexpr (mode == CompMode::Strict) {
         assert(error != nullptr);
         *error = false;
     }
@@ -27,11 +27,11 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         return 0;
     }
 
-    auto lhs_gen_t = RDF_OID::get_generic_type(lhs_oid);
-    auto rhs_gen_t = RDF_OID::get_generic_type(rhs_oid);
+    auto lhs_gen_t = lhs_oid.generic_type();
+    auto rhs_gen_t = rhs_oid.generic_type();
 
     if (lhs_gen_t != rhs_gen_t) {
-        if constexpr (mode == Comparisons::Mode::Strict) {
+        if constexpr (mode == CompMode::Strict) {
             *error = true;
             return 0;
         } else {
@@ -40,7 +40,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
     }
 
     switch (lhs_gen_t) {
-    case RDF_OID::GenericType::IRI: {
+    case ObjectGenType::Iri: {
         // if different prefix we dont have to reconstruct the string
         auto lhs_prefix_id = lhs_oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
         auto rhs_prefix_id = rhs_oid.get_value() >> (ObjectId::IRI_INLINE_BYTES * 8);
@@ -68,9 +68,9 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             rhs_size - shortest_prefix_size
         );
     }
-    case RDF_OID::GenericType::STRING: {
-        auto lhs_sub_t = RDF_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_sub_t = RDF_OID::get_generic_sub_type(rhs_oid);
+    case ObjectGenType::String: {
+        auto lhs_sub_t = lhs_oid.subtype();
+        auto rhs_sub_t = rhs_oid.subtype();
 
         if (lhs_sub_t != rhs_sub_t) {
             return static_cast<int64_t>(lhs_sub_t) - static_cast<int64_t>(rhs_sub_t);
@@ -83,13 +83,13 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
         size_t rhs_size;
 
         switch (lhs_sub_t) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD: {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             lhs_size = Conversions::print_string(lhs_oid, lhs_buffer);
             rhs_size = Conversions::print_string(rhs_oid, rhs_buffer);
             break;
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto lhs_tag = lhs_oid.id & ObjectId::MASK_LITERAL_TAG;
             auto rhs_tag = rhs_oid.id & ObjectId::MASK_LITERAL_TAG;
 
@@ -101,7 +101,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             rhs_size = Conversions::print_string_lang(rhs_oid, rhs_buffer);
             break;
         }
-        case RDF_OID::GenericSubType::STRING_DATATYPE: {
+        case ObjectSubType::StringDatatype: {
             auto lhs_tag = lhs_oid.id & ObjectId::MASK_LITERAL_TAG;
             auto rhs_tag = rhs_oid.id & ObjectId::MASK_LITERAL_TAG;
 
@@ -114,16 +114,16 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             break;
         }
         default:
-            throw LogicException("unexpected RDF_OID::GenericSubType at SPARQL::Comparisons::_compare");
+            throw LogicException("unexpected ObjectSubType at SPARQL::Comparisons::_compare");
         }
 
         return StringManager::compare(lhs_buffer, rhs_buffer, lhs_size, rhs_size);
     }
-    case RDF_OID::GenericType::NUMERIC: {
-        auto lhs_sub_t = lhs_oid.get_sub_type();
-        auto rhs_sub_t = rhs_oid.get_sub_type();
+    case ObjectGenType::Numeric: {
+        auto lhs_sub_t = lhs_oid.subtype();
+        auto rhs_sub_t = rhs_oid.subtype();
         // Integer optimization
-        if (lhs_sub_t == ObjectId::MASK_INT && rhs_sub_t == ObjectId::MASK_INT) {
+        if (lhs_sub_t == ObjectSubType::Int && rhs_sub_t == ObjectSubType::Int) {
             return static_cast<int64_t>(lhs_oid.id) - static_cast<int64_t>(rhs_oid.id);
         }
 
@@ -174,20 +174,20 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
             throw LogicException("This should never happen");
         }
     }
-    case RDF_OID::GenericType::DATE: {
+    case ObjectGenType::TemporalLiteral: {
         DateTime lhs_dt(lhs_oid);
         DateTime rhs_dt(rhs_oid);
 
-        if constexpr (mode == Comparisons::Mode::Strict) {
-            return lhs_dt.compare<DateTimeComparisonMode::Strict>(rhs_dt, error);
-        } else if constexpr (mode == Comparisons::Mode::Normal){
-            return lhs_dt.compare<DateTimeComparisonMode::Normal>(rhs_dt, error);
+        if constexpr (mode == CompMode::Strict) {
+            return lhs_dt.compare<DTCompare::Strict>(rhs_dt, error);
+        } else if constexpr (mode == CompMode::Normal) {
+            return lhs_dt.compare<DTCompare::Normal>(rhs_dt, error);
         }
     }
-    case RDF_OID::GenericType::BOOL: {
+    case ObjectGenType::Bool: {
         return static_cast<int64_t>(lhs_oid.id & 1) - static_cast<int64_t>(rhs_oid.id & 1);
     }
-    case RDF_OID::GenericType::TENSOR: {
+    case ObjectGenType::Tensor: {
         const auto optype = Conversions::calculate_optype(lhs_oid, rhs_oid);
         switch (optype) {
         case Conversions::OpType::TENSOR_FLOAT: {
@@ -212,6 +212,5 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error) {
     }
 }
 
-
-template int64_t Comparisons::_compare<Comparisons::Mode::Normal>(ObjectId lhs_oid, ObjectId rhs_oid, bool* error);
-template int64_t Comparisons::_compare<Comparisons::Mode::Strict>(ObjectId lhs_oid, ObjectId rhs_oid, bool* error);
+template int64_t Comparisons::_compare<CompMode::Normal>(ObjectId lhs, ObjectId rhs, bool* error);
+template int64_t Comparisons::_compare<CompMode::Strict>(ObjectId lhs, ObjectId rhs, bool* error);

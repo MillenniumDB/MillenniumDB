@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/object_id.h"
 #include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cassert>
+#include <memory>
 
 namespace MQL {
 class BindingExprCosineSimilarity : public BindingExpr {
@@ -24,12 +24,12 @@ public:
         const auto lhs_oid = lhs->eval(binding);
         const auto rhs_oid = rhs->eval(binding);
 
-        const auto lhs_gen_t = lhs_oid.id & ObjectId::GENERIC_TYPE_MASK;
-        if (lhs_gen_t != ObjectId::MASK_TENSOR) {
+        const auto lhs_gen_t = lhs_oid.generic_type();
+        if (lhs_gen_t != ObjectGenType::Tensor) {
             return ObjectId::get_null();
         }
 
-        const auto rhs_gen_t = rhs_oid.id & ObjectId::GENERIC_TYPE_MASK;
+        const auto rhs_gen_t = rhs_oid.generic_type();
         if (lhs_gen_t != rhs_gen_t) {
             return ObjectId::get_null();
         }

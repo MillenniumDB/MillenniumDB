@@ -703,7 +703,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                 edge_id = pending_tuple[2];
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
-                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                    && ObjectId(id1).type() == ObjectType::AnonInl)
                 {
                     auto it = node_ids_map.find(id1);
                     if (it != node_ids_map.end()) {
@@ -716,7 +716,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                 }
 
                 if ((id2 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
-                    && (id2 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                    && ObjectId(id2).type() == ObjectType::AnonInl)
                 {
                     auto it = node_ids_map.find(id2);
                     if (it != node_ids_map.end()) {
@@ -740,7 +740,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                 edge_id = pending_tuple[2];
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
-                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                    && ObjectId(id1).type() == ObjectType::AnonInl)
                 {
                     auto it = node_ids_map.find(id1);
                     if (it != node_ids_map.end()) {
@@ -753,7 +753,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                 }
 
                 if ((id2 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
-                    && (id2 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                    && ObjectId(id2).type() == ObjectType::AnonInl)
                 {
                     auto it = node_ids_map.find(id2);
                     if (it != node_ids_map.end()) {

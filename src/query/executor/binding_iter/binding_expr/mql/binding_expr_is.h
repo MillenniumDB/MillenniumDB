@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
-#include <stdexcept>
-
 #include "graph_models/quad_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_is.h"
+
+#include <memory>
+#include <stdexcept>
 
 namespace MQL {
 class BindingExprIs : public BindingExpr {
@@ -26,21 +26,22 @@ public:
     {
         auto oid = expr->eval(binding);
         bool res = false;
+        auto subtype = oid.subtype();
         switch (type) {
         case ExprIs::TypeName::NULL_:
-            res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_NULL;
+            res = subtype == ObjectSubType::Null;
             break;
         case ExprIs::TypeName::INTEGER:
-            res = (oid.id & ObjectId::SUB_TYPE_MASK) == ObjectId::MASK_INT;
+            res = subtype == ObjectSubType::Int;
             break;
         case ExprIs::TypeName::FLOAT:
-            res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_FLOAT;
+            res = subtype == ObjectSubType::Float;
             break;
         case ExprIs::TypeName::BOOL:
-            res = (oid.id & ObjectId::TYPE_MASK) == ObjectId::MASK_BOOL;
+            res = subtype == ObjectSubType::Bool;
             break;
         case ExprIs::TypeName::STRING:
-            res = (oid.id & ObjectId::SUB_TYPE_MASK) == ObjectId::MASK_STRING_SIMPLE;
+            res = subtype == ObjectSubType::String;
             break;
         default:
             throw std::logic_error("ExprIs::TypeName case not implemented in BindingExprIs");

@@ -1,17 +1,16 @@
 #include "update_executor.h"
 
-#include <iostream>
-#include <sstream>
-
 #include "graph_models/inliner.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/text_search/text_index.h"
 #include "storage/index/text_search/text_index_manager.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
+
+#include <iostream>
+#include <sstream>
 
 using namespace SPARQL;
 
@@ -183,25 +182,25 @@ bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string
 // If the tmp_manager is in use, move to the external manager
 bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
 {
-    auto oid_type = RDF_OID::get_type(oid);
+    auto oid_type = oid.type();
 
     switch (oid_type) {
-    case RDF_OID::Type::STRING_LANG_INLINE: {
+    case ObjectType::StringLangInl: {
         return try_transform_inline(oid, rdf_model.catalog.languages, '@');
     }
-    case RDF_OID::Type::STRING_LANG_EXTERN: {
+    case ObjectType::StringLangExt: {
         return try_transform_extern(oid, rdf_model.catalog.languages, '@');
     }
-    case RDF_OID::Type::STRING_LANG_TMP: {
+    case ObjectType::StringLangTmp: {
         return try_transform_tmp(oid, rdf_model.catalog.languages, '@');
     }
-    case RDF_OID::Type::STRING_DATATYPE_INLINE: {
+    case ObjectType::StringDatatypeInl: {
         return try_transform_inline(oid, rdf_model.catalog.datatypes, '^');
     }
-    case RDF_OID::Type::STRING_DATATYPE_EXTERN: {
+    case ObjectType::StringDatatypeExt: {
         return try_transform_extern(oid, rdf_model.catalog.datatypes, '^');
     }
-    case RDF_OID::Type::STRING_DATATYPE_TMP: {
+    case ObjectType::StringDatatypeTmp: {
         return try_transform_tmp(oid, rdf_model.catalog.datatypes, '^');
     }
     default: {
@@ -209,10 +208,8 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
             const uint64_t tmp_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
             const auto& tmp_str = tmp_manager.get_str(tmp_id);
 
-            const uint64_t gen_t = oid.id & ObjectId::GENERIC_TYPE_MASK;
-
             uint64_t new_external_id;
-            if (gen_t == ObjectId::MASK_TENSOR) {
+            if (oid.generic_type() == ObjectGenType::Tensor) {
                 new_external_id = tensor_manager.get_or_create_id(tmp_str.data(), tmp_str.size());
             } else {
                 new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());

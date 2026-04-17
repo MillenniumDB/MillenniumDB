@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <regex>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
+#include <regex>
 
 namespace SPARQL {
 class BindingExprRegex : public BindingExpr {
@@ -37,13 +37,13 @@ public:
         std::string expr2_str;
         std::string expr3_str;
 
-        switch (RDF_OID::get_generic_sub_type(expr1_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
-        case RDF_OID::GenericSubType::STRING_XSD:
+        switch (expr1_oid.subtype()) {
+        case ObjectSubType::String: {
+        case ObjectSubType::StringXsd:
             expr1_str = Conversions::unpack_string(expr1_oid);
             break;
         }
-        case RDF_OID::GenericSubType::STRING_LANG: {
+        case ObjectSubType::StringLang: {
             auto&& [lang, str] = Conversions::unpack_string_lang(expr1_oid);
             expr1_str = str;
             break;
@@ -52,12 +52,10 @@ public:
             return ObjectId::get_null();
         }
 
-        if (RDF_OID::get_generic_sub_type(expr2_oid) != RDF_OID::GenericSubType::STRING_SIMPLE) {
+        if (expr2_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
-        if (expr3 != nullptr
-            && RDF_OID::get_generic_sub_type(expr3_oid) != RDF_OID::GenericSubType::STRING_SIMPLE)
-        {
+        if (expr3 != nullptr && expr3_oid.subtype() != ObjectSubType::String) {
             return ObjectId::get_null();
         }
 

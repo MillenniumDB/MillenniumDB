@@ -1,15 +1,10 @@
 #include "comparisons.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-
 #include "graph_models/gql/conversions.h"
-#include "graph_models/gql/gql_model.h"
-#include "graph_models/inliner.h"
 #include "query/query_context.h"
 #include "system/string_manager.h"
-#include "system/tmp_manager.h"
+
+#include <cassert>
 
 using namespace GQL;
 
@@ -66,10 +61,10 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
         return StringManager::compare(lhs_buffer, rhs_buffer, lhs_size, rhs_size);
     }
     case GQL_OID::GenericType::NUMERIC: {
-        auto lhs_sub_t = lhs_oid.get_sub_type();
-        auto rhs_sub_t = rhs_oid.get_sub_type();
+        auto lhs_sub_t = lhs_oid.subtype();
+        auto rhs_sub_t = rhs_oid.subtype();
         // Integer optimization
-        if (lhs_sub_t == ObjectId::MASK_INT && rhs_sub_t == ObjectId::MASK_INT) {
+        if (lhs_sub_t == ObjectSubType::Int && rhs_sub_t == ObjectSubType::Int) {
             return static_cast<int64_t>(lhs_oid.id) - static_cast<int64_t>(rhs_oid.id);
         }
 
@@ -125,9 +120,9 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
         DateTime rhs_dt(rhs_oid);
 
         if constexpr (mode == Comparisons::Mode::Strict) {
-            return lhs_dt.compare<DateTimeComparisonMode::Strict>(rhs_dt, error);
+            return lhs_dt.compare<DTCompare::Strict>(rhs_dt, error);
         } else if constexpr (mode == Comparisons::Mode::Normal) {
-            return lhs_dt.compare<DateTimeComparisonMode::Normal>(rhs_dt, error);
+            return lhs_dt.compare<DTCompare::Normal>(rhs_dt, error);
         }
     }
     case GQL_OID::GenericType::BOOL: {

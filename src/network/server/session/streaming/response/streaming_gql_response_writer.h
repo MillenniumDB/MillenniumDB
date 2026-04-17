@@ -71,7 +71,7 @@ public:
         }
     }
 
-    void write_object_id(const ObjectId& oid) override
+    void write_object_id(ObjectId oid) override
     {
         const auto type = GQL_OID::get_type(oid);
         const auto value = oid.get_value();

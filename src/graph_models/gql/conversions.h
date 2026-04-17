@@ -32,14 +32,9 @@ void print_path(std::ostream& os, ObjectId oid);
 ObjectId pack_path(const std::vector<ObjectId>& oid_list);
 void unpack_path(ObjectId oid, std::vector<ObjectId>& out);
 
-ObjectId pack_list(const std::vector<ObjectId>& list);
-void unpack_list(ObjectId list_id, std::vector<ObjectId>& out);
-std::vector<ObjectId> unpack_list(ObjectId list_id);
-
 std::ostream& debug_print(std::ostream& os, ObjectId oid);
 
 constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
-constexpr uint64_t LIST_OFFSET_MASK = 0x0000'00FF'FFFF'FFFFUL;
 
 ObjectId pack_string_simple(const std::string& str);
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
-#include <regex>
-
 #include "graph_models/quad_model/conversions.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
+#include <regex>
 
 namespace MQL {
 class BindingExprRegex : public BindingExpr {
@@ -38,18 +38,17 @@ public:
         std::string expr2_str;
         std::string expr3_str;
 
-        if ((expr1_oid.id & ObjectId::GENERIC_TYPE_MASK) == ObjectId::MASK_STRING_SIMPLE) {
+        if (expr1_oid.generic_type() == ObjectGenType::String) {
             expr1_str = Conversions::unpack_string(expr1_oid);
         } else {
             return ObjectId::get_null();
         }
 
-        if ((expr2_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE) {
+        if (expr2_oid.generic_type() != ObjectGenType::String) {
             return ObjectId::get_null();
         }
 
-        if (expr3 != nullptr && (expr3_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE)
-        {
+        if (expr3 != nullptr && expr3_oid.generic_type() != ObjectGenType::String) {
             return ObjectId::get_null();
         }
 

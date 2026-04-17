@@ -17,13 +17,12 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        if ((oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_NAMED_NODE) {
+        if (oid.generic_type() != ObjectGenType::NamedNode) {
             return ObjectId::get_null();
         }
 
         bool interruption = false;
-        BptIter<2> iter = quad_model.node_label
-                              ->get_range(&interruption, { oid.id, 0 }, { oid.id, UINT64_MAX });
+        auto iter = quad_model.node_label->get_range(&interruption, { oid.id, 0 }, { oid.id, UINT64_MAX });
 
         std::vector<ObjectId> labels;
 

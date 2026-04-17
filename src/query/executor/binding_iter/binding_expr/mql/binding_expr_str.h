@@ -18,28 +18,25 @@ public:
     {
         const auto expr_oid = expr->eval(binding);
 
-        const auto gen_sub_t = expr_oid.id & ObjectId::SUB_TYPE_MASK;
+        const auto subtype = expr_oid.subtype();
 
-        switch (gen_sub_t) {
-        case ObjectId::MASK_ANON:
-        case ObjectId::MASK_NAMED_NODE:
-        case ObjectId::MASK_STRING_SIMPLE:
-        case ObjectId::MASK_INT:
-        case ObjectId::MASK_DECIMAL:
-        case ObjectId::MASK_FLOAT:
-        case ObjectId::MASK_DT_DATE:
-        case ObjectId::MASK_DT_TIME:
-        case ObjectId::MASK_DT_DATETIME:
-        case ObjectId::MASK_DT_DATETIMESTAMP:
-        case ObjectId::MASK_BOOL:
-        case ObjectId::MASK_EDGE:
-        case ObjectId::MASK_TENSOR_FLOAT:
-        case ObjectId::MASK_TENSOR_DOUBLE: {
+        switch (subtype) {
+        case ObjectSubType::String:
+        case ObjectSubType::Anon:
+        case ObjectSubType::NamedNode:
+        case ObjectSubType::Int:
+        case ObjectSubType::Decimal:
+        case ObjectSubType::Float:
+        case ObjectSubType::TemporalLiteral:
+        case ObjectSubType::Bool:
+        case ObjectSubType::Edge:
+        case ObjectSubType::TensorDouble:
+        case ObjectSubType::TensorFloat: {
             const auto str = Conversions::to_lexical_str(expr_oid);
             return Conversions::pack_string(str);
         }
-        case ObjectId::MASK_PATH:
-        case ObjectId::MASK_NULL:
+        case ObjectSubType::Path:
+        case ObjectSubType::Null:
             return ObjectId::get_null();
         default:
             assert(false);

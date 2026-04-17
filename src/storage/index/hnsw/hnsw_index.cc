@@ -296,8 +296,7 @@ uint_fast32_t HNSWIndex::index_property(const std::string& key)
 template<bool CheckTombstones>
 bool HNSWIndex::index_single(ObjectId ref_object_id, ObjectId tensor_object_id)
 {
-    const auto gen_t = RDF_OID::get_generic_type(tensor_object_id);
-    if (gen_t != RDF_OID::GenericType::TENSOR) {
+    if (tensor_object_id.generic_type() != ObjectGenType::Tensor) {
         // Object is not a tensor
         return false;
     }

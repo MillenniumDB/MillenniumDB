@@ -1,14 +1,14 @@
 #pragma once
 
+#include "graph_models/object_id.h"
+#include "graph_models/rdf_model/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <cstdio>
 #include <memory>
 
 #include <openssl/evp.h>
 #include <openssl/md5.h>
-
-#include "graph_models/object_id.h"
-#include "graph_models/rdf_model/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 #ifdef OPENSSL_VERSION_MAJOR
 #if OPENSSL_VERSION_MAJOR == 3
@@ -29,8 +29,8 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::String: {
             auto str = Conversions::unpack_string(expr_oid);
 
 #ifdef MDB_USE_MD5_EVP_Q_DIGEST
@@ -75,4 +75,4 @@ public:
         os << ')';
     }
 };
-} // namespace SPARQL
+} // namespace SPARQL>

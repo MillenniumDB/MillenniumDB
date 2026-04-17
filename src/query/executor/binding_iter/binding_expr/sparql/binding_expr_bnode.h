@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/query_context.h"
+
+#include <memory>
 
 namespace SPARQL {
 
@@ -19,9 +19,9 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto oid = expr->eval(binding);
-        switch (RDF_OID::get_generic_sub_type(oid)) {
-        case RDF_OID::GenericSubType::STRING_XSD:
-        case RDF_OID::GenericSubType::STRING_SIMPLE: {
+        switch (oid.subtype()) {
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd: {
             auto str = Conversions::unpack_string(oid);
             auto it = get_query_ctx().blank_node_ids.find(str);
             if (it == get_query_ctx().blank_node_ids.end()) {

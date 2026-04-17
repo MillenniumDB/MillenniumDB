@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/quad_model/conversions.h"
 #include "misc/edit_distance.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace MQL {
 
@@ -25,12 +25,12 @@ public:
     {
         const auto lhs_oid = lhs->eval(binding);
 
-        if ((lhs_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE) {
+        if ((lhs_oid.generic_type()) != ObjectGenType::String) {
             return ObjectId::get_null();
         }
 
         const auto rhs_oid = rhs->eval(binding);
-        if ((rhs_oid.id & ObjectId::GENERIC_TYPE_MASK) != ObjectId::MASK_STRING_SIMPLE) {
+        if ((rhs_oid.generic_type()) != ObjectGenType::String) {
             return ObjectId::get_null();
         }
 

@@ -83,7 +83,7 @@ Any QueryVisitor::visitDescribeQuery(MQL_Parser::DescribeQueryContext* ctx)
     }
 
     const auto object_id = last_node.get_OID();
-    const bool is_edge = object_id.get_type() & ObjectId::MASK_EDGE;
+    const bool is_edge = object_id.type() == ObjectType::Edge;
     if (is_edge && (labels_limit_seen || outgoing_limit_seen || incoming_limit_seen)) {
         throw QueryException("Invalid flag to describe edge");
     }
@@ -1731,9 +1731,9 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
     // converts a value context to the contents of its string, throws if not possible
     auto value_to_str = [&](MQL_Parser::ValueContext* ctx, const std::string& key) -> std::string {
         visit(ctx);
-        const auto gen_sub_t = current_value_oid.id & ObjectId::SUB_TYPE_MASK;
-        switch (gen_sub_t) {
-        case ObjectId::MASK_STRING_SIMPLE:
+        const auto subtype = current_value_oid.subtype();
+        switch (subtype) {
+        case ObjectSubType::String:
             return MQL::Conversions::unpack_string(current_value_oid);
         default:
             break;
@@ -1745,9 +1745,9 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
     // converts a value context to a uint64_t, throws if not possible
     auto value_to_uint64 = [&](MQL_Parser::ValueContext* ctx, const std::string& key) -> uint64_t {
         visit(ctx);
-        const auto gen_sub_t = current_value_oid.id & ObjectId::SUB_TYPE_MASK;
-        switch (gen_sub_t) {
-        case ObjectId::MASK_INT:
+        const auto subtype = current_value_oid.subtype();
+        switch (subtype) {
+        case ObjectSubType::Int:
             return MQL::Conversions::unpack_int(current_value_oid);
         default:
             break;

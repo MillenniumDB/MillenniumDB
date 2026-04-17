@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace SPARQL {
 class BindingExprStrAfter : public BindingExpr {
@@ -21,26 +21,22 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_sub = RDF_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_sub = RDF_OID::get_generic_sub_type(rhs_oid);
+        auto lhs_sub = lhs_oid.subtype();
+        auto rhs_sub = rhs_oid.subtype();
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
-            && lhs_sub != RDF_OID::GenericSubType::STRING_XSD
-            && lhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (lhs_sub != ObjectSubType::String && lhs_sub != ObjectSubType::StringXsd
+            && lhs_sub != ObjectSubType::StringLang)
         {
             return ObjectId::get_null();
         }
 
-        if (rhs_sub != RDF_OID::GenericSubType::STRING_SIMPLE
-            && rhs_sub != RDF_OID::GenericSubType::STRING_XSD
-            && rhs_sub != RDF_OID::GenericSubType::STRING_LANG)
+        if (rhs_sub != ObjectSubType::String && rhs_sub != ObjectSubType::StringXsd
+            && rhs_sub != ObjectSubType::StringLang)
         {
             return ObjectId::get_null();
         }
 
-        if (lhs_sub != RDF_OID::GenericSubType::STRING_LANG
-            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
-        {
+        if (lhs_sub != ObjectSubType::StringLang && rhs_sub == ObjectSubType::StringLang) {
             return ObjectId::get_null();
         }
 
@@ -50,9 +46,7 @@ public:
         bool return_lang = false;
         std::string lhs_lang;
 
-        if (lhs_sub == RDF_OID::GenericSubType::STRING_LANG
-            && rhs_sub == RDF_OID::GenericSubType::STRING_LANG)
-        {
+        if (lhs_sub == ObjectSubType::StringLang && rhs_sub == ObjectSubType::StringLang) {
             auto [lhs_l, lhs_s] = Conversions::unpack_string_lang(lhs_oid);
             auto [rhs_l, rhs_s] = Conversions::unpack_string_lang(rhs_oid);
             if (lhs_l != rhs_l) {
@@ -62,9 +56,7 @@ public:
             return_lang = true;
             lhs_str = std::move(lhs_s);
             rhs_str = std::move(rhs_s);
-        } else if (lhs_sub == RDF_OID::GenericSubType::STRING_SIMPLE
-                   || lhs_sub == RDF_OID::GenericSubType::STRING_XSD)
-        {
+        } else if (lhs_sub == ObjectSubType::String || lhs_sub == ObjectSubType::StringXsd) {
             lhs_str = Conversions::to_lexical_str(lhs_oid);
             rhs_str = Conversions::to_lexical_str(rhs_oid);
         } else {
@@ -87,7 +79,7 @@ public:
             auto substr = lhs_str.substr(it + rhs_str.size());
             if (return_lang) {
                 return Conversions::pack_string_lang(lhs_lang, substr);
-            } else if (lhs_sub == RDF_OID::GenericSubType::STRING_XSD) {
+            } else if (lhs_sub == ObjectSubType::StringXsd) {
                 return Conversions::pack_string_xsd(substr);
             } else {
                 return Conversions::pack_string_simple(substr);

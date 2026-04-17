@@ -145,7 +145,7 @@ int compare_date_time() {
         auto lhs_dt = DateTime(DateTime::from_dateTime(lhs));
         auto rhs_dt = DateTime(DateTime::from_dateTime(rhs));
         bool error;
-        int64_t result = lhs_dt.compare<DateTimeComparisonMode::Strict>(rhs_dt, &error);
+        int64_t result = lhs_dt.compare<DTCompare::Strict>(rhs_dt, &error);
         result = std::min(std::max(static_cast<int64_t>(-1), result), static_cast<int64_t>(1)); // Turn into -1,0,1;
         if (expected_error && !error) {
             std::cerr << lhs << " compare " << rhs << ": expected error\n";

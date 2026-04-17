@@ -495,7 +495,7 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
         }
     }
 
-    if (str_len <= RDF_OID::MAX_INLINE_LEN_IRI) {
+    if (str_len <= ObjectId::MAX_LEN_INLINE_IRI) {
         return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
     } else {
         return ObjectId(
@@ -611,7 +611,7 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
 void OnDiskImport::save_object_id_literal_lang(XMLTag& object)
 {
     uint64_t lang_id = get_lang_id(object.lang.c_str());
-    if (object.value.size() <= RDF_OID::MAX_INLINE_LEN_STRING_LANG) {
+    if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING_LANG) {
         object_id = SPARQL::Conversions::pack_string_lang_inline(lang_id, object.value.c_str());
     } else {
         object_id.id = external_helper->get_or_create_external_string_id(
@@ -654,7 +654,7 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
 
     switch (object.datatype) {
     case RDFDatatype::UNSPECIFIED: {
-        if (object.value.size() <= RDF_OID::MAX_INLINE_LEN_STRING) {
+        if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = SPARQL::Conversions::pack_string_simple_inline(object.value.c_str());
         } else {
             object_id.id = external_helper->get_or_create_external_string_id(
@@ -708,7 +708,7 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         break;
     }
     case RDFDatatype::STRING: {
-        if (object.value.size() <= RDF_OID::MAX_INLINE_LEN_STRING) {
+        if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = SPARQL::Conversions::pack_string_xsd_inline(object.value.c_str());
         } else {
             object_id.id = external_helper->get_or_create_external_string_id(

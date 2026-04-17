@@ -538,30 +538,30 @@ public:
     // ============================================================================
     // Misc
     // ============================================================================
-    static constexpr uint64_t get_inline_mask()
+    static constexpr ObjectType get_inline_type()
     {
         if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_INLINED;
+            return ObjectType::TensorFloatInl;
         } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_INLINED;
+            return ObjectType::TensorDoubleInl;
         }
     }
 
-    static constexpr uint64_t get_external_mask()
+    static constexpr ObjectType get_external_type()
     {
         if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_EXTERN;
+            return ObjectType::TensorFloatExt;
         } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_EXTERN;
+            return ObjectType::TensorDoubleExt;
         }
     }
 
-    static constexpr uint64_t get_tmp_mask()
+    static constexpr ObjectType get_tmp_type()
     {
         if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_TMP;
+            return ObjectType::TensorFloatTmp;
         } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_TMP;
+            return ObjectType::TensorDoubleTmp;
         }
     }
 
@@ -570,6 +570,30 @@ public:
             return ObjectId::MASK_TENSOR_FLOAT;
         } else if constexpr (std::is_same_v<value_type, double>) {
             return ObjectId::MASK_TENSOR_DOUBLE;
+        }
+    }
+
+    static constexpr uint64_t get_external_mask() {
+        if constexpr (std::is_same_v<value_type, float>) {
+            return ObjectId::MASK_TENSOR_FLOAT_EXTERN;
+        } else if constexpr (std::is_same_v<value_type, double>) {
+            return ObjectId::MASK_TENSOR_DOUBLE_EXTERN;
+        }
+    }
+
+    static constexpr uint64_t get_inline_mask() {
+        if constexpr (std::is_same_v<value_type, float>) {
+            return ObjectId::MASK_TENSOR_FLOAT_INLINED;
+        } else if constexpr (std::is_same_v<value_type, double>) {
+            return ObjectId::MASK_TENSOR_DOUBLE_INLINED;
+        }
+    }
+
+    static constexpr uint64_t get_tmp_mask() {
+        if constexpr (std::is_same_v<value_type, float>) {
+            return ObjectId::MASK_TENSOR_FLOAT_TMP;
+        } else if constexpr (std::is_same_v<value_type, double>) {
+            return ObjectId::MASK_TENSOR_DOUBLE_TMP;
         }
     }
 

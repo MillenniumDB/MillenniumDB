@@ -1,14 +1,11 @@
 #pragma once
 
+#include "graph_models/object_id.h"
+#include "query/rewriter/sparql/expr/rewrite_rules/expr_rewrite_rule.h"
+
 #include <cassert>
 #include <memory>
-#include <set>
 #include <type_traits>
-
-#include "graph_models/object_id.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
-#include "query/query_context.h"
-#include "query/rewriter/sparql/expr/rewrite_rules/expr_rewrite_rule.h"
 
 namespace SPARQL {
 /**
@@ -41,7 +38,7 @@ private:
         if (expr == nullptr) {
             return false;
         }
-        return RDF_OID::get_generic_type(expr->term) == RDF_OID::GenericType::BOOL;
+        return expr->term.type() == ObjectType::Bool;
     }
 
     bool get_bool(ObjectId& oid) {

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/rdf_model/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
+
+#include <cassert>
+#include <memory>
 
 namespace SPARQL {
 class BindingExprDatatype : public BindingExpr {
@@ -20,45 +20,44 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        switch (RDF_OID::get_generic_sub_type(expr_oid)) {
-        case RDF_OID::GenericSubType::STRING_DATATYPE: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::StringDatatype: {
             auto&& [datatype, str] = Conversions::unpack_string_datatype(expr_oid);
             return Conversions::pack_iri(datatype);
         }
-        case RDF_OID::GenericSubType::STRING_SIMPLE:
-        case RDF_OID::GenericSubType::STRING_XSD:
+        case ObjectSubType::String:
+        case ObjectSubType::StringXsd:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#string");
-        case RDF_OID::GenericSubType::STRING_LANG:
+        case ObjectSubType::StringLang:
             return Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
-        case RDF_OID::GenericSubType::INTEGER:
+        case ObjectSubType::Int:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#integer");
-        case RDF_OID::GenericSubType::DECIMAL:
+        case ObjectSubType::Decimal:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#decimal");
-        case RDF_OID::GenericSubType::FLOAT:
+        case ObjectSubType::Float:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#float");
-        case RDF_OID::GenericSubType::DOUBLE:
+        case ObjectSubType::Double:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#double");
-        case RDF_OID::GenericSubType::DATE: {
-            switch (RDF_OID::get_type(expr_oid)) {
-            case RDF_OID::Type::DATE:
-                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#date");
-            case RDF_OID::Type::DATETIME:
-                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTime");
-            case RDF_OID::Type::TIME:
-                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#time");
-            case RDF_OID::Type::DATETIMESTAMP:
-                return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTimeStamp");
-            default: {
-                assert(false);
-                return ObjectId::get_null();
-            }
+        case ObjectSubType::TemporalLiteral: {
+            switch (expr_oid.type()) {
+                case ObjectType::Date:
+                    return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#date");
+                case ObjectType::Datetime:
+                    return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTime");
+                case ObjectType::Datetimestamp:
+                    return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#dateTimeStamp");
+                case ObjectType::Time:
+                    return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#time");
+                default:
+                    assert(false);
+                    return ObjectId::get_null();
             }
         }
-        case RDF_OID::GenericSubType::BOOL:
+        case ObjectSubType::Bool:
             return Conversions::pack_iri("http://www.w3.org/2001/XMLSchema#boolean");
-        case RDF_OID::GenericSubType::TENSOR_FLOAT:
+        case ObjectSubType::TensorFloat:
             return Conversions::pack_iri(MDBExtensions::Type::TENSOR_FLOAT_IRI);
-        case RDF_OID::GenericSubType::TENSOR_DOUBLE:
+        case ObjectSubType::TensorDouble:
             return Conversions::pack_iri(MDBExtensions::Type::TENSOR_DOUBLE_IRI);
         default:
             return ObjectId::get_null();
