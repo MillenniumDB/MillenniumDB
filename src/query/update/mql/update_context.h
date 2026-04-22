@@ -228,12 +228,12 @@ public:
 
     ObjectId get_new_edge_id()
     {
-        return ObjectId(ObjectId::MASK_EDGE | current_edge++);
+        return ObjectId(ObjectId::MASK_DIRECTED_EDGE | current_edge++);
     }
 
     ObjectId get_anon_id()
     {
-        return ObjectId(ObjectId::MASK_ANON_INLINED | current_edge++);
+        return ObjectId(ObjectId::MASK_ANON_INL | current_edge++);
     }
 
     void delete_object(uint64_t obj, bool detach)
@@ -254,7 +254,7 @@ public:
             }
         }
 
-        if (ObjectId(obj).type() == ObjectType::Edge) {
+        if (ObjectId(obj).type() == ObjectType::DirectedEdge) {
             auto iter = quad_model.edge_from_to_type->get_range(&interruption, min_range, max_range);
 
             if (auto existing_record = iter.next()) {

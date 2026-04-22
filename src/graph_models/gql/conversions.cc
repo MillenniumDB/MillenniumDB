@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "graph_models/gql/gql_model.h"
-#include "graph_models/gql/gql_object_id.h"
 #include "graph_models/inliner.h"
 #include "system/path_manager.h"
 #include "system/string_manager.h"
@@ -14,29 +13,6 @@
 #include "third_party/dragonbox/dragonbox_to_chars.h"
 
 using namespace GQL;
-
-std::string Conversions::unpack_string(ObjectId oid)
-{
-    switch (oid.type()) {
-    case ObjectType::StringInl: {
-        return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.id);
-    }
-    case ObjectType::StringExt: {
-        std::stringstream ss;
-        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        string_manager.print(ss, external_id);
-        return ss.str();
-    }
-    case ObjectType::StringTmp: {
-        std::stringstream ss;
-        uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        tmp_manager.print_str(ss, external_id);
-        return ss.str();
-    }
-    default:
-        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
-    }
-}
 
 void Conversions::print_path_node(std::ostream& os, ObjectId node_id)
 {
@@ -115,7 +91,7 @@ void Conversions::print_string(ObjectId oid, std::ostream& os)
         break;
     }
     default:
-        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
+        throw LogicException("Called print_string with incorrect ObjectId type, this should never happen");
     }
 }
 
@@ -134,26 +110,22 @@ size_t Conversions::print_string(ObjectId oid, char* out)
         return tmp_manager.print_to_buffer(out, external_id);
     }
     default:
-        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
+        throw LogicException("Called print_string with incorrect ObjectId type, this should never happen");
     }
 }
 
 // Converts an ObjectId into its lexical representation.
 std::string Conversions::to_lexical_str(ObjectId oid)
 {
-    switch (GQL_OID::get_type(oid)) {
-    case GQL_OID::Type::STRING_SIMPLE_INLINE:
-    case GQL_OID::Type::STRING_SIMPLE_EXTERN:
-    case GQL_OID::Type::STRING_SIMPLE_TMP: {
+    switch (oid.subtype()) {
+    case ObjectSubType::String: {
         return unpack_string(oid);
     }
-    case GQL_OID::Type::INT56_INLINE:
-    case GQL_OID::Type::INT64_EXTERN:
-    case GQL_OID::Type::INT64_TMP: {
+    case ObjectSubType::Int: {
         int64_t i = unpack_int(oid);
         return std::to_string(i);
     }
-    case GQL_OID::Type::FLOAT32: {
+    case ObjectSubType::Float: {
         float f = unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -161,8 +133,7 @@ std::string Conversions::to_lexical_str(ObjectId oid)
 
         return std::string(float_buffer);
     }
-    case GQL_OID::Type::DOUBLE64_EXTERN:
-    case GQL_OID::Type::DOUBLE64_TMP: {
+    case ObjectSubType::Double: {
         double d = unpack_double(oid);
 
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
@@ -170,10 +141,10 @@ std::string Conversions::to_lexical_str(ObjectId oid)
 
         return std::string(double_buffer);
     }
-    case GQL_OID::Type::BOOL: {
+    case ObjectSubType::Bool: {
         return (unpack_bool(oid) ? "true" : "false");
     }
-    case GQL_OID::Type::PATH: {
+    case ObjectSubType::Path: {
         std::stringstream ss;
         ss << '[';
         path_manager.for_each(
@@ -184,51 +155,32 @@ std::string Conversions::to_lexical_str(ObjectId oid)
         ss << ']';
         return ss.str();
     }
-    case GQL_OID::Type::DATE:
-    case GQL_OID::Type::DATETIME:
-    case GQL_OID::Type::TIME:
-    case GQL_OID::Type::DATETIMESTAMP: {
+    case ObjectSubType::TemporalLiteral: {
         DateTime datetime = unpack_date(oid);
         return datetime.get_value_string();
     }
-    case GQL_OID::Type::DECIMAL_INLINE:
-    case GQL_OID::Type::DECIMAL_EXTERN:
-    case GQL_OID::Type::DECIMAL_TMP: {
+    case ObjectSubType::Decimal: {
         Decimal decimal = unpack_decimal(oid);
         return decimal.to_string();
     }
-    case GQL_OID::Type::NULL_ID:
-    case GQL_OID::Type::NODE:
-    case GQL_OID::Type::DIRECTED_EDGE:
-    case GQL_OID::Type::UNDIRECTED_EDGE:
-    case GQL_OID::Type::NODE_LABEL:
-    case GQL_OID::Type::EDGE_LABEL:
-    case GQL_OID::Type::NODE_KEY:
-    case GQL_OID::Type::EDGE_KEY:
-    case GQL_OID::Type::LIST:
-    case GQL_OID::Type::DICTIONARY: {
+    case ObjectSubType::Null: {
         return "";
     }
+    case ObjectSubType::Dictionary: // TODO: should print something?
+    case ObjectSubType::List:  // TODO: should print something?
+    case ObjectSubType::TensorFloat: // TODO: should print something?
+    case ObjectSubType::TensorDouble:  // TODO: should print something?
+    case ObjectSubType::Anon: // TODO: should print something?
+    case ObjectSubType::Edge: // TODO: should print something?
+    case ObjectSubType::NamedNode:
+    case ObjectSubType::StringXsd:
+    case ObjectSubType::StringLang:
+    case ObjectSubType::StringDatatype:
+    case ObjectSubType::Iri:
+    case ObjectSubType::NotFound:
+        break;
     }
     return "";
-}
-
-ObjectId Conversions::pack_string_simple(const std::string& str)
-{
-    uint64_t oid;
-    if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
-    } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
-        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-    } else {
-        auto str_id = string_manager.get_str_id(str);
-        if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_STRING_SIMPLE_EXTERN | str_id;
-        } else {
-            oid = ObjectId::MASK_STRING_SIMPLE_TMP | tmp_manager.get_str_id(str);
-        }
-    }
-    return ObjectId(oid);
 }
 
 ObjectId Conversions::pack_node_label(const std::string& label)
@@ -274,7 +226,7 @@ ObjectId Conversions::pack_edge_property(const std::string& property)
 ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
 {
     ObjectId path_oid = pack_list(oid_list);
-    return ObjectId((path_oid.id & ObjectId::VALUE_MASK) | ObjectId::MASK_GQL_PATH);
+    return ObjectId((path_oid.id & ObjectId::VALUE_MASK) | ObjectId::MASK_PATH);
 }
 
 void Conversions::unpack_path(ObjectId oid, std::vector<ObjectId>& out)
@@ -287,36 +239,37 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
 {
     const auto unmasked_id = oid.id & ObjectId::VALUE_MASK;
 
-    switch (GQL_OID::get_type(oid)) {
-    case GQL_OID::Type::NODE: {
+    switch (oid.type()) {
+    case ObjectType::AnonInl: {
         os << "_n" << unmasked_id;
         break;
     }
-    case GQL_OID::Type::DIRECTED_EDGE: {
+    case ObjectType::DirectedEdge: {
         os << "_e" << unmasked_id;
         break;
     }
-    case GQL_OID::Type::UNDIRECTED_EDGE: {
+    case ObjectType::UndirectedEdge: {
         os << "_u" << unmasked_id;
         break;
     }
-    case GQL_OID::Type::NODE_LABEL: {
+    case ObjectType::NodeLabel: {
         os << gql_model.catalog.node_labels_str[unmasked_id];
         break;
     }
-    case GQL_OID::Type::EDGE_LABEL: {
+    case ObjectType::EdgeLabel: {
         os << gql_model.catalog.edge_labels_str[unmasked_id];
         break;
     }
-    case GQL_OID::Type::NODE_KEY: {
+    case ObjectType::NodeKey: {
         os << gql_model.catalog.node_keys_str[unmasked_id];
         break;
     }
-    case GQL_OID::Type::EDGE_KEY: {
+    case ObjectType::EdgeKey: {
         os << gql_model.catalog.edge_keys_str[unmasked_id];
         break;
     }
-    case GQL_OID::Type::LIST: {
+    case ObjectType::ListExt:
+    case ObjectType::ListTmp: {
         std::vector<ObjectId> out = Conversions::unpack_list(oid);
         os << "[";
         for (auto it = out.begin(); it != out.end(); ++it) {
@@ -328,27 +281,27 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         os << "]";
         break;
     }
-    case GQL_OID::Type::DICTIONARY: {
+    case ObjectType::DictionaryExt:
+    case ObjectType::DictionaryTmp: {
         std::unique_ptr<Dictionary> dict;
         Common::Conversions::unpack_dictionary(oid, dict);
         dict->to_string(os);
         break;
     }
-    case GQL_OID::Type::STRING_SIMPLE_INLINE:
-    case GQL_OID::Type::STRING_SIMPLE_EXTERN:
-    case GQL_OID::Type::STRING_SIMPLE_TMP: {
+    case ObjectType::StringInl:
+    case ObjectType::StringExt:
+    case ObjectType::StringTmp: {
         os << '"';
         print_string(oid, os);
         os << '"';
         break;
     }
-    case GQL_OID::Type::INT56_INLINE:
-    case GQL_OID::Type::INT64_EXTERN:
-    case GQL_OID::Type::INT64_TMP: {
+    case ObjectType::PositiveInt56:
+    case ObjectType::NegativeInt56: {
         os << Conversions::unpack_int(oid);
         break;
     }
-    case GQL_OID::Type::FLOAT32: {
+    case ObjectType::Float: {
         float f = Conversions::unpack_float(oid);
 
         char float_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary32>];
@@ -357,8 +310,8 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         os << float_buffer;
         break;
     }
-    case GQL_OID::Type::DOUBLE64_EXTERN:
-    case GQL_OID::Type::DOUBLE64_TMP: {
+    case ObjectType::DoubleExt:
+    case ObjectType::DoubleTmp: {
         double d = Conversions::unpack_double(oid);
 
         char double_buffer[1 + jkj::dragonbox::max_output_string_length<jkj::dragonbox::ieee754_binary64>];
@@ -367,45 +320,77 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
         os << double_buffer;
         break;
     }
-    case GQL_OID::Type::BOOL: {
+    case ObjectType::Bool: {
         os << (Conversions::unpack_bool(oid) ? "true" : "false");
         break;
     }
-    case GQL_OID::Type::PATH: {
+    case ObjectType::Path: {
         print_path(os, oid);
         break;
     }
-    case GQL_OID::Type::DATE: {
+    case ObjectType::Date: {
         DateTime datetime = Conversions::unpack_date(oid);
         os << "Date(" << datetime.get_value_string() << ")";
         break;
     }
-    case GQL_OID::Type::DATETIME: {
+    case ObjectType::Datetime: {
         DateTime datetime = Conversions::unpack_date(oid);
         os << "Datetime(" << datetime.get_value_string() << ")";
         break;
     }
-    case GQL_OID::Type::TIME: {
+    case ObjectType::Time: {
         DateTime datetime = Conversions::unpack_date(oid);
         os << "Time(" << datetime.get_value_string() << ")";
         break;
     }
-    case GQL_OID::Type::DATETIMESTAMP: {
+    case ObjectType::Datetimestamp: {
         DateTime datetime = Conversions::unpack_date(oid);
         os << "DatetimeStamp(" << datetime.get_value_string() << ")";
         break;
     }
-    case GQL_OID::Type::DECIMAL_INLINE:
-    case GQL_OID::Type::DECIMAL_EXTERN:
-    case GQL_OID::Type::DECIMAL_TMP: {
+    case ObjectType::DecimalInl:
+    case ObjectType::DecimalExt:
+    case ObjectType::DecimalTmp: {
         auto decimal = Conversions::unpack_decimal(oid);
         os << decimal;
         break;
     }
-    case GQL_OID::Type::NULL_ID: {
+    case ObjectType::Null: {
         os << "NULL";
         break;
     }
+    case ObjectType::AnonTmp:
+    case ObjectType::StringXsdInl:
+    case ObjectType::StringXsdExt:
+    case ObjectType::StringXsdTmp:
+    case ObjectType::StringLangInl:
+    case ObjectType::StringLangExt:
+    case ObjectType::StringLangTmp:
+    case ObjectType::StringDatatypeInl:
+    case ObjectType::StringDatatypeExt:
+    case ObjectType::StringDatatypeTmp:
+    case ObjectType::IriInl:
+    case ObjectType::IriExt:
+    case ObjectType::IriTmp:
+    case ObjectType::IriUuidLowerTmp:
+    case ObjectType::IriUuidLowerExt:
+    case ObjectType::IriUuidUpperTmp:
+    case ObjectType::IriUuidUpperExt:
+    case ObjectType::IriHexLowerTmp:
+    case ObjectType::IriHexLowerExt:
+    case ObjectType::IriHexUpperTmp:
+    case ObjectType::IriHexUpperExt:
+    case ObjectType::NamedNodeInl:
+    case ObjectType::NamedNodeExt:
+    case ObjectType::NamedNodeTmp:
+    case ObjectType::TensorFloatInl:
+    case ObjectType::TensorFloatExt:
+    case ObjectType::TensorFloatTmp:
+    case ObjectType::TensorDoubleInl:
+    case ObjectType::TensorDoubleExt:
+    case ObjectType::TensorDoubleTmp:
+    case ObjectType::NotFound:
+        break;
     }
     return os;
 }

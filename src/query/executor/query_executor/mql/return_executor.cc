@@ -132,7 +132,7 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << (unmasked_id == 0 ? "false" : "true");
         break;
     }
-    case ObjectType::Edge: {
+    case ObjectType::DirectedEdge: {
         os << "_e" << unmasked_id;
         break;
     }

@@ -18,7 +18,7 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         ObjectId list_id = rhs->eval(binding);
-        if (GQL_OID::get_type(list_id) != GQL_OID::Type::LIST) {
+        if (list_id.generic_type() != ObjectGenType::List) {
             return ObjectId::get_null();
         }
         std::vector<ObjectId> list = Conversions::unpack_list(list_id);

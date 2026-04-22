@@ -222,7 +222,6 @@ void JsonSelectExecutor::print(std::ostream& os, std::ostream& escaped_os, Objec
     case ObjectSubType::List:
     case ObjectSubType::Edge:
     case ObjectSubType::NotFound:
-    case ObjectSubType::Invalid:
         break;
     }
 }

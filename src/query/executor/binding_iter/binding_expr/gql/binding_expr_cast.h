@@ -2,6 +2,7 @@
 
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <memory>
 #include <string>
 
@@ -10,9 +11,9 @@ namespace GQL {
 class BindingExprCast : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> operand;
-    GQL_OID::GenericType targetType;
+    ObjectGenType targetType;
 
-    BindingExprCast(std::unique_ptr<BindingExpr> operand, GQL_OID::GenericType targetType) :
+    BindingExprCast(std::unique_ptr<BindingExpr> operand, ObjectGenType targetType) :
         operand(std::move(operand)),
         targetType(std::move(targetType))
     { }
@@ -24,39 +25,40 @@ public:
             return ObjectId::get_null();
         }
 
-        auto sourceType = GQL_OID::get_generic_type(operand_oid);
+        auto sourceType = operand_oid.generic_type();
 
         if (sourceType == targetType) {
             return operand_oid;
         }
 
         switch (targetType) {
-        case GQL_OID::GenericType::BOOL:
+        case ObjectGenType::Bool:
             switch (sourceType) {
-            case GQL_OID::GenericType::NUMERIC: {
+            case ObjectGenType::Numeric: {
                 auto number = GQL::Conversions::to_integer(operand_oid);
                 auto boolean = number != 0;
                 return GQL::Conversions::pack_bool(boolean);
             }
-            case GQL_OID::GenericType::STRING:
+            case ObjectGenType::String:
                 return GQL::Conversions::pack_bool(GQL::Conversions::to_lexical_str(operand_oid) == "true");
             default:
                 return ObjectId::get_null();
             }
 
-        case GQL_OID::GenericType::NUMERIC:
+        case ObjectGenType::Numeric:
             switch (sourceType) {
-            case GQL_OID::GenericType::NUMERIC:
+            case ObjectGenType::Numeric:
                 return operand_oid;
-            case GQL_OID::GenericType::BOOL: {
+            case ObjectGenType::Bool: {
                 auto boolean = GQL::Conversions::to_boolean(operand_oid);
                 auto boolean_value = boolean == GQL::Conversions::pack_bool(true);
                 auto number = boolean_value ? 1 : 0;
                 return GQL::Conversions::pack_int(number);
             }
-            case GQL_OID::GenericType::STRING: {
+            case ObjectGenType::String: {
                 std::string str = GQL::Conversions::to_lexical_str(operand_oid);
                 try {
+                    // TODO: avoid exception from std::stod?
                     return GQL::Conversions::pack_int(std::stod(str));
                 } catch (...) {
                     return ObjectId::get_null();
@@ -66,8 +68,8 @@ public:
                 return ObjectId::get_null();
             }
 
-        case GQL_OID::GenericType::DATE:
-            if (sourceType == GQL_OID::GenericType::STRING) {
+        case ObjectGenType::TemporalLiteral:
+            if (sourceType == ObjectGenType::String) {
                 try {
                     return ObjectId(DateTime::from_dateTime(Conversions::to_lexical_str(operand_oid)));
                 } catch (...) {
@@ -76,12 +78,12 @@ public:
             }
             return ObjectId::get_null();
 
-        case GQL_OID::GenericType::STRING:
+        case ObjectGenType::String:
             switch (sourceType) {
-            case GQL_OID::GenericType::NUMERIC:
-            case GQL_OID::GenericType::BOOL:
-            case GQL_OID::GenericType::DATE:
-                return GQL::Conversions::pack_string_simple(GQL::Conversions::to_lexical_str(operand_oid));
+            case ObjectGenType::Numeric:
+            case ObjectGenType::Bool:
+            case ObjectGenType::TemporalLiteral:
+                return GQL::Conversions::pack_string(GQL::Conversions::to_lexical_str(operand_oid));
             default:
                 return ObjectId::get_null();
             }
@@ -101,13 +103,13 @@ public:
         os << "CAST(";
         operand->print(os, ops);
         os << " AS ";
-        if (targetType == GQL_OID::GenericType::BOOL) {
+        if (targetType == ObjectGenType::Bool) {
             os << "BOOL";
-        } else if (targetType == GQL_OID::GenericType::NUMERIC) {
+        } else if (targetType == ObjectGenType::Numeric) {
             os << "NUMERIC";
-        } else if (targetType == GQL_OID::GenericType::DATE) {
+        } else if (targetType == ObjectGenType::TemporalLiteral) {
             os << "DATE";
-        } else if (targetType == GQL_OID::GenericType::STRING) {
+        } else if (targetType == ObjectGenType::String) {
             os << "STRING";
         }
         os << ")";

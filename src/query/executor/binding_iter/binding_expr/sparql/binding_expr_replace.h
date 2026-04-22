@@ -89,7 +89,7 @@ public:
         case ObjectSubType::StringXsd: {
             auto expr1_str = Conversions::unpack_string(expr1_oid);
             auto res = replace(expr1_str, reg, expr3_str);
-            return Conversions::pack_string_simple(res);
+            return Conversions::pack_string(res);
         }
         case ObjectSubType::StringLang: {
             auto&& [lang, expr1_str] = Conversions::unpack_string_lang(expr1_oid);

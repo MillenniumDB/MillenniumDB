@@ -1,15 +1,15 @@
 #pragma once
 
-#include "graph_models/gql/conversions.h"
+#include "graph_models/object_id.h"
 #include "query/parser/expr/gql/expr.h"
 
 namespace GQL {
 class ExprCast : public Expr {
 public:
     std::unique_ptr<Expr> expr;
-    GQL_OID::GenericType targetType;
+    ObjectGenType targetType;
 
-    ExprCast(std::unique_ptr<Expr> operand, GQL_OID::GenericType targetType) :
+    ExprCast(std::unique_ptr<Expr> operand, ObjectGenType targetType) :
         expr(std::move(operand)),
         targetType(std::move(targetType))
     { }

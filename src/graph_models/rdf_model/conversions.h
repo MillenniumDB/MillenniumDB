@@ -4,7 +4,6 @@
 #include <string>
 
 #include "graph_models/common/conversions.h" // IWYU pragma: export
-#include "graph_models/rdf_model/rdf_object_id.h" // IWYU pragma: export
 
 namespace SPARQL { namespace Conversions {
 
@@ -53,7 +52,7 @@ ObjectId string_simple_to_xsd(ObjectId oid);
 
 inline constexpr ObjectId pack_blank_inline(uint64_t id)
 {
-    return ObjectId(ObjectId::MASK_ANON_INLINED | id);
+    return ObjectId(ObjectId::MASK_ANON_INL | id);
 }
 
 inline constexpr ObjectId pack_blank_tmp(uint64_t blank_id)
@@ -62,7 +61,6 @@ inline constexpr ObjectId pack_blank_tmp(uint64_t blank_id)
 }
 
 ObjectId pack_iri_inline(const char* str, uint_fast8_t prefix_id);
-ObjectId pack_string_simple_inline(const char* str);
 ObjectId pack_string_xsd_inline(const char* str);
 ObjectId pack_string_datatype_inline(uint64_t datatype_id, const char* str);
 ObjectId pack_string_lang_inline(uint64_t lang_id, const char* str);
@@ -76,11 +74,10 @@ ObjectId try_pack_integer(const std::string& dt, const std::string& str);
 
 constexpr ObjectId pack_empty_string()
 {
-    return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
+    return ObjectId(ObjectId::MASK_STR_INL);
 }
 
 ObjectId pack_iri(const std::string& str);
-ObjectId pack_string_simple(const std::string& str);
 ObjectId pack_string_xsd(const std::string& str);
 
 // Returns a string with the lexical representation of the value

@@ -16,7 +16,7 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        if (oid.type() != ObjectType::Edge) {
+        if (oid.type() != ObjectType::DirectedEdge) {
             return ObjectId::get_null();
         }
 

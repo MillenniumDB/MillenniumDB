@@ -109,7 +109,7 @@ private:
     DiskVector<2> undirected_equal_edges;
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     // map Id->InternalId
     boost::unordered_flat_map<uint64_t, uint64_t> node_ids_map;

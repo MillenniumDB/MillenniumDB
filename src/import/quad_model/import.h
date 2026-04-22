@@ -105,7 +105,7 @@ private:
     DiskVector<2> equal_from_to_type;
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     void do_nothing() { }
 
@@ -123,10 +123,9 @@ private:
     {
         ids_stack.clear();
         if (lexer.str_len < 8) {
-            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INLINED;
+            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
-            id1 = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                | ObjectId::MASK_NAMED_NODE;
+            id1 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
         }
     }
 
@@ -135,7 +134,7 @@ private:
         ids_stack.clear();
         // ignore first 2 characters: '_a'
         uint64_t unmasked_id = std::stoull(lexer.str + 2);
-        id1 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        id1 = unmasked_id | ObjectId::MASK_ANON_INL;
         if (unmasked_id > max_anon_seen) {
             max_anon_seen = unmasked_id;
         }
@@ -147,10 +146,9 @@ private:
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            id1 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            id1 = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                | ObjectId::MASK_STRING_SIMPLE;
+            id1 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
     }
 
@@ -289,13 +287,12 @@ private:
     void save_edge_type()
     {
         if (lexer.str_len < 8) {
-            type_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INLINED;
+            type_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
-            type_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                    | ObjectId::MASK_NAMED_NODE;
+            type_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
         }
 
-        edge_id = edge_count++ | ObjectId::MASK_EDGE;
+        edge_id = edge_count++ | ObjectId::MASK_DIRECTED_EDGE;
         ids_stack.push_back(edge_id);
 
         if (direction) {
@@ -308,20 +305,18 @@ private:
     void save_prop_key()
     {
         if (lexer.str_len < 8) {
-            key_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            key_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            key_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                   | ObjectId::MASK_STRING_SIMPLE;
+            key_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
     }
 
     void save_second_id_identifier()
     {
         if (lexer.str_len < 8) {
-            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INLINED;
+            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_NAMED_NODE_INL;
         } else {
-            id2 = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                | ObjectId::MASK_NAMED_NODE;
+            id2 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_NAMED_NODE_EXT);
         }
     }
 
@@ -329,7 +324,7 @@ private:
     {
         // ignore first 2 characters: '_a'
         uint64_t unmasked_id = std::stoull(lexer.str + 2);
-        id2 = unmasked_id | ObjectId::MASK_ANON_INLINED;
+        id2 = unmasked_id | ObjectId::MASK_ANON_INL;
         if (unmasked_id > max_anon_seen) {
             max_anon_seen = unmasked_id;
         }
@@ -340,10 +335,9 @@ private:
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            id2 = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            id2 = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                | ObjectId::MASK_STRING_SIMPLE;
+            id2 = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
     }
 
@@ -370,10 +364,9 @@ private:
     void add_node_label()
     {
         if (lexer.str_len < 8) {
-            label_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            label_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            label_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                     | ObjectId::MASK_STRING_SIMPLE;
+            label_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
         try_save_label();
@@ -477,7 +470,7 @@ private:
         const auto bytes = reinterpret_cast<const char*>(tensor.data());
         const auto num_bytes = sizeof(T) * tensor.size();
         return tensor::Tensor<T>::get_subtype()
-             | external_helper->get_or_create_external_tensor_id(bytes, num_bytes);
+             | ext_helper->get_or_create_external_tensor_id(bytes, num_bytes);
     }
 
     void add_node_prop_string()
@@ -485,10 +478,9 @@ private:
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            value_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                     | ObjectId::MASK_STRING_SIMPLE;
+            value_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
         try_save_property(id1);
@@ -523,10 +515,9 @@ private:
         normalize_string_literal(lexer.str, &lexer.str_len);
 
         if (lexer.str_len < 8) {
-            value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            value_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            value_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                     | ObjectId::MASK_STRING_SIMPLE;
+            value_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
         try_save_property(edge_id);
@@ -591,10 +582,10 @@ private:
 
         uint64_t str_id;
         if (lexer.str_len < 8) {
-            str_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+            str_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            str_id = external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                   | ObjectId::MASK_STRING;
+            str_id = ext_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
+                   | ObjectId::MASK_STR_INL;
         }
 
         lists_stack.top().emplace_back(str_id);
@@ -612,7 +603,7 @@ private:
         uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
         lists_stack.pop();
 
-        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+        uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
                          | ObjectId::MASK_LIST;
 
         // if there is a list in the stack, then this list is nested and we do not store the property yet
@@ -637,7 +628,7 @@ private:
         uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
         lists_stack.pop();
 
-        uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+        uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
                          | ObjectId::MASK_LIST;
 
         // if there is a list in the stack, then this list is nested and we do not store the property yet
@@ -708,8 +699,8 @@ private:
             ++i;
 
             // advance pending variables for current iteration
-            external_helper->advance_pending();
-            external_helper->clear_sets();
+            ext_helper->advance_pending();
+            ext_helper->clear_sets();
 
             old_pending_vector->begin_tuple_iter();
             while (old_pending_vector->has_next_tuple()) {
@@ -719,9 +710,9 @@ private:
             }
 
             // write out new data
-            external_helper->flush_to_disk();
+            ext_helper->flush_to_disk();
             // close and delete the old pending files
-            external_helper->clean_up_old();
+            ext_helper->clean_up_old();
 
             // close and delete old pending file
             pending_vector->finish_appends();

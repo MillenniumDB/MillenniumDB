@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "misc/transliterator.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cassert>
+#include <memory>
 
 namespace GQL {
 class BindingExprFold : public BindingExpr {
@@ -21,14 +21,14 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto expr_oid = expr->eval(binding);
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
+        auto expr_generic_type = expr_oid.generic_type();
 
-        if (expr_generic_type == GQL_OID::GenericType::STRING) {
+        if (expr_generic_type == ObjectGenType::String) {
             auto str = GQL::Conversions::unpack_string(expr_oid);
             if (upper) {
-                return Conversions::pack_string_simple(Transliterator::uppercase(str));
+                return Conversions::pack_string(Transliterator::uppercase(str));
             } else {
-                return Conversions::pack_string_simple(Transliterator::lowercase(str));
+                return Conversions::pack_string(Transliterator::lowercase(str));
             }
         } else {
             return ObjectId::get_null();

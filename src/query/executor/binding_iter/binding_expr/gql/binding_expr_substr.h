@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace GQL {
 class BindingExprSubStr : public BindingExpr {
@@ -22,7 +22,6 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto expr_oid = expr->eval(binding);
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
 
         auto len_oid = str_len->eval(binding);
         auto len_int = GQL::Conversions::to_integer(len_oid);
@@ -31,15 +30,15 @@ public:
             throw QueryExecutionException("data exception — substring error (negative number)");
         }
 
-        if (expr_generic_type == GQL_OID::GenericType::STRING) {
+        if (expr_oid.generic_type() == ObjectGenType::String) {
             auto str = GQL::Conversions::unpack_string(expr_oid);
             if (static_cast<std::size_t>(len_int) > str.size()) {
-                return GQL::Conversions::pack_string_simple(str);
+                return GQL::Conversions::pack_string(str);
             }
             if (left == true) {
-                return GQL::Conversions::pack_string_simple(str.substr(0, len_int));
+                return GQL::Conversions::pack_string(str.substr(0, len_int));
             } else {
-                return GQL::Conversions::pack_string_simple(str.substr(str.size() - len_int, len_int));
+                return GQL::Conversions::pack_string(str.substr(str.size() - len_int, len_int));
             }
         } else {
             return ObjectId::get_null();

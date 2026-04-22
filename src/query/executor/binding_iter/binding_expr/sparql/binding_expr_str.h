@@ -34,7 +34,7 @@ public:
         case ObjectSubType::TensorDouble:
         case ObjectSubType::TensorFloat: {
             auto str = Conversions::to_lexical_str(expr_oid);
-            return Conversions::pack_string_simple(str);
+            return Conversions::pack_string(str);
         }
         case ObjectSubType::Null:
         case ObjectSubType::Path:

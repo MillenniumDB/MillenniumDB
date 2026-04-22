@@ -1,11 +1,11 @@
 #pragma once
 
+#include "graph_models/gql/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <cassert>
 #include <cmath>
 #include <memory>
-
-#include "graph_models/gql/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
 class BindingExprCosh : public BindingExpr {
@@ -20,16 +20,14 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        auto expr_subtype = GQL_OID::get_generic_sub_type(expr_oid);
-
-        switch (expr_subtype) {
-        case GQL_OID::GenericSubType::INTEGER:
-        case GQL_OID::GenericSubType::DECIMAL:
-        case GQL_OID::GenericSubType::FLOAT: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::Int:
+        case ObjectSubType::Decimal:
+        case ObjectSubType::Float: {
             auto expr = GQL::Conversions::to_float(expr_oid);
             return GQL::Conversions::pack_float(cosh(expr));
         }
-        case GQL_OID::GenericSubType::DOUBLE: {
+        case ObjectSubType::Double: {
             auto expr = GQL::Conversions::to_double(expr_oid);
             return GQL::Conversions::pack_double(cosh(expr));
         }

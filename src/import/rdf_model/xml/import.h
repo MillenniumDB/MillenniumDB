@@ -101,7 +101,7 @@ private:
     Import::DiskVector<2> equal_po;
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     void normalize_string_literal();
 

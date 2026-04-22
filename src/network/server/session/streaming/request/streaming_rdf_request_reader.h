@@ -28,7 +28,7 @@ public:
         }
         case Protocol::DataType::STRING: {
             const auto str = read_string();
-            return SPARQL::Conversions::pack_string_simple(str);
+            return SPARQL::Conversions::pack_string(str);
         }
         case Protocol::DataType::STRING_LANG: {
             const auto str = read_string();

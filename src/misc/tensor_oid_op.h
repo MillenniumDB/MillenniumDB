@@ -36,7 +36,7 @@ inline ObjectId op_oid_tensor(
         }
         return Common::Conversions::pack_tensor(lhs);
     } else {
-        assert(rhs_generic_type == ObjectId::MASK_TENSOR && "at least one operand must be a tensor");
+        assert(rhs_generic_type == ObjectGenType::Tensor && "at least one operand must be a tensor");
         auto rhs = Common::Conversions::to_tensor<T>(rhs_oid);
         const T lhs = to_scalar_func(lhs_oid);
         scalar_tensor_op(lhs, rhs);

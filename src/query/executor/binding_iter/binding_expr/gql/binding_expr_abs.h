@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace GQL {
 class BindingExprAbs : public BindingExpr {
@@ -18,22 +18,20 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        auto expr_subtype = GQL_OID::get_generic_sub_type(expr_oid);
-
-        switch (expr_subtype) {
-        case GQL_OID::GenericSubType::INTEGER: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::Int: {
             auto expr = GQL::Conversions::to_integer(expr_oid);
             return GQL::Conversions::pack_int(abs(expr));
         }
-        case GQL_OID::GenericSubType::DECIMAL: {
+        case ObjectSubType::Decimal: {
             auto expr = GQL::Conversions::to_decimal(expr_oid);
             return GQL::Conversions::pack_decimal(expr.abs());
         }
-        case GQL_OID::GenericSubType::FLOAT: {
+        case ObjectSubType::Float: {
             auto expr = GQL::Conversions::to_float(expr_oid);
             return GQL::Conversions::pack_float(abs(expr));
         }
-        case GQL_OID::GenericSubType::DOUBLE: {
+        case ObjectSubType::Double: {
             auto expr = GQL::Conversions::to_double(expr_oid);
             return GQL::Conversions::pack_double(abs(expr));
         }

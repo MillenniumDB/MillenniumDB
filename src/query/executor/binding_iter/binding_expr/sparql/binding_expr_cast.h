@@ -287,7 +287,7 @@ public:
         case ObjectSubType::Bool: {
             switch (cast_type) {
             case CastType::xsd_string:
-                return Conversions::pack_string_simple(Conversions::to_lexical_str(oid));
+                return Conversions::pack_string(Conversions::to_lexical_str(oid));
             case CastType::xsd_float: {
                 float flt = oid == Conversions::pack_bool(true) ? 1.0 : 0.0;
                 return Conversions::pack_float(flt);

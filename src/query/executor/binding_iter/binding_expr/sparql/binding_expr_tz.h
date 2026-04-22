@@ -20,7 +20,7 @@ public:
         switch (expr_oid.generic_type()) {
         case ObjectGenType::TemporalLiteral: {
             auto str = DateTime(expr_oid).get_tz();
-            return Conversions::pack_string_simple(str);
+            return Conversions::pack_string(str);
         }
         default:
             return ObjectId::get_null();

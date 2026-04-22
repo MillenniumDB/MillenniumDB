@@ -123,7 +123,7 @@ private:
     DiskVector<2> equal_po;
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     // Blank nodes
     uint64_t blank_node_count = 0;
@@ -180,10 +180,9 @@ private:
         auto size = object->n_bytes;
 
         if (size <= ObjectId::MAX_LEN_INLINE_STRING) {
-            object_id = Conversions::pack_string_simple_inline(object_str);
+            object_id = Conversions::pack_string_inline(object_str);
         } else {
-            object_id.id = external_helper->get_or_create_external_string_id(object_str, size)
-                         | ObjectId::MASK_STRING_SIMPLE;
+            object_id.id = ext_helper->get_or_create_ext(object_str, size, ObjectId::MASK_STR_EXT);
         }
     }
 
@@ -194,8 +193,11 @@ private:
             object_id = Conversions::pack_string_datatype_inline(datatype_id, str);
             return;
         }
-        object_id.id = external_helper->get_or_create_external_string_id(str, str_size)
-                     | ObjectId::MASK_STRING_DATATYPE | (datatype_id << Conversions::TMP_SHIFT);
+        object_id.id = ext_helper->get_or_create_ext(
+            str,
+            str_size,
+            ObjectId::MASK_STR_DATATYPE_INL | (datatype_id << Conversions::TMP_SHIFT)
+        );
     }
 
     template<typename T>
@@ -216,8 +218,7 @@ private:
         const auto bytes = reinterpret_cast<const char*>(tensor.data());
         const auto num_bytes = sizeof(T) * tensor.size();
 
-        object_id.id = tensor::Tensor<T>::get_subtype()
-                     | external_helper->get_or_create_external_tensor_id(bytes, num_bytes);
+        object_id.id = tensor::Tensor<T>::get_subtype() | ext_helper->get_or_create_tensor(bytes, num_bytes);
     }
 
     void try_save_object_id_mdbtype(const char* str, uint64_t str_size, const char* dt)
@@ -236,8 +237,7 @@ private:
             try_save_tensor<double>(str, dt);
         }
         // Unsupported datatypes are stored as literals with datatype
-        else
-        {
+        else {
             save_object_id_unsupported_datatype(str, str_size, dt);
         }
     }
@@ -285,8 +285,7 @@ private:
             if (str_size <= ObjectId::MAX_LEN_INLINE_STRING) {
                 object_id = Conversions::pack_string_xsd_inline(str);
             } else {
-                object_id.id = external_helper->get_or_create_external_string_id(str, str_size)
-                             | ObjectId::MASK_STRING_XSD;
+                object_id.id = ext_helper->get_or_create_ext(str, str_size, ObjectId::MASK_STR_XSD_EXT);
             }
         }
         // Decimal: xsd:decimal
@@ -299,15 +298,15 @@ private:
                 object_id = save_ill_typed(reader->source.cur.line, str, dt);
             } else {
                 if (dec.can_inline()) {
-                    object_id.id = dec.serialize_inlined() | ObjectId::MASK_DECIMAL_INLINED;
+                    object_id.id = dec.serialize_inlined() | ObjectId::MASK_DECIMAL_INL;
                 } else {
                     char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
                     dec.serialize_extern(dec_buffer);
-                    object_id.id = external_helper->get_or_create_external_string_id(
-                                       dec_buffer,
-                                       Decimal::EXTERN_BUFFER_SIZE
-                                   )
-                                 | ObjectId::MASK_DECIMAL;
+                    object_id.id = ext_helper->get_or_create_ext(
+                        dec_buffer,
+                        Decimal::EXTERN_BUFFER_SIZE,
+                        ObjectId::MASK_DECIMAL_EXT
+                    );
                 }
             }
         }
@@ -329,8 +328,7 @@ private:
             try {
                 double d = std::stod(str);
                 const char* chars = reinterpret_cast<const char*>(&d);
-                object_id.id = external_helper->get_or_create_external_string_id(chars, sizeof(d))
-                             | ObjectId::MASK_DOUBLE;
+                object_id.id = ext_helper->get_or_create_ext(chars, sizeof(d), ObjectId::MASK_DOUBLE_EXT);
             } catch (const std::out_of_range& e) {
                 object_id = save_ill_typed(reader->source.cur.line, str, dt);
             } catch (const std::invalid_argument& e) {
@@ -338,17 +336,18 @@ private:
             }
         }
         // Signed Integer: xsd:integer, xsd:long, xsd:int, xsd:short and xsd:byte
-        else if (strcmp(xsd_suffix, "integer") == 0 || strcmp(xsd_suffix, "long") == 0
-                 || strcmp(xsd_suffix, "int") == 0 || strcmp(xsd_suffix, "short") == 0
-                 || strcmp(xsd_suffix, "byte") == 0
-                 // Negative Integer: xsd:nonPositiveInteger, xsd:negativeInteger
-                 || strcmp(xsd_suffix, "nonPositiveInteger") == 0
-                 || strcmp(xsd_suffix, "negativeInteger") == 0
-                 // Positive Integer:
-                 || strcmp(xsd_suffix, "positiveInteger") == 0
-                 || strcmp(xsd_suffix, "nonNegativeInteger") == 0 || strcmp(xsd_suffix, "unsignedLong") == 0
-                 || strcmp(xsd_suffix, "unsignedInt") == 0 || strcmp(xsd_suffix, "unsignedShort") == 0
-                 || strcmp(xsd_suffix, "unsignedByte") == 0)
+        else if (
+            strcmp(xsd_suffix, "integer") == 0 || strcmp(xsd_suffix, "long") == 0
+            || strcmp(xsd_suffix, "int") == 0 || strcmp(xsd_suffix, "short") == 0
+            || strcmp(xsd_suffix, "byte") == 0
+            // Negative Integer: xsd:nonPositiveInteger, xsd:negativeInteger
+            || strcmp(xsd_suffix, "nonPositiveInteger") == 0
+            || strcmp(xsd_suffix, "negativeInteger") == 0
+            // Positive Integer:
+            || strcmp(xsd_suffix, "positiveInteger") == 0 || strcmp(xsd_suffix, "nonNegativeInteger") == 0
+            || strcmp(xsd_suffix, "unsignedLong") == 0 || strcmp(xsd_suffix, "unsignedInt") == 0
+            || strcmp(xsd_suffix, "unsignedShort") == 0 || strcmp(xsd_suffix, "unsignedByte") == 0
+        )
         {
             bool int_parser_error;
             object_id = handle_integer_string(str, &int_parser_error);
@@ -368,8 +367,7 @@ private:
             }
         }
         // Unsupported datatypes are stored as literals with datatype
-        else
-        {
+        else {
             save_object_id_unsupported_datatype(str, str_size, dt);
         }
     }
@@ -414,8 +412,8 @@ private:
         if (object_size <= ObjectId::MAX_LEN_INLINE_STRING_LANG) {
             object_id = Conversions::pack_string_lang_inline(lang_id, object_str);
         } else {
-            object_id.id = external_helper->get_or_create_external_string_id(object_str, object_size)
-                         | ObjectId::MASK_STRING_LANG | (lang_id << Conversions::TMP_SHIFT);
+            object_id.id = ext_helper->get_or_create_external_string_id(object_str, object_size)
+                         | ObjectId::MASK_STR_LANG_INL | (lang_id << Conversions::TMP_SHIFT);
         }
     }
 
@@ -431,15 +429,15 @@ private:
         if (UUIDCompression::compress_lower(str, str_len, buffer_iri)) {
             str_len = str_len - 20;
             return ObjectId(
-                external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                | (ObjectId::MASK_IRI_UUID_LOWER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                ext_helper->get_or_create_external_string_id(buffer_iri, str_len)
+                | (ObjectId::MASK_IRI_UUID_LOWER_EXT & (~ObjectId::MOD_MASK)) | prefix_id_shifted
             );
 
         } else if (UUIDCompression::compress_upper(str, str_len, buffer_iri)) {
             str_len = str_len - 20;
             return ObjectId(
-                external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                | (ObjectId::MASK_IRI_UUID_UPPER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                ext_helper->get_or_create_external_string_id(buffer_iri, str_len)
+                | (ObjectId::MASK_IRI_UUID_UPPER_EXT & (~ObjectId::MOD_MASK)) | prefix_id_shifted
             );
         }
 
@@ -453,16 +451,16 @@ private:
             {
                 str_len = HexCompression::compress(str, str_len, lower_hex_length, buffer_iri);
                 return ObjectId(
-                    external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                    | (ObjectId::MASK_IRI_HEX_LOWER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                    ext_helper->get_or_create_external_string_id(buffer_iri, str_len)
+                    | (ObjectId::MASK_IRI_HEX_LOWER_EXT & (~ObjectId::MOD_MASK)) | prefix_id_shifted
                 );
 
                 // Compress uppercase hex characters
             } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
                 str_len = HexCompression::compress(str, str_len, upper_hex_length, buffer_iri);
                 return ObjectId(
-                    external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                    | (ObjectId::MASK_IRI_HEX_UPPER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                    ext_helper->get_or_create_external_string_id(buffer_iri, str_len)
+                    | (ObjectId::MASK_IRI_HEX_UPPER_EXT & (~ObjectId::MOD_MASK)) | prefix_id_shifted
                 );
             }
         }
@@ -471,7 +469,7 @@ private:
             return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
         } else {
             return ObjectId(
-                external_helper->get_or_create_external_string_id(str, str_len) | ObjectId::MASK_IRI
+                ext_helper->get_or_create_external_string_id(str, str_len) | ObjectId::MASK_IRI_INL
                 | prefix_id_shifted
             );
         }
@@ -552,10 +550,11 @@ private:
 
                 char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
                 dec.serialize_extern(dec_buffer);
-                return ObjectId(
-                    external_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
-                    | ObjectId::MASK_DECIMAL
-                );
+                return ObjectId(ext_helper->get_or_create_ext(
+                    dec_buffer,
+                    Decimal::EXTERN_BUFFER_SIZE,
+                    ObjectId::MASK_DECIMAL_EXT
+                ));
             } else {
                 return Conversions::pack_int(i);
             }
@@ -567,10 +566,11 @@ private:
 
             char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
             dec.serialize_extern(dec_buffer);
-            return ObjectId(
-                external_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
-                | ObjectId::MASK_DECIMAL
-            );
+            return ObjectId(ext_helper->get_or_create_external_string_id(
+                dec_buffer,
+                Decimal::EXTERN_BUFFER_SIZE,
+                ObjectId::MASK_DECIMAL_EXT
+            ));
         } catch (const std::invalid_argument& e) {
             *error = true;
             return ObjectId::get_null();

@@ -29,7 +29,7 @@ public:
         switch (expr_oid.subtype()) {
         case ObjectSubType::String: {
             std::string str = Conversions::unpack_string(expr_oid);
-            return Conversions::pack_string_simple(lcase(str));
+            return Conversions::pack_string(lcase(str));
         }
         case ObjectSubType::StringXsd: {
             std::string str = Conversions::unpack_string(expr_oid);

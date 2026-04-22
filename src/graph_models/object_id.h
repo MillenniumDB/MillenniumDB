@@ -15,7 +15,7 @@ enum class ObjectGenType {
     Dict,
 
     // MQL
-    Anon, // TODO: maybe just use Node as NamedNode, Anon
+    Anon,
     NamedNode,
     Edge,
     Path,
@@ -23,8 +23,7 @@ enum class ObjectGenType {
     // RDF
     Iri,
 
-    NotFound,
-    Invalid
+    NotFound
 };
 
 
@@ -54,15 +53,14 @@ enum class ObjectSubType {
     // RDF
     Iri,
 
-    NotFound,
-    Invalid
+    NotFound
 };
 
 enum class ObjectType {
     Null,
 
     AnonInl, // also represents blank inlined in RDF, or node in GQL
-    AnonTmp, // TODO: decide on how to print in quad model?
+    AnonTmp,
 
     Bool,
     NegativeInt56,
@@ -129,11 +127,16 @@ enum class ObjectType {
     ListExt,
     ListTmp,
 
-    Edge,
+    DirectedEdge,
+    UndirectedEdge,
     Path,
 
+    EdgeKey, // Only For GQL
+    NodeKey, // Only For GQL
+    EdgeLabel, // Only For GQL
+    NodeLabel, // Only For GQL
+
     NotFound,
-    Invalid,
 };
 
 std::string to_string(ObjectType type);
@@ -167,57 +170,65 @@ public:
     static constexpr int STR_DT_INLINE_BYTES     = 5; // Number of bytes of string, excluding datatype id, stored inline
     static constexpr int STR_LANG_INLINE_BYTES   = 5; // Number of bytes of string, excluding language id, stored inline
 
-    static constexpr uint64_t MASK_NULL                    = 0x00'00000000000000UL; // 0b0000'00'00  GENERIC
 
-    static constexpr uint64_t MASK_ANON                    = 0x10'00000000000000UL; // 0b0001'00'00  GENERIC/SUBTYPE
-    static constexpr uint64_t MASK_ANON_INLINED            = 0x10'00000000000000UL; // 0b0001'00'00     TYPE
-    static constexpr uint64_t MASK_ANON_TMP                = 0x12'00000000000000UL; // 0b0001'00'10     TYPE
+    static constexpr uint64_t MASK_NULL               = 0x00'00000000000000UL; // 0b000000'00
+    static constexpr uint64_t MASK_ANON_INL           = 0x10'00000000000000UL; // 0b000100'00
+    static constexpr uint64_t MASK_ANON_TMP           = 0x12'00000000000000UL; // 0b000100'10
+    static constexpr uint64_t MASK_NAMED_NODE_INL     = 0x20'00000000000000UL; // 0b001000'00
+    static constexpr uint64_t MASK_NAMED_NODE_EXT     = 0x21'00000000000000UL; // 0b001000'01
+    static constexpr uint64_t MASK_NAMED_NODE_TMP     = 0x22'00000000000000UL; // 0b001000'10
+    static constexpr uint64_t MASK_IRI_INL            = 0x30'00000000000000UL; // 0b001100'00
+    static constexpr uint64_t MASK_IRI_EXT            = 0x31'00000000000000UL; // 0b001100'01
+    static constexpr uint64_t MASK_IRI_TMP            = 0x32'00000000000000UL; // 0b001100'10
+    static constexpr uint64_t MASK_DIRECTED_EDGE      = 0x80'00000000000000UL; // 0b111000'00
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_EXT = 0xA1'00000000000000UL; // 0b101000'01
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP = 0xA2'00000000000000UL; // 0b101000'10
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_EXT = 0xA5'00000000000000UL; // 0b101001'01
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP = 0xA6'00000000000000UL; // 0b101001'10
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_EXT  = 0xA9'00000000000000UL; // 0b101010'01
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP  = 0xAA'00000000000000UL; // 0b101010'10
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_EXT  = 0xAD'00000000000000UL; // 0b101011'01
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP  = 0xAE'00000000000000UL; // 0b101011'10
+    static constexpr uint64_t MASK_UNDIRECTED_EDGE    = 0xE4'00000000000000UL; // 0b111001'00
+    static constexpr uint64_t MASK_NODE_LABEL         = 0xE8'00000000000000UL; // 0b111010'00
+    static constexpr uint64_t MASK_EDGE_LABEL         = 0xEC'00000000000000UL; // 0b111011'00
+    static constexpr uint64_t MASK_NODE_KEY           = 0xF0'00000000000000UL; // 0b111100'00
+    static constexpr uint64_t MASK_EDGE_KEY           = 0xF4'00000000000000UL; // 0b111101'00
+    static constexpr uint64_t MASK_DIRECTION          = 0xFC'00000000000000UL; // 0b111111'00
+    static constexpr uint64_t MASK_NOT_FOUND          = 0xFF'00000000000000UL; // 0b111111'11
 
-    static constexpr uint64_t MASK_NAMED_NODE              = 0x20'00000000000000UL; // 0b0010'00'00  GENERIC
-    static constexpr uint64_t MASK_NAMED_NODE_INLINED      = 0x20'00000000000000UL; // 0b0010'00'00    TYPE
-    static constexpr uint64_t MASK_NAMED_NODE_EXTERN       = 0x21'00000000000000UL; // 0b0010'00'01    TYPE
-    static constexpr uint64_t MASK_NAMED_NODE_TMP          = 0x22'00000000000000UL; // 0b0010'00'10    TYPE
 
-    static constexpr uint64_t MASK_NAMED_NODE_HEX_EXTERN   = 0x25'00000000000000UL; // 0b0010'01'01    TYPE
-    static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP      = 0x26'00000000000000UL; // 0b0010'01'10    TYPE
+    // TODO: new named node types
+    // static constexpr uint64_t MASK_NAMED_NODE_HEX_EXTERN   = 0x25'00000000000000UL; // 0b0010'01'01    TYPE
+    // static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP      = 0x26'00000000000000UL; // 0b0010'01'10    TYPE
 
-    static constexpr uint64_t MASK_IRI                     = 0x30'00000000000000UL; // 0b0011'00'00  GENERIC
-    static constexpr uint64_t MASK_IRI_INLINED             = 0x30'00000000000000UL; // 0b0011'00'00    TYPE
-    static constexpr uint64_t MASK_IRI_EXTERN              = 0x31'00000000000000UL; // 0b0011'00'01    TYPE
-    static constexpr uint64_t MASK_IRI_TMP                 = 0x32'00000000000000UL; // 0b0011'00'10    TYPE
+    static constexpr uint64_t MASK_STR_INL              = 0x40'00000000000000UL; // 0b0100'00'00      TYPE
+    static constexpr uint64_t MASK_STR_EXT              = 0x41'00000000000000UL; // 0b0100'00'01      TYPE
+    static constexpr uint64_t MASK_STR_TMP              = 0x42'00000000000000UL; // 0b0100'00'10      TYPE
+    static constexpr uint64_t MASK_STR_XSD_INL          = 0x44'00000000000000UL; // 0b0100'01'00      TYPE
+    static constexpr uint64_t MASK_STR_XSD_EXT          = 0x45'00000000000000UL; // 0b0100'01'01      TYPE
+    static constexpr uint64_t MASK_STR_XSD_TMP          = 0x46'00000000000000UL; // 0b0100'01'10      TYPE
+    static constexpr uint64_t MASK_STR_LANG_INL         = 0x48'00000000000000UL; // 0b0100'10'00      TYPE
+    static constexpr uint64_t MASK_STR_LANG_EXT         = 0x49'00000000000000UL; // 0b0100'10'01      TYPE
+    static constexpr uint64_t MASK_STR_LANG_TMP         = 0x4A'00000000000000UL; // 0b0100'10'10      TYPE
+    static constexpr uint64_t MASK_STR_DATATYPE_INL     = 0x4C'00000000000000UL; // 0b0100'11'00      TYPE
+    static constexpr uint64_t MASK_STR_DATATYPE_EXT     = 0x4D'00000000000000UL; // 0b0100'11'01      TYPE
+    static constexpr uint64_t MASK_STR_DATATYPE_TMP     = 0x4E'00000000000000UL; // 0b0100'11'10      TYPE
 
-    static constexpr uint64_t MASK_STRING                  = 0x40'00000000000000UL; // 0b0100'00'00  GENERIC
-    static constexpr uint64_t MASK_STRING_SIMPLE           = 0x40'00000000000000UL; // 0b0100'00'00    SUBTYPE
-    static constexpr uint64_t MASK_STRING_SIMPLE_INLINED   = 0x40'00000000000000UL; // 0b0100'00'00      TYPE
-    static constexpr uint64_t MASK_STRING_SIMPLE_EXTERN    = 0x41'00000000000000UL; // 0b0100'00'01      TYPE
-    static constexpr uint64_t MASK_STRING_SIMPLE_TMP       = 0x42'00000000000000UL; // 0b0100'00'10      TYPE
-    static constexpr uint64_t MASK_STRING_XSD              = 0x44'00000000000000UL; // 0b0100'01'00    SUBTYPE
-    static constexpr uint64_t MASK_STRING_XSD_INLINED      = 0x44'00000000000000UL; // 0b0100'01'00      TYPE
-    static constexpr uint64_t MASK_STRING_XSD_EXTERN       = 0x45'00000000000000UL; // 0b0100'01'01      TYPE
-    static constexpr uint64_t MASK_STRING_XSD_TMP          = 0x46'00000000000000UL; // 0b0100'01'10      TYPE
-    static constexpr uint64_t MASK_STRING_LANG             = 0x48'00000000000000UL; // 0b0100'10'00    SUBTYPE
-    static constexpr uint64_t MASK_STRING_LANG_INLINED     = 0x48'00000000000000UL; // 0b0100'10'00      TYPE
-    static constexpr uint64_t MASK_STRING_LANG_EXTERN      = 0x49'00000000000000UL; // 0b0100'10'01      TYPE
-    static constexpr uint64_t MASK_STRING_LANG_TMP         = 0x4A'00000000000000UL; // 0b0100'10'10      TYPE
-    static constexpr uint64_t MASK_STRING_DATATYPE         = 0x4C'00000000000000UL; // 0b0100'11'00    SUBTYPE
-    static constexpr uint64_t MASK_STRING_DATATYPE_INLINED = 0x4C'00000000000000UL; // 0b0100'11'00      TYPE
-    static constexpr uint64_t MASK_STRING_DATATYPE_EXTERN  = 0x4D'00000000000000UL; // 0b0100'11'01      TYPE
-    static constexpr uint64_t MASK_STRING_DATATYPE_TMP     = 0x4E'00000000000000UL; // 0b0100'11'10      TYPE
-
-    static constexpr uint64_t MASK_NUMERIC                 = 0x50'00000000000000UL; // 0b0101'00'00  GENERIC
-    static constexpr uint64_t MASK_INT                     = 0x50'00000000000000UL; // 0b0101'00'00    SUBTYPE
+    // static constexpr uint64_t MASK_NUMERIC                 = 0x50'00000000000000UL; // 0b0101'00'00  GENERIC
+    // static constexpr uint64_t MASK_INT                     = 0x50'00000000000000UL; // 0b0101'00'00    SUBTYPE
     static constexpr uint64_t MASK_NEGATIVE_INT            = 0x50'00000000000000UL; // 0b0101'00'00      TYPE   MOD used to differentiate
     static constexpr uint64_t MASK_POSITIVE_INT            = 0x51'00000000000000UL; // 0b0101'00'01      TYPE   positive and negative ints
-    static constexpr uint64_t MASK_DECIMAL                 = 0x54'00000000000000UL; // 0b0101'01'00    SUBTYPE
-    static constexpr uint64_t MASK_DECIMAL_INLINED         = 0x54'00000000000000UL; // 0b0101'01'00      TYPE
-    static constexpr uint64_t MASK_DECIMAL_EXTERN          = 0x55'00000000000000UL; // 0b0101'01'01      TYPE
+    // static constexpr uint64_t MASK_DECIMAL                 = 0x54'00000000000000UL; // 0b0101'01'00    SUBTYPE
+    static constexpr uint64_t MASK_DECIMAL_INL         = 0x54'00000000000000UL; // 0b0101'01'00      TYPE
+    static constexpr uint64_t MASK_DECIMAL_EXT          = 0x55'00000000000000UL; // 0b0101'01'01      TYPE
     static constexpr uint64_t MASK_DECIMAL_TMP             = 0x56'00000000000000UL; // 0b0101'01'10      TYPE
     static constexpr uint64_t MASK_FLOAT                   = 0x58'00000000000000UL; // 0b0101'10'00    SUBTYPE
-    static constexpr uint64_t MASK_DOUBLE                  = 0x5C'00000000000000UL; // 0b0101'11'00    SUBTYPE
-    static constexpr uint64_t MASK_DOUBLE_EXTERN           = 0x5D'00000000000000UL; // 0b0101'11'01      TYPE
+    // static constexpr uint64_t MASK_DOUBLE                  = 0x5C'00000000000000UL; // 0b0101'11'00    SUBTYPE
+    static constexpr uint64_t MASK_DOUBLE_EXT           = 0x5D'00000000000000UL; // 0b0101'11'01      TYPE
     static constexpr uint64_t MASK_DOUBLE_TMP              = 0x5E'00000000000000UL; // 0b0101'11'10      TYPE
 
-    static constexpr uint64_t MASK_DT                      = 0x60'00000000000000UL; // 0b0110'00'00  GENERIC
+    // static constexpr uint64_t MASK_DT                      = 0x60'00000000000000UL; // 0b0110'00'00  GENERIC
     static constexpr uint64_t MASK_DT_DATE                 = 0x60'00000000000000UL; // 0b0110'00'00    SUBTYPE
     static constexpr uint64_t MASK_DT_TIME                 = 0x64'00000000000000UL; // 0b0110'01'00    SUBTYPE
     static constexpr uint64_t MASK_DT_DATETIME             = 0x68'00000000000000UL; // 0b0110'10'00    SUBTYPE
@@ -225,50 +236,29 @@ public:
 
     static constexpr uint64_t MASK_BOOL                    = 0x70'00000000000000UL; // 0b0111'00'00  GENERIC
 
-    static constexpr uint64_t MASK_EDGE                    = 0x80'00000000000000UL; // 0b1000'00'00  GENERIC
     static constexpr uint64_t MASK_PATH                    = 0x90'00000000000000UL; // 0b1001'00'00  GENERIC
-    // static constexpr uint64_t MASK_NOT_FOUND               = 0xA0'00000000000000UL; // 0b1010'00'00  GENERIC
-
-    static constexpr uint64_t MASK_IRI_UUID_LOWER          = 0xA1'00000000000000UL; // 0b1010'00'01
-    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP      = 0xA2'00000000000000UL; // 0b1010'00'10
-    static constexpr uint64_t MASK_IRI_UUID_UPPER          = 0xA5'00000000000000UL; // 0b1010'01'01
-    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP      = 0xA6'00000000000000UL; // 0b1010'01'10
-
-    static constexpr uint64_t MASK_IRI_HEX_LOWER           = 0xA9'00000000000000UL; // 0b1010'10'01
-    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP       = 0xAA'00000000000000UL; // 0b1010'10'10
-    static constexpr uint64_t MASK_IRI_HEX_UPPER           = 0xAD'00000000000000UL; // 0b1010'11'01
-    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP       = 0xAE'00000000000000UL; // 0b1010'11'10
 
     // Inlined tensors are only used to represent the empty tensor
-    static constexpr uint64_t MASK_TENSOR                  = 0xB0'00000000000000UL; // 0b1011'00'00  GENERIC
-    static constexpr uint64_t MASK_TENSOR_FLOAT            = 0xB0'00000000000000UL; // 0b1011'00'00    SUBTYPE
-    static constexpr uint64_t MASK_TENSOR_FLOAT_INLINED    = 0xB0'00000000000000UL; // 0b1011'00'00      TYPE
-    static constexpr uint64_t MASK_TENSOR_FLOAT_EXTERN     = 0xB1'00000000000000UL; // 0b1011'00'01      TYPE
+    // static constexpr uint64_t MASK_TENSOR                  = 0xB0'00000000000000UL; // 0b1011'00'00  GENERIC
+    // static constexpr uint64_t MASK_TENSOR_FLOAT            = 0xB0'00000000000000UL; // 0b1011'00'00    SUBTYPE
+    // TODO: delete inlined tensors?
+    static constexpr uint64_t MASK_TENSOR_FLOAT_INL    = 0xB0'00000000000000UL; // 0b1011'00'00      TYPE
+    static constexpr uint64_t MASK_TENSOR_FLOAT_EXT     = 0xB1'00000000000000UL; // 0b1011'00'01      TYPE
     static constexpr uint64_t MASK_TENSOR_FLOAT_TMP        = 0xB2'00000000000000UL; // 0b1011'00'10      TYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE           = 0xB4'00000000000000UL; // 0b1011'10'00    SUBTYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_INLINED   = 0xB4'00000000000000UL; // 0b1011'10'00      TYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXTERN    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
+    // static constexpr uint64_t MASK_TENSOR_DOUBLE           = 0xB4'00000000000000UL; // 0b1011'10'00    SUBTYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_INL   = 0xB4'00000000000000UL; // 0b1011'10'00      TYPE
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXT    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
     static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
 
-    static constexpr uint64_t MASK_LIST                    = 0xC0'00000000000000UL; // 0b1100'00'00
-    static constexpr uint64_t MASK_LIST_EXTERN             = 0xC1'00000000000000UL; // 0b1100'00'01
+    // static constexpr uint64_t MASK_LIST                    = 0xC0'00000000000000UL; // 0b1100'00'00
+    static constexpr uint64_t MASK_LIST_EXT             = 0xC1'00000000000000UL; // 0b1100'00'01
     static constexpr uint64_t MASK_LIST_TMP                = 0xC2'00000000000000UL; // 0b1100'00'10
-    static constexpr uint64_t MASK_DICTIONARY              = 0xD0'00000000000000UL; // 0b1101'00'00
-    static constexpr uint64_t MASK_DICTIONARY_EXTERN       = 0xD1'00000000000000UL; // 0b1101'00'01
+    // static constexpr uint64_t MASK_DICTIONARY              = 0xD0'00000000000000UL; // 0b1101'00'00
+    static constexpr uint64_t MASK_DICTIONARY_EXT       = 0xD1'00000000000000UL; // 0b1101'00'01
     static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xD2'00000000000000UL; // 0b1101'00'10
 
-    // GQL types
-    static constexpr uint64_t MASK_NODE                    = 0xD4'00000000000000UL; // 0b1101'01'00
-    static constexpr uint64_t MASK_DIRECTED_EDGE           = 0xE0'00000000000000UL; // 0b1110'00'00
-    static constexpr uint64_t MASK_UNDIRECTED_EDGE         = 0xE4'00000000000000UL; // 0b1110'01'00
-    static constexpr uint64_t MASK_NODE_LABEL              = 0xE8'00000000000000UL; // 0b1110'10'00
-    static constexpr uint64_t MASK_EDGE_LABEL              = 0xEC'00000000000000UL; // 0b1110'11'00
-    static constexpr uint64_t MASK_NODE_KEY                = 0xF0'00000000000000UL; // 0b1111'00'00
-    static constexpr uint64_t MASK_EDGE_KEY                = 0xF4'00000000000000UL; // 0b1111'01'00
-    static constexpr uint64_t MASK_GQL_PATH                = 0xF8'00000000000000UL; // 0b1111'10'00
-    static constexpr uint64_t MASK_DIRECTION               = 0xFC'00000000000000UL; // 0b1111'11'00
 
-    static constexpr uint64_t MASK_NOT_FOUND               = 0xFF'00000000000000UL; // 0b1111'11'11
+
 
 
     static constexpr uint64_t DIRECTION_RIGHT       = MASK_DIRECTION | 0x0UL;
@@ -278,12 +268,6 @@ public:
     static_assert(MASK_NEGATIVE_INT < MASK_POSITIVE_INT, "Integers won't be ordered properly in the B+Tree.");
     static_assert(MASK_NEGATIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");
     static_assert(MASK_POSITIVE_INT < 0x80'00000000000000UL, "Integer IDs can't be subtracted without overflow.");
-
-    // important for pending triples in import
-    static_assert((MASK_IRI_HEX_LOWER  & MOD_MASK) == MOD_EXTERNAL);
-    static_assert((MASK_IRI_HEX_UPPER  & MOD_MASK) == MOD_EXTERNAL);
-    static_assert((MASK_IRI_UUID_LOWER & MOD_MASK) == MOD_EXTERNAL);
-    static_assert((MASK_IRI_UUID_UPPER & MOD_MASK) == MOD_EXTERNAL);
 
     static constexpr uint64_t NULL_ID    = MASK_NULL;
     static constexpr uint64_t BOOL_FALSE = MASK_BOOL | 0UL;
@@ -305,7 +289,7 @@ public:
 
     inline ObjectType type() const noexcept {
         // TODO:
-        return ObjectType::Invalid;
+        return ObjectType::NotFound;
         // return id & TYPE_MASK;
     }
 
@@ -313,14 +297,14 @@ public:
         // return id & SUB_TYPE_MASK;
         // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
         // TODO:
-        return ObjectGenType::Invalid;
+        return ObjectGenType::NotFound;
     }
 
     inline ObjectSubType subtype() const noexcept {
         // return id & SUB_TYPE_MASK;
         // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
         // TODO:
-        return ObjectSubType::Invalid;
+        return ObjectSubType::NotFound;
     }
 
     inline uint64_t get_mod() const noexcept {

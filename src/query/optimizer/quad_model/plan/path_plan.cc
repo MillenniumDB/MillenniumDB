@@ -1,7 +1,7 @@
 #include "path_plan.h"
 
+#include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
-#include "graph_models/quad_model/quad_object_id.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_check.h"
 #include "query/executor/binding_iter/paths/all_shortest_simple/bfs_enum.h"
@@ -73,9 +73,9 @@ PathPlan::PathPlan(
     to_assigned(to.is_OID()),
     path_semantic(path_semantic)
 {
-    automaton = path.get_rpq_automaton(&QuadObjectId::get_named_node);
+    automaton = path.get_rpq_automaton(&MQL::Conversions::pack_named_node);
     auto inverted_path = path.clone()->invert();
-    automaton_inverted = inverted_path->get_rpq_automaton(&QuadObjectId::get_named_node);
+    automaton_inverted = inverted_path->get_rpq_automaton(&MQL::Conversions::pack_named_node);
 
     if (K == 1) {
         switch (path_semantic) {

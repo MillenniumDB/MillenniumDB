@@ -1,6 +1,5 @@
 #include "return_executor.h"
 #include "graph_models/gql/conversions.h"
-#include "graph_models/gql/gql_model.h"
 #include "query/executor/query_executor/csv_ostream_escape.h"
 #include "query/executor/query_executor/tsv_ostream_escape.h"
 
@@ -76,12 +75,12 @@ uint64_t ReturnExecutor::execute(std::ostream& os)
 
 void ReturnExecutor::print(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    switch (GQL_OID::get_generic_sub_type(oid)) {
-    case GQL_OID::GenericSubType::STRING_SIMPLE:
+    switch (oid.subtype()) {
+    case ObjectSubType::String:
         Conversions::debug_print(os, oid);
         break;
-    case GQL_OID::GenericSubType::LIST:
-    case GQL_OID::GenericSubType::DICTIONARY:
+    case ObjectSubType::List:
+    case ObjectSubType::Dictionary:
         os << '"';
         Conversions::debug_print(escaped_os, oid);
         os << '"';

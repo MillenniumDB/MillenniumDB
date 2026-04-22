@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cassert>
+#include <memory>
 
 namespace GQL {
 class BindingExprFloor : public BindingExpr {
@@ -19,25 +19,24 @@ public:
     {
         auto expr_oid = expr->eval(binding);
 
-        auto expr_subtype = GQL_OID::get_generic_sub_type(expr_oid);
+        auto expr_subtype = expr_oid.subtype();
+        auto expr_generic_type = expr_oid.generic_type();
 
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
-
-        if (expr_generic_type == GQL_OID::GenericType::NUMERIC) {
+        if (expr_generic_type == ObjectGenType::Numeric) {
             switch (expr_subtype) {
-            case GQL_OID::GenericSubType::INTEGER: {
+            case ObjectSubType::Int: {
                 auto expr = GQL::Conversions::to_integer(expr_oid);
                 return GQL::Conversions::pack_int(floor(expr));
             }
-            case GQL_OID::GenericSubType::DECIMAL: {
+            case ObjectSubType::Decimal: {
                 auto expr = GQL::Conversions::to_decimal(expr_oid);
                 return GQL::Conversions::pack_decimal(expr.floor());
             }
-            case GQL_OID::GenericSubType::FLOAT: {
+            case ObjectSubType::Float: {
                 auto expr = GQL::Conversions::to_float(expr_oid);
                 return GQL::Conversions::pack_int(floor(expr));
             }
-            case GQL_OID::GenericSubType::DOUBLE: {
+            case ObjectSubType::Double: {
                 auto expr = GQL::Conversions::to_double(expr_oid);
                 return GQL::Conversions::pack_int(floor(expr));
             }

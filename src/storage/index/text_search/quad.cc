@@ -3,7 +3,6 @@
 #include <unordered_set>
 
 #include "graph_models/quad_model/conversions.h"
-#include "graph_models/quad_model/quad_object_id.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
 #include "query/query_context.h"
 #include "storage/index/text_search/utils.h"
@@ -20,7 +19,7 @@ std::tuple<uint_fast32_t, uint_fast32_t, ObjectId> index_predicate(
 )
 {
     const auto object_var = get_query_ctx().get_internal_var();
-    const auto key_oid = QuadObjectId::get_string(predicate);
+    const auto key_oid = Common::Conversions::pack_string(predicate);
     const auto value_var = get_query_ctx().get_internal_var();
 
     const auto property_plan = PropertyPlan(object_var, key_oid, value_var);

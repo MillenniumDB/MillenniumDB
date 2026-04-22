@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <cassert>
+#include <memory>
 
 namespace GQL {
 class BindingExprSingleTrim : public BindingExpr {
@@ -27,31 +27,31 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto str_oid = str->eval(binding);
-        auto str_generic_type = GQL_OID::get_generic_type(str_oid);
+        auto str_generic_type = str_oid.generic_type();
 
-        if (str_generic_type == GQL_OID::GenericType::STRING) {
+        if (str_generic_type == ObjectGenType::String) {
             auto str = GQL::Conversions::unpack_string(str_oid);
             if (single_char != nullptr) {
                 auto char_oid = single_char->eval(binding);
-                auto char_generic_type = GQL_OID::get_generic_type(char_oid);
-                if (char_generic_type == GQL_OID::GenericType::STRING) {
+                auto char_generic_type = char_oid.generic_type();
+                if (char_generic_type == ObjectGenType::String) {
                     auto character = GQL::Conversions::unpack_string(char_oid);
                     if (character.size() <= 1) {
                         if (specification == "LEADING") {
                             size_t start = str.find_first_not_of(character);
-                            return GQL::Conversions::pack_string_simple(
+                            return GQL::Conversions::pack_string(
                                 (start == std::string::npos) ? "" : str.substr(start)
                             );
                         } else if (specification == "TRAILING") {
                             size_t end = str.find_last_not_of(character);
-                            return GQL::Conversions::pack_string_simple(
+                            return GQL::Conversions::pack_string(
                                 (end == std::string::npos) ? "" : str.substr(0, end + 1)
                             );
                         } else {
                             size_t start = str.find_first_not_of(character);
                             auto tmp = (start == std::string::npos) ? "" : str.substr(start);
                             size_t end = tmp.find_last_not_of(character);
-                            return GQL::Conversions::pack_string_simple(
+                            return GQL::Conversions::pack_string(
                                 (end == std::string::npos) ? "" : tmp.substr(0, end + 1)
                             );
                         }
@@ -65,19 +65,19 @@ public:
                 auto character = " ";
                 if (specification == "LEADING") {
                     size_t start = str.find_first_not_of(character);
-                    return GQL::Conversions::pack_string_simple(
+                    return GQL::Conversions::pack_string(
                         (start == std::string::npos) ? "" : str.substr(start)
                     );
                 } else if (specification == "TRAILING") {
                     size_t end = str.find_last_not_of(character);
-                    return GQL::Conversions::pack_string_simple(
+                    return GQL::Conversions::pack_string(
                         (end == std::string::npos) ? "" : str.substr(0, end + 1)
                     );
                 } else {
                     size_t start = str.find_first_not_of(character);
                     auto tmp = (start == std::string::npos) ? "" : str.substr(start);
                     size_t end = tmp.find_last_not_of(character);
-                    return GQL::Conversions::pack_string_simple(
+                    return GQL::Conversions::pack_string(
                         (end == std::string::npos) ? "" : tmp.substr(0, end + 1)
                     );
                 }

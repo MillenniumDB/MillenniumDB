@@ -721,7 +721,7 @@ void ExprToBindingExpr::visit(ExprStrUUID&) {
     boost::uuids::uuid uuid = uuid_generator();
     std::string uuid_str = boost::uuids::to_string(uuid);
 
-    tmp = make_unique<BindingExprTerm>(Conversions::pack_string_simple(uuid_str));
+    tmp = make_unique<BindingExprTerm>(Conversions::pack_string(uuid_str));
 }
 
 void ExprToBindingExpr::visit(ExprStr& expr_str) {

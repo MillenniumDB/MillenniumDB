@@ -61,7 +61,7 @@ void OnDiskImport::start_import(
     pending_edges = std::make_unique<DiskVector<4>>(db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX);
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     // We save the headers first, so that the keys are never temporal
     save_headers(in_nodes);
@@ -74,7 +74,7 @@ void OnDiskImport::start_import(
     print_duration("Parsing", start);
 
     // initial flush
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     { // process pending files
         pending_declared_nodes->finish_appends();
@@ -113,14 +113,14 @@ void OnDiskImport::start_import(
             ++i;
 
             // advance pending variables for current iteration
-            external_helper->advance_pending();
-            external_helper->clear_sets();
+            ext_helper->advance_pending();
+            ext_helper->clear_sets();
 
             old_pending_declared_nodes->begin_tuple_iter();
             while (old_pending_declared_nodes->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_declared_nodes->next_tuple();
 
-                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+                auto id1 = ext_helper->resolve_id(pending_tuple[0]);
 
                 try_save_declared_node(id1);
             }
@@ -129,8 +129,8 @@ void OnDiskImport::start_import(
             while (old_pending_labels->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_labels->next_tuple();
 
-                auto id1 = external_helper->resolve_id(pending_tuple[0]);
-                auto label_id = external_helper->resolve_id(pending_tuple[1]);
+                auto id1 = ext_helper->resolve_id(pending_tuple[0]);
+                auto label_id = ext_helper->resolve_id(pending_tuple[1]);
 
                 try_save_label(id1, label_id);
             }
@@ -139,9 +139,9 @@ void OnDiskImport::start_import(
             while (old_pending_properties->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_properties->next_tuple();
 
-                auto id1 = external_helper->resolve_id(pending_tuple[0]);
+                auto id1 = ext_helper->resolve_id(pending_tuple[0]);
                 auto key_id = pending_tuple[1];
-                auto value_id = external_helper->resolve_id(pending_tuple[2]);
+                auto value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 try_save_property(id1, key_id, value_id);
             }
@@ -150,18 +150,18 @@ void OnDiskImport::start_import(
             while (old_pending_edges->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_edges->next_tuple();
 
-                auto id1 = external_helper->resolve_id(pending_tuple[0]);
-                auto id2 = external_helper->resolve_id(pending_tuple[1]);
-                auto type_id = external_helper->resolve_id(pending_tuple[2]);
+                auto id1 = ext_helper->resolve_id(pending_tuple[0]);
+                auto id2 = ext_helper->resolve_id(pending_tuple[1]);
+                auto type_id = ext_helper->resolve_id(pending_tuple[2]);
                 auto edge_id = pending_tuple[3]; // always inlined
 
                 try_save_quad(id1, id2, type_id, edge_id);
             }
 
             // write out new data
-            external_helper->flush_to_disk();
+            ext_helper->flush_to_disk();
             // close and delete the old pending files
-            external_helper->clean_up_old();
+            ext_helper->clean_up_old();
 
             // close and delete old pending file
             pending_declared_nodes->finish_appends();
@@ -183,17 +183,17 @@ void OnDiskImport::start_import(
     }
 
     // delete all unnecessary files and free-up memory
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
     print_duration("Process strings and tensors", start);
 
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
     print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     declared_nodes.finish_appends();
     labels.finish_appends();
@@ -372,10 +372,10 @@ void OnDiskImport::start_import(
 uint64_t OnDiskImport::get_str_id(char* str, uint64_t str_size)
 {
     if (str_size < 8) {
-        return Inliner::inline_string(str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        return Inliner::inline_string(str) | ObjectId::MASK_STR_INL;
     } else {
-        return external_helper->get_or_create_external_string_id(str, str_size)
-             | ObjectId::MASK_STRING_SIMPLE;
+        return ext_helper->get_or_create_external_string_id(str, str_size)
+             | ObjectId::MASK_STR_INL;
     }
 }
 
@@ -420,7 +420,7 @@ void OnDiskImport::save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& fi
 
             for (auto str : split_col) {
                 if (str.size() >= 8) {
-                    external_helper->get_or_create_external_string_id(str.c_str(), str.size());
+                    ext_helper->get_or_create_external_string_id(str.c_str(), str.size());
                 }
             }
         }
@@ -662,15 +662,11 @@ void OnDiskImport::process_node_line()
     CSVColumn& id_col = columns[column_with_id];
     uint64_t node_id;
     if (anonymous_nodes) {
-        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INL;
     } else if (id_col.value_size == 0) {
-        WARN(
-            "line ",
-            current_line,
-            ": No ID was given for the node. It will be saved as an anonymous node"
-        );
+        WARN("line ", current_line, ": No ID was given for the node. It will be saved as an anonymous node");
         parsing_errors++;
-        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INL;
     } else if (global_ids) {
         // If a node with the same ID exists, do not save.
         if (csvid_global.contains(id_col.value_str)) {
@@ -699,18 +695,18 @@ void OnDiskImport::process_node_line()
         } else {
             normalize_string_literal(id_col);
             if (id_col.value_size < 8)
-                node_id = Inliner::inline_string(id_col.value_str) | ObjectId::MASK_NAMED_NODE_INLINED;
+                node_id = Inliner::inline_string(id_col.value_str) | ObjectId::MASK_NAMED_NODE_INL;
             else
-                node_id = external_helper->get_or_create_external_string_id(
+                node_id = ext_helper->get_or_create_external_string_id(
                               id_col.value_str,
                               id_col.value_size
                           )
-                        | ObjectId::MASK_NAMED_NODE;
+                        | ObjectId::MASK_NAMED_NODE_INL;
         }
         csvid_global.insert({ id_col.value_str, node_id });
     } else {
         // Using IDs inside the scope of a group
-        node_id = current_anon_id++ | ObjectId::MASK_ANON_INLINED;
+        node_id = current_anon_id++ | ObjectId::MASK_ANON_INL;
         if (csvid_groups[current_group_idx].contains(id_col.value_str)) {
             WARN(
                 "line ",
@@ -795,7 +791,7 @@ void OnDiskImport::process_node_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+            uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
                              | ObjectId::MASK_LIST;
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -831,13 +827,13 @@ void OnDiskImport::save_edge_line()
     uint64_t type_id;
     if (columns[column_with_type].value_size < 8)
         type_id = Inliner::inline_string(columns[column_with_type].value_str)
-                | ObjectId::MASK_NAMED_NODE_INLINED;
+                | ObjectId::MASK_NAMED_NODE_INL;
     else
-        type_id = external_helper->get_or_create_external_string_id(
+        type_id = ext_helper->get_or_create_external_string_id(
                       columns[column_with_type].value_str,
                       columns[column_with_type].value_size
                   )
-                | ObjectId::MASK_NAMED_NODE;
+                | ObjectId::MASK_NAMED_NODE_INL;
 
     if (columns[column_with_id_from].value_size == 0 || columns[column_with_id_to].value_size == 0) {
         WARN(
@@ -919,7 +915,7 @@ void OnDiskImport::save_edge_line()
         to_id = csvid_groups[current_group_idx_to][columns[column_with_id_to].value_str];
     }
 
-    uint64_t edge_id = edge_count++ | ObjectId::MASK_EDGE;
+    uint64_t edge_id = edge_count++ | ObjectId::MASK_DIRECTED_EDGE;
 
     try_save_quad(from_id, to_id, type_id, edge_id);
 
@@ -987,7 +983,7 @@ void OnDiskImport::save_edge_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
+            uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
                              | ObjectId::MASK_LIST;
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {

@@ -107,14 +107,23 @@ std::string to_string(ObjectType type)
         return "ListExt";
     case ObjectType::ListTmp:
         return "ListTmp";
-    case ObjectType::Edge:
-        return "Edge";
+    case ObjectType::DirectedEdge:
+        return "DirectedEdge";
+    case ObjectType::UndirectedEdge:
+        return "UndirectedEdge";
+    case ObjectType::EdgeKey:
+        return "EdgeKey";
+    case ObjectType::NodeKey:
+        return "NodeKey";
+    case ObjectType::EdgeLabel:
+        return "EdgeLabel";
+    case ObjectType::NodeLabel:
+        return "NodeLabel";
     case ObjectType::Path:
         return "Path";
     case ObjectType::NotFound:
         return "NotFound";
-    case ObjectType::Invalid:
-        return "Invalid";
+        break;
     }
     return "Unknown";
 }
@@ -164,8 +173,6 @@ std::string to_string(ObjectSubType type)
         return "Iri";
     case ObjectSubType::NotFound:
         return "NotFound";
-    case ObjectSubType::Invalid:
-        return "Invalid";
     }
     return "Unknown";
 }
@@ -201,8 +208,6 @@ std::string to_string(ObjectGenType type)
         return "Iri";
     case ObjectGenType::NotFound:
         return "NotFound";
-    case ObjectGenType::Invalid:
-        return "Invalid";
     }
     return "Unknown";
 }

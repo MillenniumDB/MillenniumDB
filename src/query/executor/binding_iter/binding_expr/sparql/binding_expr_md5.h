@@ -56,7 +56,7 @@ public:
             }
 
             std::string hash(hash_bytes_str, MD5_DIGEST_LENGTH * 2);
-            return Conversions::pack_string_simple(hash);
+            return Conversions::pack_string(hash);
         }
         default:
             return ObjectId::get_null();

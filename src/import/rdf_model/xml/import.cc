@@ -3,7 +3,6 @@
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/iri_compression.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
@@ -126,7 +125,7 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
     pending_triples = std::make_unique<DiskVector<3>>(db_folder + "/" + PENDING_TRIPLES_FILENAME_PREFIX);
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     { // Process IRI prefixes
         // We look for prefixes in the following order:
@@ -202,7 +201,7 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
     print_duration("Parsing", start);
 
     // initial flush
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     int i = 0;
     pending_triples->finish_appends();
@@ -216,25 +215,25 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
         ++i;
 
         // advance pending variables for current iteration
-        external_helper->advance_pending();
-        external_helper->clear_sets();
+        ext_helper->advance_pending();
+        ext_helper->clear_sets();
 
         old_pending_triples->begin_tuple_iter();
         while (old_pending_triples->has_next_tuple()) {
             const auto& pending_triple = old_pending_triples->next_tuple();
 
             // resolve each id
-            subject_id.id = external_helper->resolve_id(pending_triple[0]);
-            predicate_id.id = external_helper->resolve_id(pending_triple[1]);
-            object_id.id = external_helper->resolve_id(pending_triple[2]);
+            subject_id.id = ext_helper->resolve_id(pending_triple[0]);
+            predicate_id.id = ext_helper->resolve_id(pending_triple[1]);
+            object_id.id = ext_helper->resolve_id(pending_triple[2]);
 
             save_triple();
         }
 
         // write out new data
-        external_helper->flush_to_disk();
+        ext_helper->flush_to_disk();
         // close and delete the old pending files
-        external_helper->clean_up_old();
+        ext_helper->clean_up_old();
 
         // close and delete old_pending_triples file
         pending_triples->finish_appends();
@@ -245,7 +244,7 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
     pending_triples->skip_indexing(); // will close and remove file
 
     // delete all unnecessary files and free-up memory
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
     print_duration("Processing strings and tensors", start);
 
@@ -255,13 +254,13 @@ void OnDiskImport::start_import(MDBIstream& in, const std::string& prefixes_file
         blank_ids_map.swap(tmp);
     }
 
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
     print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     // Save lasts blocks to disk
     triples.finish_appends();
@@ -459,16 +458,18 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
 
     if (UUIDCompression::compress_lower(str, str_len, buffer_iri)) {
         str_len = str_len - 20;
-        return ObjectId(
-            external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-            | (ObjectId::MASK_IRI_UUID_LOWER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
-        );
+        return ObjectId(ext_helper->get_or_create_ext(
+            buffer_iri,
+            str_len,
+            ObjectId::MASK_IRI_UUID_LOWER_EXT | prefix_id_shifted
+        ));
     } else if (UUIDCompression::compress_upper(str, str_len, buffer_iri)) {
         str_len = str_len - 20;
-        return ObjectId(
-            external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-            | (ObjectId::MASK_IRI_UUID_UPPER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
-        );
+        return ObjectId(ext_helper->get_or_create_ext(
+            buffer_iri,
+            str_len,
+            ObjectId::MASK_IRI_UUID_UPPER_EXT | prefix_id_shifted
+        ));
     }
 
     if (str_len >= HexCompression::MIN_LEN_TO_COMPRESS) {
@@ -481,16 +482,20 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
         {
             str_len = HexCompression::compress(str, str_len, lower_hex_length, buffer_iri);
             return ObjectId(
-                external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                | (ObjectId::MASK_IRI_HEX_LOWER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                ext_helper->get_or_create_ext(
+                    buffer_iri,
+                    str_len,
+                    ObjectId::MASK_IRI_HEX_LOWER_TMP | prefix_id_shifted
+                )
+
             );
 
             // Compress uppercase hex characters
         } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
             str_len = HexCompression::compress(str, str_len, upper_hex_length, buffer_iri);
             return ObjectId(
-                external_helper->get_or_create_external_string_id(buffer_iri, str_len)
-                | (ObjectId::MASK_IRI_HEX_UPPER & (~ObjectId::MOD_MASK)) | prefix_id_shifted
+                ext_helper->get_or_create_ext(buffer_iri, str_len, )
+                | (ObjectId::MASK_IRI_HEX_UPPER_TMP & (~ObjectId::MOD_MASK)) | prefix_id_shifted
             );
         }
     }
@@ -499,7 +504,7 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
         return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
     } else {
         return ObjectId(
-            external_helper->get_or_create_external_string_id(str, str_len) | ObjectId::MASK_IRI
+            ext_helper->get_or_create_ext(str, str_len, ObjectId::MASK_IRI_EXT)
             | prefix_id_shifted
         );
     }
@@ -567,7 +572,7 @@ ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error
             char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
             dec.serialize_extern(dec_buffer);
             return ObjectId(
-                external_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
+                ext_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
                 | ObjectId::MASK_DECIMAL
             );
         } else {
@@ -582,7 +587,7 @@ ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error
         char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
         dec.serialize_extern(dec_buffer);
         return ObjectId(
-            external_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
+            ext_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
             | ObjectId::MASK_DECIMAL
         );
     } catch (const std::invalid_argument& e) {
@@ -602,7 +607,7 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
         return SPARQL::Conversions::pack_string_datatype_inline(datatype_id, value);
     } else {
         return ObjectId(
-            external_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STRING_DATATYPE
+            ext_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STR_DATATYPE_INL
             | (datatype_id << SPARQL::Conversions::TMP_SHIFT)
         );
     }
@@ -614,11 +619,8 @@ void OnDiskImport::save_object_id_literal_lang(XMLTag& object)
     if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING_LANG) {
         object_id = SPARQL::Conversions::pack_string_lang_inline(lang_id, object.value.c_str());
     } else {
-        object_id.id = external_helper->get_or_create_external_string_id(
-                           object.value.c_str(),
-                           object.value.size()
-                       )
-                     | ObjectId::MASK_STRING_LANG | (lang_id << SPARQL::Conversions::TMP_SHIFT);
+        object_id.id = ext_helper->get_or_create_external_string_id(object.value.c_str(), object.value.size())
+                     | ObjectId::MASK_STR_LANG_INL | (lang_id << SPARQL::Conversions::TMP_SHIFT);
     }
 }
 
@@ -641,7 +643,7 @@ void OnDiskImport::try_save_tensor(const char* str, const char* dt)
     const auto num_bytes = sizeof(T) * tensor.size();
 
     object_id.id = tensor::Tensor<T>::get_subtype()
-                 | external_helper->get_or_create_external_tensor_id(bytes, num_bytes);
+                 | ext_helper->get_or_create_external_tensor_id(bytes, num_bytes);
 }
 
 void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& object)
@@ -655,13 +657,13 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
     switch (object.datatype) {
     case RDFDatatype::UNSPECIFIED: {
         if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
-            object_id = SPARQL::Conversions::pack_string_simple_inline(object.value.c_str());
+            object_id = SPARQL::Conversions::pack_string_inline(object.value.c_str());
         } else {
-            object_id.id = external_helper->get_or_create_external_string_id(
+            object_id.id = ext_helper->get_or_create_external_string_id(
                                object.value.c_str(),
                                object.value.size()
                            )
-                         | ObjectId::MASK_STRING_SIMPLE;
+                         | ObjectId::MASK_STR_INL;
         }
         break;
     }
@@ -671,11 +673,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         if (object.value.size() <= ObjectId::STR_DT_INLINE_BYTES) {
             object_id = SPARQL::Conversions::pack_string_datatype_inline(datatype_id, object.value.c_str());
         } else {
-            object_id.id = external_helper->get_or_create_external_string_id(
+            object_id.id = ext_helper->get_or_create_external_string_id(
                                object.value.c_str(),
                                object.value.size()
                            )
-                         | ObjectId::MASK_STRING_DATATYPE | (datatype_id << SPARQL::Conversions::TMP_SHIFT);
+                         | ObjectId::MASK_STR_DATATYPE_INL | (datatype_id << SPARQL::Conversions::TMP_SHIFT);
         }
         break;
     }
@@ -711,11 +713,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = SPARQL::Conversions::pack_string_xsd_inline(object.value.c_str());
         } else {
-            object_id.id = external_helper->get_or_create_external_string_id(
+            object_id.id = ext_helper->get_or_create_external_string_id(
                                object.value.c_str(),
                                object.value.size()
                            )
-                         | ObjectId::MASK_STRING_XSD;
+                         | ObjectId::MASK_STR_XSD_INL;
         }
         break;
     }
@@ -731,7 +733,7 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
             } else {
                 char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
                 dec.serialize_extern(dec_buffer);
-                object_id.id = external_helper->get_or_create_external_string_id(
+                object_id.id = ext_helper->get_or_create_external_string_id(
                                    dec_buffer,
                                    Decimal::EXTERN_BUFFER_SIZE
                                )
@@ -755,7 +757,7 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         try {
             double d = std::stod(object.value);
             const char* chars = reinterpret_cast<const char*>(&d);
-            object_id.id = external_helper->get_or_create_external_string_id(chars, sizeof(d))
+            object_id.id = ext_helper->get_or_create_external_string_id(chars, sizeof(d))
                          | ObjectId::MASK_DOUBLE;
         } catch (const std::out_of_range& e) {
             object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
@@ -994,13 +996,15 @@ void OnDiskImport::determine_tag_datatype(XMLTag& new_xml_tag, std::vector<std::
             new_xml_tag.datatype = RDFDatatype::FLOAT;
         } else if (strcmp(xsd_suffix, "double") == 0) {
             new_xml_tag.datatype = RDFDatatype::DOUBLE;
-        } else if (strcmp(xsd_suffix, "integer") == 0 || strcmp(xsd_suffix, "long") == 0
-                   || strcmp(xsd_suffix, "int") == 0 || strcmp(xsd_suffix, "short") == 0
-                   || strcmp(xsd_suffix, "byte") == 0 || strcmp(xsd_suffix, "nonPositiveInteger") == 0
-                   || strcmp(xsd_suffix, "negativeInteger") == 0 || strcmp(xsd_suffix, "positiveInteger") == 0
-                   || strcmp(xsd_suffix, "nonNegativeInteger") == 0 || strcmp(xsd_suffix, "unsignedLong") == 0
-                   || strcmp(xsd_suffix, "unsignedInt") == 0 || strcmp(xsd_suffix, "unsignedShort") == 0
-                   || strcmp(xsd_suffix, "unsignedByte") == 0)
+        } else if (
+            strcmp(xsd_suffix, "integer") == 0 || strcmp(xsd_suffix, "long") == 0
+            || strcmp(xsd_suffix, "int") == 0 || strcmp(xsd_suffix, "short") == 0
+            || strcmp(xsd_suffix, "byte") == 0 || strcmp(xsd_suffix, "nonPositiveInteger") == 0
+            || strcmp(xsd_suffix, "negativeInteger") == 0 || strcmp(xsd_suffix, "positiveInteger") == 0
+            || strcmp(xsd_suffix, "nonNegativeInteger") == 0 || strcmp(xsd_suffix, "unsignedLong") == 0
+            || strcmp(xsd_suffix, "unsignedInt") == 0 || strcmp(xsd_suffix, "unsignedShort") == 0
+            || strcmp(xsd_suffix, "unsignedByte") == 0
+        )
         {
             new_xml_tag.datatype = RDFDatatype::INTEGER;
         } else if (strcmp(xsd_suffix, "boolean") == 0) {

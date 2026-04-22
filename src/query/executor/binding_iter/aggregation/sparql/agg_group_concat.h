@@ -87,7 +87,7 @@ public:
         case GroupConcatType::NULL_RESULT:
             return ObjectId::get_null();
         case GroupConcatType::SIMPLE:
-            return Conversions::pack_string_simple(res);
+            return Conversions::pack_string(res);
         case GroupConcatType::XSD:
             return Conversions::pack_string_xsd(res);
         case GroupConcatType::LANG:

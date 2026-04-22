@@ -74,7 +74,7 @@ public:
         switch (status) {
         case ConcatStatus::UNSET:
         case ConcatStatus::SIMPLE:
-            return Conversions::pack_string_simple(res);
+            return Conversions::pack_string(res);
         case ConcatStatus::XSD:
             return Conversions::pack_string_xsd(res);
         case ConcatStatus::LANG:

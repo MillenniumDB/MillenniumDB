@@ -22,7 +22,8 @@ std::set<VarId> NodePlan::get_vars() const
     return result;
 }
 
-void NodePlan::set_input_vars(const std::set<VarId>& input_vars) {
+void NodePlan::set_input_vars(const std::set<VarId>& input_vars)
+{
     set_input_var(input_vars, node_id, &node_assigned);
 }
 
@@ -31,7 +32,7 @@ std::unique_ptr<BindingIter> NodePlan::get_binding_iter() const
     if (node_assigned) {
         return std::make_unique<SingleResultBindingIter>();
     }
-    return std::make_unique<ObjectEnum>(node_id, ObjectId::MASK_NODE, gql_model.catalog.nodes_count);
+    return std::make_unique<ObjectEnum>(node_id, ObjectId::MASK_ANON_INL, gql_model.catalog.nodes_count);
 }
 
 void NodePlan::print(std::ostream& os, int indent) const

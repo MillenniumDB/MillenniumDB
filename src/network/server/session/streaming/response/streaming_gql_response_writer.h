@@ -73,113 +73,147 @@ public:
 
     void write_object_id(ObjectId oid) override
     {
-        const auto type = GQL_OID::get_type(oid);
         const auto value = oid.get_value();
 
-        switch (type) {
-        case GQL_OID::Type::NULL_ID: {
+        switch (oid.type()) {
+        case ObjectType::Null: {
             write_null();
             break;
         }
-        case GQL_OID::Type::STRING_SIMPLE_INLINE:
-        case GQL_OID::Type::STRING_SIMPLE_EXTERN:
-        case GQL_OID::Type::STRING_SIMPLE_TMP: {
+        case ObjectType::StringInl:
+        case ObjectType::StringExt:
+        case ObjectType::StringTmp: {
             write_typed_string(GQL::Conversions::unpack_string(oid), Protocol::DataType::STRING);
             break;
         }
-        case GQL_OID::Type::INT56_INLINE:
-        case GQL_OID::Type::INT64_EXTERN:
-        case GQL_OID::Type::INT64_TMP: {
+        case ObjectType::PositiveInt56:
+        case ObjectType::NegativeInt56: {
             const int64_t i = GQL::Conversions::unpack_int(oid);
             write_int64(i);
             break;
         }
-        case GQL_OID::Type::FLOAT32: {
+        case ObjectType::Float: {
             const int64_t f = GQL::Conversions::unpack_float(oid);
             write_float(f);
             break;
         }
-        case GQL_OID::Type::DOUBLE64_EXTERN:
-        case GQL_OID::Type::DOUBLE64_TMP: {
+        case ObjectType::DoubleExt:
+        case ObjectType::DoubleTmp: {
             const double d = GQL::Conversions::unpack_double(oid);
             write_double(d);
             break;
         }
-        case GQL_OID::Type::DECIMAL_INLINE:
-        case GQL_OID::Type::DECIMAL_EXTERN:
-        case GQL_OID::Type::DECIMAL_TMP: {
+        case ObjectType::DecimalInl:
+        case ObjectType::DecimalExt:
+        case ObjectType::DecimalTmp: {
             const Decimal dec = GQL::Conversions::unpack_decimal(oid);
             write_typed_string(dec.to_string(), Protocol::DataType::DECIMAL);
             break;
         }
-        case GQL_OID::Type::DATE: {
+        case ObjectType::Date: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
             write_date(datetime);
             break;
         }
-        case GQL_OID::Type::TIME: {
+        case ObjectType::Time: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
             write_time(datetime);
             break;
         }
-        case GQL_OID::Type::DATETIME:
-        case GQL_OID::Type::DATETIMESTAMP: {
+        case ObjectType::Datetime:
+        case ObjectType::Datetimestamp: {
             const DateTime datetime = GQL::Conversions::unpack_date(oid);
             write_datetime(datetime);
             break;
         }
-        case GQL_OID::Type::BOOL: {
+        case ObjectType::Bool: {
             const auto b = GQL::Conversions::unpack_bool(oid);
             write_bool(b);
             break;
         }
-        case GQL_OID::Type::PATH: {
+        case ObjectType::Path: {
             write_gql_path(oid);
             break;
         }
-        case GQL_OID::Type::NODE: {
+        case ObjectType::AnonInl: {
             write_typed_string("_n" + std::to_string(value), Protocol::DataType::NAMED_NODE);
             break;
         }
-        case GQL_OID::Type::DIRECTED_EDGE:
-        case GQL_OID::Type::UNDIRECTED_EDGE: {
-            write_edge(value);
+        case ObjectType::DirectedEdge:
+        case ObjectType::UndirectedEdge: {
+            write_edge(value); // TODO: should differentiate directed and undirected
             break;
         }
-        case GQL_OID::Type::NODE_LABEL: {
+        case ObjectType::NodeLabel: {
             write_typed_string(gql_model.catalog.node_labels_str[value], Protocol::DataType::STRING);
             break;
         }
-        case GQL_OID::Type::EDGE_LABEL: {
+        case ObjectType::EdgeLabel: {
             write_typed_string(gql_model.catalog.edge_labels_str[value], Protocol::DataType::STRING);
             break;
         }
-        case GQL_OID::Type::NODE_KEY: {
+        case ObjectType::NodeKey: {
             write_typed_string(gql_model.catalog.node_keys_str[value], Protocol::DataType::STRING);
             break;
         }
-        case GQL_OID::Type::EDGE_KEY: {
+        case ObjectType::EdgeKey: {
             write_typed_string(gql_model.catalog.edge_keys_str[value], Protocol::DataType::STRING);
             break;
         }
-        case GQL_OID::Type::DICTIONARY: {
+        case ObjectType::DictionaryExt:
+        case ObjectType::DictionaryTmp: {
             std::unique_ptr<Dictionary> dictionary;
             Common::Conversions::unpack_dictionary(oid, dictionary);
             write_dictionary(*dictionary);
             break;
         }
-        case GQL_OID::Type::LIST: {
+        case ObjectType::ListExt:
+        case ObjectType::ListTmp: {
             std::vector<ObjectId> oid_list;
             GQL::Conversions::unpack_list(oid, oid_list);
             write_list(oid_list);
             break;
         }
-        default: {
-            throw std::logic_error(
-                "Unmanaged type in StreamingGQLResponseWriter::encode_object_id: "
-                + std::to_string(static_cast<uint8_t>(type))
-            );
-        }
+        // default: {
+        //     throw std::logic_error(
+        //         "Unmanaged type in StreamingGQLResponseWriter::encode_object_id: "
+        //         + std::to_string(static_cast<uint8_t>(type))
+        //     );
+        // }
+        case ObjectType::TensorFloatInl:
+        case ObjectType::TensorFloatExt:
+        case ObjectType::TensorFloatTmp:
+        case ObjectType::TensorDoubleInl:
+        case ObjectType::TensorDoubleExt:
+        case ObjectType::TensorDoubleTmp:
+            // TODO: add tensors?
+        case ObjectType::AnonTmp:
+        case ObjectType::StringXsdInl:
+        case ObjectType::StringXsdExt:
+        case ObjectType::StringXsdTmp:
+        case ObjectType::StringLangInl:
+        case ObjectType::StringLangExt:
+        case ObjectType::StringLangTmp:
+        case ObjectType::StringDatatypeInl:
+        case ObjectType::StringDatatypeExt:
+        case ObjectType::StringDatatypeTmp:
+        case ObjectType::IriInl:
+        case ObjectType::IriExt:
+        case ObjectType::IriTmp:
+        case ObjectType::IriUuidLowerTmp:
+        case ObjectType::IriUuidLowerExt:
+        case ObjectType::IriUuidUpperTmp:
+        case ObjectType::IriUuidUpperExt:
+        case ObjectType::IriHexLowerTmp:
+        case ObjectType::IriHexLowerExt:
+        case ObjectType::IriHexUpperTmp:
+        case ObjectType::IriHexUpperExt:
+        case ObjectType::NamedNodeInl:
+        case ObjectType::NamedNodeExt:
+        case ObjectType::NamedNodeTmp:
+
+        case ObjectType::NotFound:
+            break;
         }
     }
 };

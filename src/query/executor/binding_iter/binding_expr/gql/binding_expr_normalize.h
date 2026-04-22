@@ -1,13 +1,13 @@
 #pragma once
 
+#include "graph_models/gql/conversions.h"
+#include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
 #include <cassert>
 #include <memory>
 #include <unicode/normalizer2.h>
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
-
-#include "graph_models/gql/conversions.h"
-#include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 namespace GQL {
 class BindingExprNormalize : public BindingExpr {
@@ -23,9 +23,8 @@ public:
     ObjectId eval(const Binding& binding) override
     {
         auto expr_oid = expr->eval(binding);
-        auto expr_generic_type = GQL_OID::get_generic_type(expr_oid);
 
-        if (expr_generic_type == GQL_OID::GenericType::STRING) {
+        if (expr_oid.generic_type() == ObjectGenType::String) {
             auto str = GQL::Conversions::unpack_string(expr_oid);
             icu::UnicodeString uInput = icu::UnicodeString::fromUTF8(str);
             icu::UnicodeString uOutput;
@@ -43,7 +42,7 @@ public:
             normalizer->normalize(uInput, uOutput, status);
             std::string out;
             uOutput.toUTF8String(out);
-            return GQL::Conversions::pack_string_simple(out);
+            return GQL::Conversions::pack_string(out);
         } else {
             return ObjectId::get_null();
         }

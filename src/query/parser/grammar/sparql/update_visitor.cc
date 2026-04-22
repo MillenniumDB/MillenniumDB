@@ -381,7 +381,7 @@ Any UpdateVisitor::visitRdfLiteral(SUP::RdfLiteralContext* ctx)
     } else if (ctx->LANGTAG()) {
         current_sparql_element = Conversions::pack_string_lang(ctx->LANGTAG()->getText().substr(1), str);
     } else {
-        current_sparql_element = Conversions::pack_string_simple(str);
+        current_sparql_element = Conversions::pack_string(str);
     }
     return 0;
 }

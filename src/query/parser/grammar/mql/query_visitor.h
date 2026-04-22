@@ -99,6 +99,8 @@ private:
 public:
     std::unique_ptr<Op> current_op;
 
+    ObjectId get_fixed_node_inside(const std::string&) const;
+
     virtual std::any visitDescribeQuery(MQL_Parser::DescribeQueryContext*) override;
     virtual std::any visitShowQuery(MQL_Parser::ShowQueryContext* ctx) override;
     virtual std::any visitSimpleQuery(MQL_Parser::SimpleQueryContext* ctx) override;

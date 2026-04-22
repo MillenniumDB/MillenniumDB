@@ -210,8 +210,10 @@ std::any QueryVisitor::visitReturnStatementBody(GQLParser::ReturnStatementBodyCo
     auto returnItemList = ctx->returnItemList();
     if (ctx->ASTERISK()) {
         if (ctx->groupByClause()) {
-            throw QuerySemanticException("A query that contains an asterisk (*) in the RETURN statement "
-                                         "cannot contain the GROUP BY clause");
+            throw QuerySemanticException(
+                "A query that contains an asterisk (*) in the RETURN statement "
+                "cannot contain the GROUP BY clause"
+            );
         }
 
         auto vars = current_op->get_all_vars();
@@ -813,7 +815,8 @@ std::any QueryVisitor::visitGraphPatternQuantifier(GQLParser::GraphPatternQuanti
         }
 
         if (upper.has_value() && lower > upper) {
-            throw QuerySemanticException("The lower bound in the quantifier is greater than the upper bound."
+            throw QuerySemanticException(
+                "The lower bound in the quantifier is greater than the upper bound."
             );
         }
 
@@ -913,8 +916,7 @@ std::any QueryVisitor::visitPropertyKeyValuePair(GQLParser::PropertyKeyValuePair
 std::any QueryVisitor::visitElementVariableDeclaration(GQLParser::ElementVariableDeclarationContext* ctx)
 {
     LOG_VISITOR
-    if (ctx->TEMP()) {
-    }
+    if (ctx->TEMP()) { }
 
     std::string var_name = ctx->elementVariable()->getText();
     auto new_var = get_query_ctx().get_or_create_var(var_name);
@@ -1201,8 +1203,10 @@ std::any QueryVisitor::visitGqlOneArgScalarFunction(GQLParser::GqlOneArgScalarFu
         current_expr = std::make_unique<ExprFloor>(std::move(expr));
     } else if (ctx->oneArgNumericFunctionName()->CEIL()) {
         current_expr = std::make_unique<ExprCeil>(std::move(expr));
-    } else if (ctx->oneArgNumericFunctionName()->CHAR_LENGTH()
-               || ctx->oneArgNumericFunctionName()->CHARACTER_LENGTH())
+    } else if (
+        ctx->oneArgNumericFunctionName()->CHAR_LENGTH()
+        || ctx->oneArgNumericFunctionName()->CHARACTER_LENGTH()
+    )
     {
         current_expr = std::make_unique<ExprLength>(std::move(expr));
     }
@@ -1487,23 +1491,23 @@ std::any QueryVisitor::visitCastFunction(GQLParser::CastFunctionContext* ctx)
     //       record types, and dynamic union types.
     LOG_VISITOR;
     visit(ctx->expression());
-    GQL_OID::GenericType target = GQL_OID::GenericType::NULL_ID; // to avoid warnings
+    ObjectGenType target = ObjectGenType::Null; // to avoid warnings
     if (auto predefTypeCtx = dynamic_cast<GQLParser::PredefTypeContext*>(ctx->valueType())) {
         auto predefinedTypeCtx = dynamic_cast<GQLParser::PredefinedTypeContext*>(predefTypeCtx->children[0]);
 
         if (predefinedTypeCtx) {
             for (auto child : predefinedTypeCtx->children) {
                 if (dynamic_cast<GQLParser::BooleanTypeContext*>(child)) {
-                    target = GQL_OID::GenericType::BOOL;
+                    target = ObjectGenType::Bool;
                     break;
                 } else if (dynamic_cast<GQLParser::CharacterStringTypeContext*>(child)) {
-                    target = GQL_OID::GenericType::STRING;
+                    target = ObjectGenType::String;
                     break;
                 } else if (dynamic_cast<GQLParser::NumericTypeContext*>(child)) {
-                    target = GQL_OID::GenericType::NUMERIC;
+                    target = ObjectGenType::Numeric;
                     break;
                 } else if (dynamic_cast<GQLParser::TemporalTypeContext*>(child)) {
-                    target = GQL_OID::GenericType::DATE;
+                    target = ObjectGenType::TemporalLiteral;
                     break;
                 }
             }
@@ -1728,8 +1732,8 @@ std::any QueryVisitor::visitGqlConcatenationExpression(GQLParser::GqlConcatenati
     return 0;
 }
 
-std::any QueryVisitor::visitSingleQuotedCharacterSequence(GQLParser::SingleQuotedCharacterSequenceContext* ctx
-)
+std::any
+    QueryVisitor::visitSingleQuotedCharacterSequence(GQLParser::SingleQuotedCharacterSequenceContext* ctx)
 {
     LOG_VISITOR
     std::vector<std::unique_ptr<Expr>> str_expressions;
@@ -1744,7 +1748,7 @@ std::any QueryVisitor::visitSingleQuotedCharacterSequence(GQLParser::SingleQuote
         }
         raw_string = std::string(raw_string, start_pos, raw_string.size() - 2);
 
-        ObjectId oid = SPARQL::Conversions::pack_string_simple(raw_string);
+        ObjectId oid = SPARQL::Conversions::pack_string(raw_string);
         str_expressions.push_back(std::make_unique<ExprTerm>(oid));
     }
 
@@ -1756,8 +1760,8 @@ std::any QueryVisitor::visitSingleQuotedCharacterSequence(GQLParser::SingleQuote
     return 0;
 }
 
-std::any QueryVisitor::visitDoubleQuotedCharacterSequence(GQLParser::DoubleQuotedCharacterSequenceContext* ctx
-)
+std::any
+    QueryVisitor::visitDoubleQuotedCharacterSequence(GQLParser::DoubleQuotedCharacterSequenceContext* ctx)
 {
     LOG_VISITOR
     std::vector<std::unique_ptr<Expr>> str_expressions;
@@ -1772,7 +1776,7 @@ std::any QueryVisitor::visitDoubleQuotedCharacterSequence(GQLParser::DoubleQuote
         }
         raw_string = std::string(raw_string, start_pos, raw_string.size() - 2);
 
-        ObjectId oid = SPARQL::Conversions::pack_string_simple(raw_string);
+        ObjectId oid = SPARQL::Conversions::pack_string(raw_string);
         str_expressions.push_back(std::make_unique<ExprTerm>(oid));
     }
 

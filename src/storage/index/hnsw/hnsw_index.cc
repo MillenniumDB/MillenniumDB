@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "graph_models/quad_model/quad_model.h"
-#include "graph_models/quad_model/quad_object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
 #include "query/optimizer/quad_model/plan/property_plan.h"
@@ -261,7 +260,7 @@ uint_fast32_t HNSWIndex::index_predicate(const std::string& predicate)
 uint_fast32_t HNSWIndex::index_property(const std::string& key)
 {
     const auto object_var = get_query_ctx().get_internal_var();
-    const auto key_val = QuadObjectId::get_string(key);
+    const auto key_val = Common::Conversions::pack_string(key);
     const auto value_var = get_query_ctx().get_internal_var();
 
     const auto property_plan = PropertyPlan(object_var, key_val, value_var);

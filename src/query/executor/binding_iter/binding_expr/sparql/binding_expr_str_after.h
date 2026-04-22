@@ -71,7 +71,7 @@ public:
             return lhs_oid;
         }
         if (lhs_str.size() == 0) {
-            return Conversions::pack_string_simple("");
+            return Conversions::pack_string("");
         }
 
         auto it = lhs_str.find(rhs_str);
@@ -82,10 +82,10 @@ public:
             } else if (lhs_sub == ObjectSubType::StringXsd) {
                 return Conversions::pack_string_xsd(substr);
             } else {
-                return Conversions::pack_string_simple(substr);
+                return Conversions::pack_string(substr);
             }
         }
-        return Conversions::pack_string_simple("");
+        return Conversions::pack_string("");
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

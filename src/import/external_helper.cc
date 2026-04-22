@@ -88,7 +88,7 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
             *tensors_external_data.old_pending_fs,
             pending_buffer
         );
-        return get_or_create_external_tensor_id(pending_buffer, num_bytes) | mask;
+        return get_or_create_tensor(pending_buffer, num_bytes, mask);
     }
 
     // handle lists
@@ -101,21 +101,24 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
             list[i] = ObjectId(resolve_id(list[i].id));
         }
         ListEncoder::encode(list, pending_buffer);
-        return get_or_create_external_string_id(pending_buffer, str_len) | ObjectId::MASK_LIST;
+        return get_or_create_ext(pending_buffer, str_len, ObjectId::MASK_LIST_EXT);
     }
 
     const auto pos = id & ObjectId::MASK_EXTERNAL_ID;
     strings_external_data.old_pending_fs->seekg(pos);
     const auto str_len = BytesEncoder::read_bytes(*strings_external_data.old_pending_fs, pending_buffer);
-    return get_or_create_external_string_id(pending_buffer, str_len) | mask;
+    return get_or_create_ext(pending_buffer, str_len, mask);
 }
 
-uint64_t ExternalHelper::get_or_create_external_id(
+uint64_t ExternalHelper::_get_or_create_external_id(
     const char* bytes,
     std::size_t num_bytes,
-    ExternalData& external_data
+    ExternalData& external_data,
+    uint64_t external_mask
 )
 {
+    uint64_t mask = external_mask & (~ObjectId::MOD_MASK);
+
     // encode size
     const auto num_bytes_size = BytesEncoder::write_size(
         external_data.buffer + external_data.buffer_end,
@@ -150,5 +153,5 @@ uint64_t ExternalHelper::get_or_create_external_id(
         external_data.buffer + external_data.buffer_end,
         num_bytes_size + num_bytes
     );
-    return ObjectId::MOD_TMP | pos;
+    return ObjectId::MOD_TMP | pos | mask;
 }

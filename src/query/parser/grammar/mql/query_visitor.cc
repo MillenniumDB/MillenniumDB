@@ -7,7 +7,6 @@
 #include "graph_models/common/datatypes/tensor/tensor.h"
 #include "graph_models/quad_model/conversions.h"
 #include "graph_models/quad_model/quad_model.h"
-#include "graph_models/quad_model/quad_object_id.h"
 #include "misc/is_name_valid_for_path.h"
 #include "misc/transliterator.h"
 #include "query/parser/expr/mql/exprs.h"
@@ -83,7 +82,7 @@ Any QueryVisitor::visitDescribeQuery(MQL_Parser::DescribeQueryContext* ctx)
     }
 
     const auto object_id = last_node.get_OID();
-    const bool is_edge = object_id.type() == ObjectType::Edge;
+    const bool is_edge = object_id.type() == ObjectType::DirectedEdge;
     if (is_edge && (labels_limit_seen || outgoing_limit_seen || incoming_limit_seen)) {
         throw QueryException("Invalid flag to describe edge");
     }
@@ -222,7 +221,7 @@ Any QueryVisitor::visitDeleteStatement(MQL_Parser::DeleteStatementContext* ctx)
     auto var_list = ctx->VARIABLE();
 
     for (auto obj : obj_list) {
-        auto oid = QuadObjectId::get_fixed_node_inside(obj->getText());
+        auto oid = get_fixed_node_inside(obj->getText());
         update_info.update_actions.push_back(std::make_unique<DeleteObject>(oid, detach));
     }
 
@@ -240,7 +239,7 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
 {
     Id obj = ObjectId();
     if (auto fixed_obj = ctx->fixedObj()) {
-        obj = QuadObjectId::get_fixed_node_inside(fixed_obj->getText());
+        obj = get_fixed_node_inside(fixed_obj->getText());
     } else if (auto variable = ctx->VARIABLE()) {
         auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
@@ -251,7 +250,7 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
         auto key_name = key_terminal->getText();
 
         key_name.erase(0, 1); // remove leading '.'
-        auto key_id = QuadObjectId::get_string(key_name);
+        auto key_id = MQL::Conversions::pack_string(key_name);
 
         ctx->conditionalOrExpr()->accept(this);
         update_info.update_actions.push_back(
@@ -266,7 +265,7 @@ Any QueryVisitor::visitSetAtom(MQL_Parser::SetAtomContext* ctx)
         for (auto& label : ctx->TYPE()) {
             auto label_str = label->getText();
             label_str.erase(0, 1); // remove leading ':'
-            auto label_id = QuadObjectId::get_string(label_str);
+            auto label_id = MQL::Conversions::pack_string(label_str);
             update_info.update_actions.push_back(std::make_unique<SetLabelOrType>(obj, label_id));
         }
     }
@@ -278,7 +277,7 @@ Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
 {
     Id obj = ObjectId();
     if (auto fixed_obj = ctx->fixedObj()) {
-        obj = QuadObjectId::get_fixed_node_inside(fixed_obj->getText());
+        obj = get_fixed_node_inside(fixed_obj->getText());
     } else if (auto variable = ctx->VARIABLE()) {
         auto var_name = variable->getText();
         var_name.erase(0, 1); // remove leading '?'
@@ -289,14 +288,14 @@ Any QueryVisitor::visitRemoveAtom(MQL_Parser::RemoveAtomContext* ctx)
         auto key_name = key_terminal->getText();
 
         key_name.erase(0, 1); // remove leading '.'
-        auto key_id = QuadObjectId::get_string(key_name);
+        auto key_id = MQL::Conversions::pack_string(key_name);
 
         update_info.update_actions.push_back(std::make_unique<DeleteProperty>(obj, key_id));
     } else {
         for (auto& label : ctx->TYPE()) {
             auto label_str = label->getText();
             label_str.erase(0, 1); // remove leading ':'
-            auto label_id = QuadObjectId::get_string(label_str);
+            auto label_id = MQL::Conversions::pack_string(label_str);
             update_info.update_actions.push_back(std::make_unique<DeleteLabel>(obj, label_id));
         }
     }
@@ -336,7 +335,7 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
         var_name.erase(0, 1); // remove leading '?'
         last_node = get_query_ctx().get_or_create_var(var_name);
     } else if (auto identifier = ctx->identifier()) {
-        last_node = QuadObjectId::get_fixed_node_inside(identifier->getText());
+        last_node = get_fixed_node_inside(identifier->getText());
     } else {
         last_node = update_info.update_ctx->get_anon_id();
     }
@@ -346,7 +345,7 @@ Any QueryVisitor::visitInsertNode(MQL_Parser::InsertNodeContext* ctx)
     for (auto& label : ctx->TYPE()) {
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
-        auto label_id = QuadObjectId::get_string(label_str);
+        auto label_id = MQL::Conversions::pack_string(label_str);
 
         update_info.update_actions.push_back(std::make_unique<InsertLabel>(last_node, label_id));
     }
@@ -367,7 +366,7 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 
     auto type_str = ctx->TYPE()->getText();
     type_str.erase(0, 1); // remove leading ':'
-    auto type_id = QuadObjectId::get_named_node(type_str);
+    auto type_id = MQL::Conversions::pack_named_node(type_str);
 
     // InsertEdge must go before because it assigns the var
     if (ctx->GT() != nullptr) {
@@ -395,7 +394,7 @@ Any QueryVisitor::visitInsertEdge(MQL_Parser::InsertEdgeContext* ctx)
 Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
 {
     auto key_str = ctx->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     ObjectId value_id;
 
@@ -420,7 +419,7 @@ Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
 Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* ctx)
 {
     auto key_str = ctx->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     std::string datatype = ctx->TYPE()->getText();
     // remove leading ':'
@@ -441,7 +440,7 @@ Any QueryVisitor::visitInsertProperty2(MQL_Parser::InsertProperty2Context* ctx)
 Any QueryVisitor::visitInsertProperty3(MQL_Parser::InsertProperty3Context* ctx)
 {
     auto key_str = ctx->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     ctx->conditionalOrExpr()->accept(this);
     assert(current_expr != nullptr);
@@ -485,7 +484,7 @@ Any QueryVisitor::visitCallStatement(MQL_Parser::CallStatementContext* ctx)
         if (current_call_argument_exprs.size() == 2) {
             // set default arguments
             current_call_argument_exprs.emplace_back(
-                std::make_unique<ExprConstant>(QuadObjectId::get_string("prefix"))
+                std::make_unique<ExprConstant>(MQL::Conversions::pack_string("prefix"))
             );
         } else if (current_call_argument_exprs.size() != 3) {
             throw QueryException(
@@ -603,7 +602,8 @@ Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx) {
+Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx)
+{
     OpLet::VarExprVecType var_expr;
 
     const auto letDefinitionList = ctx->letDefinition();
@@ -645,7 +645,7 @@ Any QueryVisitor::visitReturnAll(MQL_Parser::ReturnAllContext* ctx)
                 auto var_without_property = var_name.substr(0, pos);
                 auto key_name = var_name.substr(pos + 1);
                 auto var_without_property_id = get_query_ctx().get_or_create_var(var_without_property);
-                auto key_id = QuadObjectId::get_string(key_name);
+                auto key_id = MQL::Conversions::pack_string(key_name);
 
                 return_info.items.emplace_back(
                     std::make_unique<ExprVarProperty>(var_without_property_id, key_id, var),
@@ -726,7 +726,7 @@ Any QueryVisitor::visitGroupByItem(MQL_Parser::GroupByItemContext* ctx)
 
         auto property_var = get_query_ctx().get_or_create_var(property_var_name);
 
-        auto key_id = QuadObjectId::get_string(key_name);
+        auto key_id = MQL::Conversions::pack_string(key_name);
         group_by_exprs.push_back(std::make_unique<ExprVarProperty>(var, key_id, property_var));
     } else {
         group_by_exprs.push_back(std::make_unique<ExprVar>(var));
@@ -796,7 +796,7 @@ Any QueryVisitor::visitLinearPattern(MQL_Parser::LinearPatternContext* ctx)
 
 Any QueryVisitor::visitFixedObj(MQL_Parser::FixedObjContext* ctx)
 {
-    last_node = QuadObjectId::get_fixed_node_inside(ctx->getText());
+    last_node = get_fixed_node_inside(ctx->getText());
     if (first_element_disjoint) {
         current_bgp->add_disjoint_term(last_node.get_OID());
     }
@@ -806,7 +806,7 @@ Any QueryVisitor::visitFixedObj(MQL_Parser::FixedObjContext* ctx)
 Any QueryVisitor::visitProperty1(MQL_Parser::Property1Context* property)
 {
     auto key_str = property->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     ObjectId value_id;
 
@@ -829,7 +829,7 @@ Any QueryVisitor::visitProperty1(MQL_Parser::Property1Context* property)
 Any QueryVisitor::visitProperty2(MQL_Parser::Property2Context* property)
 {
     auto key_str = property->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     std::string datatype = property->TYPE()->getText();
     // remove leading ':'
@@ -848,7 +848,7 @@ Any QueryVisitor::visitProperty2(MQL_Parser::Property2Context* property)
 Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
 { // (?x :Person {name IS STRING})
     auto key_str = property->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     assert(saved_property_obj.is_var());
     auto var_name = get_query_ctx().get_var_name(saved_property_obj.get_var());
@@ -895,12 +895,14 @@ Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
         datatypes_is_exprs.push_back(
             std::make_unique<MQL::ExprIs>(negation, std::move(expr_var_property), type, propertyTypeBitmap)
         );
-        datatypes_is_exprs_where.push_back(std::make_unique<MQL::ExprIs>(
-            negation,
-            std::move(expr_var_property_where),
-            type,
-            propertyTypeBitmap
-        ));
+        datatypes_is_exprs_where.push_back(
+            std::make_unique<MQL::ExprIs>(
+                negation,
+                std::move(expr_var_property_where),
+                type,
+                propertyTypeBitmap
+            )
+        );
     }
     property_expr.push_back(std::make_unique<MQL::ExprOr>(std::move(datatypes_is_exprs)));
     return 0;
@@ -909,7 +911,7 @@ Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
 Any QueryVisitor::visitProperty4(MQL_Parser::Property4Context* property)
 { // (?x :Person {value > 5})
     auto key_str = property->identifier()->getText();
-    auto key_id = QuadObjectId::get_string(key_str);
+    auto key_id = MQL::Conversions::pack_string(key_str);
 
     auto var_name = get_query_ctx().get_var_name(saved_property_obj.get_var());
     auto property_var = get_query_ctx().get_or_create_var(var_name + "." + key_str);
@@ -927,7 +929,7 @@ Any QueryVisitor::visitProperty4(MQL_Parser::Property4Context* property)
 
     auto value_constant = std::make_unique<ExprConstant>(oid);
     std::tuple<VarId, ObjectId, ObjectId, ObjectId>
-        property_operation_tuple(saved_property_obj.get_var(), key_id, oid, QuadObjectId::get_value(op));
+        property_operation_tuple(saved_property_obj.get_var(), key_id, oid, get_fixed_node_inside(op));
 
     if (op == "==") {
         property_expr.push_back(
@@ -978,7 +980,7 @@ Any QueryVisitor::visitVarNode(MQL_Parser::VarNodeContext* ctx)
     for (auto& label : labels) {
         auto label_str = label->getText();
         label_str.erase(0, 1); // remove leading ':'
-        auto label_id = QuadObjectId::get_string(label_str);
+        auto label_id = MQL::Conversions::pack_string(label_str);
         current_bgp->add_label(var, label_id);
     }
 
@@ -1023,7 +1025,11 @@ Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
         edge_var_name.erase(0, 1); // remove leading '?'
         saved_edge = get_query_ctx().get_or_create_var(edge_var_name);
     } else if (auto edge = ctx->EDGE_ID()) {
-        saved_edge = QuadObjectId::get_edge(edge->getText());
+        auto edge_str = edge->getText();
+        // TODO: could use string_view and std::from_chars
+        std::string tmp = edge_str.substr(2, edge_str.size() - 2);
+        auto number = std::stoi(tmp);
+        return ObjectId(number | ObjectId::MASK_DIRECTED_EDGE);
     } else {
         saved_edge = get_query_ctx().get_internal_var();
     }
@@ -1035,7 +1041,7 @@ Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
     } else if (auto type = ctx->TYPE()) {
         auto type_str = type->getText();
         type_str.erase(0, 1); // remove leading ':'
-        saved_type = QuadObjectId::get_named_node(type_str);
+        saved_type = MQL::Conversions::pack_named_node(type_str);
     } else {
         saved_type = get_query_ctx().get_internal_var();
     }
@@ -1289,7 +1295,7 @@ Any QueryVisitor::visitExprVar(MQL_Parser::ExprVarContext* ctx)
         key_name.erase(0, 1); // remove leading '.'
 
         auto property_var = get_query_ctx().get_or_create_var(property_var_name);
-        auto key_id = QuadObjectId::get_string(key_name);
+        auto key_id = MQL::Conversions::pack_string(key_name);
 
         current_expr = std::make_unique<ExprVarProperty>(var, key_id, property_var);
     } else {
@@ -1300,7 +1306,7 @@ Any QueryVisitor::visitExprVar(MQL_Parser::ExprVarContext* ctx)
 
 Any QueryVisitor::visitExprFixedObj(MQL_Parser::ExprFixedObjContext* ctx)
 {
-    auto oid = QuadObjectId::get_fixed_node_inside(ctx->getText());
+    auto oid = get_fixed_node_inside(ctx->getText());
     current_expr = std::make_unique<ExprConstant>(oid);
 
     return 0;
@@ -1328,7 +1334,7 @@ Any QueryVisitor::visitExprCount(MQL_Parser::ExprCountContext* ctx)
             key_name.erase(0, 1); // remove leading '.'
 
             auto property_var = get_query_ctx().get_or_create_var(property_var_name);
-            auto key_id = QuadObjectId::get_string(key_name);
+            auto key_id = MQL::Conversions::pack_string(key_name);
 
             current_expr = std::make_unique<ExprAggCount>(
                 std::make_unique<ExprVarProperty>(var, key_id, property_var),
@@ -1357,7 +1363,7 @@ Any QueryVisitor::visitExprAgg(MQL_Parser::ExprAggContext* ctx)
 
         auto property_var = get_query_ctx().get_or_create_var(agg_inside_var_name);
 
-        auto key_id = QuadObjectId::get_string(key_name);
+        auto key_id = MQL::Conversions::pack_string(key_name);
         inner_expr = std::make_unique<ExprVarProperty>(var, key_id, property_var);
     } else {
         inner_expr = std::make_unique<ExprVar>(var);
@@ -1471,8 +1477,8 @@ Any QueryVisitor::visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext* ctx
         );
     }
 
-    bool not = ctx->K_NOT() != nullptr;
-    if (not ) {
+    bool not= ctx->K_NOT() != nullptr;
+    if (not) {
         propertyTypeBitmap = ~propertyTypeBitmap;
     }
     current_expr = std::make_unique<ExprIs>(not, std::move(current_expr), type, propertyTypeBitmap);
@@ -1801,12 +1807,14 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
 
-        update_info.update_actions.push_back(std::make_unique<CreateTextIndex>(
-            std::move(index_name),
-            std::move(text_index_opts.property),
-            normalize_type,
-            tokenize_type
-        ));
+        update_info.update_actions.push_back(
+            std::make_unique<CreateTextIndex>(
+                std::move(index_name),
+                std::move(text_index_opts.property),
+                normalize_type,
+                tokenize_type
+            )
+        );
 
     } else if (index_type_lowercased == "hnsw") {
         HNSWIndexOptions hnsw_index_opts;
@@ -1841,14 +1849,16 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
         }
 
-        update_info.update_actions.push_back(std::make_unique<CreateHNSWIndex>(
-            std::move(index_name),
-            std::move(hnsw_index_opts.property),
-            hnsw_index_opts.dimension,
-            hnsw_index_opts.max_edges,
-            hnsw_index_opts.max_candidates,
-            metric_type
-        ));
+        update_info.update_actions.push_back(
+            std::make_unique<CreateHNSWIndex>(
+                std::move(index_name),
+                std::move(hnsw_index_opts.property),
+                hnsw_index_opts.dimension,
+                hnsw_index_opts.max_edges,
+                hnsw_index_opts.max_candidates,
+                metric_type
+            )
+        );
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }
@@ -1871,7 +1881,7 @@ Any QueryVisitor::visitValue(MQL_Parser::ValueContext* ctx)
 
         parse_datatype_value(datatype, str); // will set current_value_oid
     } else {
-        current_value_oid = QuadObjectId::get_value(ctx->getText());
+        current_value_oid = get_fixed_node_inside(ctx->getText());
     }
 
     return 0;
@@ -1915,5 +1925,66 @@ void QueryVisitor::parse_datatype_value(const std::string& datatype, const std::
         current_value_oid = Common::Conversions::pack_tensor(tensor);
     } else {
         throw QueryException("Unrecognized datatype: " + datatype);
+    }
+}
+
+ObjectId QueryVisitor::get_fixed_node_inside(const std::string& str) const
+{
+    assert(!str.empty());
+    switch (str[0]) {
+    case '"': { // "string"
+        assert(str.size() >= 2);
+        // delete surrounding quotes
+        std::string tmp = str.substr(1, str.size() - 2);
+        return Conversions::pack_string(tmp);
+    }
+    case '_': {
+        assert(str.size() >= 3);
+        // delete first 2 characters "_a" or "_e"
+        std::string tmp = str.substr(2, str.size() - 2);
+        auto number = std::stoi(tmp);
+        if (str[1] == 'a') {
+            return ObjectId(number | ObjectId::MASK_ANON_INL);
+        } else {
+            assert(str[1] == 'e');
+            return ObjectId(number | ObjectId::MASK_DIRECTED_EDGE);
+        }
+    }
+    case 't': {
+        if (str == "true") {
+            return ObjectId(ObjectId::BOOL_TRUE);
+        } else {
+            return Conversions::pack_named_node(str);
+        }
+    }
+    case 'f': {
+        if (str == "false") {
+            return ObjectId(ObjectId::BOOL_FALSE);
+        } else {
+            return Conversions::pack_named_node(str);
+        }
+    }
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '+':
+    case '-':
+        if (str.find_first_not_of("0123456789+-") == std::string::npos) {
+            // is int
+            return Common::Conversions::pack_int(std::stoll(str));
+        } else {
+            // is float
+            return Common::Conversions::pack_float(std::strtof(str.c_str(), nullptr));
+        }
+
+    default:
+        return Conversions::pack_named_node(str);
     }
 }

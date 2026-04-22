@@ -124,7 +124,6 @@ public:
         case ObjectSubType::StringDatatype:
         case ObjectSubType::Iri:
         case ObjectSubType::NotFound:
-        case ObjectSubType::Invalid:
             assert(false);
             break;
         }

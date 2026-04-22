@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace GQL {
 
@@ -22,11 +22,11 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_subtype = GQL_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_subtype = GQL_OID::get_generic_sub_type(rhs_oid);
+        auto lhs_subtype = lhs_oid.subtype();
+        auto rhs_subtype = rhs_oid.subtype();
 
-        auto lhs_generic_type = GQL_OID::get_generic_type(lhs_oid);
-        auto rhs_generic_type = GQL_OID::get_generic_type(rhs_oid);
+        auto lhs_generic_type = lhs_oid.generic_type();
+        auto rhs_generic_type = rhs_oid.generic_type();
 
         if (lhs_oid.is_null()) {
             return ObjectId::get_null();
@@ -40,9 +40,7 @@ public:
             return ObjectId::get_null();
         }
 
-        if (lhs_generic_type == GQL_OID::GenericType::NUMERIC
-            && rhs_generic_type == GQL_OID::GenericType::NUMERIC)
-        {
+        if (lhs_generic_type == ObjectGenType::Numeric && rhs_generic_type == ObjectGenType::Numeric) {
             auto optype = GQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
             case GQL::Conversions::OpType::INTEGER: {
@@ -85,12 +83,11 @@ public:
             }
         }
 
-        // Handle date, time, dateTime and dateTimeStamp
-        if (lhs_generic_type == GQL_OID::GenericType::DATE && rhs_generic_type == GQL_OID::GenericType::DATE)
+        if (lhs_generic_type == ObjectGenType::TemporalLiteral
+            && rhs_generic_type == ObjectGenType::TemporalLiteral)
         {
             bool error;
-            auto res = DateTime(lhs_oid.id).compare<DTCompare::StrictEq>(DateTime(rhs_oid.id), &error)
-                    == 0;
+            auto res = DateTime(lhs_oid.id).compare<DTCompare::StrictEq>(DateTime(rhs_oid.id), &error) == 0;
             if (error) {
                 return ObjectId::get_null();
             }
@@ -100,9 +97,7 @@ public:
             return GQL::Conversions::pack_date(DateTime(lhs_oid.id));
         }
 
-        if (lhs_subtype == GQL_OID::GenericSubType::STRING_SIMPLE
-            && rhs_subtype == GQL_OID::GenericSubType::STRING_SIMPLE)
-        {
+        if (lhs_subtype == ObjectSubType::String && rhs_subtype == ObjectSubType::String) {
             auto equals = GQL::Conversions::to_lexical_str(lhs_oid)
                        == GQL::Conversions::to_lexical_str(rhs_oid);
             if (equals) {
@@ -111,7 +106,7 @@ public:
             return lhs_oid;
         }
 
-        if (lhs_subtype == GQL_OID::GenericSubType::LIST && rhs_subtype == GQL_OID::GenericSubType::LIST) {
+        if (lhs_subtype == ObjectSubType::List && rhs_subtype == ObjectSubType::List) {
             std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs_oid);
             std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs_oid);
             if (lhs_list == rhs_list) {
@@ -119,9 +114,7 @@ public:
             }
         }
 
-        if (lhs_subtype == GQL_OID::GenericSubType::DICTIONARY
-            && rhs_subtype == GQL_OID::GenericSubType::DICTIONARY)
-        {
+        if (lhs_subtype == ObjectSubType::Dictionary && rhs_subtype == ObjectSubType::Dictionary) {
             std::unique_ptr<Dictionary> lhs_dict;
             std::unique_ptr<Dictionary> rhs_dict;
             Common::Conversions::unpack_dictionary(lhs_oid, lhs_dict);

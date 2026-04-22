@@ -565,7 +565,7 @@ ObjectId
     if (attr_type == "uri") {
         return SPARQL::Conversions::pack_iri(attr_value);
     } else if (new_type == "literal" || attr_type == "literal") {
-        return SPARQL::Conversions::pack_string_simple(attr_value);
+        return SPARQL::Conversions::pack_string(attr_value);
     } else if (attr_type == "lang") {
         return SPARQL::Conversions::pack_string_lang(extra_data, attr_value);
     } else if (attr_type == "bnode") {

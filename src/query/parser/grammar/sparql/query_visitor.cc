@@ -1,21 +1,15 @@
 
 #include "query_visitor.h"
 
-#include <sstream>
-#include <variant>
-
-#include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/object_id.h"
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
-#include "graph_models/rdf_model/rdf_object_id.h"
 #include "misc/transliterator.h"
 #include "misc/unicode_escape.h"
 #include "query/exceptions.h"
 #include "query/id.h"
 #include "query/parser/expr/sparql/exprs.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
-#include "query/parser/grammar/sparql/sparql_parser_context_traits.h"
 #include "query/parser/op/sparql/op_show.h"
 #include "query/parser/op/sparql/op_visitor.h"
 #include "query/parser/op/sparql/ops.h"
@@ -28,6 +22,9 @@
 #include "query/parser/paths/path_sequence.h"
 #include "query/parser/paths/regular_path_expr.h"
 #include "query/query_context.h"
+
+#include <sstream>
+#include <variant>
 
 using namespace SPARQL;
 using antlrcpp::Any;
@@ -611,7 +608,7 @@ Any QueryVisitor::visitProcedure(SparqlParser::ProcedureContext* ctx)
     case OpProcedure::ProcedureType::TEXT_SEARCH: {
         if (procedure_args.size() == 2) {
             // set default arguments
-            procedure_args.emplace_back(std::make_unique<ExprTerm>(Conversions::pack_string_simple("prefix"))
+            procedure_args.emplace_back(std::make_unique<ExprTerm>(Conversions::pack_string("prefix"))
             );
         }
         validate_args_range(2, 3);
@@ -1842,7 +1839,7 @@ Any QueryVisitor::visitRdfLiteral(SparqlParser::RdfLiteralContext* ctx) {
     else if (ctx->LANGTAG()) {
         current_sparql_element = Conversions::pack_string_lang(ctx->LANGTAG()->getText().substr(1), str);
     } else {
-        current_sparql_element = Conversions::pack_string_simple(str);
+        current_sparql_element = Conversions::pack_string(str);
     }
     return 0;
 }

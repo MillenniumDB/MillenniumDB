@@ -187,14 +187,14 @@ public:
 
     ~ExternalHelper();
 
-    uint64_t get_or_create_external_string_id(const char* bytes, std::size_t num_bytes)
+    uint64_t get_or_create_ext(const char* bytes, std::size_t num_bytes, uint64_t ext_mask)
     {
-        return get_or_create_external_id(bytes, num_bytes, strings_external_data);
+        return _get_or_create_external_id(bytes, num_bytes, strings_external_data, ext_mask);
     }
 
-    uint64_t get_or_create_external_tensor_id(const char* bytes, std::size_t num_bytes)
+    uint64_t get_or_create_tensor(const char* bytes, std::size_t num_bytes, uint64_t ext_mask)
     {
-        return get_or_create_external_id(bytes, num_bytes, tensors_external_data);
+        return _get_or_create_external_id(bytes, num_bytes, tensors_external_data, ext_mask);
     }
 
     // Resolves the id by checking if it was already processed. If there is no more buffer available triple pending will be set
@@ -262,6 +262,11 @@ private:
     ExternalData tensors_external_data;
 
     // Convert the bytes to a external id if possible or to a temporal that will be resolved afterwards.
-    uint64_t get_or_create_external_id(const char* bytes, std::size_t num_bytes, ExternalData& external_data);
+    uint64_t _get_or_create_external_id(
+        const char* bytes,
+        std::size_t num_bytes,
+        ExternalData& external_data,
+        uint64_t external_mask
+    );
 };
 } // namespace Import

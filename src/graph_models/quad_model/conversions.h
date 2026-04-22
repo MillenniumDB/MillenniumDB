@@ -18,8 +18,6 @@ constexpr uint8_t OPTYPE_INTEGER = 0x01;
 constexpr uint8_t OPTYPE_FLOAT = 0x02;
 constexpr uint8_t OPTYPE_INVALID = 0x03;
 
-constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
-
 inline uint64_t unpack_anon(ObjectId oid)
 {
     return oid.get_value();
@@ -28,48 +26,6 @@ inline uint64_t unpack_anon(ObjectId oid)
 inline uint64_t unpack_edge(ObjectId oid)
 {
     return oid.get_value();
-}
-
-inline std::string unpack_string(ObjectId oid)
-{
-    switch (oid.type()) {
-    case ObjectType::StringInl: {
-        return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.get_value());
-    }
-    case ObjectType::StringExt: {
-        std::stringstream ss;
-        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        string_manager.print(ss, external_id);
-        return ss.str();
-    }
-    case ObjectType::StringTmp: {
-        std::stringstream ss;
-        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
-        tmp_manager.print_str(ss, external_id);
-        return ss.str();
-    }
-    default: {
-        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
-    }
-    }
-}
-
-inline ObjectId pack_string(const std::string& str)
-{
-    uint64_t oid;
-    if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
-    } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
-        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-    } else {
-        const auto str_id = string_manager.get_str_id(str);
-        if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_STRING_SIMPLE_EXTERN | str_id;
-        } else {
-            oid = ObjectId::MASK_STRING_SIMPLE_TMP | tmp_manager.get_str_id(str);
-        }
-    }
-    return ObjectId(oid);
 }
 
 inline std::string unpack_named_node(ObjectId oid)
@@ -102,11 +58,11 @@ inline ObjectId pack_named_node(const std::string& str)
 {
     uint64_t oid;
     if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
-        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INL;
     } else {
         const auto str_id = string_manager.get_str_id(str);
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
+            oid = ObjectId::MASK_NAMED_NODE_EXT | str_id;
         } else {
             oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
         }
@@ -116,7 +72,7 @@ inline ObjectId pack_named_node(const std::string& str)
 
 inline ObjectId pack_edge(uint64_t edge_id)
 {
-    return ObjectId(ObjectId::MASK_EDGE | edge_id);
+    return ObjectId(ObjectId::MASK_DIRECTED_EDGE | edge_id);
 }
 
 inline ObjectId pack_anon_tmp(uint64_t anon_id)
@@ -190,7 +146,7 @@ inline std::string to_lexical_str(ObjectId oid)
     }
     case ObjectType::Bool:
         return unpack_bool(oid) ? "true" : "false";
-    case ObjectType::Edge:
+    case ObjectType::DirectedEdge:
         return "_e" + std::to_string(unpack_edge(oid));
 
     case ObjectType::TensorFloatInl:
@@ -226,10 +182,46 @@ inline std::string to_lexical_str(ObjectId oid)
         dict->to_string(ss);
         return ss.str();
     }
-    default:
+    case ObjectType::Path:
+    case ObjectType::Null:
+    case ObjectType::DoubleExt:
+    case ObjectType::DoubleTmp:
+    case ObjectType::DecimalInl:
+    case ObjectType::DecimalExt:
+    case ObjectType::DecimalTmp:
+        // TODO:
+        break;
+
+    case ObjectType::StringXsdInl:
+    case ObjectType::StringXsdExt:
+    case ObjectType::StringXsdTmp:
+    case ObjectType::StringLangInl:
+    case ObjectType::StringLangExt:
+    case ObjectType::StringLangTmp:
+    case ObjectType::StringDatatypeInl:
+    case ObjectType::StringDatatypeExt:
+    case ObjectType::StringDatatypeTmp:
+    case ObjectType::IriInl:
+    case ObjectType::IriExt:
+    case ObjectType::IriTmp:
+    case ObjectType::IriUuidLowerTmp:
+    case ObjectType::IriUuidLowerExt:
+    case ObjectType::IriUuidUpperTmp:
+    case ObjectType::IriUuidUpperExt:
+    case ObjectType::IriHexLowerTmp:
+    case ObjectType::IriHexLowerExt:
+    case ObjectType::IriHexUpperTmp:
+    case ObjectType::IriHexUpperExt:
+    case ObjectType::UndirectedEdge:
+    case ObjectType::EdgeKey:
+    case ObjectType::NodeKey:
+    case ObjectType::EdgeLabel:
+    case ObjectType::NodeLabel:
+    case ObjectType::NotFound:
         assert(false);
-        return "";
+        break;
     }
+    return "";
 }
 
 inline ObjectId to_boolean(ObjectId oid)

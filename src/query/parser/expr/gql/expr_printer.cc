@@ -438,13 +438,13 @@ void ExprPrinter::visit(ExprCast& expr)
     os << "CAST(";
     expr.expr->accept_visitor(*this);
     os << " AS ";
-    if (expr.targetType == GQL_OID::GenericType::BOOL) {
+    if (expr.targetType == ObjectGenType::Bool) {
         os << "BOOL";
-    } else if (expr.targetType == GQL_OID::GenericType::NUMERIC) {
+    } else if (expr.targetType == ObjectGenType::Null) {
         os << "NUMERIC";
-    } else if (expr.targetType == GQL_OID::GenericType::DATE) {
+    } else if (expr.targetType == ObjectGenType::TemporalLiteral) {
         os << "DATE";
-    } else if (expr.targetType == GQL_OID::GenericType::STRING) {
+    } else if (expr.targetType == ObjectGenType::String) {
         os << "STRING";
     }
     os << ")";

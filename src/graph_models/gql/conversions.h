@@ -4,7 +4,6 @@
 #include <string>
 
 #include "graph_models/common/conversions.h" // IWYU pragma: export
-#include "graph_models/gql/gql_object_id.h" // IWYU pragma: export
 
 namespace GQL { namespace Conversions {
 
@@ -13,8 +12,6 @@ using namespace Common::Conversions;
 static constexpr uint64_t LAST_TMP_ID = ObjectId::MASK_LITERAL_TAG;
 
 static constexpr uint64_t TMP_SHIFT = 44;
-
-std::string unpack_string(ObjectId oid);
 
 void print_string(ObjectId oid, std::ostream&);
 size_t print_string(ObjectId oid, char* out);
@@ -33,10 +30,6 @@ ObjectId pack_path(const std::vector<ObjectId>& oid_list);
 void unpack_path(ObjectId oid, std::vector<ObjectId>& out);
 
 std::ostream& debug_print(std::ostream& os, ObjectId oid);
-
-constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
-
-ObjectId pack_string_simple(const std::string& str);
 
 ObjectId to_boolean(ObjectId oid);
 

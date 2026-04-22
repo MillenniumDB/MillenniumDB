@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
 
 namespace GQL {
 
@@ -31,8 +31,8 @@ public:
         ConcatStatus status = ConcatStatus::UNSET;
 
         auto expr_oid = lhs->eval(binding);
-        switch (GQL_OID::get_generic_sub_type(expr_oid)) {
-        case GQL_OID::GenericSubType::STRING_SIMPLE: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::String: {
             auto str = GQL::Conversions::unpack_string(expr_oid);
             res += str;
             break;
@@ -42,8 +42,8 @@ public:
         }
 
         expr_oid = rhs->eval(binding);
-        switch (GQL_OID::get_generic_sub_type(expr_oid)) {
-        case GQL_OID::GenericSubType::STRING_SIMPLE: {
+        switch (expr_oid.subtype()) {
+        case ObjectSubType::String: {
             auto str = GQL::Conversions::unpack_string(expr_oid);
             res += str;
             break;
@@ -55,7 +55,7 @@ public:
         switch (status) {
         case ConcatStatus::UNSET:
         case ConcatStatus::SIMPLE:
-            return GQL::Conversions::pack_string_simple(res);
+            return GQL::Conversions::pack_string(res);
         default:
             assert(false);
             return ObjectId::get_null();

@@ -24,36 +24,31 @@ uint64_t Conversions::unpack_blank(ObjectId oid)
 ObjectId Conversions::string_simple_to_xsd(ObjectId oid)
 {
     auto mod = oid.get_mod();
-    return ObjectId(oid.get_value() | mod | ObjectId::MASK_STRING_SIMPLE);
-}
-
-ObjectId Conversions::pack_string_simple_inline(const char* str)
-{
-    return ObjectId(Inliner::inline_string(str) | ObjectId::MASK_STRING_SIMPLE_INLINED);
+    return ObjectId(oid.get_value() | mod | ObjectId::MASK_STR_INL);
 }
 
 ObjectId Conversions::pack_string_xsd_inline(const char* str)
 {
-    return ObjectId(Inliner::inline_string(str) | ObjectId::MASK_STRING_XSD_INLINED);
+    return ObjectId(Inliner::inline_string(str) | ObjectId::MASK_STR_XSD_INL);
 }
 
 ObjectId Conversions::pack_iri_inline(const char* str, uint_fast8_t prefix_id)
 {
     uint64_t prefix_id_shifted = static_cast<uint64_t>(prefix_id) << 48;
-    return ObjectId(Inliner::inline_iri(str) | ObjectId::MASK_IRI_INLINED | prefix_id_shifted);
+    return ObjectId(Inliner::inline_iri(str) | ObjectId::MASK_IRI_INL | prefix_id_shifted);
 }
 
 ObjectId Conversions::pack_string_datatype_inline(uint64_t datatype_id, const char* str)
 {
     return ObjectId(
-        Inliner::inline_string5(str) | ObjectId::MASK_STRING_DATATYPE_INLINED | (datatype_id << TMP_SHIFT)
+        Inliner::inline_string5(str) | ObjectId::MASK_STR_DATATYPE_INL | (datatype_id << TMP_SHIFT)
     );
 }
 
 ObjectId Conversions::pack_string_lang_inline(uint64_t lang_id, const char* str)
 {
     return ObjectId(
-        Inliner::inline_string5(str) | ObjectId::MASK_STRING_LANG_INLINED | (lang_id << TMP_SHIFT)
+        Inliner::inline_string5(str) | ObjectId::MASK_STR_DATATYPE_INL | (lang_id << TMP_SHIFT)
     );
 }
 
@@ -113,13 +108,13 @@ ObjectId Conversions::pack_string_lang(const std::string& lang, const std::strin
     }
 
     if (str_ptr->size() <= ObjectId::STR_LANG_INLINE_BYTES) {
-        id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STRING_LANG_INLINED;
+        id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STR_LANG_INL;
     } else {
         auto str_id = string_manager.get_str_id(*str_ptr);
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            id = ObjectId::MASK_STRING_LANG_EXTERN | str_id;
+            id = ObjectId::MASK_STR_LANG_EXT | str_id;
         } else {
-            id = ObjectId::MASK_STRING_LANG_TMP | tmp_manager.get_str_id(*str_ptr);
+            id = ObjectId::MASK_STR_LANG_TMP | tmp_manager.get_str_id(*str_ptr);
         }
     }
     return ObjectId(id | lang_id);
@@ -261,13 +256,13 @@ ObjectId Conversions::pack_string_datatype(const std::string& dt, const std::str
     }
 
     if (str_ptr->size() <= ObjectId::STR_DT_INLINE_BYTES) {
-        id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STRING_DATATYPE_INLINED;
+        id = Inliner::inline_string5(str_ptr->c_str()) | ObjectId::MASK_STR_DATATYPE_INL;
     } else {
         auto str_id = string_manager.get_str_id(*str_ptr);
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            id = ObjectId::MASK_STRING_DATATYPE_EXTERN | str_id;
+            id = ObjectId::MASK_STR_DATATYPE_EXT | str_id;
         } else {
-            id = ObjectId::MASK_STRING_DATATYPE_TMP | tmp_manager.get_str_id(*str_ptr);
+            id = ObjectId::MASK_STR_DATATYPE_TMP | tmp_manager.get_str_id(*str_ptr);
         }
     }
     return ObjectId(id | datatype_id);
@@ -436,8 +431,7 @@ std::string Conversions::to_lexical_str(ObjectId oid)
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
-    case ObjectSubType::NotFound:
-    case ObjectSubType::Invalid: {
+    case ObjectSubType::NotFound: {
         // Impossible for RDF Model
         break;
     }
@@ -563,8 +557,7 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
-    case ObjectSubType::NotFound:
-    case ObjectSubType::Invalid:{
+    case ObjectSubType::NotFound: {
         // Impossible in RDF MODEL
         break;
     }
@@ -572,37 +565,19 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     return os;
 }
 
-ObjectId Conversions::pack_string_simple(const std::string& str)
-{
-    uint64_t oid;
-    if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_SIMPLE_INLINED);
-    } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
-        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_SIMPLE_INLINED;
-    } else {
-        auto str_id = string_manager.get_str_id(str);
-        if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_STRING_SIMPLE_EXTERN | str_id;
-        } else {
-            oid = ObjectId::MASK_STRING_SIMPLE_TMP | tmp_manager.get_str_id(str);
-        }
-    }
-    return ObjectId(oid);
-}
-
 ObjectId Conversions::pack_string_xsd(const std::string& str)
 {
     uint64_t oid;
     if (str.size() == 0) {
-        return ObjectId(ObjectId::MASK_STRING_XSD_INLINED);
+        return ObjectId(ObjectId::MASK_STR_XSD_INL);
     } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
-        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STRING_XSD_INLINED;
+        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STR_XSD_INL;
     } else {
         auto str_id = string_manager.get_str_id(str);
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_STRING_XSD_EXTERN | str_id;
+            oid = ObjectId::MASK_STR_XSD_INL | str_id;
         } else {
-            oid = ObjectId::MASK_STRING_XSD_TMP | tmp_manager.get_str_id(str);
+            oid = ObjectId::MASK_STR_XSD_TMP | tmp_manager.get_str_id(str);
         }
     }
     return ObjectId(oid);
@@ -624,17 +599,17 @@ ObjectId Conversions::pack_iri(const std::string& str)
 
     char* buffer_iri = get_query_ctx().get_buffer1();
 
-    uint64_t iri_type_mask = ObjectId::MASK_IRI;
+    uint64_t iri_type_mask = ObjectId::MASK_IRI_INL;
 
     if (UUIDCompression::compress_lower(suffix_ptr, suffix_len, buffer_iri)) {
         suffix_ptr = buffer_iri;
         suffix_len = suffix_len - 20;
-        iri_type_mask = ObjectId::MASK_IRI_UUID_LOWER;
+        iri_type_mask = ObjectId::MASK_IRI_UUID_LOWER_EXT;
 
     } else if (UUIDCompression::compress_upper(suffix_ptr, suffix_len, buffer_iri)) {
         suffix_ptr = buffer_iri;
         suffix_len = suffix_len - 20;
-        iri_type_mask = ObjectId::MASK_IRI_UUID_UPPER;
+        iri_type_mask = ObjectId::MASK_IRI_UUID_UPPER_EXT;
     }
 
     else if (suffix_len >= HexCompression::MIN_LEN_TO_COMPRESS)
@@ -648,18 +623,18 @@ ObjectId Conversions::pack_iri(const std::string& str)
         {
             suffix_len = HexCompression::compress(suffix_ptr, suffix_len, lower_hex_length, buffer_iri);
             suffix_ptr = buffer_iri;
-            iri_type_mask = ObjectId::MASK_IRI_HEX_LOWER;
+            iri_type_mask = ObjectId::MASK_IRI_HEX_LOWER_EXT;
 
             // Compress uppercase hex characters
         } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
             suffix_len = HexCompression::compress(suffix_ptr, suffix_len, upper_hex_length, buffer_iri);
             suffix_ptr = buffer_iri;
-            iri_type_mask = ObjectId::MASK_IRI_HEX_UPPER;
+            iri_type_mask = ObjectId::MASK_IRI_HEX_UPPER_EXT;
         }
     }
 
     if (suffix_len <= ObjectId::IRI_INLINE_BYTES) {
-        suffix_id = Inliner::inline_iri(suffix_ptr) | ObjectId::MASK_IRI_INLINED;
+        suffix_id = Inliner::inline_iri(suffix_ptr) | ObjectId::MASK_IRI_INL;
     } else {
         auto str_id = string_manager.get_str_id(std::string(suffix_ptr, suffix_len));
         if (str_id != ObjectId::MASK_NOT_FOUND) {

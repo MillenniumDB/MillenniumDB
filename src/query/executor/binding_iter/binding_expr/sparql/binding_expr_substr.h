@@ -77,7 +77,7 @@ public:
         case ObjectSubType::String: {
             std::string str = Conversions::unpack_string(str_oid);
             auto s = Transliterator::substr(str, start, length);
-            return Conversions::pack_string_simple(s);
+            return Conversions::pack_string(s);
         }
         case ObjectSubType::StringXsd: {
             std::string str = Conversions::unpack_string(str_oid);

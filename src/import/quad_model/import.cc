@@ -22,7 +22,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     pending_edges = std::make_unique<DiskVector<4>>(db_folder + "/" + PENDING_EDGES_FILENAME_PREFIX);
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     lexer.begin(in);
 
@@ -46,7 +46,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     print_duration("Parsing", start);
 
     // initial flush
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     { // process pending files
         pending_declared_nodes->finish_appends();
@@ -85,14 +85,14 @@ void OnDiskImport::start_import(MDBIstream& in)
             ++i;
 
             // advance pending variables for current iteration
-            external_helper->advance_pending();
-            external_helper->clear_sets();
+            ext_helper->advance_pending();
+            ext_helper->clear_sets();
 
             old_pending_declared_nodes->begin_tuple_iter();
             while (old_pending_declared_nodes->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_declared_nodes->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
 
                 try_save_declared_node();
             }
@@ -101,8 +101,8 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_pending_labels->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_labels->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
-                label_id = external_helper->resolve_id(pending_tuple[1]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
+                label_id = ext_helper->resolve_id(pending_tuple[1]);
 
                 try_save_label();
             }
@@ -111,9 +111,9 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_pending_properties->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_properties->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
-                key_id = external_helper->resolve_id(pending_tuple[1]);
-                value_id = external_helper->resolve_id(pending_tuple[2]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
+                key_id = ext_helper->resolve_id(pending_tuple[1]);
+                value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 try_save_property(id1);
             }
@@ -122,18 +122,18 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_pending_edges->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_edges->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
-                id2 = external_helper->resolve_id(pending_tuple[1]);
-                type_id = external_helper->resolve_id(pending_tuple[2]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
+                id2 = ext_helper->resolve_id(pending_tuple[1]);
+                type_id = ext_helper->resolve_id(pending_tuple[2]);
                 edge_id = pending_tuple[3]; // always inlined
 
                 try_save_quad<true>(); // was stored as right-directed
             }
 
             // write out new data
-            external_helper->flush_to_disk();
+            ext_helper->flush_to_disk();
             // close and delete the old pending files
-            external_helper->clean_up_old();
+            ext_helper->clean_up_old();
 
             // close and delete old pending file
             pending_declared_nodes->finish_appends();
@@ -155,17 +155,17 @@ void OnDiskImport::start_import(MDBIstream& in)
     }
 
     // delete all unnecessary files and free-up memory
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
     print_duration("Process strings and tensors", start);
 
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
     print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     // Save lasts blocks to disk
     declared_nodes.finish_appends();

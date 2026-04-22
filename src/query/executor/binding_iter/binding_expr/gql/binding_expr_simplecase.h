@@ -1,20 +1,22 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/gql/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
+
+#include <memory>
+#include <vector>
 
 namespace GQL {
 class BindingExprSimpleCase : public BindingExpr {
 public:
     std::unique_ptr<BindingExpr> case_operand;
+
     std::vector<std::pair<
         std::pair<std::string, std::vector<std::unique_ptr<BindingExpr>>>,
         std::unique_ptr<BindingExpr>>>
         when_clauses;
+
     std::unique_ptr<BindingExpr> else_expr;
 
     BindingExprSimpleCase(
@@ -33,26 +35,26 @@ public:
     {
         auto case_value = case_operand->eval(binding);
 
-        auto case_type = GQL_OID::get_generic_type(case_value);
+        auto case_type = case_value.generic_type();
 
         for (const auto& clause : when_clauses) {
             for (const auto& when_expr : clause.first.second) {
                 auto when_value = when_expr->eval(binding);
 
-                auto when_type = GQL_OID::get_generic_type(when_value);
+                auto when_type = when_value.generic_type();
 
                 bool is_match = false;
 
                 if (case_type == when_type) {
                     switch (case_type) {
-                    case GQL_OID::GenericType::STRING:
+                    case ObjectGenType::String:
                         is_match =
                             (Conversions::unpack_string(case_value)
                              == Conversions::unpack_string(when_value));
                         break;
-                    case GQL_OID::GenericType::NUMERIC: {
-                        auto numeric_type = GQL_OID::get_generic_sub_type(case_value);
-                        if (numeric_type == GQL_OID::GenericSubType::INTEGER) {
+                    case ObjectGenType::Numeric: {
+                        auto numeric_type = case_value.subtype();
+                        if (numeric_type == ObjectSubType::Int) {
                             if (clause.first.first == "=") {
                                 is_match =
                                     (Conversions::to_integer(case_value)
@@ -78,7 +80,7 @@ public:
                                     (Conversions::to_integer(case_value)
                                      <= Conversions::to_integer(when_value));
                             }
-                        } else if (numeric_type == GQL_OID::GenericSubType::FLOAT) {
+                        } else if (numeric_type == ObjectSubType::Float) {
                             if (clause.first.first == "=") {
                                 is_match =
                                     (Conversions::to_float(case_value) == Conversions::to_float(when_value));
@@ -98,7 +100,7 @@ public:
                                 is_match =
                                     (Conversions::to_float(case_value) <= Conversions::to_float(when_value));
                             }
-                        } else if (numeric_type == GQL_OID::GenericSubType::DOUBLE) {
+                        } else if (numeric_type == ObjectSubType::Double) {
                             if (clause.first.first == "=") {
                                 is_match =
                                     (Conversions::to_double(case_value)
@@ -122,7 +124,7 @@ public:
                                     (Conversions::to_double(case_value)
                                      <= Conversions::to_double(when_value));
                             }
-                        } else if (numeric_type == GQL_OID::GenericSubType::DECIMAL) {
+                        } else if (numeric_type == ObjectSubType::Decimal) {
                             if (clause.first.first == "=") {
                                 is_match =
                                     (Conversions::to_decimal(case_value)
@@ -151,11 +153,11 @@ public:
                         }
                         break;
                     }
-                    case GQL_OID::GenericType::BOOL:
+                    case ObjectGenType::Bool:
                         is_match =
                             (Conversions::to_boolean(case_value) == Conversions::to_boolean(when_value));
                         break;
-                    case GQL_OID::GenericType::DATE: {
+                    case ObjectGenType::TemporalLiteral: {
                         bool error;
                         is_match = DateTime(case_value)
                                        .compare<DTCompare::StrictEq>(DateTime(when_value), &error)

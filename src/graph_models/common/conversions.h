@@ -3,6 +3,7 @@
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/common/datatypes/decimal.h"
 #include "graph_models/common/datatypes/tensor/tensor.h"
+#include "graph_models/inliner.h"
 #include "graph_models/object_id.h"
 #include "query/exceptions.h"
 #include "storage/dictionary/dictionary.h"
@@ -20,6 +21,7 @@ namespace Common { namespace Conversions {
 
 constexpr int64_t INTEGER_MAX = 0x00FF'FFFF'FFFF'FFFFL;
 constexpr uint64_t LIST_OFFSET_MASK = 0x0000'00FF'FFFF'FFFFUL;
+constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
 
 constexpr ObjectId pack_bool(bool b)
 {
@@ -79,7 +81,7 @@ inline ObjectId pack_float(float f)
 inline ObjectId pack_decimal(Decimal dec)
 {
     if (dec.can_inline()) {
-        return ObjectId(ObjectId::MASK_DECIMAL_INLINED | dec.serialize_inlined());
+        return ObjectId(ObjectId::MASK_DECIMAL_INL | dec.serialize_inlined());
     }
 
     char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
@@ -87,7 +89,7 @@ inline ObjectId pack_decimal(Decimal dec)
     auto str_id = string_manager.get_bytes_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE);
     uint64_t oid;
     if (str_id != ObjectId::MASK_NOT_FOUND) {
-        oid = ObjectId::MASK_DECIMAL_EXTERN | str_id;
+        oid = ObjectId::MASK_DECIMAL_EXT | str_id;
     } else {
         oid = ObjectId::MASK_DECIMAL_TMP | tmp_manager.get_bytes_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE);
     }
@@ -100,7 +102,7 @@ inline ObjectId pack_double(double dbl)
     auto bytes = reinterpret_cast<const char*>(reinterpret_cast<const char*>(&dbl));
     auto bytes_id = string_manager.get_bytes_id(bytes, sizeof(double));
     if (bytes_id != ObjectId::MASK_NOT_FOUND) {
-        oid = ObjectId::MASK_DOUBLE_EXTERN | bytes_id;
+        oid = ObjectId::MASK_DOUBLE_EXT | bytes_id;
     } else {
         oid = ObjectId::MASK_DOUBLE_TMP | tmp_manager.get_bytes_id(bytes, sizeof(double));
     }
@@ -146,6 +148,53 @@ inline double unpack_double(ObjectId oid)
     ss.read(dst, 8);
 
     return dbl;
+}
+
+inline ObjectId pack_string(const std::string& str)
+{
+    uint64_t oid;
+    if (str.size() == 0) {
+        return ObjectId(ObjectId::MASK_STR_INL);
+    } else if (str.size() <= ObjectId::STR_INLINE_BYTES) {
+        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_STR_INL;
+    } else {
+        auto str_id = string_manager.get_str_id(str);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_STR_EXT | str_id;
+        } else {
+            oid = ObjectId::MASK_STR_TMP | tmp_manager.get_str_id(str);
+        }
+    }
+    return ObjectId(oid);
+}
+
+inline std::string unpack_string(ObjectId oid)
+{
+    switch (oid.type()) {
+    case ObjectType::StringInl: {
+        return Inliner::get_string_inlined<ObjectId::STR_INLINE_BYTES>(oid.get_value());
+    }
+    case ObjectType::StringExt: {
+        std::stringstream ss;
+        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        string_manager.print(ss, external_id);
+        return ss.str();
+    }
+    case ObjectType::StringTmp: {
+        std::stringstream ss;
+        const uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+        tmp_manager.print_str(ss, external_id);
+        return ss.str();
+    }
+    default: {
+        throw LogicException("Called unpack_string with incorrect ObjectId type, this should never happen");
+    }
+    }
+}
+
+inline ObjectId pack_string_inline(const char* str)
+{
+    return ObjectId(Inliner::inline_string(str) | ObjectId::MASK_STR_INL);
 }
 
 /*
@@ -406,7 +455,8 @@ inline ObjectId pack_list(const std::vector<ObjectId>& list)
     TmpLists& tmp_list = tmp_manager.get_tmp_list();
     uint32_t file_id = tmp_list.get_file_id();
     uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
+    // TODO: pack list always return tmp but pack_dict may return ext or tmp. decide which is better and be consistent
+    return ObjectId(ObjectId::MASK_LIST_TMP | (uint64_t(file_id) << 40) | list_offset);
 }
 
 inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
@@ -432,7 +482,6 @@ inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
     }
 }
 
-
 inline std::vector<ObjectId> unpack_list(ObjectId list_id)
 {
     std::vector<ObjectId> list;
@@ -451,7 +500,7 @@ inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
     uint64_t dict_id;
     auto str_id = string_manager.get_str_id(dict_str);
     if (str_id != ObjectId::MASK_NOT_FOUND) {
-        dict_id = ObjectId::MASK_DICTIONARY | ObjectId::MOD_EXTERNAL | str_id;
+        dict_id = ObjectId::MASK_DICTIONARY_EXT | ObjectId::MOD_EXTERNAL | str_id;
     } else {
         dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
     }

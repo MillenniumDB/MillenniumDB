@@ -23,11 +23,11 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        auto lhs_subtype = GQL_OID::get_generic_sub_type(lhs_oid);
-        auto rhs_subtype = GQL_OID::get_generic_sub_type(rhs_oid);
+        auto lhs_subtype = lhs_oid.subtype();
+        auto rhs_subtype = rhs_oid.subtype();
 
-        auto lhs_generic_type = GQL_OID::get_generic_type(lhs_oid);
-        auto rhs_generic_type = GQL_OID::get_generic_type(rhs_oid);
+        auto lhs_generic_type = lhs_oid.generic_type();
+        auto rhs_generic_type = rhs_oid.generic_type();
 
         // Nulls are not equal to anything, including other nulls.
         if (lhs_oid.is_null() || rhs_oid.is_null()) {
@@ -37,12 +37,12 @@ public:
         // Check if the ids are equal
         if (lhs_oid == rhs_oid) {
             // For floats NaN != NaN, so we have to check for that case.
-            if (lhs_subtype == GQL_OID::GenericSubType::FLOAT) {
+            if (lhs_subtype == ObjectSubType::Float) {
                 auto f = GQL::Conversions::unpack_float(lhs_oid);
                 if (std::isnan(f)) {
                     return GQL::Conversions::pack_bool(false);
                 }
-            } else if (lhs_subtype == GQL_OID::GenericSubType::DOUBLE) {
+            } else if (lhs_subtype == ObjectSubType::Double) {
                 auto d = GQL::Conversions::unpack_double(lhs_oid);
                 if (std::isnan(d)) {
                     return GQL::Conversions::pack_bool(false);
@@ -51,17 +51,14 @@ public:
             return GQL::Conversions::pack_bool(true);
         }
 
-        if (lhs_generic_type == GQL_OID::GenericType::BOOL && rhs_generic_type == GQL_OID::GenericType::BOOL)
-        {
+        if (lhs_generic_type == ObjectGenType::Bool && rhs_generic_type == ObjectGenType::Bool) {
             auto lhs = GQL::Conversions::to_boolean(lhs_oid);
             auto rhs = GQL::Conversions::to_boolean(rhs_oid);
             return GQL::Conversions::pack_bool(lhs == rhs);
         }
 
         // If both types are numeric we need to do a numeric comparison
-        if (lhs_generic_type == GQL_OID::GenericType::NUMERIC
-            && rhs_generic_type == GQL_OID::GenericType::NUMERIC)
-        {
+        if (lhs_generic_type == ObjectGenType::Numeric && rhs_generic_type == ObjectGenType::Numeric) {
             auto optype = GQL::Conversions::calculate_optype(lhs_oid, rhs_oid);
             switch (optype) {
             case GQL::Conversions::OpType::INTEGER: {
@@ -93,7 +90,8 @@ public:
         }
 
         // Handle date, time, dateTime and dateTimeStamp
-        if (lhs_generic_type == GQL_OID::GenericType::DATE && rhs_generic_type == GQL_OID::GenericType::DATE)
+        if (lhs_generic_type == ObjectGenType::TemporalLiteral
+            && rhs_generic_type == ObjectGenType::TemporalLiteral)
         {
             bool error;
             auto res = DateTime(lhs_oid.id).compare<DTCompare::StrictEq>(DateTime(rhs_oid.id), &error) == 0;
@@ -104,17 +102,13 @@ public:
         }
 
         // We have to handle simple literals
-        if (lhs_subtype == GQL_OID::GenericSubType::STRING_SIMPLE
-            && rhs_subtype == GQL_OID::GenericSubType::STRING_SIMPLE)
-        {
+        if (lhs_subtype == ObjectSubType::String && rhs_subtype == ObjectSubType::String) {
             auto equals = GQL::Conversions::to_lexical_str(lhs_oid)
                        == GQL::Conversions::to_lexical_str(rhs_oid);
             return GQL::Conversions::pack_bool(equals);
         }
 
-        if (lhs_subtype == GQL_OID::GenericSubType::DICTIONARY
-            && rhs_subtype == GQL_OID::GenericSubType::DICTIONARY)
-        {
+        if (lhs_subtype == ObjectSubType::Dictionary && rhs_subtype == ObjectSubType::Dictionary) {
             std::unique_ptr<Dictionary> lhs_dict;
             std::unique_ptr<Dictionary> rhs_dict;
             Common::Conversions::unpack_dictionary(lhs_oid, lhs_dict);
@@ -124,7 +118,7 @@ public:
             return GQL::Conversions::pack_bool(lhs == rhs);
         }
 
-        if (lhs_subtype == GQL_OID::GenericSubType::LIST && rhs_subtype == GQL_OID::GenericSubType::LIST) {
+        if (lhs_subtype == ObjectSubType::List && rhs_subtype == ObjectSubType::List) {
             std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs_oid);
             std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs_oid);
 

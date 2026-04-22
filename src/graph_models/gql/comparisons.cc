@@ -38,8 +38,8 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
         }
     }
 
-    auto lhs_gen_t = GQL_OID::get_generic_type(lhs_oid);
-    auto rhs_gen_t = GQL_OID::get_generic_type(rhs_oid);
+    auto lhs_gen_t = lhs_oid.generic_type();
+    auto rhs_gen_t = rhs_oid.generic_type();
 
     if (lhs_gen_t != rhs_gen_t) {
         if constexpr (mode == Comparisons::Mode::Strict) {
@@ -51,7 +51,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
     }
 
     switch (lhs_gen_t) {
-    case GQL_OID::GenericType::STRING: {
+    case ObjectGenType::String: {
         auto lhs_buffer = get_query_ctx().get_buffer1();
         auto rhs_buffer = get_query_ctx().get_buffer2();
 
@@ -60,7 +60,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
 
         return StringManager::compare(lhs_buffer, rhs_buffer, lhs_size, rhs_size);
     }
-    case GQL_OID::GenericType::NUMERIC: {
+    case ObjectGenType::Numeric: {
         auto lhs_sub_t = lhs_oid.subtype();
         auto rhs_sub_t = rhs_oid.subtype();
         // Integer optimization
@@ -115,7 +115,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
             throw LogicException("This should never happen");
         }
     }
-    case GQL_OID::GenericType::DATE: {
+    case ObjectGenType::TemporalLiteral: {
         DateTime lhs_dt(lhs_oid);
         DateTime rhs_dt(rhs_oid);
 
@@ -125,10 +125,10 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
             return lhs_dt.compare<DTCompare::Normal>(rhs_dt, error);
         }
     }
-    case GQL_OID::GenericType::BOOL: {
+    case ObjectGenType::Bool: {
         return static_cast<int64_t>(lhs_oid.id & 1) - static_cast<int64_t>(rhs_oid.id & 1);
     }
-    case GQL_OID::GenericType::LIST: {
+    case ObjectGenType::List: {
         std::vector<ObjectId> lhs_list = Conversions::unpack_list(lhs_oid);
         std::vector<ObjectId> rhs_list = Conversions::unpack_list(rhs_oid);
 
@@ -139,7 +139,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
                  - static_cast<int64_t>(rhs_oid.id & ObjectId::VALUE_MASK);
         }
     }
-    case GQL_OID::GenericType::DICTIONARY: {
+    case ObjectGenType::Dict: {
         std::unique_ptr<Dictionary> lhs_dict = Common::Conversions::unpack_dictionary(lhs_oid);
         std::unique_ptr<Dictionary> rhs_dict = Common::Conversions::unpack_dictionary(rhs_oid);
         Dictionary& lhs(*lhs_dict);

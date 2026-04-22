@@ -57,12 +57,12 @@ void OnDiskImport::start_import(
     );
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     parse_node_files(in_nodes);
     parse_edge_files(in_edges);
 
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     { // process pending files
         pending_node_properties->finish_appends();
@@ -90,8 +90,8 @@ void OnDiskImport::start_import(
             ++i;
 
             // advance pending variables for current iteration
-            external_helper->advance_pending();
-            external_helper->clear_sets();
+            ext_helper->advance_pending();
+            ext_helper->clear_sets();
 
             old_pending_node_properties->begin_tuple_iter();
             while (old_pending_node_properties->has_next_tuple()) {
@@ -99,7 +99,7 @@ void OnDiskImport::start_import(
 
                 uint64_t node_id = pending_tuple[0];
                 uint64_t key_id = pending_tuple[1];
-                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+                uint64_t value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 try_save_node_property(node_id, key_id, value_id);
             }
@@ -110,13 +110,13 @@ void OnDiskImport::start_import(
 
                 uint64_t edge_id = pending_tuple[0];
                 uint64_t key_id = pending_tuple[1];
-                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+                uint64_t value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 try_save_edge_property(edge_id, key_id, value_id);
             }
 
-            external_helper->flush_to_disk();
-            external_helper->clean_up_old();
+            ext_helper->flush_to_disk();
+            ext_helper->clean_up_old();
 
             pending_node_properties->finish_appends();
             pending_edge_properties->finish_appends();
@@ -129,12 +129,12 @@ void OnDiskImport::start_import(
         pending_edge_properties->skip_indexing();
     }
 
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     node_labels.finish_appends();
     edge_labels.finish_appends();
@@ -267,10 +267,9 @@ void OnDiskImport::start_import(
 uint64_t OnDiskImport::get_str_id(char* str, uint64_t str_size)
 {
     if (str_size < 8) {
-        return Inliner::inline_string(str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        return Inliner::inline_string(str) | ObjectId::MASK_STR_INL;
     } else {
-        return external_helper->get_or_create_external_string_id(str, str_size)
-             | ObjectId::MASK_STRING_SIMPLE;
+        return ext_helper->get_or_create_ext(str, str_size, ObjectId::MASK_STR_EXT);
     }
 }
 
@@ -525,13 +524,15 @@ void OnDiskImport::verify_edge_file_header()
         } else if (columns[col_idx].type == CSVType::ID && !has_first_undirected_id) {
             has_first_undirected_id = true;
             column_with_id_from = col_idx;
-        } else if (columns[col_idx].type == CSVType::ID && has_first_undirected_id
-                   && !has_second_undirected_id)
+        } else if (
+            columns[col_idx].type == CSVType::ID && has_first_undirected_id && !has_second_undirected_id
+        )
         {
             has_second_undirected_id = true;
             column_with_id_to = col_idx;
-        } else if (columns[col_idx].type == CSVType::ID && has_first_undirected_id
-                   && !has_second_undirected_id)
+        } else if (
+            columns[col_idx].type == CSVType::ID && has_first_undirected_id && !has_second_undirected_id
+        )
         {
             FATAL_ERROR("line ", current_line, ": Too many undirected IDs are present");
         }
@@ -608,7 +609,7 @@ void OnDiskImport::process_node_line()
 {
     uint64_t node_id;
     if (anonymous_nodes) {
-        node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        node_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
     } else {
         if (columns[column_with_id].value_size == 0) {
             WARN(
@@ -617,7 +618,7 @@ void OnDiskImport::process_node_line()
                 ": No ID was given for the node despite declaring IDs in the header. The node will be saved"
             );
             parsing_errors++;
-            node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+            node_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
         } else {
             if (global_ids) {
                 // If a node with the same ID exists, do not save.
@@ -634,7 +635,7 @@ void OnDiskImport::process_node_line()
                     return;
                 }
                 // Using global IDs
-                node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                node_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                 csvid_global.insert({ columns[column_with_id].value_str, node_id });
             } else {
                 // Using IDs inside the scope of a group
@@ -652,7 +653,7 @@ void OnDiskImport::process_node_line()
                     go_to_next_line();
                     return;
                 }
-                node_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                node_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                 csvid_groups[current_group_idx].insert({ columns[column_with_id].value_str, node_id });
             }
         }
@@ -748,8 +749,7 @@ void OnDiskImport::process_node_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                             | ObjectId::MASK_LIST;
+            auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             uint64_t key_id = get_node_key_id(col.name);
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -977,8 +977,7 @@ void OnDiskImport::save_edge_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                             | ObjectId::MASK_LIST;
+            auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             uint64_t key_id = get_edge_key_id(col.name);
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
@@ -1047,8 +1046,8 @@ inline void OnDiskImport::process_pending(
         ++i;
 
         // advance pending variables for current iteration
-        external_helper->advance_pending();
-        external_helper->clear_sets();
+        ext_helper->advance_pending();
+        ext_helper->clear_sets();
 
         old_pending_vector->begin_tuple_iter();
         while (old_pending_vector->has_next_tuple()) {
@@ -1058,9 +1057,9 @@ inline void OnDiskImport::process_pending(
         }
 
         // write out new data
-        external_helper->flush_to_disk();
+        ext_helper->flush_to_disk();
         // close and delete the old pending files
-        external_helper->clean_up_old();
+        ext_helper->clean_up_old();
 
         // close and delete old pending file
         pending_vector->finish_appends();

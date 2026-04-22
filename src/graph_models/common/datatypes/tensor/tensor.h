@@ -565,27 +565,28 @@ public:
         }
     }
 
-    static constexpr uint64_t get_subtype() {
-        if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT;
-        } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE;
-        }
-    }
+    // TODO:
+    // static constexpr uint64_t get_subtype() {
+    //     if constexpr (std::is_same_v<value_type, float>) {
+    //         return ObjectId::MASK_TENSOR_FLOAT;
+    //     } else if constexpr (std::is_same_v<value_type, double>) {
+    //         return ObjectId::MASK_TENSOR_DOUBLE;
+    //     }
+    // }
 
     static constexpr uint64_t get_external_mask() {
         if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_EXTERN;
+            return ObjectId::MASK_TENSOR_FLOAT_EXT;
         } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_EXTERN;
+            return ObjectId::MASK_TENSOR_DOUBLE_EXT;
         }
     }
 
     static constexpr uint64_t get_inline_mask() {
         if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_INLINED;
+            return ObjectId::MASK_TENSOR_FLOAT_INL;
         } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_INLINED;
+            return ObjectId::MASK_TENSOR_DOUBLE_INL;
         }
     }
 

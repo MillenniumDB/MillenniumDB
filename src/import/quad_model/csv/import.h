@@ -95,7 +95,7 @@ private:
     DiskVector<2> equal_from_to_type;
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 

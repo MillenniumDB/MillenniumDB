@@ -484,8 +484,7 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
-    case ObjectSubType::NotFound:
-    case ObjectSubType::Invalid: {
+    case ObjectSubType::NotFound: {
         // not possible
         break;
     }

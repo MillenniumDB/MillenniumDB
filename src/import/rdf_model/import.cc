@@ -77,7 +77,7 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
         return Conversions::pack_string_datatype_inline(datatype_id, value);
     } else {
         return ObjectId(
-            external_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STRING_DATATYPE
+            ext_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STR_DATATYPE_INL
             | (datatype_id << Conversions::TMP_SHIFT)
         );
     }
@@ -195,7 +195,7 @@ void OnDiskImport::start_import(
     pending_triples = std::make_unique<DiskVector<3>>(db_folder + "/" + PENDING_TRIPLES_FILENAME_PREFIX);
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     { // Process IRI prefixes
 
@@ -347,7 +347,7 @@ exit_while:
     print_duration("Parsing", start);
 
     // initial flush
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     int i = 0; // used for tmp filenames
     pending_triples->finish_appends();
@@ -361,25 +361,25 @@ exit_while:
         ++i;
 
         // advance pending variables for current iteration
-        external_helper->advance_pending();
-        external_helper->clear_sets();
+        ext_helper->advance_pending();
+        ext_helper->clear_sets();
 
         old_pending_triples->begin_tuple_iter();
         while (old_pending_triples->has_next_tuple()) {
             const auto& pending_triple = old_pending_triples->next_tuple();
 
             // resolve each id
-            subject_id.id = external_helper->resolve_id(pending_triple[0]);
-            predicate_id.id = external_helper->resolve_id(pending_triple[1]);
-            object_id.id = external_helper->resolve_id(pending_triple[2]);
+            subject_id.id = ext_helper->resolve_id(pending_triple[0]);
+            predicate_id.id = ext_helper->resolve_id(pending_triple[1]);
+            object_id.id = ext_helper->resolve_id(pending_triple[2]);
 
             save_triple();
         }
 
         // write out new data
-        external_helper->flush_to_disk();
+        ext_helper->flush_to_disk();
         // close and delete the old pending files
-        external_helper->clean_up_old();
+        ext_helper->clean_up_old();
 
         // close and delete old_pending_triples file
         pending_triples->finish_appends();
@@ -390,7 +390,7 @@ exit_while:
     pending_triples->skip_indexing(); // will close and remove file
 
     // delete all unnecessary files and free-up memory
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
     print_duration("Processing strings and tensors", start);
 
@@ -400,13 +400,13 @@ exit_while:
     }
 
     // build disk hashes
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
     print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     // Save lasts blocks to disk
     triples.finish_appends();

@@ -40,10 +40,9 @@ OnDiskImport::~OnDiskImport()
 uint64_t OnDiskImport::get_str_id()
 {
     if (lexer.str_len < 8) {
-        return Inliner::inline_string(lexer.str) | ObjectId::MASK_STRING_SIMPLE_INLINED;
+        return Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
     } else {
-        return external_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-             | ObjectId::MASK_STRING_SIMPLE;
+        return ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
     }
 }
 
@@ -124,7 +123,7 @@ void OnDiskImport::save_first_id_identifier()
     if (it != node_ids_map.end()) {
         id1 = it->second;
     } else {
-        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        id1 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
         node_ids_map.insert({ id, id1 });
     }
 }
@@ -144,7 +143,7 @@ void OnDiskImport::save_first_id_string()
     if (it != node_ids_map.end()) {
         id1 = it->second;
     } else {
-        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        id1 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
         node_ids_map.insert({ id, id1 });
     }
 }
@@ -157,7 +156,7 @@ void OnDiskImport::save_first_id_int()
     if (it != node_ids_map.end()) {
         id1 = it->second;
     } else {
-        id1 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        id1 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
         node_ids_map.insert({ id_int, id1 });
     }
 }
@@ -332,7 +331,7 @@ void OnDiskImport::save_second_id_identifier()
         if (it != node_ids_map.end()) {
             id2 = it->second;
         } else {
-            id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+            id2 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
             node_ids_map.insert({ id, id2 });
         }
     }
@@ -353,7 +352,7 @@ void OnDiskImport::save_second_id_string()
         if (it != node_ids_map.end()) {
             id2 = it->second;
         } else {
-            id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+            id2 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
             node_ids_map.insert({ id, id2 });
         }
     }
@@ -369,7 +368,7 @@ void OnDiskImport::save_second_id_int()
     if (it != node_ids_map.end()) {
         id2 = it->second;
     } else {
-        id2 = catalog.nodes_count++ | ObjectId::MASK_NODE;
+        id2 = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
         node_ids_map.insert({ id_int, id2 });
     }
 
@@ -510,8 +509,7 @@ void OnDiskImport::save_node_list()
     uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
     lists_stack.pop();
 
-    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                     | ObjectId::MASK_LIST;
+    uint64_t list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
     // if there is a list in the stack, then this list is nested and we do not store the property yet
     if (!lists_stack.empty()) {
@@ -537,8 +535,7 @@ void OnDiskImport::save_edge_list()
     uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
     lists_stack.pop();
 
-    uint64_t list_id = external_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                     | ObjectId::MASK_LIST;
+    uint64_t list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
     // if there is a list in the stack, then this list is nested and we do not store the property yet
     if (!lists_stack.empty()) {
@@ -622,7 +619,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     );
 
     // Initialize external helper
-    external_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
+    ext_helper = std::make_unique<ExternalHelper>(db_folder, strings_buffer_size, tensors_buffer_size);
 
     lexer.begin(in);
 
@@ -644,7 +641,7 @@ void OnDiskImport::start_import(MDBIstream& in)
     }
     print_duration("Parsing", start);
 
-    external_helper->flush_to_disk();
+    ext_helper->flush_to_disk();
 
     print_duration("Processing strings", start);
 
@@ -691,15 +688,15 @@ void OnDiskImport::start_import(MDBIstream& in)
             ++i;
 
             // advance pending variables for current iteration
-            external_helper->advance_pending();
-            external_helper->clear_sets();
+            ext_helper->advance_pending();
+            ext_helper->clear_sets();
 
             old_directed_pending_edges->begin_tuple_iter();
             while (old_directed_pending_edges->has_next_tuple()) {
                 const auto& pending_tuple = old_directed_pending_edges->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
-                id2 = external_helper->resolve_id(pending_tuple[1]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
+                id2 = ext_helper->resolve_id(pending_tuple[1]);
                 edge_id = pending_tuple[2];
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
@@ -709,7 +706,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                     if (it != node_ids_map.end()) {
                         id1 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id1, internal_id });
                         id1 = internal_id;
                     }
@@ -722,7 +719,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                     if (it != node_ids_map.end()) {
                         id2 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id2, internal_id });
                         id2 = internal_id;
                     }
@@ -735,8 +732,8 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_undirected_pending_edges->has_next_tuple()) {
                 const auto& pending_tuple = old_undirected_pending_edges->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
-                id2 = external_helper->resolve_id(pending_tuple[1]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
+                id2 = ext_helper->resolve_id(pending_tuple[1]);
                 edge_id = pending_tuple[2];
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
@@ -746,7 +743,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                     if (it != node_ids_map.end()) {
                         id1 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id1, internal_id });
                         id1 = internal_id;
                     }
@@ -759,7 +756,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                     if (it != node_ids_map.end()) {
                         id2 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id2, internal_id });
                         id2 = internal_id;
                     }
@@ -772,7 +769,7 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_pending_node_labels->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_node_labels->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
                 uint64_t label_id = pending_tuple[1];
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP) {
@@ -780,7 +777,7 @@ void OnDiskImport::start_import(MDBIstream& in)
                     if (it != node_ids_map.end()) {
                         id1 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id1, internal_id });
                         id1 = internal_id;
                     }
@@ -793,18 +790,18 @@ void OnDiskImport::start_import(MDBIstream& in)
             while (old_pending_node_properties->has_next_tuple()) {
                 const auto& pending_tuple = old_pending_node_properties->next_tuple();
 
-                id1 = external_helper->resolve_id(pending_tuple[0]);
+                id1 = ext_helper->resolve_id(pending_tuple[0]);
                 uint64_t key_id = pending_tuple[1];
-                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+                uint64_t value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 if ((id1 & ObjectId::MOD_MASK) != ObjectId::MOD_TMP
-                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_NODE)
+                    && (id1 & ObjectId::TYPE_MASK) != ObjectId::MASK_ANON_INL)
                 {
                     auto it = node_ids_map.find(id1);
                     if (it != node_ids_map.end()) {
                         id1 = it->second;
                     } else {
-                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_NODE;
+                        auto internal_id = catalog.nodes_count++ | ObjectId::MASK_ANON_INL;
                         node_ids_map.insert({ id1, internal_id });
                         id1 = internal_id;
                     }
@@ -819,7 +816,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
                 id1 = pending_tuple[0];
                 uint64_t key_id = pending_tuple[1];
-                uint64_t value_id = external_helper->resolve_id(pending_tuple[2]);
+                uint64_t value_id = ext_helper->resolve_id(pending_tuple[2]);
 
                 try_save_edge_property(id1, key_id, value_id);
             }
@@ -834,9 +831,9 @@ void OnDiskImport::start_import(MDBIstream& in)
             }
 
             // write out new data
-            external_helper->flush_to_disk();
+            ext_helper->flush_to_disk();
             // close and delete the old pending files
-            external_helper->clean_up_old();
+            ext_helper->clean_up_old();
 
             // close and delete old pending file
             pending_directed_edges->finish_appends();
@@ -869,17 +866,17 @@ void OnDiskImport::start_import(MDBIstream& in)
     }
 
     // delete all unnecessary files and free-up memory
-    external_helper->clean_up();
+    ext_helper->clean_up();
 
     print_duration("Process strings and tensors", start);
 
-    external_helper->build_disk_hash();
+    ext_helper->build_disk_hash();
 
     print_duration("Write strings and tensors hashes", start);
 
     // we reuse the buffer for external strings in the B+trees creation
-    char* const buffer = external_helper->buffer;
-    const auto buffer_size = external_helper->buffer_size;
+    char* const buffer = ext_helper->buffer;
+    const auto buffer_size = ext_helper->buffer_size;
 
     // Save lasts blocks to disk
     node_labels.finish_appends();
@@ -1062,8 +1059,8 @@ inline void OnDiskImport::process_pending(
         ++i;
 
         // advance pending variables for current iteration
-        external_helper->advance_pending();
-        external_helper->clear_sets();
+        ext_helper->advance_pending();
+        ext_helper->clear_sets();
 
         old_pending_vector->begin_tuple_iter();
         while (old_pending_vector->has_next_tuple()) {
@@ -1073,9 +1070,9 @@ inline void OnDiskImport::process_pending(
         }
 
         // write out new data
-        external_helper->flush_to_disk();
+        ext_helper->flush_to_disk();
         // close and delete the old pending files
-        external_helper->clean_up_old();
+        ext_helper->clean_up_old();
 
         // close and delete old pending file
         pending_vector->finish_appends();

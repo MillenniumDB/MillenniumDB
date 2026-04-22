@@ -21,7 +21,7 @@ public:
         switch (expr_oid.subtype()) {
         case ObjectSubType::StringLang: {
             auto&& [lang, str] = Conversions::unpack_string_lang(expr_oid);
-            return Conversions::pack_string_simple(lang);
+            return Conversions::pack_string(lang);
         }
         case ObjectSubType::Int:
         case ObjectSubType::Float:

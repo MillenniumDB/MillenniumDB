@@ -54,7 +54,7 @@ public:
             ss << std::nouppercase;
         }
 
-        return Conversions::pack_string_simple(ss.str());
+        return Conversions::pack_string(ss.str());
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

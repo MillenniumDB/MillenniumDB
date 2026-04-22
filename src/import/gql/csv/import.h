@@ -153,7 +153,7 @@ private:
     DiskVector<2> undirected_equal_edges; // { nodes_id, edge_id }
 
     // manager writing bytes to disk in a buffered manner
-    std::unique_ptr<ExternalHelper> external_helper;
+    std::unique_ptr<ExternalHelper> ext_helper;
 
     std::function<void()> state_funcs[Token::TOTAL_TOKENS * State::TOTAL_STATES];
 

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <algorithm>
-
 #include "graph_models/gql/conversions.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/aggregation/agg.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_printer.h"
 #include "storage/index/hash/distinct_binding_hash/distinct_binding_hash.h"
+
+#include <algorithm>
 
 namespace GQL {
 class AggPercentileDiscDistinct : public Agg {
@@ -49,8 +49,7 @@ public:
 
         double percentile_value;
         auto percentile_oid = percentile->eval(*binding);
-        auto percentile_subtype = GQL_OID::get_generic_type(percentile_oid);
-        if (percentile_subtype == GQL_OID::GenericType::NUMERIC) {
+        if (percentile_oid.generic_type() == ObjectGenType::Numeric) {
             percentile_value = Conversions::to_double(percentile_oid);
             if (percentile_value < 0 || percentile_value > 1) {
                 throw QueryExecutionException("data exception — percentile must be a number between 0 and 1");
