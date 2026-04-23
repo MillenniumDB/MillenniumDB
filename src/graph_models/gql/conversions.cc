@@ -383,10 +383,8 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     case ObjectType::NamedNodeInl:
     case ObjectType::NamedNodeExt:
     case ObjectType::NamedNodeTmp:
-    case ObjectType::TensorFloatInl:
     case ObjectType::TensorFloatExt:
     case ObjectType::TensorFloatTmp:
-    case ObjectType::TensorDoubleInl:
     case ObjectType::TensorDoubleExt:
     case ObjectType::TensorDoubleTmp:
     case ObjectType::NotFound:

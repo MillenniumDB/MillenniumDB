@@ -1,14 +1,15 @@
 #pragma once
 
-#include <boost/unordered/unordered_flat_set.hpp>
-#include <cstddef>
-
 #include "import/external_bytes.h"
 #include "import/import_helper.h"
 #include "storage/index/hash/strings_hash/strings_hash_bulk_ondisk_import.h"
 #include "storage/index/hash/tensors_hash/tensors_hash_bulk_ondisk_import.h"
 #include "system/string_manager.h"
 #include "system/tensor_manager.h"
+
+#include <cstddef>
+
+#include <boost/unordered/unordered_flat_set.hpp>
 
 namespace Import {
 
@@ -187,14 +188,18 @@ public:
 
     ~ExternalHelper();
 
-    uint64_t get_or_create_ext(const char* bytes, std::size_t num_bytes, uint64_t ext_mask)
+    // mask received should not have bits in ObjectId::MASK_EXTERNAL_ID
+    // and bits from ObjectId::MOD_MASK will be ignored
+    uint64_t get_or_create_ext(const char* bytes, std::size_t num_bytes, uint64_t mask)
     {
-        return _get_or_create_external_id(bytes, num_bytes, strings_external_data, ext_mask);
+        return _get_or_create_external_id(bytes, num_bytes, strings_external_data, mask);
     }
 
-    uint64_t get_or_create_tensor(const char* bytes, std::size_t num_bytes, uint64_t ext_mask)
+    // mask received should not have bits in ObjectId::MASK_EXTERNAL_ID
+    // and bits from ObjectId::MOD_MASK will be ignored
+    uint64_t get_or_create_tensor(const char* bytes, std::size_t num_bytes, uint64_t mask)
     {
-        return _get_or_create_external_id(bytes, num_bytes, tensors_external_data, ext_mask);
+        return _get_or_create_external_id(bytes, num_bytes, tensors_external_data, mask);
     }
 
     // Resolves the id by checking if it was already processed. If there is no more buffer available triple pending will be set

@@ -113,11 +113,9 @@ enum class ObjectType {
     Datetime,
     Datetimestamp,
 
-    TensorFloatInl,
     TensorFloatExt,
     TensorFloatTmp,
 
-    TensorDoubleInl,
     TensorDoubleExt,
     TensorDoubleTmp,
 
@@ -199,63 +197,52 @@ public:
 
 
     // TODO: new named node types
-    // static constexpr uint64_t MASK_NAMED_NODE_HEX_EXTERN   = 0x25'00000000000000UL; // 0b0010'01'01    TYPE
-    // static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP      = 0x26'00000000000000UL; // 0b0010'01'10    TYPE
+    // static constexpr uint64_t MASK_NAMED_NODE_HEX_EXTERN   = 0x25'00000000000000UL;
+    // static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP      = 0x26'00000000000000UL;
 
-    static constexpr uint64_t MASK_STR_INL              = 0x40'00000000000000UL; // 0b0100'00'00      TYPE
-    static constexpr uint64_t MASK_STR_EXT              = 0x41'00000000000000UL; // 0b0100'00'01      TYPE
-    static constexpr uint64_t MASK_STR_TMP              = 0x42'00000000000000UL; // 0b0100'00'10      TYPE
-    static constexpr uint64_t MASK_STR_XSD_INL          = 0x44'00000000000000UL; // 0b0100'01'00      TYPE
-    static constexpr uint64_t MASK_STR_XSD_EXT          = 0x45'00000000000000UL; // 0b0100'01'01      TYPE
-    static constexpr uint64_t MASK_STR_XSD_TMP          = 0x46'00000000000000UL; // 0b0100'01'10      TYPE
-    static constexpr uint64_t MASK_STR_LANG_INL         = 0x48'00000000000000UL; // 0b0100'10'00      TYPE
-    static constexpr uint64_t MASK_STR_LANG_EXT         = 0x49'00000000000000UL; // 0b0100'10'01      TYPE
-    static constexpr uint64_t MASK_STR_LANG_TMP         = 0x4A'00000000000000UL; // 0b0100'10'10      TYPE
-    static constexpr uint64_t MASK_STR_DATATYPE_INL     = 0x4C'00000000000000UL; // 0b0100'11'00      TYPE
-    static constexpr uint64_t MASK_STR_DATATYPE_EXT     = 0x4D'00000000000000UL; // 0b0100'11'01      TYPE
-    static constexpr uint64_t MASK_STR_DATATYPE_TMP     = 0x4E'00000000000000UL; // 0b0100'11'10      TYPE
+    static constexpr uint64_t MASK_STR_INL               = 0x40'00000000000000UL; // 0b010000'00
+    static constexpr uint64_t MASK_STR_EXT               = 0x41'00000000000000UL; // 0b010000'01
+    static constexpr uint64_t MASK_STR_TMP               = 0x42'00000000000000UL; // 0b010000'10
+    static constexpr uint64_t MASK_STR_XSD_INL           = 0x44'00000000000000UL; // 0b010001'00
+    static constexpr uint64_t MASK_STR_XSD_EXT           = 0x45'00000000000000UL; // 0b010001'01
+    static constexpr uint64_t MASK_STR_XSD_TMP           = 0x46'00000000000000UL; // 0b010001'10
+    static constexpr uint64_t MASK_STR_LANG_INL          = 0x48'00000000000000UL; // 0b010010'00
+    static constexpr uint64_t MASK_STR_LANG_EXT          = 0x49'00000000000000UL; // 0b010010'01
+    static constexpr uint64_t MASK_STR_LANG_TMP          = 0x4A'00000000000000UL; // 0b010010'10
+    static constexpr uint64_t MASK_STR_DATATYPE_INL      = 0x4C'00000000000000UL; // 0b010011'00
+    static constexpr uint64_t MASK_STR_DATATYPE_EXT      = 0x4D'00000000000000UL; // 0b010011'01
+    static constexpr uint64_t MASK_STR_DATATYPE_TMP      = 0x4E'00000000000000UL; // 0b010011'10
 
-    // static constexpr uint64_t MASK_NUMERIC                 = 0x50'00000000000000UL; // 0b0101'00'00  GENERIC
-    // static constexpr uint64_t MASK_INT                     = 0x50'00000000000000UL; // 0b0101'00'00    SUBTYPE
-    static constexpr uint64_t MASK_NEGATIVE_INT            = 0x50'00000000000000UL; // 0b0101'00'00      TYPE   MOD used to differentiate
-    static constexpr uint64_t MASK_POSITIVE_INT            = 0x51'00000000000000UL; // 0b0101'00'01      TYPE   positive and negative ints
-    // static constexpr uint64_t MASK_DECIMAL                 = 0x54'00000000000000UL; // 0b0101'01'00    SUBTYPE
-    static constexpr uint64_t MASK_DECIMAL_INL         = 0x54'00000000000000UL; // 0b0101'01'00      TYPE
-    static constexpr uint64_t MASK_DECIMAL_EXT          = 0x55'00000000000000UL; // 0b0101'01'01      TYPE
-    static constexpr uint64_t MASK_DECIMAL_TMP             = 0x56'00000000000000UL; // 0b0101'01'10      TYPE
-    static constexpr uint64_t MASK_FLOAT                   = 0x58'00000000000000UL; // 0b0101'10'00    SUBTYPE
-    // static constexpr uint64_t MASK_DOUBLE                  = 0x5C'00000000000000UL; // 0b0101'11'00    SUBTYPE
-    static constexpr uint64_t MASK_DOUBLE_EXT           = 0x5D'00000000000000UL; // 0b0101'11'01      TYPE
-    static constexpr uint64_t MASK_DOUBLE_TMP              = 0x5E'00000000000000UL; // 0b0101'11'10      TYPE
+    static constexpr uint64_t MASK_NEGATIVE_INT          = 0x50'00000000000000UL; // 0b010100'00
+    static constexpr uint64_t MASK_POSITIVE_INT          = 0x51'00000000000000UL; // 0b010100'01
+    static constexpr uint64_t MASK_DECIMAL_INL           = 0x54'00000000000000UL; // 0b010101'00
+    static constexpr uint64_t MASK_DECIMAL_EXT           = 0x55'00000000000000UL; // 0b010101'01
+    static constexpr uint64_t MASK_DECIMAL_TMP           = 0x56'00000000000000UL; // 0b010101'10
+    static constexpr uint64_t MASK_FLOAT                 = 0x58'00000000000000UL; // 0b010110'00
+    static constexpr uint64_t MASK_DOUBLE_EXT            = 0x5D'00000000000000UL; // 0b010111'01
+    static constexpr uint64_t MASK_DOUBLE_TMP            = 0x5E'00000000000000UL; // 0b010111'10
 
-    // static constexpr uint64_t MASK_DT                      = 0x60'00000000000000UL; // 0b0110'00'00  GENERIC
-    static constexpr uint64_t MASK_DT_DATE                 = 0x60'00000000000000UL; // 0b0110'00'00    SUBTYPE
-    static constexpr uint64_t MASK_DT_TIME                 = 0x64'00000000000000UL; // 0b0110'01'00    SUBTYPE
-    static constexpr uint64_t MASK_DT_DATETIME             = 0x68'00000000000000UL; // 0b0110'10'00    SUBTYPE
-    static constexpr uint64_t MASK_DT_DATETIMESTAMP        = 0x6C'00000000000000UL; // 0b0110'11'00    SUBTYPE
+    static constexpr uint64_t MASK_DT_DATE               = 0x60'00000000000000UL; // 0b011000'00
+    static constexpr uint64_t MASK_DT_TIME               = 0x64'00000000000000UL; // 0b011001'00
+    static constexpr uint64_t MASK_DT_DATETIME           = 0x68'00000000000000UL; // 0b011010'00
+    static constexpr uint64_t MASK_DT_DATETIMESTAMP      = 0x6C'00000000000000UL; // 0b011011'00
 
-    static constexpr uint64_t MASK_BOOL                    = 0x70'00000000000000UL; // 0b0111'00'00  GENERIC
-
-    static constexpr uint64_t MASK_PATH                    = 0x90'00000000000000UL; // 0b1001'00'00  GENERIC
+    static constexpr uint64_t MASK_BOOL                  = 0x70'00000000000000UL; // 0b011100'00
+    static constexpr uint64_t MASK_PATH                  = 0x90'00000000000000UL; // 0b100100'00
 
     // Inlined tensors are only used to represent the empty tensor
-    // static constexpr uint64_t MASK_TENSOR                  = 0xB0'00000000000000UL; // 0b1011'00'00  GENERIC
-    // static constexpr uint64_t MASK_TENSOR_FLOAT            = 0xB0'00000000000000UL; // 0b1011'00'00    SUBTYPE
     // TODO: delete inlined tensors?
-    static constexpr uint64_t MASK_TENSOR_FLOAT_INL    = 0xB0'00000000000000UL; // 0b1011'00'00      TYPE
-    static constexpr uint64_t MASK_TENSOR_FLOAT_EXT     = 0xB1'00000000000000UL; // 0b1011'00'01      TYPE
-    static constexpr uint64_t MASK_TENSOR_FLOAT_TMP        = 0xB2'00000000000000UL; // 0b1011'00'10      TYPE
-    // static constexpr uint64_t MASK_TENSOR_DOUBLE           = 0xB4'00000000000000UL; // 0b1011'10'00    SUBTYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_INL   = 0xB4'00000000000000UL; // 0b1011'10'00      TYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXT    = 0xB5'00000000000000UL; // 0b1011'10'01      TYPE
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP       = 0xB6'00000000000000UL; // 0b1011'00'10      TYPE
+    // static constexpr uint64_t MASK_TENSOR_FLOAT_INL      = 0xB0'00000000000000UL; // 0b101100'00
+    static constexpr uint64_t MASK_TENSOR_FLOAT_EXT      = 0xB1'00000000000000UL; // 0b101100'01
+    static constexpr uint64_t MASK_TENSOR_FLOAT_TMP      = 0xB2'00000000000000UL; // 0b101100'10
+    // static constexpr uint64_t MASK_TENSOR_DOUBLE_INL     = 0xB4'00000000000000UL; // 0b101110'00
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXT     = 0xB5'00000000000000UL; // 0b101110'01
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP     = 0xB6'00000000000000UL; // 0b101100'10
 
-    // static constexpr uint64_t MASK_LIST                    = 0xC0'00000000000000UL; // 0b1100'00'00
-    static constexpr uint64_t MASK_LIST_EXT             = 0xC1'00000000000000UL; // 0b1100'00'01
-    static constexpr uint64_t MASK_LIST_TMP                = 0xC2'00000000000000UL; // 0b1100'00'10
-    // static constexpr uint64_t MASK_DICTIONARY              = 0xD0'00000000000000UL; // 0b1101'00'00
-    static constexpr uint64_t MASK_DICTIONARY_EXT       = 0xD1'00000000000000UL; // 0b1101'00'01
-    static constexpr uint64_t MASK_DICTIONARY_TMP          = 0xD2'00000000000000UL; // 0b1101'00'10
+    static constexpr uint64_t MASK_LIST_EXT              = 0xC1'00000000000000UL; // 0b110000'01
+    static constexpr uint64_t MASK_LIST_TMP              = 0xC2'00000000000000UL; // 0b110000'10
+    static constexpr uint64_t MASK_DICTIONARY_EXT        = 0xD1'00000000000000UL; // 0b110100'01
+    static constexpr uint64_t MASK_DICTIONARY_TMP        = 0xD2'00000000000000UL; // 0b110100'10
 
 
 

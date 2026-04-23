@@ -1,10 +1,5 @@
 #include "import.h"
 
-#include <chrono>
-#include <cstdio>
-#include <ctime>
-#include <regex>
-
 #include "graph_models/rdf_model/rdf_model.h"
 #include "import/disk_vector.h"
 #include "import/exceptions.h"
@@ -12,6 +7,11 @@
 #include "import/stats_processor.h"
 #include "misc/fatal_error.h"
 #include "third_party/serd/serd_internal.h"
+
+#include <chrono>
+#include <cstdio>
+#include <ctime>
+#include <regex>
 
 namespace Import { namespace Rdf {
 
@@ -76,10 +76,11 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
     if (size <= ObjectId::STR_DT_INLINE_BYTES) {
         return Conversions::pack_string_datatype_inline(datatype_id, value);
     } else {
-        return ObjectId(
-            ext_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STR_DATATYPE_INL
-            | (datatype_id << Conversions::TMP_SHIFT)
-        );
+        return ObjectId(ext_helper->get_or_create_ext(
+            value,
+            size,
+            ObjectId::MASK_STR_DATATYPE_EXT | (datatype_id << Conversions::TMP_SHIFT)
+        ));
     }
 }
 

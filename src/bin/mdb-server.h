@@ -179,13 +179,15 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     return "";
                 } });
     opt.insert({ "port", [](SystemOptions& config, const std::string& value) {
-                    try {
-                        auto port = std::stoi(value);
+                    int port = 0;
+                    auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), port);
+
+                    if (ec == std::errc() && ptr == value.data() + value.size()) {
                         if (port >= 1024 && port <= 65535) {
                             config.port = port;
                             return "";
                         }
-                    } catch (...) { }
+                    }
                     return "invalid port, expected to be a integer in range 1024 to 65535";
                 } });
     opt.insert({ "browser", [](SystemOptions& config, const std::string& value) {
@@ -199,34 +201,40 @@ inline std::map<std::string, std::function<std::string(SystemOptions&, const std
                     return "";
                 } });
     opt.insert({ "browser-port", [](SystemOptions& config, const std::string& value) {
-                    try {
-                        auto port = std::stoi(value);
+                    int port = 0;
+                    auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), port);
+
+                    if (ec == std::errc() && ptr == value.data() + value.size()) {
                         if (port >= 1024 && port <= 65535) {
                             config.browser_port = port;
                             return "";
                         }
-                    } catch (...) { }
+                    }
                     return "invalid browser port, expected to be a integer in range 1024 to 65535";
                 } });
     opt.insert({ "threads", [](SystemOptions& config, const std::string& value) {
-                    try {
-                        auto threads = std::stoi(value);
+                    int threads = 0;
+                    auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), threads);
+
+                    if (ec == std::errc() && ptr == value.data() + value.size()) {
                         if (threads > 0) {
                             config.workers = threads;
                             return "";
                         }
-                    } catch (...) { }
+                    }
                     return "invalid worker threads, expected to be a positive integer";
                 } });
 
     opt.insert({ "timeout", [](SystemOptions& config, const std::string& value) {
-                    try {
-                        auto seconds = std::stoi(value);
+                    int seconds = 0;
+                    auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), seconds);
+
+                    if (ec == std::errc() && ptr == value.data() + value.size()) {
                         if (seconds > 0) {
                             config.query_timeout = std::chrono::seconds(seconds);
                             return "";
                         }
-                    } catch (...) { }
+                    }
                     return "invalid timeout, expected to be a positive integer";
                 } });
 

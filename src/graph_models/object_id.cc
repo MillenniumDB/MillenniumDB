@@ -87,14 +87,10 @@ std::string to_string(ObjectType type)
         return "Datetime";
     case ObjectType::Datetimestamp:
         return "Datetimestamp";
-    case ObjectType::TensorFloatInl:
-        return "TensorFloatInl";
     case ObjectType::TensorFloatExt:
         return "TensorFloatExt";
     case ObjectType::TensorFloatTmp:
         return "TensorFloatTmp";
-    case ObjectType::TensorDoubleInl:
-        return "TensorDoubleInl";
     case ObjectType::TensorDoubleExt:
         return "TensorDoubleExt";
     case ObjectType::TensorDoubleTmp:

@@ -44,30 +44,24 @@ public:
             case CastType::xsd_float: {
                 auto str = Conversions::to_lexical_str(oid);
                 float flt;
-                size_t idx;
-                try {
-                    flt = std::stof(str, &idx);
-                } catch (...) {
+                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), flt);
+
+                if (ec == std::errc() && ptr == str.data() + str.size()) {
+                    return Conversions::pack_float(flt);
+                } else {
                     return ObjectId::get_null();
                 }
-                if (idx != str.size()) {
-                    return ObjectId::get_null();
-                }
-                return Conversions::pack_float(flt);
             }
             case CastType::xsd_double: {
                 auto str = Conversions::to_lexical_str(oid);
                 double dbl;
-                size_t idx;
-                try {
-                    dbl = std::stod(str, &idx);
-                } catch (...) {
+                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), dbl);
+
+                if (ec == std::errc() && ptr == str.data() + str.size()) {
+                    return Conversions::pack_double(dbl);
+                } else {
                     return ObjectId::get_null();
                 }
-                if (idx != str.size()) {
-                    return ObjectId::get_null();
-                }
-                return Conversions::pack_double(dbl);
             }
             case CastType::xsd_decimal: {
                 auto str = Conversions::to_lexical_str(oid);
@@ -80,16 +74,12 @@ public:
             }
             case CastType::xsd_integer: {
                 auto str = Conversions::to_lexical_str(oid);
-                try {
-                    size_t pos;
-                    int64_t n = std::stoll(str, &pos);
-                    // Check if the whole string was parsed
-                    if (pos != str.size())
-                        return ObjectId::get_null();
+                int64_t n;
+                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+
+                if (ec == std::errc() && ptr == str.data() + str.size()) {
                     return Conversions::pack_int(n);
-                } catch (std::out_of_range& e) {
-                    return ObjectId::get_null();
-                } catch (std::invalid_argument& e) {
+                } else {
                     return ObjectId::get_null();
                 }
             }

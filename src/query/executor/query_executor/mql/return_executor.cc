@@ -167,14 +167,12 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "time(\"" << datetime.get_value_string() << "\")";
         break;
     }
-    case ObjectType::TensorFloatInl:
     case ObjectType::TensorFloatExt:
     case ObjectType::TensorFloatTmp: {
         const auto tensor = Conversions::unpack_tensor<float>(oid);
         os << "tensorFloat(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectType::TensorDoubleInl:
     case ObjectType::TensorDoubleExt:
     case ObjectType::TensorDoubleTmp: {
         const auto tensor = Conversions::unpack_tensor<double>(oid);

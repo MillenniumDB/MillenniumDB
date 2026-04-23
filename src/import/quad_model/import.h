@@ -1,11 +1,5 @@
 #pragma once
 
-#include <cctype>
-#include <functional>
-#include <iostream>
-
-#include <boost/unordered/unordered_flat_set.hpp>
-
 #include "graph_models/common/conversions.h"
 #include "graph_models/common/datatypes/datetime.h"
 #include "graph_models/inliner.h"
@@ -19,6 +13,12 @@
 #include "misc/istream.h"
 #include "misc/unicode_escape.h"
 #include "storage/index/lists/list_encoder.h"
+
+#include <cctype>
+#include <functional>
+#include <iostream>
+
+#include <boost/unordered/unordered_flat_set.hpp>
 
 namespace Import { namespace QuadModel {
 class OnDiskImport {
@@ -132,11 +132,15 @@ private:
     void save_first_id_anon()
     {
         ids_stack.clear();
+        uint64_t unmasked_id;
         // ignore first 2 characters: '_a'
-        uint64_t unmasked_id = std::stoull(lexer.str + 2);
-        id1 = unmasked_id | ObjectId::MASK_ANON_INL;
-        if (unmasked_id > max_anon_seen) {
-            max_anon_seen = unmasked_id;
+        auto [ptr, ec] = std::from_chars(lexer.str + 2, lexer.str + lexer.str_len, unmasked_id);
+
+        if (ec == std::errc()) {
+            id1 = unmasked_id | ObjectId::MASK_ANON_INL;
+            if (unmasked_id > max_anon_seen) {
+                max_anon_seen = unmasked_id;
+            }
         }
     }
 
@@ -322,11 +326,15 @@ private:
 
     void save_second_id_anon()
     {
+        uint64_t unmasked_id;
         // ignore first 2 characters: '_a'
-        uint64_t unmasked_id = std::stoull(lexer.str + 2);
-        id2 = unmasked_id | ObjectId::MASK_ANON_INL;
-        if (unmasked_id > max_anon_seen) {
-            max_anon_seen = unmasked_id;
+        auto [ptr, ec] = std::from_chars(lexer.str + 2, lexer.str + lexer.str_len, unmasked_id);
+
+        if (ec == std::errc()) {
+            id2 = unmasked_id | ObjectId::MASK_ANON_INL;
+            if (unmasked_id > max_anon_seen) {
+                max_anon_seen = unmasked_id;
+            }
         }
     }
 
@@ -469,8 +477,7 @@ private:
 
         const auto bytes = reinterpret_cast<const char*>(tensor.data());
         const auto num_bytes = sizeof(T) * tensor.size();
-        return tensor::Tensor<T>::get_subtype()
-             | ext_helper->get_or_create_external_tensor_id(bytes, num_bytes);
+        return ext_helper->get_or_create_tensor(bytes, num_bytes, tensor::Tensor<T>::get_external_mask());
     }
 
     void add_node_prop_string()
@@ -584,8 +591,7 @@ private:
         if (lexer.str_len < 8) {
             str_id = Inliner::inline_string(lexer.str) | ObjectId::MASK_STR_INL;
         } else {
-            str_id = ext_helper->get_or_create_external_string_id(lexer.str, lexer.str_len)
-                   | ObjectId::MASK_STR_INL;
+            str_id = ext_helper->get_or_create_ext(lexer.str, lexer.str_len, ObjectId::MASK_STR_EXT);
         }
 
         lists_stack.top().emplace_back(str_id);
@@ -603,8 +609,7 @@ private:
         uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
         lists_stack.pop();
 
-        uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                         | ObjectId::MASK_LIST;
+        uint64_t list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
         // if there is a list in the stack, then this list is nested and we do not store the property yet
         if (!lists_stack.empty()) {
@@ -628,8 +633,7 @@ private:
         uint64_t encoded_size = ListEncoder::encode(current_list, list_buffer);
         lists_stack.pop();
 
-        uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                         | ObjectId::MASK_LIST;
+        uint64_t list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
         // if there is a list in the stack, then this list is nested and we do not store the property yet
         if (!lists_stack.empty()) {

@@ -78,14 +78,12 @@ std::string UpdateVisitor::stringCtxToString(SUP::StringContext* ctx)
 
 ObjectId UpdateVisitor::handleIntegerString(const std::string& str, const std::string& iri)
 {
-    try {
-        size_t pos;
-        int64_t n = std::stoll(str, &pos);
-        // Check if the whole string was parsed
-        if (pos != str.size())
-            return Conversions::pack_string_datatype(iri, str);
+    int64_t n;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+
+    if (ec == std::errc() && ptr == str.data() + str.size()) {
         return Conversions::pack_int(n);
-    } catch (std::out_of_range& e) {
+    } else if (ec == std::errc::result_out_of_range) {
         // The integer is too big, we use a Decimal
         bool error;
         Decimal dec(str, &error);
@@ -93,8 +91,8 @@ ObjectId UpdateVisitor::handleIntegerString(const std::string& str, const std::s
             return Conversions::pack_string_datatype(iri, str);
         }
         return Conversions::pack_decimal(dec);
-    } catch (std::invalid_argument& e) {
-        // The string is not a valid integer
+    } else {
+        // The string is not a valid integer or has trailing characters
         return Conversions::pack_string_datatype(iri, str);
     }
 }
@@ -401,18 +399,16 @@ Any UpdateVisitor::visitNumericLiteralUnsigned(SUP::NumericLiteralUnsignedContex
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-        try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
-            );
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
+                text
             );
         }
     }
@@ -434,18 +430,16 @@ Any UpdateVisitor::visitNumericLiteralPositive(SUP::NumericLiteralPositiveContex
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-        try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
-            );
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
+                text
             );
         }
     }
@@ -467,18 +461,16 @@ Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContex
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-        try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
-            );
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText()
+                text
             );
         }
     }

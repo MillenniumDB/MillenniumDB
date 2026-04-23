@@ -180,10 +180,8 @@ public:
         //         + std::to_string(static_cast<uint8_t>(type))
         //     );
         // }
-        case ObjectType::TensorFloatInl:
         case ObjectType::TensorFloatExt:
         case ObjectType::TensorFloatTmp:
-        case ObjectType::TensorDoubleInl:
         case ObjectType::TensorDoubleExt:
         case ObjectType::TensorDoubleTmp:
             // TODO: add tensors?

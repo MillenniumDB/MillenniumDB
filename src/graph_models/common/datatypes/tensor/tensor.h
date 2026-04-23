@@ -1,5 +1,6 @@
 #pragma once
 
+#include <charconv>
 #include <cstddef>
 #include <cstring>
 #include <initializer_list>
@@ -184,16 +185,15 @@ public:
             }
 
             // Parse values
-            try {
-                std::size_t bytes_read = 0;
-                if constexpr (std::is_same_v<T, float>) {
-                    tensor.push_back(std::stof(&str[i], &bytes_read));
-                } else if constexpr (std::is_same_v<T, double>) {
-                    tensor.push_back(std::stod(&str[i], &bytes_read));
-                }
+            T value;
+            auto [ptr, ec] = std::from_chars(&str[i], str.data() + str.size(), value);
+
+            if (ec == std::errc()) {
+                tensor.push_back(value);
+                size_t bytes_read = ptr - &str[i];
                 i += bytes_read;
                 EXPECT_COMMA = true;
-            } catch (...) {
+            } else {
                 *error = true;
                 return {};
             }
@@ -388,7 +388,8 @@ public:
     // Vectorial arithmetic
     // ============================================================================
     // this += rhs
-    void inplace_add_tensor(const Tensor& rhs) {
+    void inplace_add_tensor(const Tensor& rhs)
+    {
         assert(size_ == rhs.size_);
 
         operations::vectorial_arithmetic<value_type>::add(data_, rhs.data_, data_, size_);
@@ -538,15 +539,6 @@ public:
     // ============================================================================
     // Misc
     // ============================================================================
-    static constexpr ObjectType get_inline_type()
-    {
-        if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectType::TensorFloatInl;
-        } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectType::TensorDoubleInl;
-        }
-    }
-
     static constexpr ObjectType get_external_type()
     {
         if constexpr (std::is_same_v<value_type, float>) {
@@ -565,16 +557,8 @@ public:
         }
     }
 
-    // TODO:
-    // static constexpr uint64_t get_subtype() {
-    //     if constexpr (std::is_same_v<value_type, float>) {
-    //         return ObjectId::MASK_TENSOR_FLOAT;
-    //     } else if constexpr (std::is_same_v<value_type, double>) {
-    //         return ObjectId::MASK_TENSOR_DOUBLE;
-    //     }
-    // }
-
-    static constexpr uint64_t get_external_mask() {
+    static constexpr uint64_t get_external_mask()
+    {
         if constexpr (std::is_same_v<value_type, float>) {
             return ObjectId::MASK_TENSOR_FLOAT_EXT;
         } else if constexpr (std::is_same_v<value_type, double>) {
@@ -582,15 +566,8 @@ public:
         }
     }
 
-    static constexpr uint64_t get_inline_mask() {
-        if constexpr (std::is_same_v<value_type, float>) {
-            return ObjectId::MASK_TENSOR_FLOAT_INL;
-        } else if constexpr (std::is_same_v<value_type, double>) {
-            return ObjectId::MASK_TENSOR_DOUBLE_INL;
-        }
-    }
-
-    static constexpr uint64_t get_tmp_mask() {
+    static constexpr uint64_t get_tmp_mask()
+    {
         if constexpr (std::is_same_v<value_type, float>) {
             return ObjectId::MASK_TENSOR_FLOAT_TMP;
         } else if constexpr (std::is_same_v<value_type, double>) {

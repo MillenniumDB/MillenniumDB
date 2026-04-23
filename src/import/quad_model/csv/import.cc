@@ -1,13 +1,13 @@
 #include "import.h"
 
-#include <cctype>
-#include <unordered_set>
-
 #include "graph_models/inliner.h"
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
 #include "misc/unicode_escape.h"
 #include "storage/index/lists/list_encoder.h"
+
+#include <cctype>
+#include <unordered_set>
 
 using namespace Import::QuadModel::CSV;
 
@@ -374,8 +374,7 @@ uint64_t OnDiskImport::get_str_id(char* str, uint64_t str_size)
     if (str_size < 8) {
         return Inliner::inline_string(str) | ObjectId::MASK_STR_INL;
     } else {
-        return ext_helper->get_or_create_external_string_id(str, str_size)
-             | ObjectId::MASK_STR_INL;
+        return ext_helper->get_or_create_ext(str, str_size, ObjectId::MASK_STR_EXT);
     }
 }
 
@@ -420,7 +419,7 @@ void OnDiskImport::save_headers(std::vector<std::unique_ptr<MDBIstreamFile>>& fi
 
             for (auto str : split_col) {
                 if (str.size() >= 8) {
-                    ext_helper->get_or_create_external_string_id(str.c_str(), str.size());
+                    ext_helper->get_or_create_ext(str.c_str(), str.size(), 0);
                 }
             }
         }
@@ -697,11 +696,11 @@ void OnDiskImport::process_node_line()
             if (id_col.value_size < 8)
                 node_id = Inliner::inline_string(id_col.value_str) | ObjectId::MASK_NAMED_NODE_INL;
             else
-                node_id = ext_helper->get_or_create_external_string_id(
-                              id_col.value_str,
-                              id_col.value_size
-                          )
-                        | ObjectId::MASK_NAMED_NODE_INL;
+                node_id = ext_helper->get_or_create_ext(
+                    id_col.value_str,
+                    id_col.value_size,
+                    ObjectId::MASK_NAMED_NODE_EXT
+                );
         }
         csvid_global.insert({ id_col.value_str, node_id });
     } else {
@@ -791,8 +790,7 @@ void OnDiskImport::process_node_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                             | ObjectId::MASK_LIST;
+            auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_properties->push_back({ node_id, col.key_id, list_id });
@@ -826,14 +824,13 @@ void OnDiskImport::save_edge_line()
     }
     uint64_t type_id;
     if (columns[column_with_type].value_size < 8)
-        type_id = Inliner::inline_string(columns[column_with_type].value_str)
-                | ObjectId::MASK_NAMED_NODE_INL;
+        type_id = Inliner::inline_string(columns[column_with_type].value_str) | ObjectId::MASK_NAMED_NODE_INL;
     else
-        type_id = ext_helper->get_or_create_external_string_id(
-                      columns[column_with_type].value_str,
-                      columns[column_with_type].value_size
-                  )
-                | ObjectId::MASK_NAMED_NODE_INL;
+        type_id = ext_helper->get_or_create_ext(
+            columns[column_with_type].value_str,
+            columns[column_with_type].value_size,
+            ObjectId::MASK_NAMED_NODE_EXT
+        );
 
     if (columns[column_with_id_from].value_size == 0 || columns[column_with_id_to].value_size == 0) {
         WARN(
@@ -983,8 +980,7 @@ void OnDiskImport::save_edge_line()
             }
 
             uint64_t encoded_size = ListEncoder::encode(oid_list, list_buffer);
-            uint64_t list_id = ext_helper->get_or_create_external_string_id(list_buffer, encoded_size)
-                             | ObjectId::MASK_LIST;
+            auto list_id = ext_helper->get_or_create_ext(list_buffer, encoded_size, ObjectId::MASK_LIST_EXT);
 
             if ((list_id & ObjectId::MOD_MASK) == ObjectId::MOD_TMP) {
                 pending_properties->push_back({ edge_id, col.key_id, list_id });

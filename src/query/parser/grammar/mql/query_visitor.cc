@@ -1026,9 +1026,8 @@ Any QueryVisitor::visitEdgeInside(MQL_Parser::EdgeInsideContext* ctx)
         saved_edge = get_query_ctx().get_or_create_var(edge_var_name);
     } else if (auto edge = ctx->EDGE_ID()) {
         auto edge_str = edge->getText();
-        // TODO: could use string_view and std::from_chars
-        std::string tmp = edge_str.substr(2, edge_str.size() - 2);
-        auto number = std::stoi(tmp);
+        edge_str.erase(0, 2);
+        auto number = std::stoi(edge_str);
         return ObjectId(number | ObjectId::MASK_DIRECTED_EDGE);
     } else {
         saved_edge = get_query_ctx().get_internal_var();

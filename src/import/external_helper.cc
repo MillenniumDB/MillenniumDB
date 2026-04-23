@@ -110,6 +110,8 @@ uint64_t ExternalHelper::resolve_id(uint64_t id)
     return get_or_create_ext(pending_buffer, str_len, mask);
 }
 
+// mask received should not have bits in ObjectId::MASK_EXTERNAL_ID
+// and bits from ObjectId::MOD_MASK will be ignored
 uint64_t ExternalHelper::_get_or_create_external_id(
     const char* bytes,
     std::size_t num_bytes,
@@ -117,6 +119,7 @@ uint64_t ExternalHelper::_get_or_create_external_id(
     uint64_t external_mask
 )
 {
+    assert((ObjectId::MASK_EXTERNAL_ID & external_mask) == 0);
     uint64_t mask = external_mask & (~ObjectId::MOD_MASK);
 
     // encode size

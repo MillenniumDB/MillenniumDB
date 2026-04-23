@@ -310,10 +310,6 @@ inline OpType calculate_optype(ObjectId oid1, ObjectId oid2)
 template<typename T>
 inline ObjectId pack_tensor(const tensor::Tensor<T>& tensor)
 {
-    if (tensor.empty()) {
-        return ObjectId(tensor::Tensor<T>::get_inline_mask());
-    }
-
     const auto bytes = reinterpret_cast<const char*>(tensor.data());
     const auto num_bytes = sizeof(T) * tensor.size();
 
@@ -331,9 +327,6 @@ inline tensor::Tensor<T> unpack_tensor(ObjectId oid)
     // No need to handle tensor construction errors in runtime as they would be an implementation fault and they
     // should never happen
     switch (oid.type()) {
-    case tensor::Tensor<T>::get_inline_type(): {
-        return tensor::Tensor<T>();
-    }
     case tensor::Tensor<T>::get_external_type(): {
         return tensor_manager.get_tensor<T>(oid);
     }

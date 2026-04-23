@@ -47,9 +47,7 @@ ObjectId Conversions::pack_string_datatype_inline(uint64_t datatype_id, const ch
 
 ObjectId Conversions::pack_string_lang_inline(uint64_t lang_id, const char* str)
 {
-    return ObjectId(
-        Inliner::inline_string5(str) | ObjectId::MASK_STR_DATATYPE_INL | (lang_id << TMP_SHIFT)
-    );
+    return ObjectId(Inliner::inline_string5(str) | ObjectId::MASK_STR_DATATYPE_INL | (lang_id << TMP_SHIFT));
 }
 
 /**
@@ -176,19 +174,21 @@ ObjectId Conversions::try_pack_xsd_datatype(const std::string& dt, const std::st
         }
         return pack_decimal(dec);
     } else if (xsd_suffix == "float") {
-        try {
-            return pack_float(std::stof(str));
-        } catch (const std::out_of_range& e) {
-            return pack_string_datatype(dt, str);
-        } catch (const std::invalid_argument& e) {
+        float flt;
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), flt);
+
+        if (ec == std::errc() && ptr == str.data() + str.size()) {
+            return pack_float(flt);
+        } else {
             return pack_string_datatype(dt, str);
         }
     } else if (xsd_suffix == "double") {
-        try {
-            return pack_double(std::stod(str));
-        } catch (const std::out_of_range& e) {
-            return pack_string_datatype(dt, str);
-        } catch (const std::invalid_argument& e) {
+        double dbl;
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), dbl);
+
+        if (ec == std::errc() && ptr == str.data() + str.size()) {
+            return pack_double(dbl);
+        } else {
             return pack_string_datatype(dt, str);
         }
     } else if (
@@ -270,14 +270,12 @@ ObjectId Conversions::pack_string_datatype(const std::string& dt, const std::str
 
 ObjectId Conversions::try_pack_integer(const std::string& dt, const std::string& str)
 {
-    try {
-        size_t pos;
-        int64_t n = std::stoll(str, &pos);
-        // Check if the whole string was parsed
-        if (pos != str.size())
-            return pack_string_datatype(dt, str);
+    int64_t n;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+
+    if (ec == std::errc() && ptr == str.data() + str.size()) {
         return pack_int(n);
-    } catch (std::out_of_range& e) {
+    } else if (ec == std::errc::result_out_of_range) {
         // The integer is too big, we use a Decimal
         bool error;
         Decimal dec(str, &error);
@@ -285,7 +283,7 @@ ObjectId Conversions::try_pack_integer(const std::string& dt, const std::string&
             return pack_string_datatype(dt, str);
         }
         return pack_decimal(dec);
-    } catch (std::invalid_argument& e) {
+    } else {
         // The string is not a valid integer
         return pack_string_datatype(dt, str);
     }

@@ -37,12 +37,15 @@ struct VisitorLogger {
     std::string context;
     static uint64_t indentation_level;
 
-    VisitorLogger(std::string context) : context(context) {
+    VisitorLogger(std::string context) :
+        context(context)
+    {
         std::cout << std::string(indentation_level * 2, ' ') << "> " << context << std::endl;
         indentation_level++;
     }
 
-    ~VisitorLogger() {
+    ~VisitorLogger()
+    {
         indentation_level--;
         std::cout << std::string(indentation_level * 2, ' ') << "< " << context << std::endl;
     }
@@ -57,7 +60,8 @@ uint64_t VisitorLogger::indentation_level = 0;
 #define LOG_INFO(arg)
 #endif
 
-Any QueryVisitor::visitConstructQuery(SparqlParser::ConstructQueryContext* ctx) {
+Any QueryVisitor::visitConstructQuery(SparqlParser::ConstructQueryContext* ctx)
+{
     LOG_VISITOR
     if (ctx->triplesTemplate()) {
         visit(ctx->triplesTemplate());
@@ -93,7 +97,8 @@ Any QueryVisitor::visitConstructQuery(SparqlParser::ConstructQueryContext* ctx) 
     return 0;
 }
 
-Any QueryVisitor::visitDescribeQuery(SparqlParser::DescribeQueryContext* ctx) {
+Any QueryVisitor::visitDescribeQuery(SparqlParser::DescribeQueryContext* ctx)
+{
     LOG_VISITOR
     if (ctx->whereClause()) {
         visit(ctx->whereClause());
@@ -126,14 +131,16 @@ Any QueryVisitor::visitDescribeQuery(SparqlParser::DescribeQueryContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitAskQuery(SparqlParser::AskQueryContext* ctx) {
+Any QueryVisitor::visitAskQuery(SparqlParser::AskQueryContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
     current_op = std::make_unique<OpAsk>(std::move(current_op));
     return 0;
 }
 
-Any QueryVisitor::visitShowQuery(SparqlParser::ShowQueryContext* ctx) {
+Any QueryVisitor::visitShowQuery(SparqlParser::ShowQueryContext* ctx)
+{
     LOG_VISITOR
 
     const auto index_type = ctx->ALPHANUMERIC_IDENTIFIER()->getText();
@@ -150,7 +157,8 @@ Any QueryVisitor::visitShowQuery(SparqlParser::ShowQueryContext* ctx) {
 }
 
 // Root parser rule
-Any QueryVisitor::visitQuery(SparqlParser::QueryContext* ctx) {
+Any QueryVisitor::visitQuery(SparqlParser::QueryContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
     if (current_op == nullptr) {
@@ -159,27 +167,28 @@ Any QueryVisitor::visitQuery(SparqlParser::QueryContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitPrologue(SparqlParser::PrologueContext* ctx) {
+Any QueryVisitor::visitPrologue(SparqlParser::PrologueContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
     for (auto&& [alias, iri_prefix] : rdf_model.default_query_prefixes) {
         if (global_info.iri_prefix_map.find(alias) == global_info.iri_prefix_map.end()) {
-            global_info.iri_prefix_map.insert({alias, iri_prefix});
+            global_info.iri_prefix_map.insert({ alias, iri_prefix });
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitBaseDecl(SparqlParser::BaseDeclContext* ctx) {
+Any QueryVisitor::visitBaseDecl(SparqlParser::BaseDeclContext* ctx)
+{
     LOG_VISITOR
     std::string base_iri = ctx->IRIREF()->getText();
     global_info.base_iri = base_iri.substr(1, base_iri.size() - 2); // remove '<' ... '>'
     return 0;
 }
 
-
-Any QueryVisitor::visitPrefixDecl(SparqlParser::PrefixDeclContext* ctx) {
+Any QueryVisitor::visitPrefixDecl(SparqlParser::PrefixDeclContext* ctx)
+{
     LOG_VISITOR
     std::string alias = ctx->PNAME_NS()->getText();
     alias = alias.substr(0, alias.size() - 1); // remove ':'
@@ -191,8 +200,8 @@ Any QueryVisitor::visitPrefixDecl(SparqlParser::PrefixDeclContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* ctx) {
+Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* ctx)
+{
     LOG_VISITOR
     // LIMIT and OFFSET
     auto limit_offset_clauses = ctx->limitOffsetClauses();
@@ -211,20 +220,14 @@ Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* c
     if (group_clause) {
         group_by_present = true;
         visit(group_clause);
-        current_op = std::make_unique<OpGroupBy>(
-            std::move(current_op),
-            std::move(group_by_items)
-        );
+        current_op = std::make_unique<OpGroupBy>(std::move(current_op), std::move(group_by_items));
     }
 
     // HAVING
     auto having_clause = ctx->havingClause();
     if (having_clause) {
         visit(having_clause);
-        current_op = std::make_unique<OpHaving>(
-            std::move(current_op),
-            std::move(having_expressions)
-        );
+        current_op = std::make_unique<OpHaving>(std::move(current_op), std::move(having_expressions));
     }
 
     // ORDER BY
@@ -240,8 +243,8 @@ Any QueryVisitor::visitSolutionModifier(SparqlParser::SolutionModifierContext* c
     return 0;
 }
 
-
-Any QueryVisitor::visitOrderClause(SparqlParser::OrderClauseContext* ctx) {
+Any QueryVisitor::visitOrderClause(SparqlParser::OrderClauseContext* ctx)
+{
     LOG_VISITOR
     for (auto& oc : ctx->orderCondition()) {
         if (oc->var()) {
@@ -268,16 +271,15 @@ Any QueryVisitor::visitOrderClause(SparqlParser::OrderClauseContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx) {
+Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->whereClause());
     visit(ctx->solutionModifier());
     visit(ctx->selectClause());
 
-
     const auto datasetClauses = ctx->datasetClause();
-    if (!datasetClauses.empty()){
+    if (!datasetClauses.empty()) {
         std::vector<std::string> from_graphs;
         std::vector<std::string> from_named_graphs;
 
@@ -295,8 +297,8 @@ Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx) {
         std::move(current_op),
         std::move(select_variables),
         std::move(select_variables_expressions),
-        ctx->selectClause()->selectModifier() != nullptr &&
-        ctx->selectClause()->selectModifier()->DISTINCT() != nullptr,
+        ctx->selectClause()->selectModifier() != nullptr
+            && ctx->selectClause()->selectModifier()->DISTINCT() != nullptr,
         limit,
         offset,
         false // is not sub select
@@ -306,7 +308,8 @@ Any QueryVisitor::visitSelectQuery(SparqlParser::SelectQueryContext* ctx) {
     return 0;
 }
 
-Any QueryVisitor::visitSubSelect(SparqlParser::SubSelectContext* ctx) {
+Any QueryVisitor::visitSubSelect(SparqlParser::SubSelectContext* ctx)
+{
     LOG_VISITOR
 
     QueryVisitor visitor(global_info);
@@ -318,8 +321,8 @@ Any QueryVisitor::visitSubSelect(SparqlParser::SubSelectContext* ctx) {
         std::move(visitor.current_op),
         std::move(visitor.select_variables),
         std::move(visitor.select_variables_expressions),
-        ctx->selectClause()->selectModifier() != nullptr &&
-        ctx->selectClause()->selectModifier()->DISTINCT() != nullptr,
+        ctx->selectClause()->selectModifier() != nullptr
+            && ctx->selectClause()->selectModifier()->DISTINCT() != nullptr,
         visitor.limit,
         visitor.offset,
         true // is sub select
@@ -330,8 +333,8 @@ Any QueryVisitor::visitSubSelect(SparqlParser::SubSelectContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitSelectClause(SparqlParser::SelectClauseContext* ctx) {
+Any QueryVisitor::visitSelectClause(SparqlParser::SelectClauseContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
     if (ctx->ASTERISK() != nullptr) {
@@ -341,9 +344,7 @@ Any QueryVisitor::visitSelectClause(SparqlParser::SelectClauseContext* ctx) {
 
         for (auto& var : current_op->get_scope_vars()) {
             // Prevent storing blank nodes and internal vars
-            if (get_query_ctx().get_var_name(var).find("_:") != 0
-                && !get_query_ctx().is_internal(var))
-            {
+            if (get_query_ctx().get_var_name(var).find("_:") != 0 && !get_query_ctx().is_internal(var)) {
                 select_variables.push_back(var);
                 select_variables_expressions.push_back(nullptr);
             }
@@ -352,8 +353,8 @@ Any QueryVisitor::visitSelectClause(SparqlParser::SelectClauseContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitSelectSingleVariable(SparqlParser::SelectSingleVariableContext* ctx) {
+Any QueryVisitor::visitSelectSingleVariable(SparqlParser::SelectSingleVariableContext* ctx)
+{
     LOG_VISITOR
     auto var_name = ctx->var()->getText().substr(1);
     select_variables.push_back(get_query_ctx().get_or_create_var(var_name));
@@ -361,7 +362,8 @@ Any QueryVisitor::visitSelectSingleVariable(SparqlParser::SelectSingleVariableCo
     return 0;
 }
 
-Any QueryVisitor::visitSelectExpressionAsVariable(SparqlParser::SelectExpressionAsVariableContext* ctx) {
+Any QueryVisitor::visitSelectExpressionAsVariable(SparqlParser::SelectExpressionAsVariableContext* ctx)
+{
     LOG_VISITOR
     auto var_name = ctx->var()->getText().substr(1);
     select_variables.push_back(get_query_ctx().get_or_create_var(var_name));
@@ -370,15 +372,16 @@ Any QueryVisitor::visitSelectExpressionAsVariable(SparqlParser::SelectExpression
     return 0;
 }
 
-Any QueryVisitor::visitWhereClause(SparqlParser::WhereClauseContext* ctx) {
+Any QueryVisitor::visitWhereClause(SparqlParser::WhereClauseContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->groupGraphPattern());
     assert(current_op != nullptr);
     return 0;
 }
 
-
-Any QueryVisitor::visitGroupGraphPatternSub(SparqlParser::GroupGraphPatternSubContext* ctx) {
+Any QueryVisitor::visitGroupGraphPatternSub(SparqlParser::GroupGraphPatternSubContext* ctx)
+{
     LOG_VISITOR
     // 1. Visit the outermost graph pattern
     if (ctx->triplesBlock()) {
@@ -411,8 +414,8 @@ Any QueryVisitor::visitGroupGraphPatternSub(SparqlParser::GroupGraphPatternSubCo
     return 0;
 }
 
-
-Any QueryVisitor::visitGroupOrUnionGraphPattern(SparqlParser::GroupOrUnionGraphPatternContext* ctx) {
+Any QueryVisitor::visitGroupOrUnionGraphPattern(SparqlParser::GroupOrUnionGraphPatternContext* ctx)
+{
     LOG_VISITOR
     std::unique_ptr<Op> lhs_op = std::move(current_op);
 
@@ -434,8 +437,8 @@ Any QueryVisitor::visitGroupOrUnionGraphPattern(SparqlParser::GroupOrUnionGraphP
     return 0;
 }
 
-
-Any QueryVisitor::visitOptionalGraphPattern(SparqlParser::OptionalGraphPatternContext* ctx) {
+Any QueryVisitor::visitOptionalGraphPattern(SparqlParser::OptionalGraphPatternContext* ctx)
+{
     LOG_VISITOR
     std::unique_ptr<Op> lhs_op = std::move(current_op);
 
@@ -444,29 +447,29 @@ Any QueryVisitor::visitOptionalGraphPattern(SparqlParser::OptionalGraphPatternCo
     return 0;
 }
 
-
-Any QueryVisitor::visitMinusGraphPattern(SparqlParser::MinusGraphPatternContext* ctx) {
+Any QueryVisitor::visitMinusGraphPattern(SparqlParser::MinusGraphPatternContext* ctx)
+{
     LOG_VISITOR
     std::unique_ptr<Op> lhs_op = std::move(current_op);
 
     visit(ctx->groupGraphPattern());
     current_op = std::make_unique<OpMinus>(std::move(lhs_op), std::move(current_op));
     return 0;
- }
+}
 
-
-Any QueryVisitor::visitServiceGraphPattern(SparqlParser::ServiceGraphPatternContext* ctx) {
+Any QueryVisitor::visitServiceGraphPattern(SparqlParser::ServiceGraphPatternContext* ctx)
+{
     LOG_VISITOR
     auto lhs_op = std::move(current_op);
     visit(ctx->groupGraphPattern());
 
     auto start_idx = ctx->groupGraphPattern()->start->getStartIndex();
-    auto stop_idx  = ctx->groupGraphPattern()->stop->getStopIndex();
+    auto stop_idx = ctx->groupGraphPattern()->stop->getStopIndex();
     antlr4::misc::Interval interval(start_idx, stop_idx);
     auto query = ctx->groupGraphPattern()->start->getInputStream()->getText(interval);
 
     std::string prefixes;
-    for (const auto& [alias, iri_prefix]: global_info.iri_prefix_map) { // sends at least the query prefixes
+    for (const auto& [alias, iri_prefix] : global_info.iri_prefix_map) { // sends at least the query prefixes
         prefixes += "PREFIX " + alias + ": <" + iri_prefix + ">\n";
     }
 
@@ -483,7 +486,8 @@ Any QueryVisitor::visitServiceGraphPattern(SparqlParser::ServiceGraphPatternCont
     current_op = std::make_unique<OpService>(
         ctx->SILENT() != nullptr,
         var_or_iri.value(),
-        query, prefixes,
+        query,
+        prefixes,
         std::move(current_op)
     );
 
@@ -495,19 +499,16 @@ Any QueryVisitor::visitServiceGraphPattern(SparqlParser::ServiceGraphPatternCont
     return 0;
 }
 
-
-Any QueryVisitor::visitGraphGraphPattern(SparqlParser::GraphGraphPatternContext* ctx) {
+Any QueryVisitor::visitGraphGraphPattern(SparqlParser::GraphGraphPatternContext* ctx)
+{
     LOG_VISITOR
     std::unique_ptr<Op> lhs_op = std::move(current_op);
 
     visit(ctx->groupGraphPattern());
     if (ctx->varOrIRI()->iri()) {
         // It's an IRI
-        current_op = std::make_unique<OpGraph>(
-            iriCtxToString(ctx->varOrIRI()->iri()),
-            std::move(current_op)
-        );
-    } else if (ctx->varOrIRI()->var()){
+        current_op = std::make_unique<OpGraph>(iriCtxToString(ctx->varOrIRI()->iri()), std::move(current_op));
+    } else if (ctx->varOrIRI()->var()) {
         // It's a variable
         auto var_name = ctx->varOrIRI()->var()->getText().substr(1);
         auto var = get_query_ctx().get_or_create_var(var_name);
@@ -520,8 +521,8 @@ Any QueryVisitor::visitGraphGraphPattern(SparqlParser::GraphGraphPatternContext*
     return 0;
 }
 
-
-Any QueryVisitor::visitFilter(SparqlParser::FilterContext* ctx) {
+Any QueryVisitor::visitFilter(SparqlParser::FilterContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->constraint());
     current_filters.top().push_back(std::move(current_expr));
@@ -550,7 +551,7 @@ Any QueryVisitor::visitProcedure(SparqlParser::ProcedureContext* ctx)
     std::vector<std::unique_ptr<Expr>> procedure_args;
     auto procedureArguments = ctx->procedureArguments();
     if (procedureArguments) {
-        for (const auto& procedureArgument : procedureArguments->expression()){
+        for (const auto& procedureArgument : procedureArguments->expression()) {
             visit(procedureArgument);
             procedure_args.emplace_back(std::move(current_expr));
         }
@@ -579,8 +580,8 @@ Any QueryVisitor::visitProcedure(SparqlParser::ProcedureContext* ctx)
     auto validate_args_range = [&](std::size_t min_args, std::size_t max_args) {
         if (procedure_args.size() < min_args || procedure_args.size() > max_args) {
             throw QueryException(
-                OpProcedure::get_procedure_string(procedure_type) + " expects "
-                + std::to_string(min_args) + "-" + std::to_string(max_args) + " arguments"
+                OpProcedure::get_procedure_string(procedure_type) + " expects " + std::to_string(min_args)
+                + "-" + std::to_string(max_args) + " arguments"
             );
         }
     };
@@ -608,8 +609,7 @@ Any QueryVisitor::visitProcedure(SparqlParser::ProcedureContext* ctx)
     case OpProcedure::ProcedureType::TEXT_SEARCH: {
         if (procedure_args.size() == 2) {
             // set default arguments
-            procedure_args.emplace_back(std::make_unique<ExprTerm>(Conversions::pack_string("prefix"))
-            );
+            procedure_args.emplace_back(std::make_unique<ExprTerm>(Conversions::pack_string("prefix")));
         }
         validate_args_range(2, 3);
         validate_bindings(2);
@@ -635,7 +635,8 @@ Any QueryVisitor::visitProcedure(SparqlParser::ProcedureContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitBind(SparqlParser::BindContext* ctx) {
+Any QueryVisitor::visitBind(SparqlParser::BindContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->expression());
     auto expr = std::move(current_expr);
@@ -648,8 +649,8 @@ Any QueryVisitor::visitBind(SparqlParser::BindContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitValuesClause(SparqlParser::ValuesClauseContext* ctx) {
+Any QueryVisitor::visitValuesClause(SparqlParser::ValuesClauseContext* ctx)
+{
     LOG_VISITOR
 
     if (ctx->VALUES() == nullptr) {
@@ -676,8 +677,8 @@ Any QueryVisitor::visitValuesClause(SparqlParser::ValuesClauseContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitInlineDataOneVar(SparqlParser::InlineDataOneVarContext* ctx) {
+Any QueryVisitor::visitInlineDataOneVar(SparqlParser::InlineDataOneVarContext* ctx)
+{
     LOG_VISITOR
     std::vector<ObjectId> values;
     for (auto block : ctx->dataBlockValue()) {
@@ -701,8 +702,8 @@ Any QueryVisitor::visitInlineDataOneVar(SparqlParser::InlineDataOneVarContext* c
     return 0;
 }
 
-
-Any QueryVisitor::visitInlineDataFull(SparqlParser::InlineDataFullContext* ctx) {
+Any QueryVisitor::visitInlineDataFull(SparqlParser::InlineDataFullContext* ctx)
+{
     LOG_VISITOR
     std::vector<VarId> vars;
     for (auto var : ctx->var()) {
@@ -726,7 +727,8 @@ Any QueryVisitor::visitInlineDataFull(SparqlParser::InlineDataFullContext* ctx) 
         }
         if (count != vars_count) {
             std::stringstream ss;
-            ss << "Each VALUES tuple should have " << vars_count << " values, but one has " << count << " values";
+            ss << "Each VALUES tuple should have " << vars_count << " values, but one has " << count
+               << " values";
             throw QuerySemanticException(ss.str());
         }
     }
@@ -741,8 +743,8 @@ Any QueryVisitor::visitInlineDataFull(SparqlParser::InlineDataFullContext* ctx) 
     return 0;
 }
 
-
-Any QueryVisitor::visitMultiplicativeExpression(SparqlParser::MultiplicativeExpressionContext* ctx) {
+Any QueryVisitor::visitMultiplicativeExpression(SparqlParser::MultiplicativeExpressionContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->unaryExpression(0));
     assert(current_expr != nullptr);
@@ -754,23 +756,23 @@ Any QueryVisitor::visitMultiplicativeExpression(SparqlParser::MultiplicativeExpr
         visit(unaryExpressions[i]);
         assert(current_expr != nullptr);
 
-        switch(ctx->op[i-1]->getType()) {
-            case SparqlParser::ASTERISK:
-                current_expr = std::make_unique<ExprMultiplication>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::DIVIDE:
-                current_expr = std::make_unique<ExprDivision>(std::move(lhs), std::move(current_expr));
-                break;
-            default:
-                // it should not enter here unless grammar is modified
-                throw QuerySemanticException("Unhandled multiplicative expression");
+        switch (ctx->op[i - 1]->getType()) {
+        case SparqlParser::ASTERISK:
+            current_expr = std::make_unique<ExprMultiplication>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::DIVIDE:
+            current_expr = std::make_unique<ExprDivision>(std::move(lhs), std::move(current_expr));
+            break;
+        default:
+            // it should not enter here unless grammar is modified
+            throw QuerySemanticException("Unhandled multiplicative expression");
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext* ctx) {
+Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext* ctx)
+{
     LOG_VISITOR
     if (ctx->expression()) {
         visit(ctx->expression());
@@ -799,40 +801,39 @@ Any QueryVisitor::visitPrimaryExpression(SparqlParser::PrimaryExpressionContext*
         auto var_name = ctx->var()->getText().substr(1);
         auto var = get_query_ctx().get_or_create_var(var_name);
         current_expr = std::make_unique<ExprVar>(var);
-    }
-    else {
+    } else {
         // it should not enter here unless grammar is modified
         throw QuerySemanticException("Unhandled primary expression");
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitUnaryExpression(SparqlParser::UnaryExpressionContext* ctx) {
+Any QueryVisitor::visitUnaryExpression(SparqlParser::UnaryExpressionContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->primaryExpression());
     assert(current_expr != nullptr);
     if (ctx->op != nullptr) {
-        switch(ctx->op->getType()) {
-            case SparqlParser::PLUS_SIGN:
-                current_expr = std::make_unique<ExprUnaryPlus>(std::move(current_expr));
-                break;
-            case SparqlParser::MINUS_SIGN:
-                current_expr = std::make_unique<ExprUnaryMinus>(std::move(current_expr));
-                break;
-            case SparqlParser::NEGATION:
-                current_expr = std::make_unique<ExprNot>(std::move(current_expr));
-                break;
-            default:
-                // it should not enter here unless grammar is modified
-                throw QuerySemanticException("Unhandled unary expression");
+        switch (ctx->op->getType()) {
+        case SparqlParser::PLUS_SIGN:
+            current_expr = std::make_unique<ExprUnaryPlus>(std::move(current_expr));
+            break;
+        case SparqlParser::MINUS_SIGN:
+            current_expr = std::make_unique<ExprUnaryMinus>(std::move(current_expr));
+            break;
+        case SparqlParser::NEGATION:
+            current_expr = std::make_unique<ExprNot>(std::move(current_expr));
+            break;
+        default:
+            // it should not enter here unless grammar is modified
+            throw QuerySemanticException("Unhandled unary expression");
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitAdditiveExpression(SparqlParser::AdditiveExpressionContext* ctx) {
+Any QueryVisitor::visitAdditiveExpression(SparqlParser::AdditiveExpressionContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->multiplicativeExpression());
     assert(current_expr != nullptr);
@@ -870,23 +871,35 @@ Any QueryVisitor::visitAdditiveExpression(SparqlParser::AdditiveExpressionContex
             assert(current_expr != nullptr);
 
             if (current_additive_expr->op[j]->getType() == SparqlParser::ASTERISK) {
-                multiplicative_rhs = std::make_unique<ExprMultiplication>(std::move(multiplicative_rhs), std::move(current_expr));
+                multiplicative_rhs = std::make_unique<ExprMultiplication>(
+                    std::move(multiplicative_rhs),
+                    std::move(current_expr)
+                );
             } else {
-                multiplicative_rhs = std::make_unique<ExprDivision>(std::move(multiplicative_rhs), std::move(current_expr));
+                multiplicative_rhs = std::make_unique<ExprDivision>(
+                    std::move(multiplicative_rhs),
+                    std::move(current_expr)
+                );
             }
         }
 
         if (minus) {
-            current_expr = std::make_unique<ExprSubtraction>(std::move(additive_lhs), std::move(multiplicative_rhs));
+            current_expr = std::make_unique<ExprSubtraction>(
+                std::move(additive_lhs),
+                std::move(multiplicative_rhs)
+            );
         } else {
-            current_expr = std::make_unique<ExprAddition>(std::move(additive_lhs), std::move(multiplicative_rhs));
+            current_expr = std::make_unique<ExprAddition>(
+                std::move(additive_lhs),
+                std::move(multiplicative_rhs)
+            );
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitRelationalExpression(SparqlParser::RelationalExpressionContext* ctx) {
+Any QueryVisitor::visitRelationalExpression(SparqlParser::RelationalExpressionContext* ctx)
+{
     LOG_VISITOR
     visit(ctx->additiveExpression(0));
     assert(current_expr != nullptr);
@@ -914,35 +927,35 @@ Any QueryVisitor::visitRelationalExpression(SparqlParser::RelationalExpressionCo
         visit(ctx->additiveExpression(1));
         assert(current_expr != nullptr);
         // op=('='|'!='|'<'|'>'|'<='|'>=')
-        switch(ctx->op->getType()) {
-            case SparqlParser::EQUAL:
-                current_expr = std::make_unique<ExprEqual>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::NOT_EQUAL:
-                current_expr = std::make_unique<ExprNotEqual>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::LESS:
-                current_expr = std::make_unique<ExprLess>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::GREATER:
-                current_expr = std::make_unique<ExprGreater>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::LESS_EQUAL:
-                current_expr = std::make_unique<ExprLessOrEqual>(std::move(lhs), std::move(current_expr));
-                break;
-            case SparqlParser::GREATER_EQUAL:
-                current_expr = std::make_unique<ExprGreaterOrEqual>(std::move(lhs), std::move(current_expr));
-                break;
-            default:
-                // it should not enter here unless grammar is modified
-                throw QuerySemanticException("Unhandled relational expression");
+        switch (ctx->op->getType()) {
+        case SparqlParser::EQUAL:
+            current_expr = std::make_unique<ExprEqual>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::NOT_EQUAL:
+            current_expr = std::make_unique<ExprNotEqual>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::LESS:
+            current_expr = std::make_unique<ExprLess>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::GREATER:
+            current_expr = std::make_unique<ExprGreater>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::LESS_EQUAL:
+            current_expr = std::make_unique<ExprLessOrEqual>(std::move(lhs), std::move(current_expr));
+            break;
+        case SparqlParser::GREATER_EQUAL:
+            current_expr = std::make_unique<ExprGreaterOrEqual>(std::move(lhs), std::move(current_expr));
+            break;
+        default:
+            // it should not enter here unless grammar is modified
+            throw QuerySemanticException("Unhandled relational expression");
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitConditionalAndExpression(SparqlParser::ConditionalAndExpressionContext* ctx) {
+Any QueryVisitor::visitConditionalAndExpression(SparqlParser::ConditionalAndExpressionContext* ctx)
+{
     LOG_VISITOR
 
     const auto relationalExpressions = ctx->relationalExpression();
@@ -959,8 +972,8 @@ Any QueryVisitor::visitConditionalAndExpression(SparqlParser::ConditionalAndExpr
     return 0;
 }
 
-
-Any QueryVisitor::visitConditionalOrExpression(SparqlParser::ConditionalOrExpressionContext* ctx) {
+Any QueryVisitor::visitConditionalOrExpression(SparqlParser::ConditionalOrExpressionContext* ctx)
+{
     LOG_VISITOR
 
     const auto conditionalAndExpressions = ctx->conditionalAndExpression();
@@ -977,47 +990,39 @@ Any QueryVisitor::visitConditionalOrExpression(SparqlParser::ConditionalOrExpres
     return 0;
 }
 
-
-Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx) {
+Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx)
+{
     LOG_VISITOR
     if (ctx->aggregate()) {
         visit(ctx->aggregate());
-    }
-    else if (ctx->STR()) {
+    } else if (ctx->STR()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprStr>(std::move(current_expr));
-    }
-    else if (ctx->LANG()) {
+    } else if (ctx->LANG()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprLang>(std::move(current_expr));
-    }
-    else if (ctx->LANGMATCHES()) {
+    } else if (ctx->LANGMATCHES()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprLangMatches>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->DATATYPE()) {
+    } else if (ctx->DATATYPE()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprDatatype>(std::move(current_expr));
-    }
-    else if (ctx->BOUND()) {
+    } else if (ctx->BOUND()) {
         auto var_name = ctx->var()->getText().substr(1);
         auto var = get_query_ctx().get_or_create_var(var_name);
         current_expr = std::make_unique<ExprBound>(var);
-    }
-    else if (ctx->IRI()) {
+    } else if (ctx->IRI()) {
         visit(ctx->expression(0));
         // IRI needs to know the base IRI of the query
         current_expr = std::make_unique<ExprIRI>(std::move(current_expr), global_info.base_iri);
-    }
-    else if (ctx->URI()) {
+    } else if (ctx->URI()) {
         visit(ctx->expression(0));
         // URI needs to know the base IRI of the query
         current_expr = std::make_unique<ExprURI>(std::move(current_expr), global_info.base_iri);
-    }
-    else if (ctx->BNODE()) {
+    } else if (ctx->BNODE()) {
         auto expr = ctx->expression(0);
         if (expr) {
             visit(expr);
@@ -1025,27 +1030,21 @@ Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx) {
         } else {
             current_expr = std::make_unique<ExprBNode>(nullptr);
         }
-    }
-    else if (ctx->RAND()) {
+    } else if (ctx->RAND()) {
         current_expr = std::make_unique<ExprRand>();
-    }
-    else if (ctx->ABS()) {
+    } else if (ctx->ABS()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprAbs>(std::move(current_expr));
-    }
-    else if (ctx->CEIL()) {
+    } else if (ctx->CEIL()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprCeil>(std::move(current_expr));
-    }
-    else if (ctx->FLOOR()) {
+    } else if (ctx->FLOOR()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprFloor>(std::move(current_expr));
-    }
-    else if (ctx->ROUND()) {
+    } else if (ctx->ROUND()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprRound>(std::move(current_expr));
-    }
-    else if (ctx->CONCAT()) {
+    } else if (ctx->CONCAT()) {
         std::vector<std::unique_ptr<Expr>> expr_list;
         if (ctx->expressionList()) {
             for (auto expr_ctx : ctx->expressionList()->expression()) {
@@ -1054,126 +1053,98 @@ Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx) {
             }
         }
         current_expr = std::make_unique<ExprConcat>(std::move(expr_list));
-    }
-    else if (ctx->subStringExpression()) {
+    } else if (ctx->subStringExpression()) {
         visit(ctx->subStringExpression());
-    }
-    else if (ctx->STRLEN()) {
+    } else if (ctx->STRLEN()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprStrLen>(std::move(current_expr));
-    }
-    else if (ctx->strReplaceExpression()) {
+    } else if (ctx->strReplaceExpression()) {
         visit(ctx->strReplaceExpression());
-    }
-    else if (ctx->UCASE()) {
+    } else if (ctx->UCASE()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprUCase>(std::move(current_expr));
-    }
-    else if (ctx->LCASE()) {
+    } else if (ctx->LCASE()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprLCase>(std::move(current_expr));
-    }
-    else if (ctx->ENCODE_FOR_URI()) {
+    } else if (ctx->ENCODE_FOR_URI()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprEncodeForUri>(std::move(current_expr));
-    }
-    else if (ctx->CONTAINS()) {
+    } else if (ctx->CONTAINS()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprContains>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->STRSTARTS()) {
+    } else if (ctx->STRSTARTS()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrStarts>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->STRENDS()) {
+    } else if (ctx->STRENDS()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrEnds>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->STRBEFORE()) {
+    } else if (ctx->STRBEFORE()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrBefore>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->STRAFTER()) {
+    } else if (ctx->STRAFTER()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrAfter>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->YEAR()) {
+    } else if (ctx->YEAR()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprYear>(std::move(current_expr));
-    }
-    else if (ctx->MONTH()) {
+    } else if (ctx->MONTH()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprMonth>(std::move(current_expr));
-    }
-    else if (ctx->DAY()) {
+    } else if (ctx->DAY()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprDay>(std::move(current_expr));
-    }
-    else if (ctx->HOURS()) {
+    } else if (ctx->HOURS()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprHours>(std::move(current_expr));
-    }
-    else if (ctx->MINUTES()) {
+    } else if (ctx->MINUTES()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprMinutes>(std::move(current_expr));
-    }
-    else if (ctx->SECONDS()) {
+    } else if (ctx->SECONDS()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprSeconds>(std::move(current_expr));
-    }
-    else if (ctx->TIMEZONE()) {
+    } else if (ctx->TIMEZONE()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprTimezone>(std::move(current_expr));
-    }
-    else if (ctx->TZ()) {
+    } else if (ctx->TZ()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprTZ>(std::move(current_expr));
-    }
-    else if (ctx->NOW()) {
+    } else if (ctx->NOW()) {
         current_expr = std::make_unique<ExprNow>();
-    }
-    else if (ctx->UUID()) {
+    } else if (ctx->UUID()) {
         current_expr = std::make_unique<ExprUUID>();
-    }
-    else if (ctx->STRUUID()) {
+    } else if (ctx->STRUUID()) {
         current_expr = std::make_unique<ExprStrUUID>();
-    }
-    else if (ctx->MD5()) {
+    } else if (ctx->MD5()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprMD5>(std::move(current_expr));
-    }
-    else if (ctx->SHA1()) {
+    } else if (ctx->SHA1()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprSHA1>(std::move(current_expr));
-    }
-    else if (ctx->SHA256()) {
+    } else if (ctx->SHA256()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprSHA256>(std::move(current_expr));
-    }
-    else if (ctx->SHA384()) {
+    } else if (ctx->SHA384()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprSHA384>(std::move(current_expr));
-    }
-    else if (ctx->SHA512()) {
+    } else if (ctx->SHA512()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprSHA512>(std::move(current_expr));
-    }
-    else if (ctx->COALESCE()) {
+    } else if (ctx->COALESCE()) {
         std::vector<std::unique_ptr<Expr>> expr_list;
         if (ctx->expressionList()) {
             for (auto expr_ctx : ctx->expressionList()->expression()) {
@@ -1182,77 +1153,62 @@ Any QueryVisitor::visitBuiltInCall(SparqlParser::BuiltInCallContext* ctx) {
             }
         }
         current_expr = std::make_unique<ExprCoalesce>(std::move(expr_list));
-    }
-    else if (ctx->IF()) {
+    } else if (ctx->IF()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         visit(ctx->expression(2));
         auto expr2 = std::move(current_expr);
-        current_expr = std::make_unique<ExprIf>(std::move(expr0),
-                                                std::move(expr1),
-                                                std::move(expr2));
-    }
-    else if (ctx->STRLANG()) {
+        current_expr = std::make_unique<ExprIf>(std::move(expr0), std::move(expr1), std::move(expr2));
+    } else if (ctx->STRLANG()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrLang>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->STRDT()) {
+    } else if (ctx->STRDT()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprStrDT>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->SAMETERM()) {
+    } else if (ctx->SAMETERM()) {
         visit(ctx->expression(0));
         auto expr0 = std::move(current_expr);
         visit(ctx->expression(1));
         auto expr1 = std::move(current_expr);
         current_expr = std::make_unique<ExprSameTerm>(std::move(expr0), std::move(expr1));
-    }
-    else if (ctx->ISIRI()) {
+    } else if (ctx->ISIRI()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprIsIRI>(std::move(current_expr));
-    }
-    else if (ctx->ISURI()) {
+    } else if (ctx->ISURI()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprIsURI>(std::move(current_expr));
-    }
-    else if (ctx->ISBLANK()) {
+    } else if (ctx->ISBLANK()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprIsBlank>(std::move(current_expr));
-    }
-    else if (ctx->ISLITERAL()) {
+    } else if (ctx->ISLITERAL()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprIsLiteral>(std::move(current_expr));
-    }
-    else if (ctx->ISNUMERIC()) {
+    } else if (ctx->ISNUMERIC()) {
         visit(ctx->expression(0));
         current_expr = std::make_unique<ExprIsNumeric>(std::move(current_expr));
-    }
-    else if (ctx->regexExpression()) {
+    } else if (ctx->regexExpression()) {
         visit(ctx->regexExpression());
-    }
-    else if (ctx->existsFunction()) {
+    } else if (ctx->existsFunction()) {
         visit(ctx->existsFunction());
-    }
-    else if (ctx->notExistsFunction()) {
+    } else if (ctx->notExistsFunction()) {
         visit(ctx->notExistsFunction());
-    }
-    else {
+    } else {
         // it should not enter here unless grammar is modified
         throw QuerySemanticException("Unhandled built-in call: \"" + ctx->getText() + '"');
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitAggregate(SparqlParser::AggregateContext* ctx) {
+Any QueryVisitor::visitAggregate(SparqlParser::AggregateContext* ctx)
+{
     LOG_VISITOR
     bool distinct = ctx->DISTINCT() != nullptr;
     if (ctx->expression()) {
@@ -1288,8 +1244,8 @@ Any QueryVisitor::visitAggregate(SparqlParser::AggregateContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitSubStringExpression(SparqlParser::SubStringExpressionContext* ctx) {
+Any QueryVisitor::visitSubStringExpression(SparqlParser::SubStringExpressionContext* ctx)
+{
     LOG_VISITOR
 
     const auto expressions = ctx->expression();
@@ -1302,18 +1258,15 @@ Any QueryVisitor::visitSubStringExpression(SparqlParser::SubStringExpressionCont
     if (expressions.size() == 3) {
         visit(expressions[2]);
         auto expr2 = std::move(current_expr);
-        current_expr = std::make_unique<ExprSubStr>(std::move(expr0),
-                                                    std::move(expr1),
-                                                    std::move(expr2));
+        current_expr = std::make_unique<ExprSubStr>(std::move(expr0), std::move(expr1), std::move(expr2));
     } else {
-        current_expr = std::make_unique<ExprSubStr>(std::move(expr0),
-                                                    std::move(expr1));
+        current_expr = std::make_unique<ExprSubStr>(std::move(expr0), std::move(expr1));
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitStrReplaceExpression(SparqlParser::StrReplaceExpressionContext* ctx) {
+Any QueryVisitor::visitStrReplaceExpression(SparqlParser::StrReplaceExpressionContext* ctx)
+{
     LOG_VISITOR
 
     const auto expressions = ctx->expression();
@@ -1328,20 +1281,20 @@ Any QueryVisitor::visitStrReplaceExpression(SparqlParser::StrReplaceExpressionCo
     if (expressions.size() == 4) {
         visit(expressions[3]);
         auto expr3 = std::move(current_expr);
-        current_expr = std::make_unique<ExprReplace>(std::move(expr0),
-                                                     std::move(expr1),
-                                                     std::move(expr2),
-                                                     std::move(expr3));
+        current_expr = std::make_unique<ExprReplace>(
+            std::move(expr0),
+            std::move(expr1),
+            std::move(expr2),
+            std::move(expr3)
+        );
     } else {
-        current_expr = std::make_unique<ExprReplace>(std::move(expr0),
-                                                     std::move(expr1),
-                                                     std::move(expr2));
+        current_expr = std::make_unique<ExprReplace>(std::move(expr0), std::move(expr1), std::move(expr2));
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitRegexExpression(SparqlParser::RegexExpressionContext* ctx) {
+Any QueryVisitor::visitRegexExpression(SparqlParser::RegexExpressionContext* ctx)
+{
     LOG_VISITOR
 
     const auto expressions = ctx->expression();
@@ -1354,18 +1307,15 @@ Any QueryVisitor::visitRegexExpression(SparqlParser::RegexExpressionContext* ctx
     if (expressions.size() == 3) {
         visit(expressions[2]);
         auto expr2 = std::move(current_expr);
-        current_expr = std::make_unique<ExprRegex>(std::move(expr0),
-                                                   std::move(expr1),
-                                                   std::move(expr2));
+        current_expr = std::make_unique<ExprRegex>(std::move(expr0), std::move(expr1), std::move(expr2));
     } else {
-        current_expr = std::make_unique<ExprRegex>(std::move(expr0),
-                                                   std::move(expr1));
+        current_expr = std::make_unique<ExprRegex>(std::move(expr0), std::move(expr1));
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitExistsFunction(SparqlParser::ExistsFunctionContext* ctx) {
+Any QueryVisitor::visitExistsFunction(SparqlParser::ExistsFunctionContext* ctx)
+{
     LOG_VISITOR
     auto previous_op = std::move(current_op);
     visit(ctx->groupGraphPattern());
@@ -1375,8 +1325,8 @@ Any QueryVisitor::visitExistsFunction(SparqlParser::ExistsFunctionContext* ctx) 
     return 0;
 }
 
-
-Any QueryVisitor::visitNotExistsFunction(SparqlParser::NotExistsFunctionContext* ctx) {
+Any QueryVisitor::visitNotExistsFunction(SparqlParser::NotExistsFunctionContext* ctx)
+{
     LOG_VISITOR
     auto previous_op = std::move(current_op);
     visit(ctx->groupGraphPattern());
@@ -1386,28 +1336,26 @@ Any QueryVisitor::visitNotExistsFunction(SparqlParser::NotExistsFunctionContext*
     return 0;
 }
 
-Any QueryVisitor::visitFunctionCall(SparqlParser::FunctionCallContext* ctx) {
+Any QueryVisitor::visitFunctionCall(SparqlParser::FunctionCallContext* ctx)
+{
     LOG_VISITOR
 
     handle_function_call(ctx->iri(), ctx->argList());
     return 0;
 }
 
-
-Any QueryVisitor::visitTriplesBlock(SparqlParser::TriplesBlockContext* ctx) {
+Any QueryVisitor::visitTriplesBlock(SparqlParser::TriplesBlockContext* ctx)
+{
     LOG_VISITOR
     for (auto& triples_same_subject_path : ctx->triplesSameSubjectPath()) {
         visit(triples_same_subject_path);
     }
-    current_op = std::make_unique<OpBasicGraphPattern>(
-        std::move(current_triples),
-        std::move(current_paths)
-    );
+    current_op = std::make_unique<OpBasicGraphPattern>(std::move(current_triples), std::move(current_paths));
     return 0;
 }
 
-
-Any QueryVisitor::visitTriplesSameSubjectPath(SparqlParser::TriplesSameSubjectPathContext* ctx) {
+Any QueryVisitor::visitTriplesSameSubjectPath(SparqlParser::TriplesSameSubjectPathContext* ctx)
+{
     LOG_VISITOR
     if (ctx->varOrTerm()) {
         // 1. Visit the subject
@@ -1416,8 +1364,7 @@ Any QueryVisitor::visitTriplesSameSubjectPath(SparqlParser::TriplesSameSubjectPa
         // 2. Visit the predicate object list
         visit(ctx->propertyListPathNotEmpty());
         subject_stack.pop();
-    }
-    else {
+    } else {
         // Create new blank node
         LOG_INFO("Creating blank node in:" << "TriplesSameSubjectPathContext");
         auto new_blank_node = get_new_blank_node_var();
@@ -1432,8 +1379,8 @@ Any QueryVisitor::visitTriplesSameSubjectPath(SparqlParser::TriplesSameSubjectPa
     return 0;
 }
 
-
-Any QueryVisitor::visitTriplesSameSubject(SparqlParser::TriplesSameSubjectContext* ctx) {
+Any QueryVisitor::visitTriplesSameSubject(SparqlParser::TriplesSameSubjectContext* ctx)
+{
     LOG_VISITOR
     if (ctx->varOrTerm()) {
         // 1. Visit the subject
@@ -1442,8 +1389,7 @@ Any QueryVisitor::visitTriplesSameSubject(SparqlParser::TriplesSameSubjectContex
         // 2. Visit the predicate object list
         visit(ctx->propertyListNotEmpty());
         subject_stack.pop();
-    }
-    else {
+    } else {
         // Create new blank node
         LOG_INFO("Creating blank node in:" << "TriplesSameSubjectContext");
         auto new_blank_node = get_new_blank_node_var();
@@ -1458,8 +1404,8 @@ Any QueryVisitor::visitTriplesSameSubject(SparqlParser::TriplesSameSubjectContex
     return 0;
 }
 
-
-Any QueryVisitor::visitBlankNodePropertyListPath(SparqlParser::BlankNodePropertyListPathContext* ctx) {
+Any QueryVisitor::visitBlankNodePropertyListPath(SparqlParser::BlankNodePropertyListPathContext* ctx)
+{
     LOG_VISITOR
 
     // Visit the propertyListNotEmpty
@@ -1506,7 +1452,8 @@ Any QueryVisitor::visitPropertyListPathNotEmpty(SparqlParser::PropertyListPathNo
     return 0;
 }
 
-Any QueryVisitor::visitPropertyListNotEmpty(SparqlParser::PropertyListNotEmptyContext* ctx) {
+Any QueryVisitor::visitPropertyListNotEmpty(SparqlParser::PropertyListNotEmptyContext* ctx)
+{
     LOG_VISITOR
 
     const auto verbs = ctx->verb();
@@ -1523,17 +1470,15 @@ Any QueryVisitor::visitPropertyListNotEmpty(SparqlParser::PropertyListNotEmptyCo
     return 0;
 }
 
-
-Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
+Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx)
+{
     LOG_VISITOR
     auto gnp = ctx->graphNodePath();
     if (gnp->varOrTerm()) {
         visit(gnp->varOrTerm());
 
         if (predicate_stack.top().is_path()) {
-            auto path_var = current_path_var_is_fresh
-                          ? current_path_var
-                          : get_query_ctx().get_internal_var();
+            auto path_var = current_path_var_is_fresh ? current_path_var : get_query_ctx().get_internal_var();
             current_path_var_is_fresh = false;
 
             current_paths.emplace_back(
@@ -1551,8 +1496,7 @@ Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
                 current_sparql_element.get_ID()
             );
         }
-    }
-    else {
+    } else {
         LOG_INFO("Creating blank node in:" << "ObjectPathContext");
         auto new_blank_node = get_new_blank_node_var();
 
@@ -1561,9 +1505,7 @@ Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
         subject_stack.pop();
 
         if (predicate_stack.top().is_path()) {
-            auto path_var = current_path_var_is_fresh
-                          ? current_path_var
-                          : get_query_ctx().get_internal_var();
+            auto path_var = current_path_var_is_fresh ? current_path_var : get_query_ctx().get_internal_var();
             current_path_var_is_fresh = false;
 
             current_paths.emplace_back(
@@ -1575,27 +1517,21 @@ Any QueryVisitor::visitObjectPath(SparqlParser::ObjectPathContext* ctx) {
             );
         } else {
             LOG_INFO("triples emplace back in: ObjectPathContext not varOrTerm");
-            current_triples.emplace_back(
-                subject_stack.top(),
-                predicate_stack.top().get_ID(),
-                new_blank_node
-            );
+            current_triples.emplace_back(subject_stack.top(), predicate_stack.top().get_ID(), new_blank_node);
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
+Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx)
+{
     LOG_VISITOR
     auto gn = ctx->graphNode();
     if (gn->varOrTerm()) {
         visit(gn->varOrTerm());
 
         if (predicate_stack.top().is_path()) {
-            auto path_var = current_path_var_is_fresh
-                          ? current_path_var
-                          : get_query_ctx().get_internal_var();
+            auto path_var = current_path_var_is_fresh ? current_path_var : get_query_ctx().get_internal_var();
             current_path_var_is_fresh = false;
 
             current_paths.emplace_back(
@@ -1613,8 +1549,7 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
                 current_sparql_element.get_ID()
             );
         }
-    }
-    else {
+    } else {
         LOG_INFO("Creating blank node in: ObjectContext");
         auto new_blank_node = get_new_blank_node_var();
 
@@ -1623,9 +1558,7 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
         subject_stack.pop();
 
         if (predicate_stack.top().is_path()) {
-            auto path_var = current_path_var_is_fresh
-                          ? current_path_var
-                          : get_query_ctx().get_internal_var();
+            auto path_var = current_path_var_is_fresh ? current_path_var : get_query_ctx().get_internal_var();
             current_path_var_is_fresh = false;
 
             current_paths.emplace_back(
@@ -1637,18 +1570,14 @@ Any QueryVisitor::visitObject(SparqlParser::ObjectContext* ctx) {
             );
         } else {
             LOG_INFO("triples emplace back in: ObjectContext");
-            current_triples.emplace_back(
-                subject_stack.top(),
-                predicate_stack.top().get_ID(),
-                new_blank_node
-            );
+            current_triples.emplace_back(subject_stack.top(), predicate_stack.top().get_ID(), new_blank_node);
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) {
+Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx)
+{
     LOG_VISITOR
     Id representative_bnode = subject_stack.top();
 
@@ -1672,11 +1601,7 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
 
         Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
         LOG_INFO("triples emplace back in: CollectionPathContext");
-        current_triples.emplace_back(
-            prev_bnode,
-            predicate,
-            rdf_node.get_ID()
-        );
+        current_triples.emplace_back(prev_bnode, predicate, rdf_node.get_ID());
 
         if (i < graphNodePaths.size() - 1) {
             Id next_bnode = subject_stack.top();
@@ -1684,11 +1609,7 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
             LOG_INFO("triples emplace back in: CollectionPathContext");
-            current_triples.emplace_back(
-                prev_bnode,
-                predicate,
-                next_bnode
-            );
+            current_triples.emplace_back(prev_bnode, predicate, next_bnode);
             prev_bnode = std::move(next_bnode);
         } else {
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
@@ -1706,8 +1627,8 @@ Any QueryVisitor::visitCollectionPath(SparqlParser::CollectionPathContext* ctx) 
     return 0;
 }
 
-
-Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
+Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx)
+{
     LOG_VISITOR
     Id representative_bnode = subject_stack.top();
     // I assume this prev_bnode is the blank node that will be added, the
@@ -1733,11 +1654,7 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
 
         Id predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#first");
         LOG_INFO("triples emplace back in: CollectionContext");
-        current_triples.emplace_back(
-            prev_bnode,
-            predicate,
-            rdf_node
-        );
+        current_triples.emplace_back(prev_bnode, predicate, rdf_node);
 
         if (i < graphNodes.size() - 1) {
             Id next_bnode = subject_stack.top();
@@ -1745,11 +1662,7 @@ Any QueryVisitor::visitCollection(SparqlParser::CollectionContext* ctx) {
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
 
             LOG_INFO("triples emplace back in: CollectionContext");
-            current_triples.emplace_back(
-                prev_bnode,
-                predicate,
-                next_bnode
-            );
+            current_triples.emplace_back(prev_bnode, predicate, next_bnode);
             prev_bnode = std::move(next_bnode);
         } else {
             predicate = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
@@ -1798,7 +1711,8 @@ Any QueryVisitor::visitGroupCondition(SparqlParser::GroupConditionContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitHavingCondition(SparqlParser::HavingConditionContext *ctx) {
+Any QueryVisitor::visitHavingCondition(SparqlParser::HavingConditionContext* ctx)
+{
     LOG_VISITOR
     visitChildren(ctx);
     auto constraint = ctx->constraint();
@@ -1812,8 +1726,8 @@ Any QueryVisitor::visitHavingCondition(SparqlParser::HavingConditionContext *ctx
     return 0;
 }
 
-
-Any QueryVisitor::visitVar(SparqlParser::VarContext* ctx) {
+Any QueryVisitor::visitVar(SparqlParser::VarContext* ctx)
+{
     LOG_VISITOR
     auto var_name = ctx->getText().substr(1);
     auto var = get_query_ctx().get_or_create_var(var_name);
@@ -1821,22 +1735,21 @@ Any QueryVisitor::visitVar(SparqlParser::VarContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitIri(SparqlParser::IriContext* ctx) {
+Any QueryVisitor::visitIri(SparqlParser::IriContext* ctx)
+{
     LOG_VISITOR
     current_sparql_element = Conversions::pack_iri(iriCtxToString(ctx));
     return 0;
 }
 
-
-Any QueryVisitor::visitRdfLiteral(SparqlParser::RdfLiteralContext* ctx) {
+Any QueryVisitor::visitRdfLiteral(SparqlParser::RdfLiteralContext* ctx)
+{
     LOG_VISITOR
     std::string str = stringCtxToString(ctx->string());
     if (ctx->iri()) {
         std::string iri = iriCtxToString(ctx->iri());
         current_sparql_element = Conversions::try_pack_string_datatype(iri, str);
-    }
-    else if (ctx->LANGTAG()) {
+    } else if (ctx->LANGTAG()) {
         current_sparql_element = Conversions::pack_string_lang(ctx->LANGTAG()->getText().substr(1), str);
     } else {
         current_sparql_element = Conversions::pack_string(str);
@@ -1844,11 +1757,14 @@ Any QueryVisitor::visitRdfLiteral(SparqlParser::RdfLiteralContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitNumericLiteralUnsigned(SparqlParser::NumericLiteralUnsignedContext* ctx) {
+Any QueryVisitor::visitNumericLiteralUnsigned(SparqlParser::NumericLiteralUnsignedContext* ctx)
+{
     LOG_VISITOR
     if (ctx->INTEGER()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#integer");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#integer"
+        );
     } else if (ctx->DECIMAL()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -1857,27 +1773,30 @@ Any QueryVisitor::visitNumericLiteralUnsigned(SparqlParser::NumericLiteralUnsign
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-         try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                text
+            );
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitNumericLiteralPositive(SparqlParser::NumericLiteralPositiveContext* ctx) {
+Any QueryVisitor::visitNumericLiteralPositive(SparqlParser::NumericLiteralPositiveContext* ctx)
+{
     LOG_VISITOR
     if (ctx->INTEGER_POSITIVE()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#positiveInteger");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#positiveInteger"
+        );
     } else if (ctx->DECIMAL_POSITIVE()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -1886,27 +1805,30 @@ Any QueryVisitor::visitNumericLiteralPositive(SparqlParser::NumericLiteralPositi
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-        try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                text
+            );
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitNumericLiteralNegative(SparqlParser::NumericLiteralNegativeContext* ctx) {
+Any QueryVisitor::visitNumericLiteralNegative(SparqlParser::NumericLiteralNegativeContext* ctx)
+{
     LOG_VISITOR
     if (ctx->INTEGER_NEGATIVE()) {
-        current_sparql_element = handleIntegerString(ctx->getText(), "http://www.w3.org/2001/XMLSchema#negativeInteger");
+        current_sparql_element = handleIntegerString(
+            ctx->getText(),
+            "http://www.w3.org/2001/XMLSchema#negativeInteger"
+        );
     } else if (ctx->DECIMAL_NEGATIVE()) {
         bool error;
         Decimal dec(ctx->getText(), &error);
@@ -1915,53 +1837,52 @@ Any QueryVisitor::visitNumericLiteralNegative(SparqlParser::NumericLiteralNegati
         }
         current_sparql_element = Conversions::pack_decimal(dec);
     } else {
-        // Double
-        try {
-            current_sparql_element = Conversions::pack_double(std::stod(ctx->getText()));
-        } catch (const std::out_of_range& e) {
+        double d;
+        std::string text = ctx->getText();
+        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+
+        if (ec == std::errc() && ptr == text.data() + text.size()) {
+            current_sparql_element = Conversions::pack_double(d);
+        } else {
             current_sparql_element = Conversions::pack_string_datatype(
                 "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
-        } catch (const std::invalid_argument& e) {
-            current_sparql_element = Conversions::pack_string_datatype(
-                "http://www.w3.org/2001/XMLSchema#double",
-                ctx->getText());
+                text
+            );
         }
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitBooleanLiteral(SparqlParser::BooleanLiteralContext* ctx) {
+Any QueryVisitor::visitBooleanLiteral(SparqlParser::BooleanLiteralContext* ctx)
+{
     LOG_VISITOR
     current_sparql_element = Conversions::pack_bool(ctx->K_TRUE() != nullptr);
     return 0;
 }
 
-
-Any QueryVisitor::visitBlankNode(SparqlParser::BlankNodeContext* ctx) {
+Any QueryVisitor::visitBlankNode(SparqlParser::BlankNodeContext* ctx)
+{
     LOG_VISITOR
     if (ctx->BLANK_NODE_LABEL()) {
         auto var_name = ctx->getText();
         auto var = get_query_ctx().get_or_create_var(var_name);
         current_sparql_element = var;
-    }
-    else {
+    } else {
         LOG_INFO("Creating blank node in: BlankNodeContext");
         current_sparql_element = get_new_blank_node_var();
     }
     return 0;
 }
 
-
-Any QueryVisitor::visitNil(SparqlParser::NilContext*) {
+Any QueryVisitor::visitNil(SparqlParser::NilContext*)
+{
     LOG_VISITOR
     current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil");
     return 0;
 }
 
-
-Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx) {
+Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx)
+{
     LOG_VISITOR
     // Set current_path
     current_path_inverse = false;
@@ -1990,8 +1911,7 @@ Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx) {
                     throw QueryException("ALL WALKS path semantic not allowed");
                 }
             }
-        }
-        else { //if (ctx->ANY())
+        } else { //if (ctx->ANY())
             if (ctx->SHORTEST()) {
                 if (ctx->SIMPLE()) {
                     current_path_semantic = PathSemantic::ANY_SHORTEST_SIMPLE;
@@ -2028,8 +1948,8 @@ Any QueryVisitor::visitVerbPath(SparqlParser::VerbPathContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitPathAlternative(SparqlParser::PathAlternativeContext* ctx) {
+Any QueryVisitor::visitPathAlternative(SparqlParser::PathAlternativeContext* ctx)
+{
     LOG_VISITOR
 
     const auto pathSequences = ctx->pathSequence();
@@ -2047,8 +1967,8 @@ Any QueryVisitor::visitPathAlternative(SparqlParser::PathAlternativeContext* ctx
     return 0;
 }
 
-
-Any QueryVisitor::visitPathSequence(SparqlParser::PathSequenceContext* ctx) {
+Any QueryVisitor::visitPathSequence(SparqlParser::PathSequenceContext* ctx)
+{
     LOG_VISITOR
 
     const auto pathEltOrInverses = ctx->pathEltOrInverse();
@@ -2073,8 +1993,8 @@ Any QueryVisitor::visitPathSequence(SparqlParser::PathSequenceContext* ctx) {
     return 0;
 }
 
-
-Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* ctx) {
+Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* ctx)
+{
     LOG_VISITOR
     auto pe = ctx->pathElt();
     auto pp = pe->pathPrimary();
@@ -2088,8 +2008,10 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
         std::string iri = iriCtxToString(pp->iri());
         current_path = std::make_unique<PathAtom>(std::move(iri), current_path_inverse);
     } else if (pp->A()) {
-        current_path = std::make_unique<PathAtom>("http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                                                  current_path_inverse);
+        current_path = std::make_unique<PathAtom>(
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            current_path_inverse
+        );
     } else {
         std::vector<PathAtom> negated_set;
         for (auto& path_one : pp->pathNegatedPropertySet()->pathOneInPropertySet()) {
@@ -2115,8 +2037,7 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
                 for (unsigned i = 0; i < exact; i++) {
                     seq.push_back(current_path->clone());
                 }
-            }
-            else if (mod->pathQuantity()->pathQuantityRange()) {
+            } else if (mod->pathQuantity()->pathQuantityRange()) {
                 unsigned min = std::stoul(mod->pathQuantity()->pathQuantityRange()->min->getText());
                 unsigned max = std::stoul(mod->pathQuantity()->pathQuantityRange()->max->getText());
                 unsigned i = 0;
@@ -2126,14 +2047,12 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
                 for (; i < max; i++) {
                     seq.push_back(std::make_unique<PathOptional>(current_path->clone()));
                 }
-            }
-            else if (mod->pathQuantity()->pathQuantityMax()) {
+            } else if (mod->pathQuantity()->pathQuantityMax()) {
                 unsigned max = std::stoul(mod->pathQuantity()->pathQuantityMax()->max->getText());
                 for (unsigned i = 0; i < max; i++) {
                     seq.push_back(std::make_unique<PathOptional>(current_path->clone()));
                 }
-            }
-            else if (mod->pathQuantity()->pathQuantityMin()) {
+            } else if (mod->pathQuantity()->pathQuantityMin()) {
                 unsigned min = std::stoul(mod->pathQuantity()->pathQuantityMin()->min->getText());
                 for (unsigned i = 0; i < min; i++) {
                     seq.push_back(current_path->clone());
@@ -2142,7 +2061,7 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
             }
             current_path = std::make_unique<PathSequence>(std::move(seq));
         } else {
-            switch(mod->getText()[0]) {
+            switch (mod->getText()[0]) {
             case '*':
                 current_path = std::make_unique<PathKleeneStar>(std::move(current_path));
                 break;
@@ -2161,8 +2080,8 @@ Any QueryVisitor::visitPathEltOrInverse(SparqlParser::PathEltOrInverseContext* c
     return 0;
 }
 
-
-Any QueryVisitor::visitVerb(SparqlParser::VerbContext* ctx) {
+Any QueryVisitor::visitVerb(SparqlParser::VerbContext* ctx)
+{
     LOG_VISITOR
     if (ctx->A()) {
         current_sparql_element = Conversions::pack_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -2172,14 +2091,13 @@ Any QueryVisitor::visitVerb(SparqlParser::VerbContext* ctx) {
     return 0;
 }
 
-
-std::string QueryVisitor::iriCtxToString(SparqlParser::IriContext* ctx) {
+std::string QueryVisitor::iriCtxToString(SparqlParser::IriContext* ctx)
+{
     std::string iri;
     if (ctx->IRIREF()) {
         iri = ctx->IRIREF()->getText();
         iri = iri.substr(1, iri.size() - 2);
-    }
-    else {
+    } else {
         std::string prefixedName = ctx->prefixedName()->getText();
         auto pos = prefixedName.find(':');
         auto prefix = prefixedName.substr(0, pos);
@@ -2195,15 +2113,17 @@ std::string QueryVisitor::iriCtxToString(SparqlParser::IriContext* ctx) {
     auto pos = iri.find(':');
     if (pos == std::string::npos) {
         if (global_info.base_iri.empty()) {
-            throw QuerySemanticException("The IRI '" + iri + "' is not absolute and the base IRI is not defined");
+            throw QuerySemanticException(
+                "The IRI '" + iri + "' is not absolute and the base IRI is not defined"
+            );
         }
         iri = global_info.base_iri + iri;
     }
     return iri;
 }
 
-
-std::string QueryVisitor::stringCtxToString(SparqlParser::StringContext* ctx) {
+std::string QueryVisitor::stringCtxToString(SparqlParser::StringContext* ctx)
+{
     std::string str = ctx->getText();
 
     if (ctx->STRING_LITERAL1() || ctx->STRING_LITERAL2()) {
@@ -2233,15 +2153,14 @@ std::string QueryVisitor::stringCtxToString(SparqlParser::StringContext* ctx) {
  *
  * @param str the string representing the integer
  */
-ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::string& iri) {
-    try {
-        size_t pos;
-        int64_t n = std::stoll(str, &pos);
-        // Check if the whole string was parsed
-        if (pos != str.size())
-            return Conversions::pack_string_datatype(iri, str);
+ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::string& iri)
+{
+    int64_t n;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+
+    if (ec == std::errc() && ptr == str.data() + str.size()) {
         return Conversions::pack_int(n);
-    } catch (std::out_of_range& e) {
+    } else if (ec == std::errc::result_out_of_range) {
         // The integer is too big, we use a Decimal
         bool error;
         Decimal dec(str, &error);
@@ -2249,8 +2168,8 @@ ObjectId QueryVisitor::handleIntegerString(const std::string& str, const std::st
             return Conversions::pack_string_datatype(iri, str);
         }
         return Conversions::pack_decimal(dec);
-    } catch (std::invalid_argument& e) {
-        // The string is not a valid integer
+    } else {
+        // The string is not a valid integer or has trailing characters
         return Conversions::pack_string_datatype(iri, str);
     }
 }
@@ -2409,7 +2328,7 @@ void QueryVisitor::handle_function_call(
             auto lhs = std::move(current_expr);
             visit(expressions[1]);
             current_expr = std::make_unique<ExprEuclideanDistance>(std::move(lhs), std::move(current_expr));
-        } else if (mdbfn_suffix == MDBFn::COSINE_DISTANCE_SUFFIX_IRI){
+        } else if (mdbfn_suffix == MDBFn::COSINE_DISTANCE_SUFFIX_IRI) {
             if (expressions.size() != 2) {
                 throw QuerySemanticException(iri + " function expects 2 arguments");
             }

@@ -57,10 +57,12 @@ public:
             }
             case ObjectGenType::String: {
                 std::string str = GQL::Conversions::to_lexical_str(operand_oid);
-                try {
-                    // TODO: avoid exception from std::stod?
-                    return GQL::Conversions::pack_int(std::stod(str));
-                } catch (...) {
+                double val;
+                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), val);
+
+                if (ec == std::errc() && ptr == str.data() + str.size()) {
+                    return GQL::Conversions::pack_int(val);
+                } else {
                     return ObjectId::get_null();
                 }
             }
@@ -70,11 +72,7 @@ public:
 
         case ObjectGenType::TemporalLiteral:
             if (sourceType == ObjectGenType::String) {
-                try {
-                    return ObjectId(DateTime::from_dateTime(Conversions::to_lexical_str(operand_oid)));
-                } catch (...) {
-                    return ObjectId::get_null();
-                }
+                return ObjectId(DateTime::from_dateTime(Conversions::to_lexical_str(operand_oid)));
             }
             return ObjectId::get_null();
 

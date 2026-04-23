@@ -149,13 +149,11 @@ inline std::string to_lexical_str(ObjectId oid)
     case ObjectType::DirectedEdge:
         return "_e" + std::to_string(unpack_edge(oid));
 
-    case ObjectType::TensorFloatInl:
     case ObjectType::TensorFloatExt:
     case ObjectType::TensorFloatTmp: {
         const auto tensor = unpack_tensor<float>(oid);
         return tensor.to_string();
     }
-    case ObjectType::TensorDoubleInl:
     case ObjectType::TensorDoubleExt:
     case ObjectType::TensorDoubleTmp: {
         const auto tensor = unpack_tensor<double>(oid);

@@ -493,10 +493,11 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
             // Compress uppercase hex characters
         } else if (upper_hex_length > HexCompression::MIN_HEX_LEN_TO_COMPRESS) {
             str_len = HexCompression::compress(str, str_len, upper_hex_length, buffer_iri);
-            return ObjectId(
-                ext_helper->get_or_create_ext(buffer_iri, str_len, )
-                | (ObjectId::MASK_IRI_HEX_UPPER_TMP & (~ObjectId::MOD_MASK)) | prefix_id_shifted
-            );
+            return ObjectId(ext_helper->get_or_create_ext(
+                buffer_iri,
+                str_len,
+                ObjectId::MASK_IRI_HEX_UPPER_EXT | prefix_id_shifted
+            ));
         }
     }
 
@@ -504,8 +505,7 @@ ObjectId OnDiskImport::get_iri_id(const char* str, size_t str_len)
         return SPARQL::Conversions::pack_iri_inline(str, prefix_id);
     } else {
         return ObjectId(
-            ext_helper->get_or_create_ext(str, str_len, ObjectId::MASK_IRI_EXT)
-            | prefix_id_shifted
+            ext_helper->get_or_create_ext(str, str_len, ObjectId::MASK_IRI_EXT) | prefix_id_shifted
         );
     }
 }
@@ -553,32 +553,16 @@ uint64_t OnDiskImport::get_lang_id(const char* lang)
 ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error)
 {
     *error = false;
-    try {
-        size_t pos;
-        int64_t i = std::stoll(str, &pos);
-        // Check if the whole string was parsed
-        if (pos != str.size()) {
-            *error = true;
-            return ObjectId::get_null();
-        }
-        // If the integer uses more than 56 bits, it must be converted into Decimal Extern (overflow)
-        else if (i > SPARQL::Conversions::INTEGER_MAX || i < -SPARQL::Conversions::INTEGER_MAX)
-        {
-            Decimal dec(str, error);
-            if (*error) {
-                return ObjectId::get_null();
-            }
+    int64_t i;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), i);
 
-            char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
-            dec.serialize_extern(dec_buffer);
-            return ObjectId(
-                ext_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
-                | ObjectId::MASK_DECIMAL
-            );
-        } else {
-            return SPARQL::Conversions::pack_int(i);
-        }
-    } catch (const std::out_of_range& e) {
+    // 1. Check for invalid format or trailing characters
+    if (ec == std::errc::invalid_argument || ptr != str.data() + str.size()) {
+        *error = true;
+        return ObjectId::get_null();
+    }
+
+    if (ec == std::errc::result_out_of_range || i > SPARQL::Conversions::INTEGER_MAX || i < -SPARQL::Conversions::INTEGER_MAX) {
         Decimal dec(str, error);
         if (*error) {
             return ObjectId::get_null();
@@ -586,14 +570,14 @@ ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error
 
         char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
         dec.serialize_extern(dec_buffer);
-        return ObjectId(
-            ext_helper->get_or_create_external_string_id(dec_buffer, Decimal::EXTERN_BUFFER_SIZE)
-            | ObjectId::MASK_DECIMAL
-        );
-    } catch (const std::invalid_argument& e) {
-        *error = true;
-        return ObjectId::get_null();
+        return ObjectId(ext_helper->get_or_create_ext(
+            dec_buffer,
+            Decimal::EXTERN_BUFFER_SIZE,
+            ObjectId::MASK_DECIMAL_EXT
+        ));
     }
+
+    return SPARQL::Conversions::pack_int(i);
 }
 
 ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const char* datatype)
@@ -606,10 +590,11 @@ ObjectId OnDiskImport::save_ill_typed(unsigned line, const char* value, const ch
     if (size <= ObjectId::STR_DT_INLINE_BYTES) {
         return SPARQL::Conversions::pack_string_datatype_inline(datatype_id, value);
     } else {
-        return ObjectId(
-            ext_helper->get_or_create_external_string_id(value, size) | ObjectId::MASK_STR_DATATYPE_INL
-            | (datatype_id << SPARQL::Conversions::TMP_SHIFT)
-        );
+        return ObjectId(ext_helper->get_or_create_ext(
+            value,
+            size,
+            ObjectId::MASK_STR_DATATYPE_EXT | (datatype_id << SPARQL::Conversions::TMP_SHIFT)
+        ));
     }
 }
 
@@ -619,8 +604,11 @@ void OnDiskImport::save_object_id_literal_lang(XMLTag& object)
     if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING_LANG) {
         object_id = SPARQL::Conversions::pack_string_lang_inline(lang_id, object.value.c_str());
     } else {
-        object_id.id = ext_helper->get_or_create_external_string_id(object.value.c_str(), object.value.size())
-                     | ObjectId::MASK_STR_LANG_INL | (lang_id << SPARQL::Conversions::TMP_SHIFT);
+        object_id.id = ext_helper->get_or_create_ext(
+            object.value.c_str(),
+            object.value.size(),
+            ObjectId::MASK_STR_LANG_EXT | (lang_id << SPARQL::Conversions::TMP_SHIFT)
+        );
     }
 }
 
@@ -634,16 +622,10 @@ void OnDiskImport::try_save_tensor(const char* str, const char* dt)
         return;
     }
 
-    if (tensor.empty()) {
-        object_id.id = tensor.get_inline_mask();
-        return;
-    }
-
     const auto bytes = reinterpret_cast<const char*>(tensor.data());
     const auto num_bytes = sizeof(T) * tensor.size();
 
-    object_id.id = tensor::Tensor<T>::get_subtype()
-                 | ext_helper->get_or_create_external_tensor_id(bytes, num_bytes);
+    object_id.id = ext_helper->get_or_create_tensor(bytes, num_bytes, tensor::Tensor<T>::get_external_mask());
 }
 
 void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& object)
@@ -659,11 +641,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = SPARQL::Conversions::pack_string_inline(object.value.c_str());
         } else {
-            object_id.id = ext_helper->get_or_create_external_string_id(
-                               object.value.c_str(),
-                               object.value.size()
-                           )
-                         | ObjectId::MASK_STR_INL;
+            object_id.id = ext_helper->get_or_create_ext(
+                object.value.c_str(),
+                object.value.size(),
+                ObjectId::MASK_STR_EXT
+            );
         }
         break;
     }
@@ -673,11 +655,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         if (object.value.size() <= ObjectId::STR_DT_INLINE_BYTES) {
             object_id = SPARQL::Conversions::pack_string_datatype_inline(datatype_id, object.value.c_str());
         } else {
-            object_id.id = ext_helper->get_or_create_external_string_id(
-                               object.value.c_str(),
-                               object.value.size()
-                           )
-                         | ObjectId::MASK_STR_DATATYPE_INL | (datatype_id << SPARQL::Conversions::TMP_SHIFT);
+            object_id.id = ext_helper->get_or_create_ext(
+                object.value.c_str(),
+                object.value.size(),
+                ObjectId::MASK_STR_DATATYPE_EXT | (datatype_id << SPARQL::Conversions::TMP_SHIFT)
+            );
         }
         break;
     }
@@ -713,11 +695,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
         if (object.value.size() <= ObjectId::MAX_LEN_INLINE_STRING) {
             object_id = SPARQL::Conversions::pack_string_xsd_inline(object.value.c_str());
         } else {
-            object_id.id = ext_helper->get_or_create_external_string_id(
-                               object.value.c_str(),
-                               object.value.size()
-                           )
-                         | ObjectId::MASK_STR_XSD_INL;
+            object_id.id = ext_helper->get_or_create_ext(
+                object.value.c_str(),
+                object.value.size(),
+                ObjectId::MASK_STR_XSD_EXT
+            );
         }
         break;
     }
@@ -729,39 +711,38 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
             object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
         } else {
             if (dec.can_inline()) {
-                object_id.id = dec.serialize_inlined() | ObjectId::MASK_DECIMAL_INLINED;
+                object_id.id = dec.serialize_inlined() | ObjectId::MASK_DECIMAL_INL;
             } else {
                 char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
                 dec.serialize_extern(dec_buffer);
-                object_id.id = ext_helper->get_or_create_external_string_id(
-                                   dec_buffer,
-                                   Decimal::EXTERN_BUFFER_SIZE
-                               )
-                             | ObjectId::MASK_DECIMAL;
+                object_id.id = ext_helper->get_or_create_ext(
+                    dec_buffer,
+                    Decimal::EXTERN_BUFFER_SIZE,
+                    ObjectId::MASK_DECIMAL_EXT
+                );
             }
         }
         break;
     }
     case RDFDatatype::FLOAT: {
-        try {
-            float f = std::stof(object.value);
+        float f;
+        auto [ptr, ec] = std::from_chars(object.value.data(), object.value.data() + object.value.size(), f);
+
+        if (ec == std::errc() && ptr == object.value.data() + object.value.size()) {
             object_id = SPARQL::Conversions::pack_float(f);
-        } catch (const std::out_of_range& e) {
-            object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
-        } catch (const std::invalid_argument& e) {
+        } else {
             object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
         }
         break;
     }
     case RDFDatatype::DOUBLE: {
-        try {
-            double d = std::stod(object.value);
+        double d;
+        auto [ptr, ec] = std::from_chars(object.value.data(), object.value.data() + object.value.size(), d);
+
+        if (ec == std::errc() && ptr == object.value.data() + object.value.size()) {
             const char* chars = reinterpret_cast<const char*>(&d);
-            object_id.id = ext_helper->get_or_create_external_string_id(chars, sizeof(d))
-                         | ObjectId::MASK_DOUBLE;
-        } catch (const std::out_of_range& e) {
-            object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
-        } catch (const std::invalid_argument& e) {
+            object_id.id = ext_helper->get_or_create_ext(chars, sizeof(d), ObjectId::MASK_DOUBLE_EXT);
+        } else {
             object_id = save_ill_typed(current_line, object.value.c_str(), datatype_name.c_str());
         }
         break;
