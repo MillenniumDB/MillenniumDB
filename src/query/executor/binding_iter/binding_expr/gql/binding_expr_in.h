@@ -27,10 +27,10 @@ public:
 
         for (auto& oid : list) {
             if (GQL::Comparisons::compare_null_last(elem, oid) == 0) {
-                return ObjectId(ObjectId::BOOL_TRUE);
+                return ObjectId::get_true();
             }
         }
-        return ObjectId(ObjectId::BOOL_FALSE);
+        return ObjectId::get_false();
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

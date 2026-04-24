@@ -316,7 +316,7 @@ void ReplaceParametersExpr::visit_or_replace_parameter(std::unique_ptr<Expr>& ex
         const auto it = parameters.find(expr_bound->var);
         if (it != parameters.end()) {
             // the variable is bounded by a parameter
-            expr = std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+            expr = std::make_unique<ExprTerm>(ObjectId::get_true());
         }
     } else {
         expr->accept_visitor(*this);

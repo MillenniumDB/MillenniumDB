@@ -92,7 +92,7 @@ void PushWherePropertiesExpr::visit(ExprAnd& expr_and)
     current_parent = old_parent;
 
     if (expr_and.and_list.empty()) {
-        *current_parent = std::make_unique<ExprConstant>(ObjectId(ObjectId::BOOL_TRUE));
+        *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
     }
 }
 
@@ -102,27 +102,27 @@ void PushWherePropertiesExpr::visit(ExprEquals& expr_equals)
         if (auto casted_const = dynamic_cast<ExprConstant*>(expr_equals.rhs.get())) {
             props_to_push
                 .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
-            *current_parent = std::make_unique<ExprConstant>(ObjectId(ObjectId::BOOL_TRUE));
+            *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         }
         // else if (auto casted_prop2 = dynamic_cast<ExprVarProperty*>(expr_equals.rhs.get())) {
         //     props_to_push
         //         .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_prop->var_with_property);
         //     props_to_push
         //         .emplace_back(casted_prop2->var_without_property, casted_prop2->key, casted_prop2->var_with_property);
-        //     *current_parent = std::make_unique<ExprConstant>(ObjectId(ObjectId::BOOL_TRUE));
+        //     *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         // }
     } else if (auto casted_prop = dynamic_cast<ExprVarProperty*>(expr_equals.rhs.get())) {
         if (auto casted_const = dynamic_cast<ExprConstant*>(expr_equals.lhs.get())) {
             props_to_push
                 .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_const->value);
-            *current_parent = std::make_unique<ExprConstant>(ObjectId(ObjectId::BOOL_TRUE));
+            *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         }
         // else if (auto casted_prop2 = dynamic_cast<ExprVarProperty*>(expr_equals.lhs.get())) {
         //     props_to_push
         //         .emplace_back(casted_prop->var_without_property, casted_prop->key, casted_prop->var_with_property);
         //     props_to_push
         //         .emplace_back(casted_prop2->var_without_property, casted_prop2->key, casted_prop2->var_with_property);
-        //     *current_parent = std::make_unique<ExprConstant>(ObjectId(ObjectId::BOOL_TRUE));
+        //     *current_parent = std::make_unique<ExprConstant>(ObjectId::get_true());
         // }
     }
 }

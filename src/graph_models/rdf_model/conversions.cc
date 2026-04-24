@@ -603,15 +603,11 @@ ObjectId Conversions::pack_iri(const std::string& str)
         suffix_ptr = buffer_iri;
         suffix_len = suffix_len - 20;
         iri_type_mask = ObjectId::MASK_IRI_UUID_LOWER_EXT;
-
     } else if (UUIDCompression::compress_upper(suffix_ptr, suffix_len, buffer_iri)) {
         suffix_ptr = buffer_iri;
         suffix_len = suffix_len - 20;
         iri_type_mask = ObjectId::MASK_IRI_UUID_UPPER_EXT;
-    }
-
-    else if (suffix_len >= HexCompression::MIN_LEN_TO_COMPRESS)
-    {
+    } else if (suffix_len >= HexCompression::MIN_LEN_TO_COMPRESS) {
         auto lower_hex_length = HexCompression::get_lower_hex_length(suffix_ptr, suffix_len);
         auto upper_hex_length = HexCompression::get_upper_hex_length(suffix_ptr, suffix_len);
 
@@ -636,9 +632,9 @@ ObjectId Conversions::pack_iri(const std::string& str)
     } else {
         auto str_id = string_manager.get_str_id(std::string(suffix_ptr, suffix_len));
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            suffix_id = iri_type_mask | ObjectId::MOD_EXTERNAL | str_id;
+            suffix_id = iri_type_mask | str_id;
         } else {
-            iri_type_mask &= ~ObjectId::MOD_MASK;
+            iri_type_mask &= ~ObjectId::MOD_MASK; // delete ext mask
             suffix_id = iri_type_mask | ObjectId::MOD_TMP
                       | tmp_manager.get_str_id(std::string(suffix_ptr, suffix_len));
         }

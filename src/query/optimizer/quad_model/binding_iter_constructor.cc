@@ -252,9 +252,9 @@ void BindingIterConstructor::visit(OpWhere& op_where)
 
     auto potential_expr_term = dynamic_cast<BindingExprTerm*>(binding_expr.get());
     auto is_trivial = potential_expr_term != nullptr
-                   && potential_expr_term->object_id == ObjectId(ObjectId::BOOL_TRUE);
+                   && potential_expr_term->object_id == ObjectId::get_true();
     auto is_always_false = potential_expr_term != nullptr
-                        && potential_expr_term->object_id == ObjectId(ObjectId::BOOL_FALSE);
+                        && potential_expr_term->object_id == ObjectId::get_false();
 
     if (binding_expr == nullptr || is_trivial)
         return;

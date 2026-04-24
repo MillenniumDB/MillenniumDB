@@ -23,9 +23,9 @@ public:
 
         // Check if the ids are equal
         if (lhs_oid != rhs_oid) {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return ObjectId::get_true();
         } else {
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return ObjectId::get_false();
         }
     }
 

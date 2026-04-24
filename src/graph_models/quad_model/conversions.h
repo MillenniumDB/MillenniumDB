@@ -249,7 +249,7 @@ inline ObjectId to_boolean(ObjectId oid)
     // case ObjectSubType::TensorFloat:
     // case ObjectSubType::TensorDouble:
     //     return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(value != 0));
-    //     return ObjectId(ObjectId::BOOL_TRUE);
+    //     return ObjectId::get_true();
     // Can not be converted to boolean
     default:
         return ObjectId::get_null();

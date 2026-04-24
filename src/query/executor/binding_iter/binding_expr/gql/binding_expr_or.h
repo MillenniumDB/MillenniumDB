@@ -20,15 +20,15 @@ public:
         for (auto& expr : or_list) {
             auto oid = expr->eval(binding);
 
-            if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
+            if (oid == ObjectId::get_false()) {
                 continue;
-            } else if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
+            } else if (oid == ObjectId::get_true()) {
                 return oid;
             } else {
                 return ObjectId::get_null();
             }
         }
-        return ObjectId(ObjectId::BOOL_FALSE);
+        return ObjectId::get_false();
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

@@ -52,9 +52,9 @@ private:
 
     std::unique_ptr<ExprTerm> create_expr_object_id(bool value) {
         if (value) {
-            return std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+            return std::make_unique<ExprTerm>(ObjectId::get_true());
         }
-        return std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
+        return std::make_unique<ExprTerm>(ObjectId::get_false());
     }
 
     std::unique_ptr<Expr> transform(std::unique_ptr<ExprAnd>& expr) {

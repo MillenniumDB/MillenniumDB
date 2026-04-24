@@ -15,9 +15,9 @@ public:
         case Protocol::DataType::NULL_:
             return ObjectId::get_null();
         case Protocol::DataType::BOOL_FALSE:
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return ObjectId::get_false();
         case Protocol::DataType::BOOL_TRUE:
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return ObjectId::get_true();
         case Protocol::DataType::STRING: {
             const auto str = read_string();
             return MQL::Conversions::pack_string(str);

@@ -163,7 +163,7 @@ void ExprToBindingExpr::visit(ExprIs& expr)
     if (property_var != nullptr) {
         for (auto property : fixed_types_properties) {
             if (property.var_with_property == property_var->var_with_property) { // ?x.value
-                tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+                tmp = std::make_unique<BindingExprTerm>(ObjectId::get_true());
                 return;
             };
         }
@@ -212,11 +212,11 @@ void ExprToBindingExpr::visit(ExprAnd& expr)
         if (tmp != nullptr) {
             auto potential_expr_term = dynamic_cast<BindingExprTerm*>(tmp.get());
             if (potential_expr_term == nullptr
-                || potential_expr_term->object_id != ObjectId(ObjectId::BOOL_TRUE))
+                || potential_expr_term->object_id != ObjectId::get_true())
             {
                 always_true = false;
                 if (potential_expr_term != nullptr
-                    && potential_expr_term->object_id == ObjectId(ObjectId::BOOL_FALSE))
+                    && potential_expr_term->object_id == ObjectId::get_false())
                 {
                     always_false = true;
                     break;
@@ -226,9 +226,9 @@ void ExprToBindingExpr::visit(ExprAnd& expr)
         }
     }
     if (always_true) {
-        tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+        tmp = std::make_unique<BindingExprTerm>(ObjectId::get_true());
     } else if (always_false) {
-        tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
+        tmp = std::make_unique<BindingExprTerm>(ObjectId::get_false());
     } else if (and_list.size() > 1) {
         tmp = std::make_unique<BindingExprAnd>(std::move(and_list));
     } else if (and_list.size() == 1) {
@@ -242,11 +242,11 @@ void ExprToBindingExpr::visit(ExprNot& expr)
     auto potential_expr_term = dynamic_cast<BindingExprTerm*>(tmp.get());
 
     if (potential_expr_term != nullptr) {
-        if (potential_expr_term->object_id == ObjectId(ObjectId::BOOL_TRUE)) {
-            tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
+        if (potential_expr_term->object_id == ObjectId::get_true()) {
+            tmp = std::make_unique<BindingExprTerm>(ObjectId::get_false());
             return;
-        } else if (potential_expr_term->object_id == ObjectId(ObjectId::BOOL_FALSE)) {
-            tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+        } else if (potential_expr_term->object_id == ObjectId::get_false()) {
+            tmp = std::make_unique<BindingExprTerm>(ObjectId::get_true());
             return;
         }
     }
@@ -260,7 +260,7 @@ void ExprToBindingExpr::visit(ExprOr& expr)
     for (auto& e : expr.or_list) {
         e->accept_visitor(*this);
         auto potential_expr_term = dynamic_cast<BindingExprTerm*>(tmp.get());
-        if (potential_expr_term != nullptr && potential_expr_term->object_id == ObjectId(ObjectId::BOOL_TRUE))
+        if (potential_expr_term != nullptr && potential_expr_term->object_id == ObjectId::get_true())
         {
             always_true = true;
             break;
@@ -269,7 +269,7 @@ void ExprToBindingExpr::visit(ExprOr& expr)
         or_list.push_back(std::move(tmp));
     }
     if (always_true) {
-        tmp = std::make_unique<BindingExprTerm>(ObjectId(ObjectId::BOOL_TRUE));
+        tmp = std::make_unique<BindingExprTerm>(ObjectId::get_true());
     } else {
         tmp = std::make_unique<BindingExprOr>(std::move(or_list));
     }

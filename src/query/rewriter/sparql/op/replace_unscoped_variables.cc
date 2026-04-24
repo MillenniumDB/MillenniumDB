@@ -162,7 +162,7 @@ void ReplaceUnscopedVariablesExpr::visit_and_replace_if_necessary(std::unique_pt
         }
     } else if (auto expr_bound = dynamic_cast<ExprBound*>(expr.get())) {
         if (vars_in_scope.find(expr_bound->var) == vars_in_scope.end()) {
-            expr = std::make_unique<ExprTerm>(ObjectId(ObjectId::BOOL_FALSE));
+            expr = std::make_unique<ExprTerm>(ObjectId::get_false());
         }
     } else {
         expr->accept_visitor(*this);

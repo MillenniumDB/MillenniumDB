@@ -23,7 +23,7 @@ public:
     {
         for (const auto& clause : when_clauses) {
             auto condition = clause.first->eval(binding);
-            if (condition == ObjectId(ObjectId::BOOL_TRUE)) {
+            if (condition == ObjectId::get_true()) {
                 return clause.second->eval(binding);
             }
         }

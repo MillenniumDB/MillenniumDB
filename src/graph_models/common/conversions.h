@@ -30,7 +30,7 @@ constexpr ObjectId pack_bool(bool b)
 
 constexpr bool unpack_bool(ObjectId oid)
 {
-    return oid.id != ObjectId::BOOL_FALSE;
+    return oid != ObjectId::get_false();
 }
 
 constexpr ObjectId pack_int(int64_t i)
@@ -137,7 +137,7 @@ inline double unpack_double(ObjectId oid)
         tmp_manager.print_str(ss, external_id);
         break;
     }
-    case ObjectId::MOD_EXTERNAL: {
+    case ObjectId::MOD_EXT: {
         string_manager.print(ss, external_id);
         break;
     }
@@ -493,7 +493,7 @@ inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
     uint64_t dict_id;
     auto str_id = string_manager.get_str_id(dict_str);
     if (str_id != ObjectId::MASK_NOT_FOUND) {
-        dict_id = ObjectId::MASK_DICTIONARY_EXT | ObjectId::MOD_EXTERNAL | str_id;
+        dict_id = ObjectId::MASK_DICTIONARY_EXT | str_id;
     } else {
         dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
     }

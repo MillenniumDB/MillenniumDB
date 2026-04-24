@@ -45,7 +45,7 @@ protected:
                 new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
             }
 
-            oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
+            oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXT | new_external_id;
         }
 
         assert(!oid.is_tmp());

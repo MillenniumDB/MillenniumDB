@@ -28,13 +28,13 @@ public:
         for (auto& expr : and_list) {
             const auto oid = MQL::Conversions::to_boolean(expr->eval(binding));
 
-            if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
-                return ObjectId(ObjectId::BOOL_FALSE);
+            if (oid == ObjectId::get_false()) {
+                return ObjectId::get_false();
             } else if (oid == ObjectId::get_null()) {
                 null_seen = true;
             }
         }
-        return null_seen ? ObjectId::get_null() : ObjectId(ObjectId::BOOL_TRUE);
+        return null_seen ? ObjectId::get_null() : ObjectId::get_true();
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

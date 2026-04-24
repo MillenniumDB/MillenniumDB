@@ -174,17 +174,10 @@ public:
             write_list(oid_list);
             break;
         }
-        // default: {
-        //     throw std::logic_error(
-        //         "Unmanaged type in StreamingGQLResponseWriter::encode_object_id: "
-        //         + std::to_string(static_cast<uint8_t>(type))
-        //     );
-        // }
         case ObjectType::TensorFloatExt:
         case ObjectType::TensorFloatTmp:
         case ObjectType::TensorDoubleExt:
         case ObjectType::TensorDoubleTmp:
-            // TODO: add tensors?
         case ObjectType::AnonTmp:
         case ObjectType::StringXsdInl:
         case ObjectType::StringXsdExt:
@@ -209,7 +202,10 @@ public:
         case ObjectType::NamedNodeInl:
         case ObjectType::NamedNodeExt:
         case ObjectType::NamedNodeTmp:
-
+        case ObjectType::NamedNodeHexExt:
+        case ObjectType::NamedNodeHexTmp:
+        case ObjectType::NamedNodeUuidExt:
+        case ObjectType::NamedNodeUuidTmp:
         case ObjectType::NotFound:
             break;
         }

@@ -25,7 +25,7 @@ public:
 
         // Check if the ids are equal
         if (lhs_oid == rhs_oid) {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return ObjectId::get_true();
         }
 
         return Conversions::pack_bool(Comparisons::compare(lhs_oid, rhs_oid) == 0);

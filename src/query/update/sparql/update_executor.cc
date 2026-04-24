@@ -68,7 +68,7 @@ bool UpdateExecutor::try_transform_inline(ObjectId& oid, std::vector<std::string
     oid.id = (oid.id & CLEAR_TAG_MASK) | (new_tag_id << Conversions::TMP_SHIFT);
 
     // update external id
-    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_INLINE | new_inline_id;
+    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_INL | new_inline_id;
 
     return true;
 }
@@ -87,7 +87,7 @@ bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& 
         // we don't have to modify the tag, but we need to materialize the string
         auto new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
 
-        oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
+        oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXT | new_external_id;
         return false;
     }
 
@@ -121,7 +121,7 @@ bool UpdateExecutor::try_transform_tmp(ObjectId& oid, std::vector<std::string>& 
     oid.id = (oid.id & CLEAR_TAG_MASK) | (new_tag_id << Conversions::TMP_SHIFT);
 
     // update external id
-    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
+    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXT | new_external_id;
 
     return true;
 }
@@ -173,7 +173,7 @@ bool UpdateExecutor::try_transform_extern(ObjectId& oid, std::vector<std::string
     oid.id = (oid.id & CLEAR_TAG_MASK) | (new_tag_id << Conversions::TMP_SHIFT);
 
     // update external id
-    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
+    oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXT | new_external_id;
     return true;
 }
 
@@ -215,7 +215,7 @@ bool UpdateExecutor::transform_if_tmp(ObjectId& oid)
                 new_external_id = string_manager.get_or_create(tmp_str.data(), tmp_str.size());
             }
 
-            oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXTERNAL | new_external_id;
+            oid.id = (oid.id & CLEAR_TMP_MASK) | ObjectId::MOD_EXT | new_external_id;
         }
 
         return true;

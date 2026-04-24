@@ -403,10 +403,10 @@ Any QueryVisitor::visitInsertProperty1(MQL_Parser::InsertProperty1Context* ctx)
         value_id = current_value_oid;
     } else {
         if (ctx->FALSE_PROP() != nullptr) {
-            value_id = ObjectId(ObjectId::BOOL_FALSE);
+            value_id = ObjectId::get_false();
         } else {
             assert(ctx->TRUE_PROP() != nullptr);
-            value_id = ObjectId(ObjectId::BOOL_TRUE);
+            value_id = ObjectId::get_true();
         }
     }
 
@@ -815,10 +815,10 @@ Any QueryVisitor::visitProperty1(MQL_Parser::Property1Context* property)
         value_id = current_value_oid;
     } else {
         if (property->FALSE_PROP() != nullptr) {
-            value_id = ObjectId(ObjectId::BOOL_FALSE);
+            value_id = ObjectId::get_false();
         } else {
             assert(property->TRUE_PROP() != nullptr);
-            value_id = ObjectId(ObjectId::BOOL_TRUE);
+            value_id = ObjectId::get_true();
         }
     }
 
@@ -1951,14 +1951,14 @@ ObjectId QueryVisitor::get_fixed_node_inside(const std::string& str) const
     }
     case 't': {
         if (str == "true") {
-            return ObjectId(ObjectId::BOOL_TRUE);
+            return ObjectId::get_true();
         } else {
             return Conversions::pack_named_node(str);
         }
     }
     case 'f': {
         if (str == "false") {
-            return ObjectId(ObjectId::BOOL_FALSE);
+            return ObjectId::get_false();
         } else {
             return Conversions::pack_named_node(str);
         }

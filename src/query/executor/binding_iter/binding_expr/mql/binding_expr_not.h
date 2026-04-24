@@ -18,10 +18,10 @@ public:
     {
         auto oid = expr->eval(binding);
 
-        if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
-            return ObjectId(ObjectId::BOOL_TRUE);
-        } else if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
-            return ObjectId(ObjectId::BOOL_FALSE);
+        if (oid == ObjectId::get_false()) {
+            return ObjectId::get_true();
+        } else if (oid == ObjectId::get_true()) {
+            return ObjectId::get_false();
         } else {
             return ObjectId::get_null();
         }
