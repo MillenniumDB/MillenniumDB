@@ -5,6 +5,7 @@
 #include "graph_models/rdf_model/rdf_model.h"
 #include "import/import_helper.h"
 #include "misc/fatal_error.h"
+#include "misc/from_chars.h"
 #include "misc/unicode_escape.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
 
@@ -554,15 +555,16 @@ ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error
 {
     *error = false;
     int64_t i;
-    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), i);
+    auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), i);
 
-    // 1. Check for invalid format or trailing characters
     if (ec == std::errc::invalid_argument || ptr != str.data() + str.size()) {
         *error = true;
         return ObjectId::get_null();
     }
 
-    if (ec == std::errc::result_out_of_range || i > SPARQL::Conversions::INTEGER_MAX || i < -SPARQL::Conversions::INTEGER_MAX) {
+    if (ec == std::errc::result_out_of_range || i > SPARQL::Conversions::INTEGER_MAX
+        || i < -SPARQL::Conversions::INTEGER_MAX)
+    {
         Decimal dec(str, error);
         if (*error) {
             return ObjectId::get_null();
@@ -570,11 +572,9 @@ ObjectId OnDiskImport::handle_integer_string(const std::string& str, bool* error
 
         char dec_buffer[Decimal::EXTERN_BUFFER_SIZE];
         dec.serialize_extern(dec_buffer);
-        return ObjectId(ext_helper->get_or_create_ext(
-            dec_buffer,
-            Decimal::EXTERN_BUFFER_SIZE,
-            ObjectId::MASK_DECIMAL_EXT
-        ));
+        return ObjectId(
+            ext_helper->get_or_create_ext(dec_buffer, Decimal::EXTERN_BUFFER_SIZE, ObjectId::MASK_DECIMAL_EXT)
+        );
     }
 
     return SPARQL::Conversions::pack_int(i);
@@ -726,7 +726,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
     }
     case RDFDatatype::FLOAT: {
         float f;
-        auto [ptr, ec] = std::from_chars(object.value.data(), object.value.data() + object.value.size(), f);
+        auto [ptr, ec] = SPARQL::from_chars(
+            object.value.data(),
+            object.value.data() + object.value.size(),
+            f
+        );
 
         if (ec == std::errc() && ptr == object.value.data() + object.value.size()) {
             object_id = SPARQL::Conversions::pack_float(f);
@@ -737,7 +741,11 @@ void OnDiskImport::save_object_id_literal_datatype(XMLTag& predicate, XMLTag& ob
     }
     case RDFDatatype::DOUBLE: {
         double d;
-        auto [ptr, ec] = std::from_chars(object.value.data(), object.value.data() + object.value.size(), d);
+        auto [ptr, ec] = SPARQL::from_chars(
+            object.value.data(),
+            object.value.data() + object.value.size(),
+            d
+        );
 
         if (ec == std::errc() && ptr == object.value.data() + object.value.size()) {
             const char* chars = reinterpret_cast<const char*>(&d);

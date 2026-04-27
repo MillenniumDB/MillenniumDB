@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graph_models/common/conversions.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 
 #include <memory>
@@ -24,9 +25,9 @@ public:
         if (lhs_oid.type() != ObjectType::Bool || rhs_oid.type() != ObjectType::Bool) {
             return ObjectId::get_null();
         }
-        bool res = (lhs_oid.is_true() && rhs_oid.is_false()) || (lhs_oid.is_false() && rhs_oid.is_true());
+        bool res = lhs_oid.is_true() != rhs_oid.is_true();
 
-        return ObjectId(static_cast<uint64_t>(res));
+        return Common::Conversions::pack_bool(res);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override

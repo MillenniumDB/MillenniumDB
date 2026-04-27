@@ -2,6 +2,7 @@
 
 #include "graph_models/rdf_model/conversions.h"
 #include "graph_models/rdf_model/rdf_model.h"
+#include "misc/from_chars.h"
 #include "misc/is_name_valid_for_path.h"
 #include "misc/transliterator.h"
 #include "misc/unicode_escape.h"
@@ -79,7 +80,7 @@ std::string UpdateVisitor::stringCtxToString(SUP::StringContext* ctx)
 ObjectId UpdateVisitor::handleIntegerString(const std::string& str, const std::string& iri)
 {
     int64_t n;
-    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+    auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), n);
 
     if (ec == std::errc() && ptr == str.data() + str.size()) {
         return Conversions::pack_int(n);
@@ -401,7 +402,7 @@ Any UpdateVisitor::visitNumericLiteralUnsigned(SUP::NumericLiteralUnsignedContex
     } else {
         double d;
         std::string text = ctx->getText();
-        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+        auto [ptr, ec] = SPARQL::from_chars(text.data(), text.data() + text.size(), d);
 
         if (ec == std::errc() && ptr == text.data() + text.size()) {
             current_sparql_element = Conversions::pack_double(d);
@@ -432,7 +433,7 @@ Any UpdateVisitor::visitNumericLiteralPositive(SUP::NumericLiteralPositiveContex
     } else {
         double d;
         std::string text = ctx->getText();
-        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+        auto [ptr, ec] = SPARQL::from_chars(text.data(), text.data() + text.size(), d);
 
         if (ec == std::errc() && ptr == text.data() + text.size()) {
             current_sparql_element = Conversions::pack_double(d);
@@ -463,7 +464,7 @@ Any UpdateVisitor::visitNumericLiteralNegative(SUP::NumericLiteralNegativeContex
     } else {
         double d;
         std::string text = ctx->getText();
-        auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
+        auto [ptr, ec] = SPARQL::from_chars(text.data(), text.data() + text.size(), d);
 
         if (ec == std::errc() && ptr == text.data() + text.size()) {
             current_sparql_element = Conversions::pack_double(d);

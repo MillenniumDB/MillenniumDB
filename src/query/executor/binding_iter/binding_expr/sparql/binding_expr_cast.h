@@ -1,12 +1,12 @@
 #pragma once
 
 #include "graph_models/rdf_model/conversions.h"
+#include "misc/from_chars.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/expr/sparql/builtin_call/expr_cast.h"
 
 #include <cassert>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -44,7 +44,7 @@ public:
             case CastType::xsd_float: {
                 auto str = Conversions::to_lexical_str(oid);
                 float flt;
-                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), flt);
+                auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), flt);
 
                 if (ec == std::errc() && ptr == str.data() + str.size()) {
                     return Conversions::pack_float(flt);
@@ -55,7 +55,7 @@ public:
             case CastType::xsd_double: {
                 auto str = Conversions::to_lexical_str(oid);
                 double dbl;
-                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), dbl);
+                auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), dbl);
 
                 if (ec == std::errc() && ptr == str.data() + str.size()) {
                     return Conversions::pack_double(dbl);
@@ -75,7 +75,7 @@ public:
             case CastType::xsd_integer: {
                 auto str = Conversions::to_lexical_str(oid);
                 int64_t n;
-                auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+                auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), n);
 
                 if (ec == std::errc() && ptr == str.data() + str.size()) {
                     return Conversions::pack_int(n);

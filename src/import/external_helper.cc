@@ -134,11 +134,11 @@ uint64_t ExternalHelper::_get_or_create_external_id(
     const auto found = external_data.external_bytes_set.find(eb);
     if (found != external_data.external_bytes_set.end()) {
         // bytes were already encoded
-        return ObjectId::MOD_EXT | external_data.offset2id(found->offset);
+        return ObjectId::MOD_EXT | mask | external_data.offset2id(found->offset);
     }
 
     if (!external_data.full()) {
-        // there are space available
+        // there is space available
         external_data.external_bytes_set.emplace(eb);
         external_data.buffer_end += num_bytes_size + num_bytes;
 
@@ -148,7 +148,7 @@ uint64_t ExternalHelper::_get_or_create_external_id(
             external_data.buffer_end += remaining_in_block;
         }
 
-        return ObjectId::MOD_EXT | external_data.offset2id(eb.offset);
+        return ObjectId::MOD_EXT | mask | external_data.offset2id(eb.offset);
     }
 
     const uint64_t pos = external_data.pending_fs->tellp();

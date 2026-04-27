@@ -6,6 +6,7 @@
 #include "graph_models/rdf_model/rdf_catalog.h"
 #include "import/disk_vector.h"
 #include "import/external_helper.h"
+#include "misc/from_chars.h"
 #include "misc/istream.h"
 #include "query/parser/grammar/sparql/mdb_extensions.h"
 
@@ -312,7 +313,7 @@ private:
         else if (strcmp(xsd_suffix, "float") == 0)
         {
             float f;
-            auto [ptr, ec] = std::from_chars(str, str + str_size, f);
+            auto [ptr, ec] = SPARQL::from_chars(str, str + str_size, f);
 
             if (ec == std::errc() && ptr == str + str_size) {
                 object_id = Conversions::pack_float(f);
@@ -324,7 +325,7 @@ private:
         else if (strcmp(xsd_suffix, "double") == 0)
         {
             double d;
-            auto [ptr, ec] = std::from_chars(str, str + str_size, d);
+            auto [ptr, ec] = SPARQL::from_chars(str, str + str_size, d);
 
             if (ec == std::errc() && ptr == str + str_size) {
                 const char* chars = reinterpret_cast<const char*>(&d);
@@ -538,14 +539,16 @@ private:
         *error = false;
 
         int64_t i;
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), i);
+        auto [ptr, ec] = SPARQL::from_chars(str.data(), str.data() + str.size(), i);
 
         if (ec == std::errc::invalid_argument || ptr != str.data() + str.size()) {
             *error = true;
             return ObjectId::get_null();
         }
 
-        if (ec == std::errc::result_out_of_range || i > Conversions::INTEGER_MAX || i < -Conversions::INTEGER_MAX) {
+        if (ec == std::errc::result_out_of_range || i > Conversions::INTEGER_MAX
+            || i < -Conversions::INTEGER_MAX)
+        {
             Decimal dec(str, error);
             if (*error) {
                 return ObjectId::get_null();

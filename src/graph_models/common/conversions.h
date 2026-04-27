@@ -25,7 +25,7 @@ constexpr uint64_t LIST_FILE_ID_MASK = 0x00FF'FF00'0000'0000UL;
 
 constexpr ObjectId pack_bool(bool b)
 {
-    return b ? ObjectId(ObjectId::MASK_BOOL | 1) : ObjectId(ObjectId::MASK_BOOL | 0);
+    return ObjectId(ObjectId::MASK_BOOL | static_cast<uint64_t>(b));
 }
 
 constexpr bool unpack_bool(ObjectId oid)
