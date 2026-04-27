@@ -70,7 +70,7 @@ public:
             throw QueryExecutionException("cannot insert a null node");
         }
 
-        if (node_.generic_type() == ObjectGenType::Edge) {
+        if (node_.type() == ObjectType::DirectedEdge) {
             return;
         }
 
@@ -119,7 +119,7 @@ public:
             throw QueryExecutionException("cannot set label null label");
         }
 
-        if (node_.generic_type() == ObjectGenType::Edge) {
+        if (node_.type() == ObjectType::DirectedEdge) {
             throw QueryExecutionException("cannot insert label to an edge");
         }
 
@@ -172,7 +172,7 @@ public:
 
         auto obj_id = transform_if_tmp(obj_).id;
         auto label_id = transform_if_tmp(label).id;
-        if (obj_.generic_type() == ObjectGenType::Edge) {
+        if (obj_.type() == ObjectType::DirectedEdge) {
             ctx.set_edge_type(obj_id, label_id);
         } else {
             ctx.insert_label(obj_id, label_id);
@@ -361,7 +361,7 @@ public:
     {
         ObjectId node_ = node.is_var() ? binding[node.get_var()] : node.get_OID();
 
-        if (node_.is_null() || node_.generic_type() == ObjectGenType::Edge) {
+        if (node_.is_null() || node_.type() == ObjectType::DirectedEdge) {
             return;
         }
 

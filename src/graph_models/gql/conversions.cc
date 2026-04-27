@@ -178,6 +178,7 @@ std::string Conversions::to_lexical_str(ObjectId oid)
     case ObjectSubType::StringDatatype:
     case ObjectSubType::Iri:
     case ObjectSubType::NotFound:
+    case ObjectSubType::PGMetaData:
         break;
     }
     return "";
@@ -388,6 +389,11 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     case ObjectType::TensorDoubleExt:
     case ObjectType::TensorDoubleTmp:
     case ObjectType::NotFound:
+    case ObjectType::NamedNodeHexExt:
+    case ObjectType::NamedNodeHexTmp:
+    case ObjectType::NamedNodeUuidExt:
+    case ObjectType::NamedNodeUuidTmp:
+    case ObjectType::Direction:
         break;
     }
     return os;

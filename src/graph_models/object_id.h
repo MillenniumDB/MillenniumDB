@@ -2,142 +2,131 @@
 
 #include <cstdint>
 #include <ostream>
-#include <type_traits>
 
-enum class ObjectGenType {
-    Null,
-    Bool,
-    TemporalLiteral,
-    String,
-    Numeric,
-    Tensor,
-    List,
-    Dict,
+// clang-format off
 
-    // MQL
-    Anon,
-    NamedNode,
-    Edge,
-    Path,
 
-    // RDF
-    Iri,
+enum class ObjectType : uint8_t {
+    Null              = 0x00, // 0b000000'00
 
-    NotFound
+    // AnonInl also represents blank inlined in RDF, or node in GQL
+    AnonInl           = 0x10, // 0b000100'00
+    AnonTmp           = 0x12, // 0b000100'10
+
+    NamedNodeInl      = 0x20, // 0b001000'00
+    NamedNodeExt      = 0x21, // 0b001000'01
+    NamedNodeTmp      = 0x22, // 0b001000'10
+    NamedNodeHexExt   = 0x25, // 0b001001'01
+    NamedNodeHexTmp   = 0x26, // 0b001001'10
+    NamedNodeUuidExt  = 0x29, // 0b001010'01
+    NamedNodeUuidTmp  = 0x2A, // 0b001010'10
+
+    IriInl            = 0x30, // 0b001100'00
+    IriExt            = 0x31, // 0b001100'01
+    IriTmp            = 0x32, // 0b001100'10
+
+    StringInl         = 0x40, // 0b010000'00
+    StringExt         = 0x41, // 0b010000'01
+    StringTmp         = 0x42, // 0b010000'10
+    StringXsdInl      = 0x44, // 0b010001'00
+    StringXsdExt      = 0x45, // 0b010001'01
+    StringXsdTmp      = 0x46, // 0b010001'10
+    StringLangInl     = 0x48, // 0b010010'00
+    StringLangExt     = 0x49, // 0b010010'01
+    StringLangTmp     = 0x4A, // 0b010010'10
+    StringDatatypeInl = 0x4C, // 0b010011'00
+    StringDatatypeExt = 0x4D, // 0b010011'01
+    StringDatatypeTmp = 0x4E, // 0b010011'10
+
+    NegativeInt56     = 0x50, // 0b010100'00
+    PositiveInt56     = 0x51, // 0b010100'01 TODO: has ext, does this cause trouble in import?
+    DecimalInl        = 0x54, // 0b010101'00
+    DecimalExt        = 0x55, // 0b010101'01
+    DecimalTmp        = 0x56, // 0b010101'10
+
+    Float             = 0x58, // 0b010110'00
+    DoubleExt         = 0x5D, // 0b010111'01
+    DoubleTmp         = 0x5E, // 0b010111'10
+
+    Date              = 0x60, // 0b011000'00
+    Time              = 0x64, // 0b011001'00
+    Datetime          = 0x68, // 0b011010'00
+    Datetimestamp     = 0x6C, // 0b011011'00
+
+    Bool              = 0x70, // 0b011100'00
+
+    DirectedEdge      = 0x80, // 0b100000'00
+    UndirectedEdge    = 0x84, // 0b100001'00
+    NodeLabel         = 0x88, // 0b100010'00
+    EdgeLabel         = 0x8C, // 0b100011'00
+    NodeKey           = 0x90, // 0b100100'00
+    EdgeKey           = 0x94, // 0b100101'00
+    Direction         = 0x98, // 0b100110'00
+    Path              = 0x9C, // 0b100111'00
+
+    IriUuidLowerExt   = 0xA1, // 0b101000'01
+    IriUuidLowerTmp   = 0xA2, // 0b101000'10
+    IriUuidUpperExt   = 0xA5, // 0b101001'01
+    IriUuidUpperTmp   = 0xA6, // 0b101001'10
+    IriHexLowerExt    = 0xA9, // 0b101010'01
+    IriHexLowerTmp    = 0xAA, // 0b101010'10
+    IriHexUpperExt    = 0xAD, // 0b101011'01
+    IriHexUpperTmp    = 0xAE, // 0b101011'10
+
+    TensorFloatExt    = 0xB1, // 0b101100'01
+    TensorFloatTmp    = 0xB2, // 0b101100'10
+    TensorDoubleExt   = 0xB5, // 0b101110'01
+    TensorDoubleTmp   = 0xB6, // 0b101110'10
+
+    ListExt           = 0xC1, // 0b110000'01
+    ListTmp           = 0xC2, // 0b110000'10
+    DictionaryExt     = 0xD1, // 0b110100'01
+    DictionaryTmp     = 0xD2, // 0b110100'10
+
+    NotFound          = 0xFF, // 0b111111'11
 };
 
 enum class ObjectSubType {
     Null,
-    Bool,
-    Int,
-    Float,
-    Double,
-    Decimal,
-    TemporalLiteral, // Time, Date, DateTime, DateTimestamp,
+    Anon,
+    NamedNode,
+    Iri,
     String,
     StringXsd,
     StringLang,
     StringDatatype,
-    TensorFloat,
-    TensorDouble,
-    Dictionary,
-    List,
-
-    // MQL
-    Anon,
-    NamedNode,
+    Int,
+    Decimal,
+    Float,
+    Double,
+    TemporalLiteral, // Time, Date, DateTime, DateTimestamp,
+    Bool,
     Edge,
     Path,
-
-    // RDF
-    Iri,
-
+    PGMetaData, // EdgeKey, EdgeLabel, NodeKey, NodeLabel, Direction
+    TensorFloat,
+    TensorDouble,
+    List,
+    Dictionary,
     NotFound
 };
 
-enum class ObjectType {
+enum class ObjectGenType {
     Null,
-
-    AnonInl, // also represents blank inlined in RDF, or node in GQL
-    AnonTmp,
-
+    Anon,
+    NamedNode,
+    Iri,
+    String,
+    Numeric,
+    TemporalLiteral, // Time, Date, DateTime, DateTimestamp,
     Bool,
-    NegativeInt56,
-    PositiveInt56,
-    Float,
-
-    DoubleExt,
-    DoubleTmp,
-
-    DecimalInl,
-    DecimalExt,
-    DecimalTmp,
-
-    StringInl,
-    StringExt,
-    StringTmp,
-
-    StringXsdInl,
-    StringXsdExt,
-    StringXsdTmp,
-
-    StringLangInl,
-    StringLangExt,
-    StringLangTmp,
-
-    StringDatatypeInl,
-    StringDatatypeExt,
-    StringDatatypeTmp,
-
-    IriInl,
-    IriExt,
-    IriTmp,
-
-    IriUuidLowerTmp,
-    IriUuidLowerExt,
-    IriUuidUpperTmp,
-    IriUuidUpperExt,
-
-    IriHexLowerTmp,
-    IriHexLowerExt,
-    IriHexUpperTmp,
-    IriHexUpperExt,
-
-    NamedNodeInl,
-    NamedNodeExt,
-    NamedNodeTmp,
-    NamedNodeHexExt,
-    NamedNodeHexTmp,
-    NamedNodeUuidExt,
-    NamedNodeUuidTmp,
-
-    Time,
-    Date,
-    Datetime,
-    Datetimestamp,
-
-    TensorFloatExt,
-    TensorFloatTmp,
-
-    TensorDoubleExt,
-    TensorDoubleTmp,
-
-    DictionaryExt,
-    DictionaryTmp,
-
-    ListExt,
-    ListTmp,
-
-    DirectedEdge,
-    UndirectedEdge,
+    Edge,
     Path,
-
-    EdgeKey, // Only For GQL
-    NodeKey, // Only For GQL
-    EdgeLabel, // Only For GQL
-    NodeLabel, // Only For GQL
-
-    NotFound,
+    PGMetaData, // EdgeKey, EdgeLabel, NodeKey, NodeLabel, Direction
+    Tensor,
+    List,
+    Dict,
+    NotFound
 };
 
 std::string to_string(ObjectType type);
@@ -146,7 +135,6 @@ std::string to_string(ObjectGenType type);
 
 class ObjectId {
 public:
-    // clang-format off
     static constexpr int MAX_LEN_INLINE_STRING = 7;
     static constexpr int MAX_LEN_INLINE_STRING_DATATYPE = 5;
     static constexpr int MAX_LEN_INLINE_STRING_LANG = 5;
@@ -172,72 +160,69 @@ public:
     static constexpr int STR_DT_INLINE_BYTES     = 5; // Number of bytes of string, excluding datatype id, stored inline
     static constexpr int STR_LANG_INLINE_BYTES   = 5; // Number of bytes of string, excluding language id, stored inline
 
-    static constexpr uint64_t MASK_NULL                 = 0x00'00000000000000UL; // 0b000000'00
-    static constexpr uint64_t MASK_ANON_INL             = 0x10'00000000000000UL; // 0b000100'00
-    static constexpr uint64_t MASK_ANON_TMP             = 0x12'00000000000000UL; // 0b000100'10
-    static constexpr uint64_t MASK_NAMED_NODE_INL       = 0x20'00000000000000UL; // 0b001000'00
-    static constexpr uint64_t MASK_NAMED_NODE_EXT       = 0x21'00000000000000UL; // 0b001000'01
-    static constexpr uint64_t MASK_NAMED_NODE_TMP       = 0x22'00000000000000UL; // 0b001000'10
-
-    // TODO: new named node types
-    static constexpr uint64_t MASK_NAMED_NODE_HEX_EXT   = 0x25'00000000000000UL; // 0b001001'01
-    static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP   = 0x26'00000000000000UL; // 0b001001'10
-    static constexpr uint64_t MASK_NAMED_NODE_UUID_EXT  = 0x29'00000000000000UL; // 0b001010'01
-    static constexpr uint64_t MASK_NAMED_NODE_UUID_TMP  = 0x2A'00000000000000UL; // 0b001010'10
-
-    static constexpr uint64_t MASK_IRI_INL              = 0x30'00000000000000UL; // 0b001100'00
-    static constexpr uint64_t MASK_IRI_EXT              = 0x31'00000000000000UL; // 0b001100'01
-    static constexpr uint64_t MASK_IRI_TMP              = 0x32'00000000000000UL; // 0b001100'10
-    static constexpr uint64_t MASK_STR_INL              = 0x40'00000000000000UL; // 0b010000'00
-    static constexpr uint64_t MASK_STR_EXT              = 0x41'00000000000000UL; // 0b010000'01
-    static constexpr uint64_t MASK_STR_TMP              = 0x42'00000000000000UL; // 0b010000'10
-    static constexpr uint64_t MASK_STR_XSD_INL          = 0x44'00000000000000UL; // 0b010001'00
-    static constexpr uint64_t MASK_STR_XSD_EXT          = 0x45'00000000000000UL; // 0b010001'01
-    static constexpr uint64_t MASK_STR_XSD_TMP          = 0x46'00000000000000UL; // 0b010001'10
-    static constexpr uint64_t MASK_STR_LANG_INL         = 0x48'00000000000000UL; // 0b010010'00
-    static constexpr uint64_t MASK_STR_LANG_EXT         = 0x49'00000000000000UL; // 0b010010'01
-    static constexpr uint64_t MASK_STR_LANG_TMP         = 0x4A'00000000000000UL; // 0b010010'10
-    static constexpr uint64_t MASK_STR_DATATYPE_INL     = 0x4C'00000000000000UL; // 0b010011'00
-    static constexpr uint64_t MASK_STR_DATATYPE_EXT     = 0x4D'00000000000000UL; // 0b010011'01
-    static constexpr uint64_t MASK_STR_DATATYPE_TMP     = 0x4E'00000000000000UL; // 0b010011'10
-    static constexpr uint64_t MASK_NEGATIVE_INT         = 0x50'00000000000000UL; // 0b010100'00
-    static constexpr uint64_t MASK_POSITIVE_INT         = 0x51'00000000000000UL; // 0b010100'01
-    static constexpr uint64_t MASK_DECIMAL_INL          = 0x54'00000000000000UL; // 0b010101'00
-    static constexpr uint64_t MASK_DECIMAL_EXT          = 0x55'00000000000000UL; // 0b010101'01
-    static constexpr uint64_t MASK_DECIMAL_TMP          = 0x56'00000000000000UL; // 0b010101'10
-    static constexpr uint64_t MASK_FLOAT                = 0x58'00000000000000UL; // 0b010110'00
-    static constexpr uint64_t MASK_DOUBLE_EXT           = 0x5D'00000000000000UL; // 0b010111'01
-    static constexpr uint64_t MASK_DOUBLE_TMP           = 0x5E'00000000000000UL; // 0b010111'10
-    static constexpr uint64_t MASK_DT_DATE              = 0x60'00000000000000UL; // 0b011000'00
-    static constexpr uint64_t MASK_DT_TIME              = 0x64'00000000000000UL; // 0b011001'00
-    static constexpr uint64_t MASK_DT_DATETIME          = 0x68'00000000000000UL; // 0b011010'00
-    static constexpr uint64_t MASK_DT_DATETIMESTAMP     = 0x6C'00000000000000UL; // 0b011011'00
-    static constexpr uint64_t MASK_BOOL                 = 0x70'00000000000000UL; // 0b011100'00
-    static constexpr uint64_t MASK_DIRECTED_EDGE        = 0x80'00000000000000UL; // 0b111000'00
-    static constexpr uint64_t MASK_PATH                 = 0x90'00000000000000UL; // 0b100100'00
-    static constexpr uint64_t MASK_IRI_UUID_LOWER_EXT   = 0xA1'00000000000000UL; // 0b101000'01
-    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP   = 0xA2'00000000000000UL; // 0b101000'10
-    static constexpr uint64_t MASK_IRI_UUID_UPPER_EXT   = 0xA5'00000000000000UL; // 0b101001'01
-    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP   = 0xA6'00000000000000UL; // 0b101001'10
-    static constexpr uint64_t MASK_IRI_HEX_LOWER_EXT    = 0xA9'00000000000000UL; // 0b101010'01
-    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP    = 0xAA'00000000000000UL; // 0b101010'10
-    static constexpr uint64_t MASK_IRI_HEX_UPPER_EXT    = 0xAD'00000000000000UL; // 0b101011'01
-    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP    = 0xAE'00000000000000UL; // 0b101011'10
-    static constexpr uint64_t MASK_TENSOR_FLOAT_EXT     = 0xB1'00000000000000UL; // 0b101100'01
-    static constexpr uint64_t MASK_TENSOR_FLOAT_TMP     = 0xB2'00000000000000UL; // 0b101100'10
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXT    = 0xB5'00000000000000UL; // 0b101110'01
-    static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP    = 0xB6'00000000000000UL; // 0b101100'10
-    static constexpr uint64_t MASK_LIST_EXT             = 0xC1'00000000000000UL; // 0b110000'01
-    static constexpr uint64_t MASK_LIST_TMP             = 0xC2'00000000000000UL; // 0b110000'10
-    static constexpr uint64_t MASK_DICTIONARY_EXT       = 0xD1'00000000000000UL; // 0b110100'01
-    static constexpr uint64_t MASK_DICTIONARY_TMP       = 0xD2'00000000000000UL; // 0b110100'10
-    static constexpr uint64_t MASK_UNDIRECTED_EDGE      = 0xE4'00000000000000UL; // 0b111001'00
-    static constexpr uint64_t MASK_NODE_LABEL           = 0xE8'00000000000000UL; // 0b111010'00
-    static constexpr uint64_t MASK_EDGE_LABEL           = 0xEC'00000000000000UL; // 0b111011'00
-    static constexpr uint64_t MASK_NODE_KEY             = 0xF0'00000000000000UL; // 0b111100'00
-    static constexpr uint64_t MASK_EDGE_KEY             = 0xF4'00000000000000UL; // 0b111101'00
-    static constexpr uint64_t MASK_DIRECTION            = 0xFC'00000000000000UL; // 0b111111'00
-    static constexpr uint64_t MASK_NOT_FOUND            = 0xFF'00000000000000UL; // 0b111111'11
+    static constexpr uint64_t MASK_NULL                 = uint64_t(ObjectType::Null) << 56;
+    static constexpr uint64_t MASK_ANON_INL             = uint64_t(ObjectType::AnonInl) << 56;
+    static constexpr uint64_t MASK_ANON_TMP             = uint64_t(ObjectType::AnonTmp) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_INL       = uint64_t(ObjectType::NamedNodeInl) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_EXT       = uint64_t(ObjectType::NamedNodeExt) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_TMP       = uint64_t(ObjectType::NamedNodeTmp) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_HEX_EXT   = uint64_t(ObjectType::NamedNodeHexExt) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_HEX_TMP   = uint64_t(ObjectType::NamedNodeHexTmp) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_UUID_EXT  = uint64_t(ObjectType::NamedNodeUuidExt) << 56;
+    static constexpr uint64_t MASK_NAMED_NODE_UUID_TMP  = uint64_t(ObjectType::NamedNodeUuidTmp) << 56;
+    static constexpr uint64_t MASK_IRI_INL              = uint64_t(ObjectType::IriInl) << 56;
+    static constexpr uint64_t MASK_IRI_EXT              = uint64_t(ObjectType::IriExt) << 56;
+    static constexpr uint64_t MASK_IRI_TMP              = uint64_t(ObjectType::IriTmp) << 56;
+    static constexpr uint64_t MASK_STR_INL              = uint64_t(ObjectType::StringInl) << 56;
+    static constexpr uint64_t MASK_STR_EXT              = uint64_t(ObjectType::StringExt) << 56;
+    static constexpr uint64_t MASK_STR_TMP              = uint64_t(ObjectType::StringTmp) << 56;
+    static constexpr uint64_t MASK_STR_XSD_INL          = uint64_t(ObjectType::StringXsdInl) << 56;
+    static constexpr uint64_t MASK_STR_XSD_EXT          = uint64_t(ObjectType::StringXsdExt) << 56;
+    static constexpr uint64_t MASK_STR_XSD_TMP          = uint64_t(ObjectType::StringXsdTmp) << 56;
+    static constexpr uint64_t MASK_STR_LANG_INL         = uint64_t(ObjectType::StringLangInl) << 56;
+    static constexpr uint64_t MASK_STR_LANG_EXT         = uint64_t(ObjectType::StringLangExt) << 56;
+    static constexpr uint64_t MASK_STR_LANG_TMP         = uint64_t(ObjectType::StringLangTmp) << 56;
+    static constexpr uint64_t MASK_STR_DATATYPE_INL     = uint64_t(ObjectType::StringDatatypeInl) << 56;
+    static constexpr uint64_t MASK_STR_DATATYPE_EXT     = uint64_t(ObjectType::StringDatatypeExt) << 56;
+    static constexpr uint64_t MASK_STR_DATATYPE_TMP     = uint64_t(ObjectType::StringDatatypeTmp) << 56;
+    static constexpr uint64_t MASK_NEGATIVE_INT         = uint64_t(ObjectType::NegativeInt56) << 56;
+    static constexpr uint64_t MASK_POSITIVE_INT         = uint64_t(ObjectType::PositiveInt56) << 56;
+    static constexpr uint64_t MASK_DECIMAL_INL          = uint64_t(ObjectType::DecimalInl) << 56;
+    static constexpr uint64_t MASK_DECIMAL_EXT          = uint64_t(ObjectType::DecimalExt) << 56;
+    static constexpr uint64_t MASK_DECIMAL_TMP          = uint64_t(ObjectType::DecimalTmp) << 56;
+    static constexpr uint64_t MASK_FLOAT                = uint64_t(ObjectType::Float) << 56;
+    static constexpr uint64_t MASK_DOUBLE_EXT           = uint64_t(ObjectType::DoubleExt) << 56;
+    static constexpr uint64_t MASK_DOUBLE_TMP           = uint64_t(ObjectType::DoubleTmp) << 56;
+    static constexpr uint64_t MASK_DT_DATE              = uint64_t(ObjectType::Date) << 56;
+    static constexpr uint64_t MASK_DT_TIME              = uint64_t(ObjectType::Time) << 56;
+    static constexpr uint64_t MASK_DT_DATETIME          = uint64_t(ObjectType::Datetime) << 56;
+    static constexpr uint64_t MASK_DT_DATETIMESTAMP     = uint64_t(ObjectType::Datetimestamp) << 56;
+    static constexpr uint64_t MASK_BOOL                 = uint64_t(ObjectType::Bool) << 56;
+    static constexpr uint64_t MASK_DIRECTED_EDGE        = uint64_t(ObjectType::DirectedEdge) << 56;
+    static constexpr uint64_t MASK_UNDIRECTED_EDGE      = uint64_t(ObjectType::UndirectedEdge) << 56;
+    static constexpr uint64_t MASK_NODE_LABEL           = uint64_t(ObjectType::NodeLabel) << 56;
+    static constexpr uint64_t MASK_EDGE_LABEL           = uint64_t(ObjectType::EdgeLabel) << 56;
+    static constexpr uint64_t MASK_NODE_KEY             = uint64_t(ObjectType::NodeKey) << 56;
+    static constexpr uint64_t MASK_EDGE_KEY             = uint64_t(ObjectType::EdgeKey) << 56;
+    static constexpr uint64_t MASK_DIRECTION            = uint64_t(ObjectType::Direction) << 56;
+    static constexpr uint64_t MASK_PATH                 = uint64_t(ObjectType::Path) << 56;
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_EXT   = uint64_t(ObjectType::IriUuidLowerExt) << 56;
+    static constexpr uint64_t MASK_IRI_UUID_LOWER_TMP   = uint64_t(ObjectType::IriUuidLowerTmp) << 56;
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_EXT   = uint64_t(ObjectType::IriUuidUpperExt) << 56;
+    static constexpr uint64_t MASK_IRI_UUID_UPPER_TMP   = uint64_t(ObjectType::IriUuidUpperTmp) << 56;
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_EXT    = uint64_t(ObjectType::IriHexLowerExt) << 56;
+    static constexpr uint64_t MASK_IRI_HEX_LOWER_TMP    = uint64_t(ObjectType::IriHexLowerTmp) << 56;
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_EXT    = uint64_t(ObjectType::IriHexUpperExt) << 56;
+    static constexpr uint64_t MASK_IRI_HEX_UPPER_TMP    = uint64_t(ObjectType::IriHexUpperTmp) << 56;
+    static constexpr uint64_t MASK_TENSOR_FLOAT_EXT     = uint64_t(ObjectType::TensorFloatExt) << 56;
+    static constexpr uint64_t MASK_TENSOR_FLOAT_TMP     = uint64_t(ObjectType::TensorFloatTmp) << 56;
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_EXT    = uint64_t(ObjectType::TensorDoubleExt) << 56;
+    static constexpr uint64_t MASK_TENSOR_DOUBLE_TMP    = uint64_t(ObjectType::TensorDoubleTmp) << 56;
+    static constexpr uint64_t MASK_LIST_EXT             = uint64_t(ObjectType::ListExt) << 56;
+    static constexpr uint64_t MASK_LIST_TMP             = uint64_t(ObjectType::ListTmp) << 56;
+    static constexpr uint64_t MASK_DICTIONARY_EXT       = uint64_t(ObjectType::DictionaryExt) << 56;
+    static constexpr uint64_t MASK_DICTIONARY_TMP       = uint64_t(ObjectType::DictionaryTmp) << 56;
+    static constexpr uint64_t MASK_NOT_FOUND            = uint64_t(ObjectType::NotFound) << 56;
 
     static constexpr uint64_t DIRECTION_RIGHT      = MASK_DIRECTION | 0x0UL;
     static constexpr uint64_t DIRECTION_LEFT       = MASK_DIRECTION | 0x1UL;
@@ -279,24 +264,185 @@ public:
 
     inline ObjectType type() const noexcept
     {
-        // TODO:
-        return ObjectType::NotFound;
-        // return id & TYPE_MASK;
+        return static_cast<ObjectType>(id >> 56);
     }
 
     inline ObjectGenType generic_type() const noexcept
     {
-        // return id & SUB_TYPE_MASK;
-        // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
-        // TODO:
+        switch (type()) {
+        case ObjectType::Null:
+            return ObjectGenType::Null;
+        case ObjectType::AnonInl:
+        case ObjectType::AnonTmp:
+            return ObjectGenType::Anon;
+        case ObjectType::NamedNodeInl:
+        case ObjectType::NamedNodeExt:
+        case ObjectType::NamedNodeTmp:
+        case ObjectType::NamedNodeHexExt:
+        case ObjectType::NamedNodeHexTmp:
+        case ObjectType::NamedNodeUuidExt:
+        case ObjectType::NamedNodeUuidTmp:
+            return ObjectGenType::NamedNode;
+        case ObjectType::IriInl:
+        case ObjectType::IriExt:
+        case ObjectType::IriTmp:
+            return ObjectGenType::Iri;
+        case ObjectType::StringInl:
+        case ObjectType::StringExt:
+        case ObjectType::StringTmp:
+        case ObjectType::StringXsdInl:
+        case ObjectType::StringXsdExt:
+        case ObjectType::StringXsdTmp:
+        case ObjectType::StringLangInl:
+        case ObjectType::StringLangExt:
+        case ObjectType::StringLangTmp:
+        case ObjectType::StringDatatypeInl:
+        case ObjectType::StringDatatypeExt:
+        case ObjectType::StringDatatypeTmp:
+            return ObjectGenType::String;
+        case ObjectType::NegativeInt56:
+        case ObjectType::PositiveInt56:
+        case ObjectType::DecimalInl:
+        case ObjectType::DecimalExt:
+        case ObjectType::DecimalTmp:
+        case ObjectType::Float:
+        case ObjectType::DoubleExt:
+        case ObjectType::DoubleTmp:
+            return ObjectGenType::Numeric;
+        case ObjectType::Date:
+        case ObjectType::Time:
+        case ObjectType::Datetime:
+        case ObjectType::Datetimestamp:
+            return ObjectGenType::TemporalLiteral;
+        case ObjectType::Bool:
+            return ObjectGenType::Bool;
+        case ObjectType::DirectedEdge:
+        case ObjectType::UndirectedEdge:
+            return ObjectGenType::Edge;
+        case ObjectType::NodeLabel:
+        case ObjectType::EdgeLabel:
+        case ObjectType::NodeKey:
+        case ObjectType::EdgeKey:
+        case ObjectType::Direction:
+            return ObjectGenType::PGMetaData;
+        case ObjectType::Path:
+            return ObjectGenType::Path;
+        case ObjectType::IriUuidLowerExt:
+        case ObjectType::IriUuidLowerTmp:
+        case ObjectType::IriUuidUpperExt:
+        case ObjectType::IriUuidUpperTmp:
+        case ObjectType::IriHexLowerExt:
+        case ObjectType::IriHexLowerTmp:
+        case ObjectType::IriHexUpperExt:
+        case ObjectType::IriHexUpperTmp:
+            return ObjectGenType::Iri;
+        case ObjectType::TensorFloatExt:
+        case ObjectType::TensorFloatTmp:
+        case ObjectType::TensorDoubleExt:
+        case ObjectType::TensorDoubleTmp:
+            return ObjectGenType::Tensor;
+        case ObjectType::ListExt:
+        case ObjectType::ListTmp:
+            return ObjectGenType::List;
+        case ObjectType::DictionaryExt:
+        case ObjectType::DictionaryTmp:
+            return ObjectGenType::Dict;
+        case ObjectType::NotFound:
+            return ObjectGenType::NotFound;
+        }
         return ObjectGenType::NotFound;
     }
 
     inline ObjectSubType subtype() const noexcept
     {
-        // return id & SUB_TYPE_MASK;
-        // static constexpr uint64_t SUB_TYPE_MASK = 0xFC'00000000000000UL; // 0b1111'11'00
-        // TODO:
+        switch (type()) {
+        case ObjectType::Null:
+            return ObjectSubType::Null;
+        case ObjectType::AnonInl:
+        case ObjectType::AnonTmp:
+            return ObjectSubType::Anon;
+        case ObjectType::NamedNodeInl:
+        case ObjectType::NamedNodeExt:
+        case ObjectType::NamedNodeTmp:
+        case ObjectType::NamedNodeHexExt:
+        case ObjectType::NamedNodeHexTmp:
+        case ObjectType::NamedNodeUuidExt:
+        case ObjectType::NamedNodeUuidTmp:
+            return ObjectSubType::NamedNode;
+        case ObjectType::IriInl:
+        case ObjectType::IriExt:
+        case ObjectType::IriTmp:
+            return ObjectSubType::Iri;
+        case ObjectType::StringInl:
+        case ObjectType::StringExt:
+        case ObjectType::StringTmp:
+            return ObjectSubType::String;
+        case ObjectType::StringXsdInl:
+        case ObjectType::StringXsdExt:
+        case ObjectType::StringXsdTmp:
+            return ObjectSubType::StringXsd;
+        case ObjectType::StringLangInl:
+        case ObjectType::StringLangExt:
+        case ObjectType::StringLangTmp:
+            return ObjectSubType::StringLang;
+        case ObjectType::StringDatatypeInl:
+        case ObjectType::StringDatatypeExt:
+        case ObjectType::StringDatatypeTmp:
+            return ObjectSubType::StringDatatype;
+        case ObjectType::NegativeInt56:
+        case ObjectType::PositiveInt56:
+            return ObjectSubType::Int;
+        case ObjectType::DecimalInl:
+        case ObjectType::DecimalExt:
+        case ObjectType::DecimalTmp:
+            return ObjectSubType::Decimal;
+        case ObjectType::Float:
+            return ObjectSubType::Float;
+        case ObjectType::DoubleExt:
+        case ObjectType::DoubleTmp:
+            return ObjectSubType::Double;
+        case ObjectType::Date:
+        case ObjectType::Time:
+        case ObjectType::Datetime:
+        case ObjectType::Datetimestamp:
+            return ObjectSubType::TemporalLiteral;
+        case ObjectType::Bool:
+            return ObjectSubType::Bool;
+        case ObjectType::DirectedEdge:
+        case ObjectType::UndirectedEdge:
+            return ObjectSubType::Edge;
+        case ObjectType::NodeLabel:
+        case ObjectType::EdgeLabel:
+        case ObjectType::NodeKey:
+        case ObjectType::EdgeKey:
+        case ObjectType::Direction:
+            return ObjectSubType::PGMetaData;
+        case ObjectType::Path:
+            return ObjectSubType::Path;
+        case ObjectType::IriUuidLowerExt:
+        case ObjectType::IriUuidLowerTmp:
+        case ObjectType::IriUuidUpperExt:
+        case ObjectType::IriUuidUpperTmp:
+        case ObjectType::IriHexLowerExt:
+        case ObjectType::IriHexLowerTmp:
+        case ObjectType::IriHexUpperExt:
+        case ObjectType::IriHexUpperTmp:
+            return ObjectSubType::Iri;
+        case ObjectType::TensorFloatExt:
+        case ObjectType::TensorFloatTmp:
+            return ObjectSubType::TensorFloat;
+        case ObjectType::TensorDoubleExt:
+        case ObjectType::TensorDoubleTmp:
+            return ObjectSubType::TensorDouble;
+        case ObjectType::ListExt:
+        case ObjectType::ListTmp:
+            return ObjectSubType::List;
+        case ObjectType::DictionaryExt:
+        case ObjectType::DictionaryTmp:
+            return ObjectSubType::Dictionary;
+        case ObjectType::NotFound:
+            return ObjectSubType::NotFound;
+        }
         return ObjectSubType::NotFound;
     }
 

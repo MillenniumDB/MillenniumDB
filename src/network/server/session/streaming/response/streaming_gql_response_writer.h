@@ -206,6 +206,7 @@ public:
         case ObjectType::NamedNodeHexTmp:
         case ObjectType::NamedNodeUuidExt:
         case ObjectType::NamedNodeUuidTmp:
+        case ObjectType::Direction:
         case ObjectType::NotFound:
             break;
         }

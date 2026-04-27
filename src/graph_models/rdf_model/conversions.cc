@@ -429,6 +429,7 @@ std::string Conversions::to_lexical_str(ObjectId oid)
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
+    case ObjectSubType::PGMetaData:
     case ObjectSubType::NotFound: {
         // Impossible for RDF Model
         break;
@@ -555,6 +556,7 @@ std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
+    case ObjectSubType::PGMetaData:
     case ObjectSubType::NotFound: {
         // Impossible in RDF MODEL
         break;

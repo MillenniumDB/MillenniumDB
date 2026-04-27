@@ -215,6 +215,11 @@ inline std::string to_lexical_str(ObjectId oid)
     case ObjectType::NodeKey:
     case ObjectType::EdgeLabel:
     case ObjectType::NodeLabel:
+    case ObjectType::NamedNodeHexExt:
+    case ObjectType::NamedNodeHexTmp:
+    case ObjectType::NamedNodeUuidExt:
+    case ObjectType::NamedNodeUuidTmp:
+    case ObjectType::Direction:
     case ObjectType::NotFound:
         assert(false);
         break;

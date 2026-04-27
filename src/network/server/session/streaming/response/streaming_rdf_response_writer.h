@@ -119,6 +119,7 @@ public:
         case ObjectSubType::List:
         case ObjectSubType::Edge:
         case ObjectSubType::NotFound:
+        case ObjectSubType::PGMetaData:
             assert(false);
             break;
         }

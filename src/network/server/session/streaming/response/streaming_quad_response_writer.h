@@ -124,6 +124,7 @@ public:
         case ObjectSubType::StringDatatype:
         case ObjectSubType::Iri:
         case ObjectSubType::NotFound:
+        case ObjectSubType::PGMetaData:
             assert(false);
             break;
         }

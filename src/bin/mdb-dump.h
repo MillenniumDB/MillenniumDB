@@ -78,8 +78,7 @@ static std::string oid2json_str(uint64_t oid)
 
     bool need_quote;
 
-    const auto type = ObjectId(oid).generic_type();
-    switch (type) {
+    switch (ObjectId(oid).generic_type()) {
     case ObjectGenType::Null:
     case ObjectGenType::Numeric:
     // strings already come with double quotes
@@ -484,8 +483,10 @@ inline std::ostream& rdf_print(std::ostream& os, std::ostream& escaped_os, Objec
     case ObjectSubType::Dictionary:
     case ObjectSubType::List:
     case ObjectSubType::Edge:
+    case ObjectSubType::PGMetaData:
     case ObjectSubType::NotFound: {
         // not possible
+        assert(false);
         break;
     }
     }

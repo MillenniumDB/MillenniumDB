@@ -119,7 +119,16 @@ std::string to_string(ObjectType type)
         return "Path";
     case ObjectType::NotFound:
         return "NotFound";
-        break;
+    case ObjectType::NamedNodeHexExt:
+        return "NamedNodeHexExt";
+    case ObjectType::NamedNodeHexTmp:
+        return "NamedNodeHexTmp";
+    case ObjectType::NamedNodeUuidExt:
+        return "NamedNodeUuidExt";
+    case ObjectType::NamedNodeUuidTmp:
+        return "NamedNodeUuidTmp";
+    case ObjectType::Direction:
+        return "Direction";
     }
     return "Unknown";
 }
@@ -163,12 +172,14 @@ std::string to_string(ObjectSubType type)
         return "NamedNode";
     case ObjectSubType::Edge:
         return "Edge";
-    case ObjectSubType::Path:
-        return "Path";
     case ObjectSubType::Iri:
         return "Iri";
     case ObjectSubType::NotFound:
         return "NotFound";
+    case ObjectSubType::Path:
+        return "Path";
+    case ObjectSubType::PGMetaData:
+        return "PGMetaData";
     }
     return "Unknown";
 }
@@ -196,14 +207,16 @@ std::string to_string(ObjectGenType type)
         return "Anon";
     case ObjectGenType::NamedNode:
         return "NamedNode";
-    case ObjectGenType::Edge:
-        return "Edge";
-    case ObjectGenType::Path:
-        return "Path";
     case ObjectGenType::Iri:
         return "Iri";
     case ObjectGenType::NotFound:
         return "NotFound";
+    case ObjectGenType::PGMetaData:
+        return "PGMetaData";
+    case ObjectGenType::Edge:
+        return "Edge";
+    case ObjectGenType::Path:
+        return "Path";
     }
     return "Unknown";
 }

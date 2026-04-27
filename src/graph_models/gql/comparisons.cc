@@ -142,9 +142,7 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
     case ObjectGenType::Dict: {
         std::unique_ptr<Dictionary> lhs_dict = Common::Conversions::unpack_dictionary(lhs_oid);
         std::unique_ptr<Dictionary> rhs_dict = Common::Conversions::unpack_dictionary(rhs_oid);
-        Dictionary& lhs(*lhs_dict);
-        Dictionary& rhs(*rhs_dict);
-        if (lhs == rhs) {
+        if (*lhs_dict == *rhs_dict) {
             return 0;
         } else {
             return static_cast<int64_t>(lhs_oid.id & ObjectId::VALUE_MASK)

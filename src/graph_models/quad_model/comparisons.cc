@@ -17,17 +17,6 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
 
     const auto lhs_unmasked_id = lhs.id & ObjectId::VALUE_MASK;
     const auto rhs_unmasked_id = rhs.id & ObjectId::VALUE_MASK;
-    /*
-    GENERIC:
-        MASK_NULL
-        MASK_ANON
-        MASK_NAMED_NODE
-        MASK_STRING_SIMPLE
-        MASK_NUMERIC
-        MASK_BOOL
-        MASK_EDGE
-        MASK_PATH
-    */
 
     switch (lhs_generic_type) {
     case ObjectGenType::Null: {
@@ -119,11 +108,6 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
         DateTime rhs_dt(rhs);
         return lhs_dt.MQL_compare(rhs_dt);
     }
-    case ObjectGenType::Anon:
-    case ObjectGenType::Bool:
-    case ObjectGenType::Path:
-    case ObjectGenType::Edge:
-        return lhs_unmasked_id - rhs_unmasked_id;
     case ObjectGenType::Tensor: {
         const auto optype = Conversions::calculate_optype(lhs, rhs);
         switch (optype) {
@@ -160,9 +144,14 @@ int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
         }
         return lhs_unmasked_id - rhs_unmasked_id;
     }
-    default:
-        throw std::logic_error(
-            "Unmanaged generic mask in Quad Comparisons " + to_string(lhs_generic_type)
-        );
+    default: {
+        auto lhs_t = lhs.type();
+        auto rhs_t = lhs.type();
+        if (lhs_t == rhs_t) {
+            return lhs_unmasked_id - rhs_unmasked_id;
+        } else {
+            return static_cast<int64_t>(lhs_t) - static_cast<int64_t>(rhs_t);
+        }
+    }
     }
 }

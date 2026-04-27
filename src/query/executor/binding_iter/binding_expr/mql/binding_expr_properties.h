@@ -17,8 +17,8 @@ public:
     {
         const ObjectId oid = expr->eval(binding);
 
-        const auto gen_t = oid.generic_type();
-        if (gen_t != ObjectGenType::NamedNode && gen_t != ObjectGenType::Edge) {
+        const auto sub_t = oid.subtype();
+        if (sub_t != ObjectSubType::NamedNode && sub_t != ObjectSubType::Edge) {
             return ObjectId::get_null();
         }
 

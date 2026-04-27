@@ -128,6 +128,7 @@ void write_and_escape_ttl(std::ostream& os, ObjectId oid) {
     case ObjectSubType::List:
     case ObjectSubType::NamedNode:
     case ObjectSubType::Edge:
+    case ObjectSubType::PGMetaData:
     case ObjectSubType::NotFound:
         break;
     }
