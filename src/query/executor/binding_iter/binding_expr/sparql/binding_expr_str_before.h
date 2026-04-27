@@ -56,7 +56,7 @@ public:
             return_lang = true;
             lhs_str = std::move(lhs_s);
             rhs_str = std::move(rhs_s);
-        } else if (lhs_sub == ObjectSubType::StringLang || lhs_sub == ObjectSubType::StringXsd) {
+        } else if (lhs_sub == ObjectSubType::String || lhs_sub == ObjectSubType::StringXsd) {
             lhs_str = Conversions::to_lexical_str(lhs_oid);
             rhs_str = Conversions::to_lexical_str(rhs_oid);
         } else {

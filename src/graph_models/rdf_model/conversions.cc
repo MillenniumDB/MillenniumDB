@@ -576,7 +576,7 @@ ObjectId Conversions::pack_string_xsd(const std::string& str)
     } else {
         auto str_id = string_manager.get_str_id(str);
         if (str_id != ObjectId::MASK_NOT_FOUND) {
-            oid = ObjectId::MASK_STR_XSD_INL | str_id;
+            oid = ObjectId::MASK_STR_XSD_EXT | str_id;
         } else {
             oid = ObjectId::MASK_STR_XSD_TMP | tmp_manager.get_str_id(str);
         }
@@ -594,13 +594,9 @@ ObjectId Conversions::pack_iri(const std::string& str)
     const char* suffix_ptr = suffix.c_str();
     size_t suffix_len = suffix.size();
 
-    auto prefix_id_shifted = static_cast<uint64_t>(prefix_id) << ObjectId::IRI_INLINE_BYTES * 8;
-
-    uint64_t suffix_id;
-
     char* buffer_iri = get_query_ctx().get_buffer1();
 
-    uint64_t iri_type_mask = ObjectId::MASK_IRI_INL;
+    uint64_t iri_type_mask = ObjectId::MASK_IRI_EXT; // Not used if inlined
 
     if (UUIDCompression::compress_lower(suffix_ptr, suffix_len, buffer_iri)) {
         suffix_ptr = buffer_iri;
@@ -630,6 +626,7 @@ ObjectId Conversions::pack_iri(const std::string& str)
         }
     }
 
+    uint64_t suffix_id;
     if (suffix_len <= ObjectId::IRI_INLINE_BYTES) {
         suffix_id = Inliner::inline_iri(suffix_ptr) | ObjectId::MASK_IRI_INL;
     } else {
@@ -643,6 +640,7 @@ ObjectId Conversions::pack_iri(const std::string& str)
         }
     }
 
+    auto prefix_id_shifted = static_cast<uint64_t>(prefix_id) << ObjectId::IRI_INLINE_BYTES * 8;
     return ObjectId(suffix_id | prefix_id_shifted);
 }
 
@@ -1029,7 +1027,7 @@ void Conversions::print_string_lang(ObjectId oid, std::ostream& os)
     }
     default:
         throw LogicException(
-            "Called unpack_string_lang with incorrect ObjectId type, this should never happen"
+            "Called print_string_lang with incorrect ObjectId type, this should never happen"
         );
     }
 }
@@ -1051,7 +1049,7 @@ size_t Conversions::print_string_lang(ObjectId oid, char* out)
     }
     default:
         throw LogicException(
-            "Called unpack_string_lang with incorrect ObjectId type, this should never happen"
+            "Called print_string_lang with incorrect ObjectId type, this should never happen"
         );
     }
 }
