@@ -250,7 +250,7 @@ public:
 
     static constexpr ObjectId get_not_found() noexcept
     {
-        return ObjectId(MASK_BOOL | 0UL);
+        return ObjectId(MASK_NOT_FOUND);
     }
 
     static constexpr ObjectId get_false() noexcept

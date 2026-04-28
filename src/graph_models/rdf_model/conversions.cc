@@ -25,7 +25,7 @@ uint64_t Conversions::unpack_blank(ObjectId oid)
 ObjectId Conversions::string_simple_to_xsd(ObjectId oid)
 {
     auto mod = oid.get_mod();
-    return ObjectId(oid.get_value() | mod | ObjectId::MASK_STR_INL);
+    return ObjectId(oid.get_value() | mod | ObjectId::MASK_STR_XSD_INL);
 }
 
 ObjectId Conversions::pack_string_xsd_inline(const char* str)
