@@ -53,8 +53,29 @@ else()
     find_package(ICU COMPONENTS uc i18n REQUIRED)
 endif(APPLE)
 
+# Optional native-code generation for the build machine's exact CPU. On by
+# default this is OFF so the resulting binaries run on any x86-64 CPU:
+# -march=native bakes the build host's instruction set into the binary (e.g.
+# AVX-512), and a binary built that way dies with SIGILL on CPUs that lack
+# those extensions. Build with -DMDB_USE_NATIVE_ARCH=ON to trade portability
+# for peak performance on the machine you are building for.
+option(MDB_USE_NATIVE_ARCH "Compile with -march=native for the build machine's CPU" OFF)
+
+if(MDB_USE_NATIVE_ARCH)
+    set(MDB_MARCH_FLAG "-march=native")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+    # x86-64-v2 is the conservative baseline: any x86-64 CPU from ~2009
+    # (Nehalem and later) supports it, which covers the vast majority of
+    # machines and every common cloud VM.
+    set(MDB_MARCH_FLAG "-march=x86-64-v2")
+else()
+    # Non-x86_64 targets: leave the architecture flag to the compiler's
+    # default for the target.
+    set(MDB_MARCH_FLAG "")
+endif()
+
 # Define the compiler flags
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -Wno-deprecated -pthread -march=native -funroll-loops -fno-operator-names")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -Wno-deprecated -pthread ${MDB_MARCH_FLAG} -funroll-loops -fno-operator-names")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -fsanitize=undefined,address -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g0")
 
