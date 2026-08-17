@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# start-server — start a MillenniumDB server on an existing database.
+#
+# Usage:
+#   ./scripts/start-server <db_folder> [server options...]
+#
+# Examples:
+#   ./scripts/start-server /data/mydb
+#   ./scripts/start-server /data/mydb -p 1240 --browser-port 4321 -t 300
+#   ./scripts/start-server /data/mydb --no-browser --log-path /var/log/mdb.log
+#
+# The script validates that the mdb binary and the database exist, then
+# forwards every extra argument unchanged to `mdb server`. Because options
+# are passed through transparently, this script keeps working even when the
+# server options change over time (see issue #94).
+#
+# Exits 0 on success, non-zero on the first failure (set -e).
+
+set -e; set -u; set -o pipefail
+
+BLUE='\033[0;34m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; NC='\033[0m'
+
+info() { echo -e "${BLUE}[start]${NC} $*"; }
+ok()   { echo -e "${GREEN}[start]${NC} $*"; }
+fail() { echo -e "${RED}[start] ERROR:${NC} $*" >&2; exit 1; }
+
+# Find the repo root, so the script works from anywhere.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# ---------------------------------------------------------------------------
+# locate the mdb binary (prefer Release, fall back to Debug)
+# ---------------------------------------------------------------------------
+find_mdb() {
+    for candidate in \
+        "${REPO_ROOT}/build/Release/bin/mdb" \
+        "${REPO_ROOT}/build/Debug/bin/mdb"
+    do
+        if [[ -x "${candidate}" ]]; then
+            echo "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# ---------------------------------------------------------------------------
+# arguments
+# ---------------------------------------------------------------------------
+if [[ $# -lt 1 ]]; then
+    sed -n '3,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit 1
+fi
+
+DB_FOLDER="$1"
+shift
+
+MDB_BIN="$(find_mdb)" || fail "mdb binary not found — build it first with ./scripts/setup_millenniumdb.sh"
+
+if [[ ! -d "${DB_FOLDER}" ]]; then
+    fail "database folder not found: ${DB_FOLDER}"
+    fail "create it first, e.g.:  ${MDB_BIN} import <data_file> ${DB_FOLDER}"
+fi
+
+# ---------------------------------------------------------------------------
+# run
+# ---------------------------------------------------------------------------
+info "Starting MillenniumDB server on ${DB_FOLDER}..."
+info "Command: ${MDB_BIN} server ${DB_FOLDER} $*"
+echo
+exec "${MDB_BIN}" server "${DB_FOLDER}" "$@"
