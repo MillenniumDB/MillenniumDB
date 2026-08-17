@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <csignal>
+#include <fstream>
 #include <thread>
 #include <vector>
 
@@ -190,6 +191,38 @@ void MDBServer::Server::browser_session(tcp::socket&& socket)
         if (req.target().back() == '/')
             path.append("index.html");
 
+        // Serve env.js dynamically so the browser connects to the actual server
+        // port instead of the hardcoded default (fixes issue #32).
+        if (req.target() == "/env.js") {
+            std::ifstream env_file(path);
+            if (!env_file.is_open()) {
+                write(stream, not_found(req.target()), ec);
+                return;
+            }
+            std::string content((std::istreambuf_iterator<char>(env_file)),
+                                std::istreambuf_iterator<char>());
+
+            const std::string default_url = "http://localhost:"
+                + std::to_string(MDBServer::Protocol::DEFAULT_PORT);
+            const std::string actual_url = "http://localhost:"
+                + std::to_string(Server::mdb_port);
+
+            std::string::size_type pos = 0;
+            while ((pos = content.find(default_url, pos)) != std::string::npos) {
+                content.replace(pos, default_url.length(), actual_url);
+                pos += actual_url.length();
+            }
+
+            http::response<http::string_body> res { http::status::ok, req.version() };
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+            res.set(http::field::content_type, "application/javascript");
+            res.body() = content;
+            res.content_length(content.size());
+            res.keep_alive(req.keep_alive());
+            write(stream, std::move(res), ec);
+            return;
+        }
+
         // Attempt to open the file
         boost::beast::error_code ec;
         boost::beast::http::file_body::value_type body;
@@ -283,6 +316,8 @@ void Server::run(
     std::chrono::seconds query_timeout
 )
 {
+    Server::mdb_port = port;
+
     asio::io_context io_context(num_workers);
 
     Listener listener(*this, io_context, ssl_ctx, tcp::endpoint(tcp::v4(), port), query_timeout);

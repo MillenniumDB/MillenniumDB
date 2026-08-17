@@ -33,6 +33,10 @@ public:
     // Prevent concurrent updates
     static inline std::mutex update_execution_mutex;
 
+    // Port where the MillenniumDB HTTP/WebSocket server is listening.
+    // The browser interface needs it to connect to the right endpoint (see issue #32).
+    static inline unsigned short mdb_port = Protocol::DEFAULT_PORT;
+
     uint64_t model_id;
 
     std::vector<QueryContext> query_contexts;
