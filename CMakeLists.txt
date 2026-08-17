@@ -53,8 +53,14 @@ else()
     find_package(ICU COMPONENTS uc i18n REQUIRED)
 endif(APPLE)
 
+# Define target architecture option (default: native)
+set(TARGET_ARCH "native" CACHE STRING "Target CPU architecture for -march (e.g. native, x86-64-v2, x86-64-v3). Leave empty to omit.")
+
 # Define the compiler flags
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -Wno-deprecated -pthread -march=native -funroll-loops -fno-operator-names")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -Wno-deprecated -pthread -funroll-loops -fno-operator-names")
+if(TARGET_ARCH)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${TARGET_ARCH}")
+endif()
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -fsanitize=undefined,address -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g0")
 

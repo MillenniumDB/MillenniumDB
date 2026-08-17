@@ -2,6 +2,9 @@
 FROM alpine:3.20 AS build
 WORKDIR /mdb
 
+# Automatically populated by Docker Buildx ('amd64' or 'arm64')
+ARG TARGETARCH
+
 RUN apk --no-cache add cmake \
                        make \
                        g++ \
@@ -14,7 +17,18 @@ COPY src                               src
 COPY CMakeLists.txt                    CMakeLists.txt
 COPY third_party/antlr4-runtime-4.13.1 third_party/antlr4-runtime-4.13.1
 
-RUN cmake -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=./ && \
+# Set appropriate architecture flag depending on the target platform
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        TARGET_ARCH="x86-64-v2"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        TARGET_ARCH="armv8-a"; \
+    else \
+        TARGET_ARCH=""; \
+    fi && \
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DTARGET_ARCH="${TARGET_ARCH}" \
+        -DCMAKE_INSTALL_PREFIX=./ && \
     cmake --build build -j $(($(getconf _NPROCESSORS_ONLN)-1)) --target install
 
 COPY browser browser
