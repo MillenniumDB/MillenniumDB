@@ -4,14 +4,14 @@ using namespace Import::Rdf::XML;
 
 void OnDiskImport::set_transition(int state, int token, int value, std::function<void()> func)
 {
-    state_funcs[State::TOTAL_STATES * token + state] = func;
-    state_transitions[State::TOTAL_STATES * token + state] = value;
+    state_funcs[Token::TOTAL_TOKENS * token + state] = func;
+    state_transitions[Token::TOTAL_TOKENS * token + state] = value;
 }
 
 int OnDiskImport::get_transition(int state, int token)
 {
-    state_funcs[State::TOTAL_STATES * token + state]();
-    return state_transitions[State::TOTAL_STATES * token + state];
+    state_funcs[Token::TOTAL_TOKENS * token + state]();
+    return state_transitions[Token::TOTAL_TOKENS * token + state];
 }
 
 void OnDiskImport::create_automata() {

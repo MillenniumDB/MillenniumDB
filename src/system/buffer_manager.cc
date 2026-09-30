@@ -104,7 +104,7 @@ Page& BufferManager::get_vpage_available()
 
         auto& page = vp_pool[vp_clock];
 
-        if (page.pins != 0 && page.dirty) {
+        if (page.pins != 0 || page.dirty) {
             continue;
         }
         if (page.second_chance) {
