@@ -1010,15 +1010,15 @@ void OnDiskImport::start_import(MDBIstream& in)
 
 void OnDiskImport::set_transition(int state, int token, int value, std::function<void()> func)
 {
-    state_funcs[State::TOTAL_STATES * state + token] = func;
-    state_transitions[State::TOTAL_STATES * state + token] = value;
+    state_funcs[Token::TOTAL_TOKENS * state + token] = func;
+    state_transitions[Token::TOTAL_TOKENS * state + token] = value;
 }
 
 void OnDiskImport::advance_automaton(int token)
 {
     try {
-        auto& func = state_funcs[State::TOTAL_STATES * current_state + token];
-        current_state = state_transitions[State::TOTAL_STATES * current_state + token];
+        auto& func = state_funcs[Token::TOTAL_TOKENS * current_state + token];
+        current_state = state_transitions[Token::TOTAL_TOKENS * current_state + token];
         func();
     } catch (std::exception& e) {
         parsing_errors++;
