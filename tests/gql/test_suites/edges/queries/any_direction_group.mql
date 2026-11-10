@@ -1,0 +1,2 @@
+MATCH (x {name:"1"}) ((u)-[e]-(v)) (y)
+RETURN e, y
