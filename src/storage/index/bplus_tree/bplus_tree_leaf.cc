@@ -248,8 +248,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
     if (*value_count == 0) {
         upgrade_to_editable();
 
-        unsigned long bits_ul = 0xFFFFFFFF;
-        memcpy(bitset_ptr, &bits_ul, N);
+        redundant_bitset.set();
         redundant_count = N * 8;
         records = redundant_bytes + redundant_count;
 

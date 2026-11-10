@@ -79,8 +79,8 @@ uint_fast32_t index_single(
     for (const auto& [token, count] : processed_tokens) {
         const auto trie_node_id = trie.insert_string(token);
 
-        constexpr double M = static_cast<double>(UINT64_MAX);
-        const uint64_t score = M - M * (double(count) / double(tokens.size()));
+        uint32_t score = UINT32_MAX
+                       - static_cast<uint32_t>(static_cast<double>(count) / tokens.size() * UINT32_MAX);
 
         const auto [first, second] = compress(trie_node_id, score, table_pointer);
         bpt.insert({ first, second });
