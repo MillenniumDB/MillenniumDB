@@ -23,4 +23,7 @@ public:
 
 private:
     Binding* parent_binding;
+
+    // iters are begun lazily, when the union reaches them; only those can be reset
+    std::vector<bool> begun;
 };

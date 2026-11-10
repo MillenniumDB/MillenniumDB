@@ -4,6 +4,8 @@ void Union::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
     iters[0]->begin(_parent_binding);
+    begun.assign(iters.size(), false);
+    begun[0] = true;
 }
 
 bool Union::_next()
@@ -16,6 +18,7 @@ bool Union::_next()
             ++current_iter;
             if (current_iter < iters.size()) {
                 iters[current_iter]->begin(*parent_binding);
+                begun[current_iter] = true;
             }
         }
     }
@@ -28,8 +31,10 @@ void Union::_reset()
         iters[current_iter]->assign_nulls();
     }
     current_iter = 0;
-    for (auto& iter : iters) {
-        iter->reset();
+    for (size_t i = 0; i < iters.size(); i++) {
+        if (begun[i]) {
+            iters[i]->reset();
+        }
     }
 }
 
