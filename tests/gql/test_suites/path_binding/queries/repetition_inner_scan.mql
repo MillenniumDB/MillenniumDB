@@ -1,0 +1,2 @@
+MATCH (a {name:"N3"}) ((u)-[e]->(m)-[f]->(v)){1} (b)
+RETURN b.name, e, m, f

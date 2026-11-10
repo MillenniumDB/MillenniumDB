@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "path_binding_iter.h"
 #include "query/executor/binding_iter.h"
 #include "query/rewriter/gql/op/var_type.h"
@@ -28,4 +31,9 @@ private:
     Binding* parent_binding;
 
     std::map<VarId, GQL::VarType> types;
+
+    // Elements replaced by group lists in the binding; put back before the child is asked again
+    std::vector<std::pair<VarId, ObjectId>> overwritten_values;
+
+    void restore_overwritten_values();
 };

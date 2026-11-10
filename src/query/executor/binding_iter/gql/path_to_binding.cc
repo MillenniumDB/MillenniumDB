@@ -19,11 +19,22 @@ void PathToBinding::_begin(Binding& parent_binding)
 
 void PathToBinding::_reset()
 {
+    restore_overwritten_values();
     child_iter->reset();
+}
+
+void PathToBinding::restore_overwritten_values()
+{
+    for (auto& [var, value] : overwritten_values) {
+        parent_binding->add(var, value);
+    }
+    overwritten_values.clear();
 }
 
 bool PathToBinding::_next()
 {
+    restore_overwritten_values();
+
     auto list = child_iter->next();
     if (list == nullptr) {
         return false;
@@ -53,6 +64,7 @@ bool PathToBinding::_next()
     }
 
     for (auto&& [var, oids] : groups) {
+        overwritten_values.emplace_back(var, (*parent_binding)[var]);
         parent_binding->add(var, GQL::Conversions::pack_list(oids));
     }
     if (path_var.has_value()) {
@@ -83,6 +95,7 @@ void PathToBinding::assign_path_var(std::unique_ptr<PathBinding>& list)
 
 void PathToBinding::assign_nulls()
 {
+    overwritten_values.clear();
     child_iter->assign_nulls();
 }
 
