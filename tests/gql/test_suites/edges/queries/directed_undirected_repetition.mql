@@ -1,0 +1,2 @@
+MATCH (x {name:"1"}) ((u)~[e]~>(v)){1} (y)
+RETURN DISTINCT y.name
