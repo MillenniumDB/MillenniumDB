@@ -371,8 +371,7 @@ void PathBindingIterConstructor::visit(OpWhere& op_filter)
     op_filter.op->accept_visitor(*this);
 
     if (!is_first_gp) {
-        // A WHERE inside a path pattern is only left there for quantified path patterns
-        // (see ExtractExprs): it is evaluated on every iteration, on singleton bindings.
+        // A WHERE inside a quantifier or a union branch (see ExtractExprs) becomes a PathFilter
         std::vector<std::unique_ptr<BindingExpr>> path_exprs;
         std::set<ExprProperty> properties;
 

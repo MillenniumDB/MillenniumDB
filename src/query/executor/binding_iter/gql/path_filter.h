@@ -10,9 +10,7 @@
 
 namespace GQL {
 
-// Evaluates a WHERE clause of a quantified path pattern on every iteration, before the iteration is
-// concatenated with the others, i.e., while the variables of the iteration still hold single elements.
-// The variables of the child pattern are bound in the parent binding when the child returns a path.
+// Filters the child's paths by a WHERE inside a quantifier (per iteration) or a union branch
 class PathFilter : public PathBindingIter {
 public:
     PathFilter(

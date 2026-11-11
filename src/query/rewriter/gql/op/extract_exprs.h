@@ -15,6 +15,9 @@ private:
     // number of quantified path patterns enclosing the visited op
     uint64_t repetition_depth = 0;
 
+    // number of path pattern unions enclosing the visited op
+    uint64_t union_depth = 0;
+
     void check_mode(const PathMode& mode);
 
     void visit(OpGraphPattern& op) override;

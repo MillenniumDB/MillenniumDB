@@ -73,8 +73,8 @@ void ExtractExprs::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
 
-    // A WHERE inside a quantifier is not extracted: it is evaluated per iteration, on singletons
-    if (graph_pattern_visited && repetition_depth == 0) {
+    // A WHERE inside a quantifier or a union branch is evaluated there: per iteration or branch
+    if (graph_pattern_visited && repetition_depth == 0 && union_depth == 0) {
         // store the exprs
         tmp_exprs.insert(
             tmp_exprs.end(),
@@ -102,10 +102,12 @@ void ExtractExprs::visit(OpPathUnion& op_path_union)
 {
     std::vector<std::unique_ptr<Op>> new_patterns;
 
+    union_depth++;
     for (auto& pattern : op_path_union.op_list) {
         pattern->accept_visitor(*this);
         new_patterns.push_back(std::move(tmp));
     }
+    union_depth--;
     tmp = std::make_unique<OpPathUnion>(std::move(new_patterns));
 }
 

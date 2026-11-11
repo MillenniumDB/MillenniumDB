@@ -1,0 +1,2 @@
+MATCH (a {name:"N2"}) ((-[:Follows]->(y) WHERE y.age > 25) | -[:Owns]->(y))
+RETURN y.name
