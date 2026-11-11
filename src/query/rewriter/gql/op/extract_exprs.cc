@@ -73,7 +73,8 @@ void ExtractExprs::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
 
-    if (graph_pattern_visited) {
+    // A WHERE inside a quantifier is not extracted: it is evaluated per iteration, on singletons
+    if (graph_pattern_visited && repetition_depth == 0) {
         // store the exprs
         tmp_exprs.insert(
             tmp_exprs.end(),
@@ -110,7 +111,9 @@ void ExtractExprs::visit(OpPathUnion& op_path_union)
 
 void ExtractExprs::visit(OpRepetition& op_repetition)
 {
+    repetition_depth++;
     op_repetition.op->accept_visitor(*this);
+    repetition_depth--;
     tmp = std::make_unique<OpRepetition>(std::move(tmp), op_repetition.lower, op_repetition.upper);
 }
 

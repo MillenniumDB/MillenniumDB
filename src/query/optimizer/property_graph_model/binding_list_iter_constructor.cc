@@ -12,6 +12,7 @@
 #include "query/executor/binding_iter/gql/check_repeated_variable.h"
 #include "query/executor/binding_iter/gql/extend_right.h"
 #include "query/executor/binding_iter/gql/linear_pattern_path.h"
+#include "query/executor/binding_iter/gql/path_filter.h"
 #include "query/executor/binding_iter/gql/path_to_binding.h"
 #include "query/executor/binding_iter/gql/repetition.h"
 #include "query/executor/binding_iter/gql/union_path.h"
@@ -368,6 +369,27 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
 void PathBindingIterConstructor::visit(OpWhere& op_filter)
 {
     op_filter.op->accept_visitor(*this);
+
+    if (!is_first_gp) {
+        // A WHERE inside a path pattern is only left there for quantified path patterns
+        // (see ExtractExprs): it is evaluated on every iteration, on singleton bindings.
+        std::vector<std::unique_ptr<BindingExpr>> path_exprs;
+        std::set<ExprProperty> properties;
+
+        ExprToBindingExpr expr_to_binding_expr;
+        expr_to_binding_expr.collected_properties = &properties;
+        for (auto& expr : op_filter.exprs) {
+            expr->accept_visitor(expr_to_binding_expr);
+            path_exprs.push_back(std::move(expr_to_binding_expr.tmp));
+        }
+
+        tmp_path = std::make_unique<PathFilter>(
+            std::move(tmp_path),
+            std::move(path_exprs),
+            std::vector<ExprProperty>(properties.begin(), properties.end())
+        );
+        return;
+    }
 
     std::vector<std::unique_ptr<BindingExpr>> binding_exprs;
 

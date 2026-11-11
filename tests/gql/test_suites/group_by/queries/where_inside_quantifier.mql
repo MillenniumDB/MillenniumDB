@@ -1,0 +1,2 @@
+MATCH ANY SHORTEST (a {name:"N0"}) ((x)-[:Follows]->(y) WHERE x.age < y.age)+ (b)
+RETURN DISTINCT b.name

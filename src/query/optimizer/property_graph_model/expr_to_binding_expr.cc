@@ -94,6 +94,10 @@ void ExprToBindingExpr::visit(ExprProperty& expr)
         bic->used_properties.emplace(expr, false);
     }
 
+    if (collected_properties != nullptr) {
+        collected_properties->insert(expr);
+    }
+
     if (after_group) {
         bic->group_saved_vars.insert(expr.value);
     }

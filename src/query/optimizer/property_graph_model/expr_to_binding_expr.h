@@ -1,9 +1,11 @@
 #pragma once
 
 #include <optional>
+#include <set>
 
 #include "query/executor/binding_iter/binding_expr/binding_expr.h"
 #include "query/parser/expr/gql/expr.h"
+#include "query/parser/expr/gql/expr_property.h"
 #include "query/parser/expr/gql/expr_visitor.h"
 #include "query/var_id.h"
 
@@ -27,6 +29,9 @@ public:
 
     // true if expression is from order by or return
     bool after_group = false;
+
+    // if set, every property x.key that the expression uses is added here
+    std::set<ExprProperty>* collected_properties = nullptr;
 
     // This constructor is used to visit expressions that must not have aggregations or group variables.
     ExprToBindingExpr() :
