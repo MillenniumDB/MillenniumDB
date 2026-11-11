@@ -1,0 +1,2 @@
+MATCH ANY SHORTEST (a {name:"N0"}) -[e:Follows WHERE e.year < 2005]->+ (b)
+RETURN DISTINCT b.name
