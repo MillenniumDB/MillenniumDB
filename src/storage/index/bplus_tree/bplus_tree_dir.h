@@ -9,24 +9,30 @@
 #include "storage/index/record.h"
 #include "storage/page/page.h"
 
-template <std::size_t N> class BPlusTree;
+template<std::size_t N>
+class BPlusTree;
 
-template <std::size_t N>
+template<std::size_t N>
 class BPlusTreeDir {
-friend class BPlusTree<N>;
+    friend class BPlusTree<N>;
 
 public:
     BPlusTreeDir(FileId leaf_file_id, Page* page) :
-        keys         (reinterpret_cast<uint64_t*>(page->get_bytes())),
-        key_count    (reinterpret_cast<uint32_t*>(page->get_bytes()
-                        + (sizeof(uint64_t) * BPlusTree<N>::dir_max_records * N))),
-        children     (reinterpret_cast<int32_t*>(page->get_bytes()
-                        + (sizeof(uint64_t) * BPlusTree<N>::dir_max_records * N)
-                        + sizeof(uint32_t))),
-        page         (page),
-        dir_file_id  (page->page_id.file_id),
-        leaf_file_id (leaf_file_id) { }
-
+        keys(reinterpret_cast<uint64_t*>(page->get_bytes())),
+        key_count(
+            reinterpret_cast<uint32_t*>(
+                page->get_bytes() + (sizeof(uint64_t) * BPlusTree<N>::dir_max_records * N)
+            )
+        ),
+        children(
+            reinterpret_cast<int32_t*>(
+                page->get_bytes() + (sizeof(uint64_t) * BPlusTree<N>::dir_max_records * N) + sizeof(uint32_t)
+            )
+        ),
+        page(page),
+        dir_file_id(page->page_id.file_id),
+        leaf_file_id(leaf_file_id)
+    { }
 
     ~BPlusTreeDir();
 
@@ -41,8 +47,8 @@ public:
     SearchLeafResult<N> search_leaf(const Record<N>& min) const noexcept;
 
     // same as previous search_leaf but the BPlusTreeDir branch is added to the stack
-    SearchLeafResult<N> search_leaf(std::vector< std::unique_ptr<BPlusTreeDir<N>> >&,
-                                    const Record<N>& min) const noexcept;
+    SearchLeafResult<N>
+        search_leaf(std::vector<std::unique_ptr<BPlusTreeDir<N>>>&, const Record<N>& min) const noexcept;
 
     // returns true if min_key <= r <= max_key. If key_count==0, will return false.
     // used in leapfrog to know if the search can be done from here or from a upper directory in the branch
@@ -54,7 +60,7 @@ public:
 private:
     uint64_t* keys;
     uint32_t* key_count;
-    int32_t*  children;
+    int32_t* children;
 
     Page* page;
     const FileId dir_file_id;

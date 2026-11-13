@@ -8,71 +8,59 @@
 #include "system/buffer_manager.h"
 #include "system/file_manager.h"
 
-template <std::size_t N>
+template<std::size_t N>
 BPlusTree<N>::BPlusTree(const std::string& name) :
-    dir_file_id  (file_manager.get_file_id(name + ".dir")),
-    leaf_file_id (file_manager.get_file_id(name + ".leaf")) { }
+    dir_file_id(file_manager.get_file_id(name + ".dir")),
+    leaf_file_id(file_manager.get_file_id(name + ".leaf"))
+{ }
 
-
-template <std::size_t N>
-std::unique_ptr<BPlusTreeDir<N>> BPlusTree<N>::get_root() const noexcept {
-    return std::make_unique<BPlusTreeDir<N>>(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+template<std::size_t N>
+std::unique_ptr<BPlusTreeDir<N>> BPlusTree<N>::get_root() const noexcept
+{
+    return std::make_unique<BPlusTreeDir<N>>(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
 }
 
-
-template <std::size_t N>
-BptIter<N> BPlusTree<N>::get_range(bool* interruption_requested,
-                                   const Record<N>& min,
-                                   const Record<N>& max) const noexcept {
-    BPlusTreeDir<N> root(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+template<std::size_t N>
+BptIter<N> BPlusTree<N>::get_range(
+    bool* interruption_requested,
+    const Record<N>& min,
+    const Record<N>& max
+) const noexcept
+{
+    BPlusTreeDir<N> root(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
     auto leaf_and_pos = root.search_leaf(min);
     return BptIter<N>(interruption_requested, std::move(leaf_and_pos), max);
 }
 
-
-template <std::size_t N>
-bool BPlusTree<N>::insert(const Record<N>& record) {
+template<std::size_t N>
+bool BPlusTree<N>::insert(const Record<N>& record)
+{
     // although root can be modified in insert, we start as readonly, and
     // it will create a new version in the insert method if needed
-    BPlusTreeDir<N> root(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+    BPlusTreeDir<N> root(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
     bool error;
     root.insert(record, error);
     return !error;
 }
 
-
-template <std::size_t N>
-bool BPlusTree<N>::delete_record(const Record<N>& record) {
+template<std::size_t N>
+bool BPlusTree<N>::delete_record(const Record<N>& record)
+{
     // although root can be modified in insert, we start as readonly, and
     // it will create a new version in the insert method if needed
-    BPlusTreeDir<N> root(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+    BPlusTreeDir<N> root(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
     return root.delete_record(record);
 }
 
-
-template <std::size_t N>
-bool BPlusTree<N>::check(std::ostream& os) const {
-    BPlusTreeDir<N> root(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+template<std::size_t N>
+bool BPlusTree<N>::check(std::ostream& os) const
+{
+    BPlusTreeDir<N> root(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
     return root.check(os);
 }
 
-
-uint64_t powi(uint64_t base, size_t exp) {
+uint64_t powi(uint64_t base, size_t exp)
+{
     uint64_t res = 1;
     while (exp) {
         if (exp & 1)
@@ -83,23 +71,15 @@ uint64_t powi(uint64_t base, size_t exp) {
     return res;
 }
 
-
-template <std::size_t N>
-double BPlusTree<N>::estimate_records(const Record<N>& min,
-                                      const Record<N>& max) const
+template<std::size_t N>
+double BPlusTree<N>::estimate_records(const Record<N>& min, const Record<N>& max) const
 {
-    BPlusTreeDir<N> root(
-        leaf_file_id,
-        &buffer_manager.get_page_readonly(dir_file_id, 0)
-    );
+    BPlusTreeDir<N> root(leaf_file_id, &buffer_manager.get_page_readonly(dir_file_id, 0));
     return BPlusTree<N>::estimate_records(root, min, max);
 }
 
-
-template <std::size_t N>
-double BPlusTree<N>::estimate_records(const BPlusTreeDir<N>& root,
-                                      const Record<N>& min,
-                                      const Record<N>& max)
+template<std::size_t N>
+double BPlusTree<N>::estimate_records(const BPlusTreeDir<N>& root, const Record<N>& min, const Record<N>& max)
 {
     std::vector<int> min_idxs;
     std::vector<int> max_idxs;
@@ -114,17 +94,20 @@ double BPlusTree<N>::estimate_records(const BPlusTreeDir<N>& root,
     double estimated_max = 0;
     size_t current_exponent = max_idxs.size() - 1;
     for (size_t i = 0; i < min_idxs.size(); i++) {
-        estimated_min += min_idxs[i] * powi(dir_max_records+1, current_exponent);
-        estimated_max += max_idxs[i] * powi(dir_max_records+1, current_exponent);
+        estimated_min += min_idxs[i] * powi(dir_max_records + 1, current_exponent);
+        estimated_max += max_idxs[i] * powi(dir_max_records + 1, current_exponent);
         current_exponent--;
     }
     return 1 + (estimated_max - estimated_min) * leaf_max_records;
 }
 
-
 /******************************* BptIter ********************************/
 template<std::size_t N>
-BptIter<N>::BptIter(bool* interruption_requested, SearchLeafResult<N>&& leaf_and_pos, const Record<N>& max) noexcept :
+BptIter<N>::BptIter(
+    bool* interruption_requested,
+    SearchLeafResult<N>&& leaf_and_pos,
+    const Record<N>& max
+) noexcept :
     interruption_requested(interruption_requested),
     current_pos(leaf_and_pos.result_index),
     max(max),
@@ -144,16 +127,18 @@ BptIter<N>::BptIter(BptIter&& other) noexcept :
 }
 
 template<std::size_t N>
-void BptIter<N>::operator=(BptIter&& other) noexcept {
+void BptIter<N>::operator=(BptIter&& other) noexcept
+{
     interruption_requested = other.interruption_requested;
-    current_pos            = other.current_pos;
-    max                    = std::move(other.max);
-    current_leaf           = std::move(other.current_leaf);
+    current_pos = other.current_pos;
+    max = std::move(other.max);
+    current_leaf = std::move(other.current_leaf);
     current_leaf.set_redundant_record(current_record);
 }
 
-template <std::size_t N>
-const Record<N>* BptIter<N>::next() {
+template<std::size_t N>
+const Record<N>* BptIter<N>::next()
+{
     while (true) {
         if (MDB_unlikely(*interruption_requested)) {
             throw InterruptedException();
@@ -165,27 +150,23 @@ const Record<N>* BptIter<N>::next() {
                 if (current_record[i] < max[i]) {
                     ++current_pos;
                     return &current_record;
-                }
-                else if (current_record[i] > max[i]) {
+                } else if (current_record[i] > max[i]) {
                     return nullptr;
                 }
                 // continue iterating if current_record[i] == max[i]
             }
             ++current_pos;
             return &current_record; // res == max
-        }
-        else if (current_leaf.has_next()) {
+        } else if (current_leaf.has_next()) {
             current_leaf.update_to_next_leaf();
             current_pos = 0;
             current_leaf.set_redundant_record(current_record);
             // continue while
-        }
-        else {
+        } else {
             return nullptr;
         }
     }
 }
-
 
 template class BPlusTree<1>;
 template class BPlusTree<2>;

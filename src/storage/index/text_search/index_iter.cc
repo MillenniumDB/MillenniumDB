@@ -2,16 +2,14 @@
 
 #include <memory>
 
-#include "graph_models/object_id.h"
 #include "storage/index/bplus_tree/bplus_tree.h"
 #include "storage/index/text_search/trie_iter.h"
 #include "storage/index/text_search/utils.h"
 
-
 namespace TextSearch {
 
-
-bool IndexIter::next() {
+bool IndexIter::next()
+{
     if (bpt_iter != nullptr) {
         auto record = bpt_iter->next();
         if (record == nullptr) {
@@ -28,8 +26,8 @@ bool IndexIter::next() {
         if (trie_iter->next()) {
             auto node_id = trie_iter->get_node_id();
 
-            auto [min_first, min_second] = compress(node_id, 0, 0 );
-            auto [max_first, max_second] = compress(node_id, UINT32_MAX, UINT64_MAX );
+            auto [min_first, min_second] = compress(node_id, 0, 0);
+            auto [max_first, max_second] = compress(node_id, UINT32_MAX, UINT64_MAX);
 
             Record<2> min({ min_first, min_second });
             Record<2> max({ max_first, max_second });
@@ -45,14 +43,14 @@ bool IndexIter::next() {
     return false;
 }
 
-
-uint64_t IndexIter::get_table_pointer() const {
+uint64_t IndexIter::get_table_pointer() const
+{
     return table_pointer;
 }
 
-uint64_t IndexIter::get_score() const {
+uint64_t IndexIter::get_score() const
+{
     return score;
 }
-
 
 } // namespace TextSearch
