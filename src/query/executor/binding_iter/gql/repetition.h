@@ -43,4 +43,10 @@ private:
     ObjectId parent_boundary = ObjectId(0);
 
     Binding* parent_binding;
+
+    // Starts the search at parent_boundary
+    void start_search();
+
+    // Concatenates an iteration to cur_list; returns the new path if it is a result
+    std::unique_ptr<PathBinding> add_iteration(const std::unique_ptr<PathBinding>& child_list);
 };

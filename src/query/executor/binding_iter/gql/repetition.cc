@@ -16,55 +16,59 @@ void Repetition::begin(Binding& binding)
     child_iter->begin(binding);
 }
 
-// set_left_boundary or set_right_boundary must be called before next
-void Repetition::set_left_boundary(ObjectId left_boundary)
+void Repetition::start_search()
 {
-    parent_boundary = left_boundary;
-    child_iter->set_left_boundary(left_boundary);
-
     pending = false;
     visited.clear();
     queue = {};
     return_zero_length = lower == 0;
 
+    // zero iterations: the path that only has the boundary node
     PathBinding start_list;
-    PathStep node({}, left_boundary);
-    start_list.push_left(node);
+    start_list.push_right(PathStep({}, parent_boundary));
     queue.push({ start_list, 0 });
-    visited.insert(left_boundary);
+    visited.insert(parent_boundary);
+}
+
+// set_left_boundary or set_right_boundary must be called before next
+void Repetition::set_left_boundary(ObjectId left_boundary)
+{
+    parent_boundary = left_boundary;
+    child_iter->set_left_boundary(left_boundary);
+    start_search();
 }
 
 void Repetition::set_right_boundary(ObjectId right_boundary)
 {
     parent_boundary = right_boundary;
     child_iter->set_right_boundary(right_boundary);
-
-    pending = false;
-    visited.clear();
-    queue = {};
-    return_zero_length = lower == 0;
-
-    PathBinding start_list;
-    PathStep node({}, right_boundary);
-    start_list.push_left(node);
-    queue.push({ start_list, 0 });
-    visited.insert(right_boundary);
+    start_search();
 }
 
 void Repetition::reset()
 {
     child_iter->reset();
+    start_search();
+}
 
-    pending = false;
-    visited.clear();
-    queue = {};
-    return_zero_length = lower == 0;
+std::unique_ptr<PathBinding> Repetition::add_iteration(const std::unique_ptr<PathBinding>& child_list)
+{
+    // the search only goes on from a node the first time it is reached
+    if (!visited.insert(child_list->steps.back().node_value).second) {
+        return nullptr;
+    }
 
-    PathBinding start_list;
-    PathStep node({}, parent_boundary);
-    start_list.push_right(node);
-    queue.push({ start_list, 0 });
-    visited.insert(parent_boundary);
+    auto path = cur_list.clone();
+    path->merge_right(child_list);
+
+    const uint64_t repetitions = cur_repetitions + 1;
+    if (repetitions < upper) {
+        queue.push({ *path, repetitions });
+    }
+    if (lower <= repetitions && repetitions <= upper) {
+        return path;
+    }
+    return nullptr;
 }
 
 std::unique_ptr<PathBinding> Repetition::next()
@@ -83,24 +87,8 @@ std::unique_ptr<PathBinding> Repetition::next()
             break;
         }
 
-        bool continue_visitation = true;
-
-        // the list should not be empty
-        if (visited.count(child_list->steps.back().node_value)) {
-            continue_visitation = false;
-        } else {
-            visited.insert(child_list->steps.back().node_value);
-        }
-
-        PathBinding cur_list_copy = cur_list;
-        cur_list_copy.merge_right(child_list);
-
-        if (continue_visitation && cur_repetitions + 1 < upper) {
-            queue.push({ cur_list_copy, cur_repetitions + 1 });
-        }
-
-        if (continue_visitation && lower <= cur_repetitions + 1 && cur_repetitions + 1 <= upper) {
-            return std::make_unique<PathBinding>(cur_list_copy);
+        if (auto path = add_iteration(child_list)) {
+            return path;
         }
     }
     pending = false;
@@ -118,25 +106,9 @@ std::unique_ptr<PathBinding> Repetition::next()
                 break;
             }
 
-            bool continue_visitation = true;
-
-            // the list should not be empty
-            if (visited.count(child_list->steps.back().node_value)) {
-                continue_visitation = false;
-            } else {
-                visited.insert(child_list->steps.back().node_value);
-            }
-
-            PathBinding cur_list_copy = cur_list;
-            cur_list_copy.merge_right(child_list);
-
-            if (continue_visitation && cur_repetitions + 1 < upper) {
-                queue.push({ cur_list_copy, cur_repetitions + 1 });
-            }
-
-            if (continue_visitation && lower <= cur_repetitions + 1 && cur_repetitions + 1 <= upper) {
+            if (auto path = add_iteration(child_list)) {
                 pending = true;
-                return std::make_unique<PathBinding>(cur_list_copy);
+                return path;
             }
         }
     }
