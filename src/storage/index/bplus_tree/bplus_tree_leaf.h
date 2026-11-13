@@ -10,40 +10,45 @@
 #include "storage/page/page.h"
 
 // forward declarations
-template <std::size_t N> class BPlusTreeDir;
-template <std::size_t N> class BPlusTreeLeaf;
-template <std::size_t N> class BPlusTree;
+template<std::size_t N>
+class BPlusTreeDir;
 
+template<std::size_t N>
+class BPlusTreeLeaf;
 
-template <std::size_t N>
+template<std::size_t N>
+class BPlusTree;
+
+template<std::size_t N>
 struct SearchLeafResult {
     BPlusTreeLeaf<N> leaf;
     uint_fast32_t result_index;
 
     SearchLeafResult(BPlusTreeLeaf<N>&& leaf, uint_fast32_t result_index) noexcept :
-        leaf         (std::move(leaf)),
-        result_index (result_index) { }
+        leaf(std::move(leaf)),
+        result_index(result_index)
+    { }
 };
 
-
-template <std::size_t N>
+template<std::size_t N>
 class BPlusTreeLeaf {
-
-friend class BPlusTreeDir<N>;
-friend class BPlusTree<N>;
+    friend class BPlusTreeDir<N>;
+    friend class BPlusTree<N>;
 
 public:
     BPlusTreeLeaf() noexcept :
-        page         (nullptr),
-        leaf_file_id (FileId::UNASSIGNED) { }
+        page(nullptr),
+        leaf_file_id(FileId::UNASSIGNED)
+    { }
 
     BPlusTreeLeaf(Page* page) noexcept :
-        value_count  ( reinterpret_cast<uint32_t*>(page->get_bytes())),
-        next_leaf    ( reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t))),
-        bitset_ptr   ((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t)),
+        value_count(reinterpret_cast<uint32_t*>(page->get_bytes())),
+        next_leaf(reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t))),
+        bitset_ptr((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t)),
         redundant_bytes((unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N),
-        page         (page),
-        leaf_file_id (page->page_id.file_id) {
+        page(page),
+        leaf_file_id(page->page_id.file_id)
+    {
         char* bitset_ptr = page->get_bytes() + 2 * sizeof(uint32_t);
 
         int pos_bitset = 0;
@@ -57,23 +62,25 @@ public:
     }
 
     BPlusTreeLeaf(BPlusTreeLeaf&& other) noexcept :
-        records      (other.records),
-        value_count  (other.value_count),
-        next_leaf    (other.next_leaf),
-        bitset_ptr   (other.bitset_ptr),
+        records(other.records),
+        value_count(other.value_count),
+        next_leaf(other.next_leaf),
+        bitset_ptr(other.bitset_ptr),
         redundant_bytes(other.redundant_bytes),
         redundant_count(other.redundant_count),
         redundant_bitset(other.redundant_bitset),
-        page         (std::exchange(other.page, nullptr)),
-        leaf_file_id (other.leaf_file_id) { }
+        page(std::exchange(other.page, nullptr)),
+        leaf_file_id(other.leaf_file_id)
+    { }
 
     ~BPlusTreeLeaf();
 
-    void operator=(BPlusTreeLeaf&& other) noexcept {
-        records      = other.records;
-        value_count  = other.value_count;
-        next_leaf    = other.next_leaf;
-        bitset_ptr   = other.bitset_ptr;
+    void operator=(BPlusTreeLeaf&& other) noexcept
+    {
+        records = other.records;
+        value_count = other.value_count;
+        next_leaf = other.next_leaf;
+        bitset_ptr = other.bitset_ptr;
         leaf_file_id = other.leaf_file_id;
         redundant_bytes = other.redundant_bytes;
         redundant_count = other.redundant_count;
@@ -86,9 +93,18 @@ public:
 
     void update_to_next_leaf();
 
-    inline Page& get_page()          const { return *page; }
-    inline uint32_t get_value_count() const { return *value_count; }
-    inline bool has_next()            const { return *next_leaf != 0; }
+    inline Page& get_page() const
+    {
+        return *page;
+    }
+    inline uint32_t get_value_count() const
+    {
+        return *value_count;
+    }
+    inline bool has_next() const
+    {
+        return *next_leaf != 0;
+    }
 
     // returns false if an error in this leaf is found
     bool check(std::ostream& os) const;
@@ -141,8 +157,18 @@ private:
     uint32_t get_page_size(std::bitset<N * 8> bitset, uint32_t n_records);
     std::bitset<N * 8> create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to);
 
-    void update_leaf(BPlusTreeLeaf<N>& leaf, std::bitset<N * 8>& bitset, uint64_t n_records, unsigned char* buffer);
-    void compress_to_buffer(unsigned char* compression_buffer, std::bitset<N * 8> bitset, uint64_t from, uint64_t to);
+    void update_leaf(
+        BPlusTreeLeaf<N>& leaf,
+        std::bitset<N * 8>& bitset,
+        uint64_t n_records,
+        unsigned char* buffer
+    );
+    void compress_to_buffer(
+        unsigned char* compression_buffer,
+        std::bitset<N * 8> bitset,
+        uint64_t from,
+        uint64_t to
+    );
     void upgrade_to_editable();
 
     bool equal_record(const Record<N>& record, uint_fast32_t index);

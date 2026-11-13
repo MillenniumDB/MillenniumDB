@@ -2,37 +2,38 @@
 
 #include <cstring>
 
-#include "system/buffer_manager.h"
 #include "query/query_context.h"
+#include "system/buffer_manager.h"
 
 using namespace std;
 
-template <std::size_t N>
-BPlusTreeLeaf<N>::~BPlusTreeLeaf() {
+template<std::size_t N>
+BPlusTreeLeaf<N>::~BPlusTreeLeaf()
+{
     if (page != nullptr)
         buffer_manager.unpin(*page);
 }
 
-
-template <std::size_t N>
-BPlusTreeLeaf<N> BPlusTreeLeaf<N>::clone() const {
+template<std::size_t N>
+BPlusTreeLeaf<N> BPlusTreeLeaf<N>::clone() const
+{
     buffer_manager.pin(*page);
     return BPlusTreeLeaf<N>(page);
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::update_to_next_leaf() {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::update_to_next_leaf()
+{
     auto next_page_number = *next_leaf;
 
     assert(page->page_id.page_number != next_page_number);
 
     buffer_manager.unpin(*page);
 
-    page        = &buffer_manager.get_page_readonly(leaf_file_id, next_page_number);
+    page = &buffer_manager.get_page_readonly(leaf_file_id, next_page_number);
     value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
-    next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
-    bitset_ptr      = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
+    next_leaf = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
+    bitset_ptr = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
     redundant_bytes = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N;
 
     unsigned char* bitset_ptr = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
@@ -47,18 +48,17 @@ void BPlusTreeLeaf<N>::update_to_next_leaf() {
     records = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N + redundant_count;
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::upgrade_to_editable() {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::upgrade_to_editable()
+{
     if (buffer_manager.need_edit_version(*page)) {
-
         auto new_page = &buffer_manager.get_page_editable(leaf_file_id, page->get_page_number());
         buffer_manager.unpin(*page);
         page = new_page;
 
         value_count = reinterpret_cast<uint32_t*>(page->get_bytes());
-        next_leaf   = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
-        bitset_ptr      = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
+        next_leaf = reinterpret_cast<uint32_t*>(page->get_bytes() + sizeof(uint32_t));
+        bitset_ptr = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
         redundant_bytes = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t) + N;
 
         unsigned char* bitset_ptr = (unsigned char*) page->get_bytes() + 2 * sizeof(uint32_t);
@@ -74,9 +74,9 @@ void BPlusTreeLeaf<N>::upgrade_to_editable() {
     }
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::set_record(uint_fast32_t pos, Record<N>& out) const {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::set_record(uint_fast32_t pos, Record<N>& out) const
+{
     unsigned char* out_char = (unsigned char*) &out;
 
     unsigned char* current_record = records + pos * (N * sizeof(uint64_t) - redundant_count);
@@ -94,17 +94,17 @@ void BPlusTreeLeaf<N>::set_record(uint_fast32_t pos, Record<N>& out) const {
     }
 }
 
-
-template <std::size_t N>
-Record<N> BPlusTreeLeaf<N>::get_record(uint_fast32_t pos) const {
+template<std::size_t N>
+Record<N> BPlusTreeLeaf<N>::get_record(uint_fast32_t pos) const
+{
     Record<N> out;
     set_record(pos, out);
     return out;
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::set_redundant_record(Record<N>& out) const {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::set_redundant_record(Record<N>& out) const
+{
     unsigned char* out_char = (unsigned char*) &out;
     size_t redundant_pos = 0;
 
@@ -116,8 +116,9 @@ void BPlusTreeLeaf<N>::set_redundant_record(Record<N>& out) const {
     }
 }
 
-template <std::size_t N>
-void BPlusTreeLeaf<N>::update_record(uint_fast32_t pos, Record<N>& out) const {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::update_record(uint_fast32_t pos, Record<N>& out) const
+{
     unsigned char* out_char = (unsigned char*) &out;
 
     unsigned char* current_record = records + pos * (N * sizeof(uint64_t) - redundant_count);
@@ -131,9 +132,9 @@ void BPlusTreeLeaf<N>::update_record(uint_fast32_t pos, Record<N>& out) const {
     }
 }
 
-
-template <std::size_t N>
-bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record) {
+template<std::size_t N>
+bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record)
+{
     if (*value_count == 0) {
         return false;
     }
@@ -153,15 +154,15 @@ bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record) {
     }
 }
 
-
-template <std::size_t N>
-uint32_t BPlusTreeLeaf<N>::get_page_size(std::bitset<N * 8> bitset, uint32_t n_records) {
+template<std::size_t N>
+uint32_t BPlusTreeLeaf<N>::get_page_size(std::bitset<N * 8> bitset, uint32_t n_records)
+{
     return 2 * sizeof(uint32_t) + N + bitset.count() + n_records * (sizeof(uint64_t) * N - bitset.count());
 }
 
-
-template <std::size_t N>
-std::bitset<N * 8> BPlusTreeLeaf<N>::create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to) {
+template<std::size_t N>
+std::bitset<N * 8> BPlusTreeLeaf<N>::create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to)
+{
     std::bitset<N * 8> new_bitset;
     new_bitset.set();
 
@@ -182,12 +183,14 @@ std::bitset<N * 8> BPlusTreeLeaf<N>::create_new_bitset(const Record<N>& referenc
     return new_bitset;
 }
 
-
 template<std::size_t N>
-void BPlusTreeLeaf<N>::compress_to_buffer(unsigned char*     compression_buffer,
-                                          std::bitset<N * 8> bitset,
-                                          uint64_t           from,
-                                          uint64_t           to) {
+void BPlusTreeLeaf<N>::compress_to_buffer(
+    unsigned char* compression_buffer,
+    std::bitset<N * 8> bitset,
+    uint64_t from,
+    uint64_t to
+)
+{
     uint64_t compression_pos = 0;
     Record<N> current_record;
     set_redundant_record(current_record);
@@ -206,10 +209,13 @@ void BPlusTreeLeaf<N>::compress_to_buffer(unsigned char*     compression_buffer,
 }
 
 template<std::size_t N>
-void BPlusTreeLeaf<N>::update_leaf(BPlusTreeLeaf<N>&   leaf,
-                                   std::bitset<N * 8>& bitset,
-                                   uint64_t            n_records,
-                                   unsigned char*      buffer) {
+void BPlusTreeLeaf<N>::update_leaf(
+    BPlusTreeLeaf<N>& leaf,
+    std::bitset<N * 8>& bitset,
+    uint64_t n_records,
+    unsigned char* buffer
+)
+{
     // update the bitset
     leaf.redundant_bitset = bitset;
     leaf.redundant_count = bitset.count();
@@ -240,9 +246,9 @@ void BPlusTreeLeaf<N>::update_leaf(BPlusTreeLeaf<N>&   leaf,
     *leaf.value_count = n_records;
 }
 
-
-template <std::size_t N>
-unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, bool& error) {
+template<std::size_t N>
+unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, bool& error)
+{
     unsigned char* new_record_char_ptr = (unsigned char*) &record;
 
     if (*value_count == 0) {
@@ -255,7 +261,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         for (uint_fast32_t i = 0; i < N * 8; i++) {
             redundant_bytes[i] = new_record_char_ptr[i];
         }
-        ++(*value_count);
+        *value_count = 1;
         error = false;
         return nullptr;
     }
@@ -340,7 +346,10 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
     // a split is needed
     // 8+N is the size of the value_count + next_leaf + bitset.
     // 2036 is the maximum number of records in the leaf.
-    static_assert(8 + N + 2036 * N * 8 <= QueryContext::buffer_size, "buffer in BPTreeLeaf is not big enough");
+    static_assert(
+        8 + N + 2036 * N * 8 <= QueryContext::buffer_size,
+        "buffer in BPTreeLeaf is not big enough"
+    );
     QueryContext& query_ctx = get_query_ctx();
     unsigned char* buffer = reinterpret_cast<unsigned char*>(query_ctx.get_buffer1());
 
@@ -433,7 +442,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 
         // recalculate the left and right bitsets
         if (n_records_left + n_records_right > *value_count + 1) {
-            n_records_left  = (*value_count + 1 - n_records_right + n_records_left) / 2;
+            n_records_left = (*value_count + 1 - n_records_right + n_records_left) / 2;
             n_records_right = *value_count + 1 - n_records_left;
 
             left_bitset.set();
@@ -500,24 +509,31 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         update_leaf(*this, left_bitset, n_records_left, buffer);
 
         // right leaf
-        update_leaf(right_leaf, right_bitset, n_records_right, buffer + (n_records_left + n_records_middle) * (N * 8));
+        update_leaf(
+            right_leaf,
+            right_bitset,
+            n_records_right,
+            buffer + (n_records_left + n_records_middle) * (N * 8)
+        );
 
         const auto middle_first = middle_leaf.get_record(0);
         const auto right_first = right_leaf.get_record(0);
-        return std::make_unique<BPlusTreeSplit<N>>(middle_first,
-                                                   middle_page.get_page_number(),
-                                                   right_first,
-                                                   right_page.get_page_number());
+        return std::make_unique<BPlusTreeSplit<N>>(
+            middle_first,
+            middle_page.get_page_number(),
+            right_first,
+            right_page.get_page_number()
+        );
     }
 }
 
-
 // returns the position of the minimum key greater or equal than the record given.
 // if there is no such key, returns (to + 1)
-template <std::size_t N>
-uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept {
+template<std::size_t N>
+uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept
+{
     int_fast32_t from = 0;
-    int_fast32_t to = static_cast<int_fast32_t>(*value_count)-1;
+    int_fast32_t to = static_cast<int_fast32_t>(*value_count) - 1;
     Record<N> search_record;
     set_redundant_record(search_record);
 search_index_begin:
@@ -552,9 +568,9 @@ search_index_begin:
     return from;
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::shift_right_records(int_fast32_t from, int_fast32_t to) {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::shift_right_records(int_fast32_t from, int_fast32_t to)
+{
     uint64_t record_step = N * 8 - redundant_count;
 
     for (auto i = to; i >= from; i--) {
@@ -564,9 +580,9 @@ void BPlusTreeLeaf<N>::shift_right_records(int_fast32_t from, int_fast32_t to) {
     }
 }
 
-
-template <std::size_t N>
-bool BPlusTreeLeaf<N>::equal_record(const Record<N>& record, uint_fast32_t index) {
+template<std::size_t N>
+bool BPlusTreeLeaf<N>::equal_record(const Record<N>& record, uint_fast32_t index)
+{
     unsigned char* record_char_ptr = (unsigned char*) &(record);
     int unique_size = N * 8 - redundant_count;
 
@@ -589,9 +605,9 @@ bool BPlusTreeLeaf<N>::equal_record(const Record<N>& record, uint_fast32_t index
     return true;
 }
 
-
-template <std::size_t N>
-bool BPlusTreeLeaf<N>::check_range(const Record<N>& r) const {
+template<std::size_t N>
+bool BPlusTreeLeaf<N>::check_range(const Record<N>& r) const
+{
     if (*value_count == 0) {
         return false;
     }
@@ -601,9 +617,9 @@ bool BPlusTreeLeaf<N>::check_range(const Record<N>& r) const {
     return min <= r && r <= max;
 }
 
-
-template <std::size_t N>
-void BPlusTreeLeaf<N>::print(std::ostream& os) const {
+template<std::size_t N>
+void BPlusTreeLeaf<N>::print(std::ostream& os) const
+{
     os << "Printing Leaf:\n";
     for (uint_fast32_t i = 0; i < (*value_count); i++) {
         os << "  (";
@@ -617,8 +633,7 @@ void BPlusTreeLeaf<N>::print(std::ostream& os) const {
             if (redundant_bitset[j]) {
                 os << redundant_bytes[pos_redundant];
                 pos_redundant++;
-            }
-            else {
+            } else {
                 os << current_record[pos_unique];
                 pos_unique++;
             }
@@ -627,9 +642,9 @@ void BPlusTreeLeaf<N>::print(std::ostream& os) const {
     }
 }
 
-
-template <std::size_t N>
-bool BPlusTreeLeaf<N>::check(std::ostream& os) const {
+template<std::size_t N>
+bool BPlusTreeLeaf<N>::check(std::ostream& os) const
+{
     if ((*value_count) == 0) {
         if (page->get_page_number() == 0) {
             os << "  WARNING: empty leaf. Ok only if the b+tree is empty.\n";

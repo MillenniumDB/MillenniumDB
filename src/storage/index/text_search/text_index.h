@@ -58,8 +58,10 @@ public:
 
     // The trie of the currently loaded index
     std::unique_ptr<Trie> trie;
+
     // The BPT of the currently loaded index
     std::unique_ptr<BPlusTree<2>> bpt;
+
     // The table of the currently loaded index
     std::unique_ptr<Table> table;
 
