@@ -1,0 +1,2 @@
+MATCH (x {name:"N0"}) ((a) (b) | (c) (d))
+RETURN x.name, a.name, c.name
