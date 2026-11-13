@@ -1,0 +1,2 @@
+MATCH (s {name:"N3"}) ( ((a)-[:Follows]->(b))? (c)-[:Owns]->(d) ) (t)
+RETURN t.name

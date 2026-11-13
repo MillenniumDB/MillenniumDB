@@ -37,6 +37,7 @@ private:
     uint64_t lower;
     uint64_t upper;
 
+    // set when a search starts, as a Repetition may be asked for a result before it has a boundary
     bool return_zero_length = false;
 
     ObjectId parent_boundary = ObjectId(0);

@@ -7,8 +7,7 @@ Repetition::Repetition(
 ) :
     child_iter(std::move(child_iter)),
     lower(lower),
-    upper(upper.value_or(MAX_REPETITIONS)),
-    return_zero_length(lower == 0)
+    upper(upper.value_or(MAX_REPETITIONS))
 { }
 
 void Repetition::begin(Binding& binding)
