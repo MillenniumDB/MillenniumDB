@@ -78,6 +78,8 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
     std::unique_ptr<VarId> previous_end;
 
     linear_pattern = None;
+    // a previous pattern may have left the flag set; the first node would close an empty pattern
+    consecutive_nodes_found = false;
 
     for (auto& pattern : op_basic_graph_pattern.patterns) {
         pattern->accept_visitor(*this);
