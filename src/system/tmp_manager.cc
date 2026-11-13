@@ -19,7 +19,6 @@ TmpManager::TmpManager(int num_workers)
     for (int i = 0; i < num_workers; i++) {
         info.emplace_back();
     }
-    tmp_lists.resize(num_workers);
 }
 
 TmpManager::~TmpManager() { }
@@ -27,12 +26,6 @@ TmpManager::~TmpManager() { }
 void TmpManager::reset(uint_fast32_t worker_idx)
 {
     info[worker_idx].reset();
-}
-
-void TmpManager::reset_tmp_list()
-{
-    auto idx = get_query_ctx().thread_info.worker_index;
-    tmp_lists[idx].reset();
 }
 
 const std::string& TmpManager::get_str(uint64_t id) const
@@ -74,13 +67,4 @@ uint64_t TmpManager::get_str_id(const std::string& str)
         _info.id_to_str.push_back(str);
         return _info.next_str_id++;
     }
-}
-
-TmpLists& TmpManager::get_tmp_list() {
-    auto idx = get_query_ctx().thread_info.worker_index;
-    if (tmp_lists[idx] == nullptr) {
-        tmp_lists[idx] = std::make_unique<TmpLists>();
-    }
-
-    return *tmp_lists[idx];
 }

@@ -48,8 +48,7 @@ public:
 
     void write_gql_path(const ObjectId& oid)
     {
-        std::vector<ObjectId> path;
-        GQL::Conversions::unpack_path(oid, path);
+        std::vector<ObjectId> path = GQL::Conversions::unpack_path(oid);
 
         const uint32_t path_length = path.size() / 3;
 
@@ -169,8 +168,7 @@ public:
             break;
         }
         case GQL_OID::Type::LIST: {
-            std::vector<ObjectId> oid_list;
-            GQL::Conversions::unpack_list(oid, oid_list);
+            std::vector<ObjectId> oid_list = GQL::Conversions::unpack_list(oid);
             write_list(oid_list);
             break;
         }

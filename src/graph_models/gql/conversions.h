@@ -30,10 +30,9 @@ ObjectId pack_edge_property(const std::string& key);
 
 void print_path(std::ostream& os, ObjectId oid);
 ObjectId pack_path(const std::vector<ObjectId>& oid_list);
-void unpack_path(ObjectId oid, std::vector<ObjectId>& out);
+std::vector<ObjectId> unpack_path(ObjectId oid);
 
 ObjectId pack_list(const std::vector<ObjectId>& list);
-void unpack_list(ObjectId list_id, std::vector<ObjectId>& out);
 std::vector<ObjectId> unpack_list(ObjectId list_id);
 
 std::ostream& debug_print(std::ostream& os, ObjectId oid);

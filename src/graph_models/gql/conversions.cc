@@ -56,8 +56,7 @@ void Conversions::print_path_edge(std::ostream& os, ObjectId edge_id, bool inver
 
 void Conversions::print_path(std::ostream& os, ObjectId oid)
 {
-    std::vector<ObjectId> oid_list;
-    unpack_path(oid, oid_list);
+    std::vector<ObjectId> oid_list = unpack_path(oid);
 
     bool is_node = true;
     for (auto it = oid_list.begin(); it != oid_list.end();) {
@@ -179,8 +178,12 @@ std::string Conversions::to_lexical_str(ObjectId oid)
         ss << '[';
         path_manager.for_each(
             Conversions::get_path_id(oid),
-            [&](ObjectId oid) { print_path_node(ss, oid); },
-            [&](ObjectId oid, bool reverse) { print_path_edge(ss, oid, reverse); }
+            [&](ObjectId oid) {
+                print_path_node(ss, oid);
+            },
+            [&](ObjectId oid, bool reverse) {
+                print_path_edge(ss, oid, reverse);
+            }
         );
         ss << ']';
         return ss.str();
@@ -274,38 +277,38 @@ ObjectId Conversions::pack_edge_property(const std::string& property)
 
 ObjectId Conversions::pack_list(const std::vector<ObjectId>& list)
 {
-    TmpLists& tmp_list = tmp_manager.get_tmp_list();
-    uint32_t file_id = tmp_list.get_file_id();
-    uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST_TMP | (uint64_t(file_id) << 40) | list_offset);
+    auto list_byte_size = ListEncoder::encode(list, get_query_ctx().get_buffer1());
+    std::string list_as_str(get_query_ctx().get_buffer1(), list_byte_size);
+
+    uint64_t list_id;
+    auto str_id = string_manager.get_str_id(list_as_str);
+    if (str_id != ObjectId::MASK_NOT_FOUND) {
+        list_id = ObjectId::MASK_LIST_EXTERN | str_id;
+    } else {
+        list_id = ObjectId::MASK_LIST_TMP | tmp_manager.get_str_id(list_as_str);
+    }
+
+    return ObjectId(list_id);
 }
 
-void Conversions::unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
+std::vector<ObjectId> Conversions::unpack_list(ObjectId oid)
 {
-    switch (list_id.get_type()) {
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_TMP: {
-        auto& lists = tmp_manager.get_tmp_list();
-        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
-        lists.get(out, list_id.id & LIST_OFFSET_MASK);
-        break;
-    }
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+
+    switch (oid.get_type()) {
     case ObjectId::MASK_LIST_EXTERN: {
-        char* buffer = get_query_ctx().get_buffer1();
-
-        auto external_id = list_id.get_value();
-        string_manager.print_to_buffer(buffer, external_id);
-        out = ListEncoder::decode(buffer);
-        break;
+        std::stringstream ss;
+        string_manager.print(ss, external_id);
+        std::string list_str = ss.str();
+        return ListEncoder::decode(list_str.data());
+    }
+    case ObjectId::MASK_LIST_TMP: {
+        auto& str = tmp_manager.get_str(external_id);
+        return ListEncoder::decode(str.data());
     }
     }
-}
-
-std::vector<ObjectId> Conversions::unpack_list(ObjectId list_id)
-{
-    std::vector<ObjectId> list;
-    unpack_list(list_id, list);
-    return list;
+    assert(false);
+    return std::vector<ObjectId>();
 }
 
 ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
@@ -314,10 +317,10 @@ ObjectId Conversions::pack_path(const std::vector<ObjectId>& oid_list)
     return ObjectId((path_oid.id & ~ObjectId::TYPE_MASK) | ObjectId::MASK_GQL_PATH);
 }
 
-void Conversions::unpack_path(ObjectId oid, std::vector<ObjectId>& out)
+std::vector<ObjectId> Conversions::unpack_path(ObjectId oid)
 {
     oid = ObjectId((oid.id & ~ObjectId::TYPE_MASK) | ObjectId::MASK_LIST_TMP);
-    unpack_list(oid, out);
+    return unpack_list(oid);
 }
 
 std::ostream& Conversions::debug_print(std::ostream& os, ObjectId oid)

@@ -22,10 +22,8 @@ void ReturnExecutor<ret>::print_handle_escape(std::ostream& os, std::ostream& es
 {
     const auto mask = oid.id & ObjectId::TYPE_MASK;
     switch (mask) {
-    case ObjectId::MASK_DICTIONARY:
     case ObjectId::MASK_DICTIONARY_EXTERN:
     case ObjectId::MASK_DICTIONARY_TMP:
-    case ObjectId::MASK_LIST:
     case ObjectId::MASK_LIST_EXTERN:
     case ObjectId::MASK_LIST_TMP:
         os << '"';
@@ -62,8 +60,7 @@ void ReturnExecutor<ret>::print_path_edge(std::ostream& os, ObjectId edge_id, bo
 template<ReturnType ret>
 void ReturnExecutor<ret>::print_list(std::ostream& os, std::ostream& escaped_os, ObjectId oid)
 {
-    std::vector<ObjectId> out;
-    Conversions::unpack_list(oid, out);
+    std::vector<ObjectId> out = Conversions::unpack_list(oid);
     os << "[";
     for (auto it = out.begin(); it != out.end(); ++it) {
         if (it != out.begin()) {
@@ -182,13 +179,12 @@ void ReturnExecutor<ret>::print(std::ostream& os, std::ostream& escaped_os, Obje
         os << "tensorDouble(\"" << tensor.to_string() << "\")";
         break;
     }
-    case ObjectId::MASK_LIST:
     case ObjectId::MASK_LIST_EXTERN:
     case ObjectId::MASK_LIST_TMP: {
         print_list(os, escaped_os, oid);
         break;
     }
-    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_EXTERN:
     case ObjectId::MASK_DICTIONARY_TMP: {
         std::unique_ptr<Dictionary> dict = Common::Conversions::unpack_dictionary(oid);
         dict->to_string(escaped_os);

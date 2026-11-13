@@ -430,7 +430,6 @@ BufferManager::VersionScope::VersionScope(uint64_t start_version, bool is_editab
 
 BufferManager::VersionScope::~VersionScope()
 {
-    tmp_manager.reset_tmp_list();
     buffer_manager.terminate(*this);
 }
 
