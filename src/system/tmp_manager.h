@@ -2,13 +2,10 @@
 
 #include <cassert>
 #include <cstdint>
-#include <memory>
 #include <ostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "storage/index/lists/tmp_lists.h"
 
 struct ThreadTempInfo {
     ThreadTempInfo() = default;
@@ -49,16 +46,10 @@ public:
     // should be called at the start of every query
     void reset(uint_fast32_t worker_idx);
 
-    void reset_tmp_list();
-
-    TmpLists& get_tmp_list();
-
 private:
     TmpManager(int num_workers);
 
     std::vector<ThreadTempInfo> info;
-
-    std::vector<std::unique_ptr<TmpLists>> tmp_lists;
 };
 
 extern TmpManager& tmp_manager; // global object

@@ -118,12 +118,11 @@ public:
             write_tensor<double>(tensor);
             break;
         }
-        case ObjectId::MASK_DICTIONARY:
+        case ObjectId::MASK_DICTIONARY_EXTERN:
         case ObjectId::MASK_DICTIONARY_TMP: {
             const auto dictionary = Common::Conversions::unpack_dictionary(oid);
             return write_dictionary(*dictionary);
         }
-        case ObjectId::MASK_LIST:
         case ObjectId::MASK_LIST_EXTERN:
         case ObjectId::MASK_LIST_TMP: {
             const auto list = MQL::Conversions::unpack_list(oid);

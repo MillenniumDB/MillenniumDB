@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <cstring>
 #include <string>
 
 #include "graph_models/common/datatypes/datetime.h"
@@ -415,7 +414,7 @@ inline ObjectId pack_dictionary(const std::unique_ptr<Dictionary>& dict)
     uint64_t dict_id;
     auto str_id = string_manager.get_str_id(dict_str);
     if (str_id != ObjectId::MASK_NOT_FOUND) {
-        dict_id = ObjectId::MASK_DICTIONARY | ObjectId::MOD_EXTERNAL | str_id;
+        dict_id = ObjectId::MASK_DICTIONARY_EXTERN | str_id;
     } else {
         dict_id = ObjectId::MASK_DICTIONARY_TMP | tmp_manager.get_str_id(dict_str);
     }
@@ -429,7 +428,7 @@ inline void unpack_dictionary(ObjectId oid, std::unique_ptr<Dictionary>& out)
     uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
 
     switch (oid.get_type()) {
-    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_EXTERN:
         string_manager.print(ss, external_id);
         break;
     case ObjectId::MASK_DICTIONARY_TMP:

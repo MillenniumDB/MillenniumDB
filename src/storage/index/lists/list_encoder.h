@@ -2,15 +2,15 @@
 
 #include "graph_models/object_id.h"
 #include "misc/bytes_encoder.h"
+
 #include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 class ListEncoder {
 public:
     // writes the encoded list to the buffer and returns the size
-    static uint64_t encode(std::vector<ObjectId>& list, char* buffer)
+    static uint64_t encode(const std::vector<ObjectId>& list, char* buffer)
     {
         if (list.empty()) {
             *buffer = 0;
@@ -27,7 +27,7 @@ public:
         return size_len + list.size() * sizeof(ObjectId);
     }
 
-    static std::vector<ObjectId> decode(char* buffer)
+    static std::vector<ObjectId> decode(const char* buffer)
     {
         uint64_t list_size;
         if (*buffer == 0) {

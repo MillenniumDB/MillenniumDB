@@ -6,10 +6,10 @@
 
 #include "graph_models/common/conversions.h" // IWYU pragma: export
 #include "graph_models/inliner.h"
+#include "storage/index/lists/list_encoder.h"
 #include "system/string_manager.h"
 #include "system/tmp_manager.h"
 #include "third_party/dragonbox/dragonbox_to_chars.h"
-#include "storage/index/lists/list_encoder.h"
 
 namespace MQL { namespace Conversions {
 using namespace Common::Conversions;
@@ -93,36 +93,38 @@ inline std::string unpack_named_node(ObjectId oid)
         return ss.str();
     }
     default: {
-        throw LogicException("Called unpack_named_node with incorrect ObjectId type, this should never happen"
+        throw LogicException(
+            "Called unpack_named_node with incorrect ObjectId type, this should never happen"
         );
     }
     }
 }
 
-    inline ObjectId pack_named_node(const std::string& str)
-    {
-        uint64_t oid;
-        if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
-            oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+inline ObjectId pack_named_node(const std::string& str)
+{
+    uint64_t oid;
+    if (str.size() <= ObjectId::NAMED_NODE_INLINE_BYTES) {
+        oid = Inliner::inline_string(str.c_str()) | ObjectId::MASK_NAMED_NODE_INLINED;
+    } else {
+        const auto str_id = string_manager.get_str_id(str);
+        if (str_id != ObjectId::MASK_NOT_FOUND) {
+            oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
         } else {
-            const auto str_id = string_manager.get_str_id(str);
-            if (str_id != ObjectId::MASK_NOT_FOUND) {
-                oid = ObjectId::MASK_NAMED_NODE_EXTERN | str_id;
-            } else {
-                oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
-            }
+            oid = ObjectId::MASK_NAMED_NODE_TMP | tmp_manager.get_str_id(str);
         }
-        return ObjectId(oid);
     }
+    return ObjectId(oid);
+}
 
-    inline ObjectId pack_edge(uint64_t edge_id) {
-        return ObjectId(ObjectId::MASK_EDGE | edge_id);
-    }
+inline ObjectId pack_edge(uint64_t edge_id)
+{
+    return ObjectId(ObjectId::MASK_EDGE | edge_id);
+}
 
-    inline ObjectId pack_anon_tmp(uint64_t anon_id)
-    {
-        return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
-    }
+inline ObjectId pack_anon_tmp(uint64_t anon_id)
+{
+    return ObjectId(ObjectId::MASK_ANON_TMP | anon_id);
+}
 
 inline DateTime unpack_datetime(ObjectId oid)
 {
@@ -143,38 +145,37 @@ inline float to_float(ObjectId oid)
 
 inline ObjectId pack_list(const std::vector<ObjectId>& list)
 {
-    TmpLists& tmp_list = tmp_manager.get_tmp_list();
-    uint32_t file_id = tmp_list.get_file_id();
-    uint64_t list_offset = tmp_list.insert(list);
-    return ObjectId(ObjectId::MASK_LIST | (uint64_t(file_id) << 40) | list_offset);
+    auto list_byte_size = ListEncoder::encode(list, get_query_ctx().get_buffer1());
+    std::string list_as_str(get_query_ctx().get_buffer1(), list_byte_size);
+
+    uint64_t list_id;
+    auto str_id = string_manager.get_str_id(list_as_str);
+    if (str_id != ObjectId::MASK_NOT_FOUND) {
+        list_id = ObjectId::MASK_LIST_EXTERN | str_id;
+    } else {
+        list_id = ObjectId::MASK_LIST_TMP | tmp_manager.get_str_id(list_as_str);
+    }
+
+    return ObjectId(list_id);
 }
 
-inline void unpack_list(ObjectId list_id, std::vector<ObjectId>& out)
+inline std::vector<ObjectId> unpack_list(ObjectId oid)
 {
-    switch (list_id.get_type()) {
-    case ObjectId::MASK_LIST:
-    case ObjectId::MASK_LIST_TMP: {
-        auto& lists = tmp_manager.get_tmp_list();
-        assert((LIST_FILE_ID_MASK & list_id.id) >> 40 == lists.get_file_id());
-        lists.get(out, list_id.id & LIST_OFFSET_MASK);
-        break;
-    }
+    uint64_t external_id = oid.id & ObjectId::MASK_EXTERNAL_ID;
+
+    switch (oid.get_type()) {
     case ObjectId::MASK_LIST_EXTERN: {
-        char* buffer = get_query_ctx().get_buffer1();
-
-        auto external_id = list_id.get_value();
-        string_manager.print_to_buffer(buffer, external_id);
-        out = ListEncoder::decode(buffer);
-        break;
+        std::stringstream ss;
+        string_manager.print(ss, external_id);
+        std::string list_str = ss.str();
+        return ListEncoder::decode(list_str.data());
     }
+    case ObjectId::MASK_LIST_TMP:
+        auto& str = tmp_manager.get_str(external_id);
+        return ListEncoder::decode(str.data());
     }
-}
-
-inline std::vector<ObjectId> unpack_list(ObjectId list_id)
-{
-    std::vector<ObjectId> list;
-    unpack_list(list_id, list);
-    return list;
+    assert(false);
+    return std::vector<ObjectId>();
 }
 
 // Returns a string with the lexical representation of the value
@@ -241,7 +242,8 @@ inline std::string to_lexical_str(ObjectId oid)
         const auto tensor = unpack_tensor<double>(oid);
         return tensor.to_string();
     }
-    case ObjectId::MASK_LIST: {
+    case ObjectId::MASK_LIST_EXTERN:
+    case ObjectId::MASK_LIST_TMP: {
         auto list = unpack_list(oid);
         std::stringstream ss;
         ss << "[";
@@ -254,7 +256,7 @@ inline std::string to_lexical_str(ObjectId oid)
         ss << "]";
         return ss.str();
     }
-    case ObjectId::MASK_DICTIONARY:
+    case ObjectId::MASK_DICTIONARY_EXTERN:
     case ObjectId::MASK_DICTIONARY_TMP: {
         std::unique_ptr<Dictionary> dict = unpack_dictionary(oid);
         std::stringstream ss;
