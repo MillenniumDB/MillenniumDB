@@ -517,6 +517,7 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
     // visit all children and create nodes and subpaths
     for (size_t i = 0; i < ctx->children.size(); i++) {
         current_repetition = nullptr;
+        const auto num_exprs = current_expr_list.size();
         visit(ctx->children[i]);
 
         switch (current_pattern) {
@@ -544,6 +545,13 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
 
             if (current_repetition) {
                 bgp_patterns.back().repetition = std::move(current_repetition);
+                // the conditions of a quantified edge are part of the repeated pattern
+                auto first_expr = current_expr_list.begin() + num_exprs;
+                bgp_patterns.back().exprs.assign(
+                    std::make_move_iterator(first_expr),
+                    std::make_move_iterator(current_expr_list.end())
+                );
+                current_expr_list.erase(first_expr, current_expr_list.end());
             }
             break;
         }
@@ -599,7 +607,10 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
             rep_patterns.push_back(std::make_unique<OpEdge>(edge));
             rep_patterns.push_back(std::move(right_node_op));
 
-            auto bgp = std::make_unique<OpBasicGraphPattern>(std::move(rep_patterns));
+            std::unique_ptr<Op> bgp = std::make_unique<OpBasicGraphPattern>(std::move(rep_patterns));
+            if (!it_bgp_patterns->exprs.empty()) {
+                bgp = std::make_unique<OpWhere>(std::move(bgp), std::move(it_bgp_patterns->exprs));
+            }
 
             PatternInfo pattern_info(
                 std::make_unique<OpRepetition>(std::move(bgp), std::move(it_bgp_patterns->repetition)),

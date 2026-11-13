@@ -12,6 +12,12 @@ private:
     bool graph_pattern_visited = false;
     std::vector<std::unique_ptr<Expr>> tmp_exprs;
 
+    // number of quantified path patterns enclosing the visited op
+    uint64_t repetition_depth = 0;
+
+    // number of path pattern unions enclosing the visited op
+    uint64_t union_depth = 0;
+
     void check_mode(const PathMode& mode);
 
     void visit(OpGraphPattern& op) override;

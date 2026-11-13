@@ -43,6 +43,8 @@ private:
         VarId id;
         EdgeType edge_type;
         std::unique_ptr<OpRepetition::Repetition> repetition;
+        // the conditions of a quantified edge pattern, evaluated on every iteration
+        std::vector<std::unique_ptr<Expr>> exprs;
 
         PatternInfo(
             std::unique_ptr<Op> pattern,
