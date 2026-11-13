@@ -309,7 +309,7 @@ void OnDiskImport::start_import(MDBIstream& in)
 
         NoStat<3> no_stat;
         equal_from_type
-            .create_bpt(db_folder + "/equal_from_type_inv", { C_TO, C_FROM_TYPE, C_EDGE }, no_stat);
+            .create_bpt(db_folder + "/equal_from_type_inverted", { C_TO, C_FROM_TYPE, C_EDGE }, no_stat);
     }
 
     { // TO=TYPE FROM EDGE
