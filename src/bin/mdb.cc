@@ -3,12 +3,14 @@
 #include "bin/mdb-import.h"
 #include "bin/mdb-server.h"
 #include "cli/cli.h"
+#include "system/system.h"
 
 using namespace MdbBin;
 
 void print_mdb_version()
 {
-    std::cout << "MillenniumDB v1.0.0\n";
+    std::cout << "MillenniumDB v" << (int) System::MAJOR_VER << '.' << (int) System::MINOR_VER << '.'
+              << (int) System::PATCH_VER << '\n';
 }
 
 void print_server_help()
