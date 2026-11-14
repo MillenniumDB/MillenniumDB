@@ -17,7 +17,7 @@ void ExtendLeft::begin(Binding& binding)
 
     left->begin(binding);
     if (right_has_value) {
-        left->set_right_boundary(right_list->steps.front().node_value);
+        left->set_right_boundary(right_list->elements.front().element.start_node());
     }
 }
 
@@ -29,11 +29,11 @@ void ExtendLeft::reset()
     right_has_value = right_list != nullptr;
 
     if (right_has_value) {
-        left->set_right_boundary(right_list->steps.front().node_value);
+        left->set_right_boundary(right_list->elements.front().element.start_node());
     }
 }
 
-void ExtendLeft::set_left_boundary(ObjectId boundary)
+void ExtendLeft::set_left_boundary(const PathElement& boundary)
 {
     left->set_left_boundary(boundary);
 
@@ -41,7 +41,7 @@ void ExtendLeft::set_left_boundary(ObjectId boundary)
     right_has_value = right_list != nullptr;
 
     if (right_has_value) {
-        left->set_right_boundary(right_list->steps.front().node_value);
+        left->set_right_boundary(right_list->elements.front().element.start_node());
     }
 }
 
@@ -53,7 +53,7 @@ void ExtendLeft::set_right_boundary(ObjectId boundary)
     right_has_value = right_list != nullptr;
 
     if (right_has_value) {
-        left->set_right_boundary(right_list->steps.front().node_value);
+        left->set_right_boundary(right_list->elements.front().element.start_node());
     }
 }
 
@@ -63,14 +63,14 @@ std::unique_ptr<PathBinding> ExtendLeft::next()
         left_list = left->next();
         if (left_list != nullptr) {
             auto final_list = right_list->clone();
-            final_list->merge_right(left_list);
+            final_list->concat(*left_list);
             return final_list;
         } else {
             right_list = right->next();
             right_has_value = right_list != nullptr;
 
             if (right_has_value) {
-                left->set_right_boundary(right_list->steps.front().node_value);
+                left->set_right_boundary(right_list->elements.front().element.start_node());
             }
         }
     }

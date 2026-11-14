@@ -7,7 +7,7 @@ public:
     CheckRepeatedVariable(std::unique_ptr<PathBindingIter> iter, VarId repeated_var);
 
     void begin(Binding& _parent_binding) override;
-    void set_left_boundary(ObjectId boundary) override;
+    void set_left_boundary(const PathElement& boundary) override;
     void set_right_boundary(ObjectId boundary) override;
     void reset() override;
     std::unique_ptr<PathBinding> next() override;

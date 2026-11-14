@@ -9,11 +9,12 @@ namespace GQL {
 
 class LinearPatternPath : public PathBindingIter {
 public:
+    // variables_in_pattern: node, (edge, direction, node)*
     LinearPatternPath(std::unique_ptr<BindingIter>&& iter, std::vector<VarId>&& variables_in_pattern);
 
     void begin(Binding& binding) override;
     void reset() override;
-    void set_left_boundary(ObjectId boundary) override;
+    void set_left_boundary(const PathElement& boundary) override;
     void set_right_boundary(ObjectId boundary) override;
     std::unique_ptr<PathBinding> next() override;
     void assign_nulls() override;
@@ -30,6 +31,10 @@ private:
     const uint64_t pattern_size;
     std::set<VarId> outer_vars;
     Binding* parent_binding;
+
+    // the element that the current result of the scan has at position i of variables_in_pattern
+    PathElement node_at(size_t i) const;
+    PathElement edge_at(size_t i) const;
 };
 
 } // namespace GQL

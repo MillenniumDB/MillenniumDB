@@ -1,4 +1,7 @@
 #include "path_to_binding.h"
+
+#include <cassert>
+
 #include "graph_models/gql/conversions.h"
 
 PathToBinding::PathToBinding(
@@ -42,23 +45,12 @@ bool PathToBinding::_next()
 
     std::map<VarId, std::vector<ObjectId>> groups;
 
-    bool first = true;
-    for (auto it = list->steps.begin(); it != list->steps.end(); ++it) {
-        // first element of the list does not contain an edge
-        if (first) {
-            first = false;
-        } else {
-            if (types[it->edge_var].is_group()) {
-                groups[it->edge_var].push_back(it->edge_value);
+    for (auto& [element, vars] : list->elements) {
+        for (auto& var : vars) {
+            if (types[var].is_group()) {
+                groups[var].push_back(element.id);
             } else {
-                parent_binding->add(it->edge_var, it->edge_value);
-            }
-        }
-        for (auto& node_var : it->node_vars) {
-            if (types[node_var].is_group()) {
-                groups[node_var].push_back(it->node_value);
-            } else {
-                parent_binding->add(node_var, it->node_value);
+                parent_binding->add(var, element.id);
             }
         }
     }
@@ -76,17 +68,16 @@ bool PathToBinding::_next()
 
 void PathToBinding::assign_path_var(std::unique_ptr<PathBinding>& list)
 {
+    // A GQL path value is node, (edge, direction, node)*
+    assert(!list->elements.empty());
+    assert(!list->elements.front().element.is_edge && !list->elements.back().element.is_edge);
+
     std::vector<ObjectId> path_oids;
 
-    bool first = true;
-    for (auto elem : list->steps) {
-        if (first) {
-            path_oids.push_back(elem.node_value);
-            first = false;
-        } else {
-            path_oids.push_back(elem.edge_value);
-            path_oids.push_back(elem.edge_direction);
-            path_oids.push_back(elem.node_value);
+    for (auto& bound : list->elements) {
+        path_oids.push_back(bound.element.id);
+        if (bound.element.is_edge) {
+            path_oids.push_back(bound.element.direction);
         }
     }
 

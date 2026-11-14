@@ -23,9 +23,10 @@ void LinearPatternPath::reset()
     child_iter->reset();
 }
 
-void LinearPatternPath::set_left_boundary(ObjectId boundary)
+void LinearPatternPath::set_left_boundary(const PathElement& boundary)
 {
-    parent_binding->add(variables_in_pattern.front(), boundary);
+    // the pattern starts with a node: the node at which the path on the left ends
+    parent_binding->add(variables_in_pattern.front(), boundary.end_node());
     // we call reset here, so that the child iter sets the ranges of the bpt iter and
     // the assign nulls function can be called safely
     child_iter->reset();
@@ -39,34 +40,36 @@ void LinearPatternPath::set_right_boundary(ObjectId boundary)
     child_iter->reset();
 }
 
+PathElement LinearPatternPath::node_at(size_t i) const
+{
+    return PathElement::node((*parent_binding)[variables_in_pattern[i]]);
+}
+
+PathElement LinearPatternPath::edge_at(size_t i) const
+{
+    // the variables around i are: node before the edge, edge, direction, node after the edge
+    return PathElement::edge(
+        (*parent_binding)[variables_in_pattern[i]],
+        (*parent_binding)[variables_in_pattern[i + 1]],
+        (*parent_binding)[variables_in_pattern[i - 1]],
+        (*parent_binding)[variables_in_pattern[i + 2]]
+    );
+}
+
 std::unique_ptr<PathBinding> LinearPatternPath::next()
 {
     if (!child_iter->next()) {
         return nullptr;
     }
 
-    PathBinding list;
-    bool first = true;
-
-    for (auto it = variables_in_pattern.begin(); it != variables_in_pattern.end(); ++it) {
-        if (first) {
-            // add the node only
-            PathStep elem({ *it }, (*parent_binding)[*it]);
-            list.push_right(elem);
-            first = false;
-        } else {
-            // add the node, the edge and the direction
-            VarId edge_var = *it;
-            ObjectId edge_value = (*parent_binding)[*it];
-            it++;
-            ObjectId edge_direction = (*parent_binding)[*it];
-            it++;
-
-            PathStep elem({ *it }, (*parent_binding)[*it], edge_var, edge_value, edge_direction);
-            list.push_right(elem);
-        }
+    auto path = std::make_unique<PathBinding>();
+    path->elements.reserve(pattern_size); // every element has a variable in the pattern
+    path->push_right(node_at(0), variables_in_pattern[0]);
+    for (size_t i = 1; i < pattern_size; i += 3) {
+        path->push_right(edge_at(i), variables_in_pattern[i]);
+        path->push_right(node_at(i + 2), variables_in_pattern[i + 2]);
     }
-    return std::make_unique<PathBinding>(list);
+    return path;
 }
 
 void LinearPatternPath::assign_nulls()

@@ -40,7 +40,7 @@ void PathFilter::reset()
     child_iter->reset();
 }
 
-void PathFilter::set_left_boundary(ObjectId boundary)
+void PathFilter::set_left_boundary(const PathElement& boundary)
 {
     child_iter->set_left_boundary(boundary);
 }
