@@ -72,8 +72,15 @@ std::unique_ptr<PathBinding> LinearPatternPath::next()
 void LinearPatternPath::assign_nulls()
 {
     for (auto& var : variables_in_pattern) {
-        parent_binding->add(var, ObjectId::get_null());
+        if (!outer_vars.count(var)) {
+            parent_binding->add(var, ObjectId::get_null());
+        }
     }
+}
+
+void LinearPatternPath::set_outer_vars(std::set<VarId>&& vars)
+{
+    outer_vars = std::move(vars);
 }
 
 void LinearPatternPath::assign_empty()

@@ -355,13 +355,20 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
     std::set<VarId> previous_assigned_vars = assigned_vars;
     bool previous_is_first_iter = is_first_iter; // consider handling this in the logical plan
 
+    // a branch sees the variables bound before the union, not those of the branches before it
+    std::set<VarId> previous_graph_pattern_vars = graph_pattern_vars;
+    std::set<VarId> union_graph_pattern_vars = graph_pattern_vars;
+
     for (auto& pattern : op_union.op_list) {
         is_first_iter = previous_is_first_iter;
+        graph_pattern_vars = previous_graph_pattern_vars;
         pattern->accept_visitor(*this);
         iters.push_back(std::move(tmp_path));
 
+        union_graph_pattern_vars.insert(graph_pattern_vars.begin(), graph_pattern_vars.end());
         assigned_vars = previous_assigned_vars;
     }
+    graph_pattern_vars = std::move(union_graph_pattern_vars);
 
     tmp_path = std::make_unique<UnionPath>(std::move(iters));
 }
@@ -507,19 +514,34 @@ void PathBindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
         }
     }
 
+    // the variables of the pattern that are bound before it, which it must not set to null
+    std::set<VarId> outer_vars;
+    for (auto var : linear_pattern_vars) {
+        if (assigned_vars.count(var)) {
+            outer_vars.insert(var);
+        }
+    }
+
     // insert new assigned vars
     for (auto& plan : base_plans) {
         for (auto var : plan->get_vars()) {
             assigned_vars.insert(var);
         }
     }
+    // get_vars leaves out input vars, such as the first node when the path on its left binds it
+    assigned_vars.insert(linear_pattern_vars.front());
 
     std::unique_ptr<Plan> root_plan = GreedyOptimizer::get_plan(base_plans);
     tmp_iter = root_plan->get_binding_iter();
 
     auto first_var = linear_pattern_vars.front();
 
-    tmp_path = std::make_unique<LinearPatternPath>(std::move(tmp_iter), std::move(linear_pattern_vars));
+    auto linear_pattern_path = std::make_unique<LinearPatternPath>(
+        std::move(tmp_iter),
+        std::move(linear_pattern_vars)
+    );
+    linear_pattern_path->set_outer_vars(std::move(outer_vars));
+    tmp_path = std::move(linear_pattern_path);
 
     if (graph_pattern_vars.count(first_var)) {
         tmp_path = std::make_unique<CheckRepeatedVariable>(std::move(tmp_path), first_var);
