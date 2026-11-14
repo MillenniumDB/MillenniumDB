@@ -14,28 +14,28 @@ public:
   enum {
     K_ACYCLIC = 1, K_AND = 2, K_ANY = 3, K_AS = 4, K_AVG = 5, K_ALL = 6, 
     K_ASC = 7, K_BY = 8, K_BOOL = 9, K_CALL = 10, K_COSINE_DISTANCE = 11, 
-    K_COSINE_SIMILARITY = 12, K_COUNT = 13, K_CREATE = 14, K_DELETE = 15, 
-    K_DESCRIBE = 16, K_DESC = 17, K_DETACH = 18, K_DIMENSIONS = 19, K_DISTINCT = 20, 
-    K_EDGE = 21, K_EDIT_DISTANCE = 22, K_EUCLIDEAN_DISTANCE = 23, K_FROM = 24, 
-    K_HAVING = 25, K_IDENTITY = 26, K_INCOMING = 27, K_INDEX = 28, K_INSERT = 29, 
-    K_INTEGER = 30, K_INTO = 31, K_IS = 32, K_FALSE = 33, K_FLOAT = 34, 
-    K_GROUP = 35, K_GROUPS = 36, K_LABELS = 37, K_LABEL = 38, K_LET = 39, 
-    K_LIMIT = 40, K_MANHATTAN_DISTANCE = 41, K_MATCH = 42, K_MAX = 43, K_MIN = 44, 
-    K_NORMALIZE = 45, K_OBJECTS = 46, K_OFFSET = 47, K_OPTIONAL = 48, K_ORDER = 49, 
-    K_OR = 50, K_OUTGOING = 51, K_PREFIX = 52, K_PROPERTY = 53, K_PROPERTIES = 54, 
-    K_NOT = 55, K_NULL = 56, K_SHORTEST = 57, K_SHOW = 58, K_SIMPLE = 59, 
-    K_STRING = 60, K_STR = 61, K_TEXT_SEARCH = 62, K_TYPE = 63, K_REGEX = 64, 
-    K_REMOVE = 65, K_RETURN = 66, K_SET = 67, K_SUM = 68, K_TRUE = 69, K_TRAILS = 70, 
-    K_VALUES = 71, K_WALKS = 72, K_WITH = 73, K_WHERE = 74, K_YIELD = 75, 
-    TRUE_PROP = 76, FALSE_PROP = 77, ANON_ID = 78, EDGE_ID = 79, KEY = 80, 
-    TYPE = 81, TYPE_VAR = 82, VARIABLE = 83, STRING = 84, UNSIGNED_INTEGER = 85, 
-    UNSIGNED_FLOAT = 86, UNSIGNED_SCIENTIFIC_NOTATION = 87, NAME = 88, LEQ = 89, 
-    GEQ = 90, EQ = 91, NEQ = 92, LT = 93, GT = 94, SINGLE_EQ = 95, PATH_SEQUENCE = 96, 
-    PATH_ALTERNATIVE = 97, PATH_NEGATION = 98, STAR = 99, PERCENT = 100, 
-    QUESTION_MARK = 101, PLUS = 102, MINUS = 103, L_PAR = 104, R_PAR = 105, 
-    LCURLY_BRACKET = 106, RCURLY_BRACKET = 107, LSQUARE_BRACKET = 108, RSQUARE_BRACKET = 109, 
-    COMMA = 110, COLON = 111, WHITE_SPACE = 112, SINGLE_LINE_COMMENT = 113, 
-    UNRECOGNIZED = 114
+    K_COSINE_SIMILARITY = 12, K_COUNT = 13, K_CREATE = 14, K_DAY = 15, K_DELETE = 16, 
+    K_DESCRIBE = 17, K_DESC = 18, K_DETACH = 19, K_DIMENSIONS = 20, K_DISTINCT = 21, 
+    K_EDGE = 22, K_EDIT_DISTANCE = 23, K_EUCLIDEAN_DISTANCE = 24, K_FROM = 25, 
+    K_HAVING = 26, K_IDENTITY = 27, K_INCOMING = 28, K_INDEX = 29, K_INSERT = 30, 
+    K_INTEGER = 31, K_INTO = 32, K_IS = 33, K_FALSE = 34, K_FLOAT = 35, 
+    K_GROUP = 36, K_GROUPS = 37, K_LABELS = 38, K_LABEL = 39, K_LET = 40, 
+    K_LIMIT = 41, K_MANHATTAN_DISTANCE = 42, K_MATCH = 43, K_MAX = 44, K_MIN = 45, 
+    K_MONTH = 46, K_NORMALIZE = 47, K_OBJECTS = 48, K_OFFSET = 49, K_OPTIONAL = 50, 
+    K_ORDER = 51, K_OR = 52, K_OUTGOING = 53, K_PREFIX = 54, K_PROPERTY = 55, 
+    K_PROPERTIES = 56, K_NOT = 57, K_NULL = 58, K_SHORTEST = 59, K_SHOW = 60, 
+    K_SIMPLE = 61, K_STRING = 62, K_STR = 63, K_TEXT_SEARCH = 64, K_TYPE = 65, 
+    K_REGEX = 66, K_REMOVE = 67, K_RETURN = 68, K_SET = 69, K_SUM = 70, 
+    K_TRUE = 71, K_TRAILS = 72, K_VALUES = 73, K_WALKS = 74, K_WITH = 75, 
+    K_WHERE = 76, K_YEAR = 77, K_YIELD = 78, TRUE_PROP = 79, FALSE_PROP = 80, 
+    ANON_ID = 81, EDGE_ID = 82, KEY = 83, TYPE = 84, TYPE_VAR = 85, VARIABLE = 86, 
+    STRING = 87, UNSIGNED_INTEGER = 88, UNSIGNED_FLOAT = 89, UNSIGNED_SCIENTIFIC_NOTATION = 90, 
+    NAME = 91, LEQ = 92, GEQ = 93, EQ = 94, NEQ = 95, LT = 96, GT = 97, 
+    SINGLE_EQ = 98, PATH_SEQUENCE = 99, PATH_ALTERNATIVE = 100, PATH_NEGATION = 101, 
+    STAR = 102, PERCENT = 103, QUESTION_MARK = 104, PLUS = 105, MINUS = 106, 
+    L_PAR = 107, R_PAR = 108, LCURLY_BRACKET = 109, RCURLY_BRACKET = 110, 
+    LSQUARE_BRACKET = 111, RSQUARE_BRACKET = 112, COMMA = 113, COLON = 114, 
+    WHITE_SPACE = 115, SINGLE_LINE_COMMENT = 116, UNRECOGNIZED = 117
   };
 
   enum {
@@ -60,10 +60,11 @@ public:
     RuleValue = 63, RuleConditionalOrExpr = 64, RuleConditionalAndExpr = 65, 
     RuleComparisonExpr = 66, RuleAdditiveExpr = 67, RuleMultiplicativeExpr = 68, 
     RuleUnaryExpr = 69, RuleAtomicExpr = 70, RuleFunction = 71, RuleRegex = 72, 
-    RuleCosineSimilarity = 73, RuleCosineDistance = 74, RuleManhattanDistance = 75, 
-    RuleEuclideanDistance = 76, RuleEditDistance = 77, RuleNormalize = 78, 
-    RuleStr = 79, RuleLabels = 80, RulePropertiesFunction = 81, RuleType = 82, 
-    RuleTextSearchIndexMode = 83, RuleExprTypename = 84, RuleKeyword = 85
+    RuleYearFunc = 73, RuleMonthFunc = 74, RuleDayFunc = 75, RuleCosineSimilarity = 76, 
+    RuleCosineDistance = 77, RuleManhattanDistance = 78, RuleEuclideanDistance = 79, 
+    RuleEditDistance = 80, RuleNormalize = 81, RuleStr = 82, RuleLabels = 83, 
+    RulePropertiesFunction = 84, RuleType = 85, RuleTextSearchIndexMode = 86, 
+    RuleExprTypename = 87, RuleKeyword = 88
   };
 
   explicit MQL_Parser(antlr4::TokenStream *input);
@@ -156,6 +157,9 @@ public:
   class AtomicExprContext;
   class FunctionContext;
   class RegexContext;
+  class YearFuncContext;
+  class MonthFuncContext;
+  class DayFuncContext;
   class CosineSimilarityContext;
   class CosineDistanceContext;
   class ManhattanDistanceContext;
@@ -1450,9 +1454,9 @@ public:
 
   class  AdditiveExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s102 = nullptr;
+    antlr4::Token *s105 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s103 = nullptr;
+    antlr4::Token *s106 = nullptr;
     antlr4::Token *_tset1470 = nullptr;
     AdditiveExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
@@ -1472,10 +1476,10 @@ public:
 
   class  MultiplicativeExprContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *s99 = nullptr;
+    antlr4::Token *s102 = nullptr;
     std::vector<antlr4::Token *> op;
-    antlr4::Token *s96 = nullptr;
-    antlr4::Token *s100 = nullptr;
+    antlr4::Token *s99 = nullptr;
+    antlr4::Token *s103 = nullptr;
     antlr4::Token *_tset1493 = nullptr;
     MultiplicativeExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
@@ -1608,6 +1612,9 @@ public:
     FunctionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     RegexContext *regex();
+    YearFuncContext *yearFunc();
+    MonthFuncContext *monthFunc();
+    DayFuncContext *dayFunc();
     CosineSimilarityContext *cosineSimilarity();
     CosineDistanceContext *cosineDistance();
     ManhattanDistanceContext *manhattanDistance();
@@ -1644,6 +1651,54 @@ public:
   };
 
   RegexContext* regex();
+
+  class  YearFuncContext : public antlr4::ParserRuleContext {
+  public:
+    YearFuncContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_YEAR();
+    antlr4::tree::TerminalNode *L_PAR();
+    ConditionalOrExprContext *conditionalOrExpr();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  YearFuncContext* yearFunc();
+
+  class  MonthFuncContext : public antlr4::ParserRuleContext {
+  public:
+    MonthFuncContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_MONTH();
+    antlr4::tree::TerminalNode *L_PAR();
+    ConditionalOrExprContext *conditionalOrExpr();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  MonthFuncContext* monthFunc();
+
+  class  DayFuncContext : public antlr4::ParserRuleContext {
+  public:
+    DayFuncContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_DAY();
+    antlr4::tree::TerminalNode *L_PAR();
+    ConditionalOrExprContext *conditionalOrExpr();
+    antlr4::tree::TerminalNode *R_PAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  DayFuncContext* dayFunc();
 
   class  CosineSimilarityContext : public antlr4::ParserRuleContext {
   public:
@@ -1864,6 +1919,7 @@ public:
     antlr4::tree::TerminalNode *K_COSINE_SIMILARITY();
     antlr4::tree::TerminalNode *K_COUNT();
     antlr4::tree::TerminalNode *K_CREATE();
+    antlr4::tree::TerminalNode *K_DAY();
     antlr4::tree::TerminalNode *K_DELETE();
     antlr4::tree::TerminalNode *K_DESCRIBE();
     antlr4::tree::TerminalNode *K_DESC();
@@ -1892,6 +1948,7 @@ public:
     antlr4::tree::TerminalNode *K_MATCH();
     antlr4::tree::TerminalNode *K_MAX();
     antlr4::tree::TerminalNode *K_MIN();
+    antlr4::tree::TerminalNode *K_MONTH();
     antlr4::tree::TerminalNode *K_NORMALIZE();
     antlr4::tree::TerminalNode *K_OBJECTS();
     antlr4::tree::TerminalNode *K_OFFSET();
@@ -1919,6 +1976,7 @@ public:
     antlr4::tree::TerminalNode *K_WALKS();
     antlr4::tree::TerminalNode *K_WITH();
     antlr4::tree::TerminalNode *K_WHERE();
+    antlr4::tree::TerminalNode *K_YEAR();
     antlr4::tree::TerminalNode *K_YIELD();
 
 

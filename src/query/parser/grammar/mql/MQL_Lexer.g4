@@ -19,6 +19,7 @@ K_COSINE_DISTANCE: C O S I N E '_' D I S T A N C E;
 K_COSINE_SIMILARITY: C O S I N E '_' S I M I L A R I T Y;
 K_COUNT: C O U N T;
 K_CREATE: C R E A T E;
+K_DAY: D A Y;
 K_DELETE: D E L E T E;
 K_DESCRIBE: D E S C R I B E;
 K_DESC: D E S C;
@@ -49,6 +50,7 @@ K_MANHATTAN_DISTANCE: M A N H A T T A N '_' D I S T A N C E;
 K_MATCH: M A T C H;
 K_MAX: M A X;
 K_MIN: M I N;
+K_MONTH: M O N T H;
 K_NORMALIZE: N O R M A L I Z E;
 K_OBJECTS: O B J E C T S;
 K_OFFSET: O F F S E T;
@@ -79,6 +81,7 @@ K_VALUES: V A L U E S;
 K_WALKS: W A L K S;
 K_WITH: W I T H;
 K_WHERE: W H E R E;
+K_YEAR: Y E A R;
 K_YIELD: Y I E L D;
 
 // Special cases: true and false are not a valid identifier

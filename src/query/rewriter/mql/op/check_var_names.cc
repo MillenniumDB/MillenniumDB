@@ -353,6 +353,21 @@ void CheckVarNamesExpr::visit(ExprRegex& expr)
     }
 }
 
+void CheckVarNamesExpr::visit(ExprDay& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
+void CheckVarNamesExpr::visit(ExprMonth& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
+void CheckVarNamesExpr::visit(ExprYear& expr)
+{
+    expr.expr->accept_visitor(*this);
+}
+
 void CheckVarNamesExpr::visit(ExprCosineSimilarity& expr)
 {
     expr.expr1->accept_visitor(*this);

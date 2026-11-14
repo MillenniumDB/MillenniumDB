@@ -337,6 +337,24 @@ void ExprToBindingExpr::visit(ExprRegex& expr)
     }
 }
 
+void ExprToBindingExpr::visit(ExprDay& expr)
+{
+    expr.expr->accept_visitor(*this);
+    tmp = std::make_unique<BindingExprDay>(std::move(tmp));
+}
+
+void ExprToBindingExpr::visit(ExprMonth& expr)
+{
+    expr.expr->accept_visitor(*this);
+    tmp = std::make_unique<BindingExprMonth>(std::move(tmp));
+}
+
+void ExprToBindingExpr::visit(ExprYear& expr)
+{
+    expr.expr->accept_visitor(*this);
+    tmp = std::make_unique<BindingExprYear>(std::move(tmp));
+}
+
 void ExprToBindingExpr::visit(ExprCosineSimilarity& expr)
 {
     expr.expr1->accept_visitor(*this);

@@ -161,6 +161,9 @@ public:
     virtual std::any visitUnaryExpr(MQL_Parser::UnaryExprContext* ctx) override;
 
     virtual std::any visitRegex(MQL_Parser::RegexContext* ctx) override;
+    virtual std::any visitDayFunc(MQL_Parser::DayFuncContext* ctx) override;
+    virtual std::any visitMonthFunc(MQL_Parser::MonthFuncContext* ctx) override;
+    virtual std::any visitYearFunc(MQL_Parser::YearFuncContext* ctx) override;
     virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext* ctx) override;
     virtual std::any visitCosineDistance(MQL_Parser::CosineDistanceContext* ctx) override;
     virtual std::any visitManhattanDistance(MQL_Parser::ManhattanDistanceContext* ctx) override;

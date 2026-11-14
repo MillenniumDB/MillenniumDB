@@ -6,6 +6,23 @@
 
 using namespace MQL;
 
+int64_t Comparisons::strict_compare(ObjectId lhs, ObjectId rhs, bool* error)
+{
+    *error = false;
+
+    auto optype = Conversions::calculate_optype(lhs, rhs);
+    if (optype != Conversions::OpType::INVALID) {
+        return compare(lhs, rhs);
+    }
+
+    if (lhs.get_type() != rhs.get_type()) {
+        *error = true;
+        return 0;
+    }
+
+    return compare(lhs, rhs);
+}
+
 int64_t Comparisons::compare(ObjectId lhs, ObjectId rhs)
 {
     const auto lhs_generic_type = lhs.id & ObjectId::GENERIC_TYPE_MASK;

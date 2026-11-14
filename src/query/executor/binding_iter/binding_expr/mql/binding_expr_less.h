@@ -22,7 +22,11 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
-        bool res = Comparisons::compare(lhs_oid, rhs_oid) < 0;
+        bool error;
+        bool res = Comparisons::strict_compare(lhs_oid, rhs_oid, &error) < 0;
+        if (error) {
+            return ObjectId::get_null();
+        }
         return Conversions::pack_bool(res);
     }
 

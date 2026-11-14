@@ -363,6 +363,18 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitYearFunc(MQL_Parser::YearFuncContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMonthFunc(MQL_Parser::MonthFuncContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitDayFunc(MQL_Parser::DayFuncContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext *ctx) override {
     return visitChildren(ctx);
   }

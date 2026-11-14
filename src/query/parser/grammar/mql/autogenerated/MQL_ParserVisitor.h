@@ -193,6 +193,12 @@ public:
 
     virtual std::any visitRegex(MQL_Parser::RegexContext *context) = 0;
 
+    virtual std::any visitYearFunc(MQL_Parser::YearFuncContext *context) = 0;
+
+    virtual std::any visitMonthFunc(MQL_Parser::MonthFuncContext *context) = 0;
+
+    virtual std::any visitDayFunc(MQL_Parser::DayFuncContext *context) = 0;
+
     virtual std::any visitCosineSimilarity(MQL_Parser::CosineSimilarityContext *context) = 0;
 
     virtual std::any visitCosineDistance(MQL_Parser::CosineDistanceContext *context) = 0;

@@ -1,39 +1,44 @@
 #pragma once
 
-#include "query/parser/expr/mql/agg/expr_agg_avg.h"                                  // IWYU pragma: export
-#include "query/parser/expr/mql/agg/expr_agg_count.h"                                // IWYU pragma: export
-#include "query/parser/expr/mql/agg/expr_agg_count_all.h"                            // IWYU pragma: export
-#include "query/parser/expr/mql/agg/expr_agg_max.h"                                  // IWYU pragma: export
-#include "query/parser/expr/mql/agg/expr_agg_min.h"                                  // IWYU pragma: export
-#include "query/parser/expr/mql/agg/expr_agg_sum.h"                                  // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_addition.h"                     // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_division.h"                     // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_modulo.h"                       // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_mutiplication.h"                // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_subtraction.h"                  // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_unary_minus.h"                  // IWYU pragma: export
-#include "query/parser/expr/mql/arithmetic_expr/expr_unary_plus.h"                   // IWYU pragma: export
-#include "query/parser/expr/mql/atom_expr/expr_constant.h"                           // IWYU pragma: export
-#include "query/parser/expr/mql/atom_expr/expr_var.h"                                // IWYU pragma: export
-#include "query/parser/expr/mql/atom_expr/expr_var_property.h"                       // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_and.h"                                // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_equals.h"            // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_greater.h"           // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_greater_or_equals.h" // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_is.h"                // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_less.h"              // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_less_or_equals.h"    // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_not_equals.h"        // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_not.h"                                // IWYU pragma: export
-#include "query/parser/expr/mql/bool_expr/expr_or.h"                                 // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_cosine_distance.h"                     // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_cosine_similarity.h"                   // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_edit_distance.h"                       // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_euclidean_distance.h"                  // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_manhattan_distance.h"                  // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_normalize.h"                           // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_regex.h"                               // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_str.h"                                 // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_labels.h"                              // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_type.h"                                // IWYU pragma: export
-#include "query/parser/expr/mql/function/expr_properties.h"                          // IWYU pragma: export
+// IWYU pragma: begin_exports
+#include "query/parser/expr/mql/agg/expr_agg_avg.h"
+#include "query/parser/expr/mql/agg/expr_agg_count.h"
+#include "query/parser/expr/mql/agg/expr_agg_count_all.h"
+#include "query/parser/expr/mql/agg/expr_agg_max.h"
+#include "query/parser/expr/mql/agg/expr_agg_min.h"
+#include "query/parser/expr/mql/agg/expr_agg_sum.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_addition.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_division.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_modulo.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_mutiplication.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_subtraction.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_unary_minus.h"
+#include "query/parser/expr/mql/arithmetic_expr/expr_unary_plus.h"
+#include "query/parser/expr/mql/atom_expr/expr_constant.h"
+#include "query/parser/expr/mql/atom_expr/expr_var.h"
+#include "query/parser/expr/mql/atom_expr/expr_var_property.h"
+#include "query/parser/expr/mql/bool_expr/expr_and.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_equals.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_greater.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_greater_or_equals.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_is.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_less.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_less_or_equals.h"
+#include "query/parser/expr/mql/bool_expr/expr_comaprision/expr_not_equals.h"
+#include "query/parser/expr/mql/bool_expr/expr_not.h"
+#include "query/parser/expr/mql/bool_expr/expr_or.h"
+#include "query/parser/expr/mql/function/expr_cosine_distance.h"
+#include "query/parser/expr/mql/function/expr_cosine_similarity.h"
+#include "query/parser/expr/mql/function/expr_day.h"
+#include "query/parser/expr/mql/function/expr_edit_distance.h"
+#include "query/parser/expr/mql/function/expr_euclidean_distance.h"
+#include "query/parser/expr/mql/function/expr_labels.h"
+#include "query/parser/expr/mql/function/expr_manhattan_distance.h"
+#include "query/parser/expr/mql/function/expr_month.h"
+#include "query/parser/expr/mql/function/expr_normalize.h"
+#include "query/parser/expr/mql/function/expr_properties.h"
+#include "query/parser/expr/mql/function/expr_regex.h"
+#include "query/parser/expr/mql/function/expr_str.h"
+#include "query/parser/expr/mql/function/expr_type.h"
+#include "query/parser/expr/mql/function/expr_year.h"
+// IWYU pragma: end_exports

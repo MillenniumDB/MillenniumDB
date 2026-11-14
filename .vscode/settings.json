@@ -74,6 +74,7 @@
         "isliteral",
         "isnumeric",
         "isuri",
+        "IWYU",
         "kleene",
         "labeljust",
         "labelloc",

@@ -22,6 +22,9 @@ class BindingExprSubtraction;
 class BindingExprUnaryMinus;
 class BindingExprUnaryPlus;
 class BindingExprRegex;
+class BindingExprDay;
+class BindingExprMonth;
+class BindingExprYear;
 class BindingExprCosineSimilarity;
 class BindingExprCosineDistance;
 class BindingExprManhattanDistance;
@@ -191,6 +194,9 @@ public:
     virtual void visit(MQL::BindingExprUnaryMinus&)        { throw LogicException("visit MQL::BindingExprUnaryMinus not implemented"); }
     virtual void visit(MQL::BindingExprUnaryPlus&)         { throw LogicException("visit MQL::BindingExprUnaryPlus not implemented"); }
     virtual void visit(MQL::BindingExprRegex&)             { throw LogicException("visit MQL::BindingExprRegex not implemented"); }
+    virtual void visit(MQL::BindingExprDay&)               { throw LogicException("visit MQL::BindingExprDay not implemented"); }
+    virtual void visit(MQL::BindingExprMonth&)             { throw LogicException("visit MQL::BindingExprMonth not implemented"); }
+    virtual void visit(MQL::BindingExprYear&)              { throw LogicException("visit MQL::BindingExprYear not implemented"); }
     virtual void visit(MQL::BindingExprCosineSimilarity&)  { throw LogicException("visit MQL::BindingExprCosineSimilarity not implemented"); }
     virtual void visit(MQL::BindingExprCosineDistance&)    { throw LogicException("visit MQL::BindingExprCosineDistance not implemented"); }
     virtual void visit(MQL::BindingExprManhattanDistance&) { throw LogicException("visit MQL::BindingExprManhattanDistance not implemented"); }

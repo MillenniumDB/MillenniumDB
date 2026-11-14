@@ -21,40 +21,43 @@ public:
     void visit(ExprAnd&) override;
     void visit(ExprOr&) override;
 
-    virtual void visit(ExprVar&) override { }
-    virtual void visit(ExprVarProperty&) override { }
-    virtual void visit(ExprConstant&) override { }
-    virtual void visit(ExprAddition&) override { }
-    virtual void visit(ExprDivision&) override { }
-    virtual void visit(ExprModulo&) override { }
-    virtual void visit(ExprMultiplication&) override { }
-    virtual void visit(ExprSubtraction&) override { }
-    virtual void visit(ExprUnaryMinus&) override { }
-    virtual void visit(ExprUnaryPlus&) override { }
-    virtual void visit(ExprEquals&) override { }
-    virtual void visit(ExprGreaterOrEquals&) override { }
-    virtual void visit(ExprGreater&) override { }
-    virtual void visit(ExprLessOrEquals&) override { }
-    virtual void visit(ExprLess&) override { }
-    virtual void visit(ExprNotEquals&) override { }
-    virtual void visit(ExprNot&) override { }
-    virtual void visit(ExprLabels&) override { }
-    virtual void visit(ExprType&) override { }
-    virtual void visit(ExprProperties&) override { }
+    void visit(ExprVar&) override { }
+    void visit(ExprVarProperty&) override { }
+    void visit(ExprConstant&) override { }
+    void visit(ExprAddition&) override { }
+    void visit(ExprDivision&) override { }
+    void visit(ExprModulo&) override { }
+    void visit(ExprMultiplication&) override { }
+    void visit(ExprSubtraction&) override { }
+    void visit(ExprUnaryMinus&) override { }
+    void visit(ExprUnaryPlus&) override { }
+    void visit(ExprEquals&) override { }
+    void visit(ExprGreaterOrEquals&) override { }
+    void visit(ExprGreater&) override { }
+    void visit(ExprLessOrEquals&) override { }
+    void visit(ExprLess&) override { }
+    void visit(ExprNotEquals&) override { }
+    void visit(ExprNot&) override { }
+    void visit(ExprLabels&) override { }
+    void visit(ExprType&) override { }
+    void visit(ExprProperties&) override { }
 
-    virtual void visit(ExprAggAvg&) override { }
-    virtual void visit(ExprAggCountAll&) override { }
-    virtual void visit(ExprAggCount&) override { }
-    virtual void visit(ExprAggMax&) override { }
-    virtual void visit(ExprAggMin&) override { }
-    virtual void visit(ExprAggSum&) override { }
-    virtual void visit(ExprRegex&) override { }
-    virtual void visit(ExprCosineSimilarity&) override { }
-    virtual void visit(ExprCosineDistance&) override { }
-    virtual void visit(ExprManhattanDistance&) override { }
-    virtual void visit(ExprEuclideanDistance&) override { }
-    virtual void visit(ExprEditDistance&) override { }
-    virtual void visit(ExprNormalize&) override { }
-    virtual void visit(ExprStr&) override { }
+    void visit(ExprAggAvg&) override { }
+    void visit(ExprAggCountAll&) override { }
+    void visit(ExprAggCount&) override { }
+    void visit(ExprAggMax&) override { }
+    void visit(ExprAggMin&) override { }
+    void visit(ExprAggSum&) override { }
+    void visit(ExprRegex&) override { }
+    void visit(ExprDay&) override { }
+    void visit(ExprMonth&) override { }
+    void visit(ExprYear&) override { }
+    void visit(ExprCosineSimilarity&) override { }
+    void visit(ExprCosineDistance&) override { }
+    void visit(ExprManhattanDistance&) override { }
+    void visit(ExprEuclideanDistance&) override { }
+    void visit(ExprEditDistance&) override { }
+    void visit(ExprNormalize&) override { }
+    void visit(ExprStr&) override { }
 };
 } // namespace MQL

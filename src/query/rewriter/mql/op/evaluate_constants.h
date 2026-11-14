@@ -58,6 +58,9 @@ private:
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
     void visit(ExprRegex&) override;
+    void visit(ExprDay&) override;
+    void visit(ExprMonth&) override;
+    void visit(ExprYear&) override;
     void visit(ExprCosineSimilarity&) override;
     void visit(ExprCosineDistance&) override;
     void visit(ExprManhattanDistance&) override;
