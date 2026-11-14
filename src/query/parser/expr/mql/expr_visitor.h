@@ -31,6 +31,9 @@ class ExprAggMin;
 class ExprAggSum;
 
 class ExprRegex;
+class ExprDay;
+class ExprMonth;
+class ExprYear;
 class ExprCosineSimilarity;
 class ExprCosineDistance;
 class ExprManhattanDistance;
@@ -73,6 +76,9 @@ public:
     virtual void visit(MQL::ExprAggMin&) = 0;
     virtual void visit(MQL::ExprAggSum&) = 0;
     virtual void visit(MQL::ExprRegex&) = 0;
+    virtual void visit(MQL::ExprDay&) = 0;
+    virtual void visit(MQL::ExprMonth&) = 0;
+    virtual void visit(MQL::ExprYear&) = 0;
     virtual void visit(MQL::ExprCosineSimilarity&) = 0;
     virtual void visit(MQL::ExprCosineDistance&) = 0;
     virtual void visit(MQL::ExprManhattanDistance&) = 0;

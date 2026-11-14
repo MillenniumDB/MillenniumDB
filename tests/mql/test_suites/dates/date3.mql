@@ -1,0 +1,3 @@
+MATCH (?x)
+WHERE ?x.date >= date("2010-12-31")
+RETURN ?x,?x.date

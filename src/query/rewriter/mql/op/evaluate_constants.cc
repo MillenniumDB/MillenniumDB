@@ -233,6 +233,21 @@ void EvaluateConstantsExpr::visit(ExprRegex& expr)
     }
 }
 
+void EvaluateConstantsExpr::visit(ExprDay& expr)
+{
+    visit_and_try_eval_expr(expr.expr);
+}
+
+void EvaluateConstantsExpr::visit(ExprMonth& expr)
+{
+    visit_and_try_eval_expr(expr.expr);
+}
+
+void EvaluateConstantsExpr::visit(ExprYear& expr)
+{
+    visit_and_try_eval_expr(expr.expr);
+}
+
 void EvaluateConstantsExpr::visit(ExprCosineSimilarity& expr)
 {
     visit_and_try_eval_expr(expr.expr1);

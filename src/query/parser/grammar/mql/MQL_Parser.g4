@@ -250,6 +250,9 @@ atomicExpr:
 
 function:
 	regex
+	| yearFunc
+	| monthFunc
+	| dayFunc
 	| cosineSimilarity
 	| cosineDistance
 	| manhattanDistance
@@ -265,6 +268,12 @@ regex:
 	K_REGEX '(' conditionalOrExpr ',' conditionalOrExpr (
 		',' conditionalOrExpr
 	)? ')';
+
+yearFunc: K_YEAR '(' conditionalOrExpr ')';
+
+monthFunc: K_MONTH '(' conditionalOrExpr ')';
+
+dayFunc: K_DAY '(' conditionalOrExpr ')';
 
 cosineSimilarity:
 	K_COSINE_SIMILARITY '(' conditionalOrExpr ',' conditionalOrExpr ')';
@@ -311,6 +320,7 @@ keyword:
 	| K_COSINE_SIMILARITY
 	| K_COUNT
 	| K_CREATE
+	| K_DAY
 	| K_DELETE
 	| K_DESCRIBE
 	| K_DESC
@@ -339,6 +349,7 @@ keyword:
 	| K_MATCH
 	| K_MAX
 	| K_MIN
+	| K_MONTH
 	| K_NORMALIZE
 	| K_OBJECTS
 	| K_OFFSET
@@ -366,4 +377,5 @@ keyword:
 	| K_WALKS
 	| K_WITH
 	| K_WHERE
+	| K_YEAR
 	| K_YIELD;

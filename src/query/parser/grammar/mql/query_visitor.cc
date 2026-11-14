@@ -603,7 +603,8 @@ Any QueryVisitor::visitYieldStatement(MQL_Parser::YieldStatementContext* ctx)
     return 0;
 }
 
-Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx) {
+Any QueryVisitor::visitLetStatement(MQL_Parser::LetStatementContext* ctx)
+{
     OpLet::VarExprVecType var_expr;
 
     const auto letDefinitionList = ctx->letDefinition();
@@ -895,12 +896,14 @@ Any QueryVisitor::visitProperty3(MQL_Parser::Property3Context* property)
         datatypes_is_exprs.push_back(
             std::make_unique<MQL::ExprIs>(negation, std::move(expr_var_property), type, propertyTypeBitmap)
         );
-        datatypes_is_exprs_where.push_back(std::make_unique<MQL::ExprIs>(
-            negation,
-            std::move(expr_var_property_where),
-            type,
-            propertyTypeBitmap
-        ));
+        datatypes_is_exprs_where.push_back(
+            std::make_unique<MQL::ExprIs>(
+                negation,
+                std::move(expr_var_property_where),
+                type,
+                propertyTypeBitmap
+            )
+        );
     }
     property_expr.push_back(std::make_unique<MQL::ExprOr>(std::move(datatypes_is_exprs)));
     return 0;
@@ -1471,8 +1474,8 @@ Any QueryVisitor::visitComparisonExprIs(MQL_Parser::ComparisonExprIsContext* ctx
         );
     }
 
-    bool not = ctx->K_NOT() != nullptr;
-    if (not ) {
+    bool not= ctx->K_NOT() != nullptr;
+    if (not) {
         propertyTypeBitmap = ~propertyTypeBitmap;
     }
     current_expr = std::make_unique<ExprIs>(not, std::move(current_expr), type, propertyTypeBitmap);
@@ -1560,6 +1563,27 @@ Any QueryVisitor::visitRegex(MQL_Parser::RegexContext* ctx)
         current_expr = std::make_unique<ExprRegex>(std::move(expr0), std::move(expr1));
     }
 
+    return 0;
+}
+
+Any QueryVisitor::visitDayFunc(MQL_Parser::DayFuncContext* ctx)
+{
+    visit(ctx->conditionalOrExpr());
+    current_expr = std::make_unique<ExprDay>(std::move(current_expr));
+    return 0;
+}
+
+Any QueryVisitor::visitMonthFunc(MQL_Parser::MonthFuncContext* ctx)
+{
+    visit(ctx->conditionalOrExpr());
+    current_expr = std::make_unique<ExprMonth>(std::move(current_expr));
+    return 0;
+}
+
+Any QueryVisitor::visitYearFunc(MQL_Parser::YearFuncContext* ctx)
+{
+    visit(ctx->conditionalOrExpr());
+    current_expr = std::make_unique<ExprYear>(std::move(current_expr));
     return 0;
 }
 
@@ -1801,12 +1825,14 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             tokenize_type = TextSearch::TOKENIZE_TYPE::IDENTITY;
         }
 
-        update_info.update_actions.push_back(std::make_unique<CreateTextIndex>(
-            std::move(index_name),
-            std::move(text_index_opts.property),
-            normalize_type,
-            tokenize_type
-        ));
+        update_info.update_actions.push_back(
+            std::make_unique<CreateTextIndex>(
+                std::move(index_name),
+                std::move(text_index_opts.property),
+                normalize_type,
+                tokenize_type
+            )
+        );
 
     } else if (index_type_lowercased == "hnsw") {
         HNSWIndexOptions hnsw_index_opts;
@@ -1841,14 +1867,16 @@ Any QueryVisitor::visitCreateIndexQuery(MQL_Parser::CreateIndexQueryContext* ctx
             metric_type = HNSW::MetricType::EUCLIDEAN_DISTANCE;
         }
 
-        update_info.update_actions.push_back(std::make_unique<CreateHNSWIndex>(
-            std::move(index_name),
-            std::move(hnsw_index_opts.property),
-            hnsw_index_opts.dimension,
-            hnsw_index_opts.max_edges,
-            hnsw_index_opts.max_candidates,
-            metric_type
-        ));
+        update_info.update_actions.push_back(
+            std::make_unique<CreateHNSWIndex>(
+                std::move(index_name),
+                std::move(hnsw_index_opts.property),
+                hnsw_index_opts.dimension,
+                hnsw_index_opts.max_edges,
+                hnsw_index_opts.max_candidates,
+                metric_type
+            )
+        );
     } else {
         throw QueryException("Invalid index type \"" + index_type + "\"");
     }

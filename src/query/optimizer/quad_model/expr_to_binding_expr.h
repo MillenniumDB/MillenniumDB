@@ -70,6 +70,9 @@ public:
     void visit(ExprNot&) override;
     void visit(ExprOr&) override;
     void visit(ExprRegex&) override;
+    void visit(ExprDay&) override;
+    void visit(ExprMonth&) override;
+    void visit(ExprYear&) override;
     void visit(ExprCosineSimilarity&) override;
     void visit(ExprCosineDistance&) override;
     void visit(ExprManhattanDistance&) override;
@@ -82,8 +85,7 @@ public:
     void visit(ExprProperties&) override;
 
 private:
-
-    template<typename AggType, class ... Args>
+    template<typename AggType, class... Args>
     void check_and_make_aggregate(Expr* expr, Expr* partent_expr, Args&&... args);
 };
 } // namespace MQL

@@ -1,0 +1,3 @@
+MATCH (?x)
+WHERE ?x.date < date("2010-01-01") AND ?x.date > date("2000-01-01")
+RETURN ?x.date, ?x.date

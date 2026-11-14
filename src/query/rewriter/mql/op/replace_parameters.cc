@@ -341,6 +341,21 @@ void ReplaceParametersExpr::visit(ExprRegex& expr)
     }
 }
 
+void ReplaceParametersExpr::visit(ExprDay& expr)
+{
+    visit_or_replace_parameter(expr.expr);
+}
+
+void ReplaceParametersExpr::visit(ExprMonth& expr)
+{
+    visit_or_replace_parameter(expr.expr);
+}
+
+void ReplaceParametersExpr::visit(ExprYear& expr)
+{
+    visit_or_replace_parameter(expr.expr);
+}
+
 void ReplaceParametersExpr::visit(ExprCosineSimilarity& expr)
 {
     visit_or_replace_parameter(expr.expr1);
