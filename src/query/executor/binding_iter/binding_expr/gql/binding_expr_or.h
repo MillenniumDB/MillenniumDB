@@ -17,18 +17,18 @@ public:
 
     ObjectId eval(const Binding& binding) override
     {
+        // three-valued: true if an operand is true, otherwise null if an operand is not false
+        bool null_seen = false;
         for (auto& expr : or_list) {
             auto oid = expr->eval(binding);
 
-            if (oid == ObjectId(ObjectId::BOOL_FALSE)) {
-                continue;
-            } else if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
+            if (oid == ObjectId(ObjectId::BOOL_TRUE)) {
                 return oid;
-            } else {
-                return ObjectId::get_null();
+            } else if (oid != ObjectId(ObjectId::BOOL_FALSE)) {
+                null_seen = true;
             }
         }
-        return ObjectId(ObjectId::BOOL_FALSE);
+        return null_seen ? ObjectId::get_null() : ObjectId(ObjectId::BOOL_FALSE);
     }
 
     void accept_visitor(BindingExprVisitor& visitor) override
