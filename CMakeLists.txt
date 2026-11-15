@@ -115,6 +115,7 @@ set(PROFILE_TARGETS
 set(TEST_TARGETS
     compare_datetime
     iri_prefixes-test
+    path_binding
     regular_path_expr_to_rpq_dfa
     scsu-test
     tensor_operations
