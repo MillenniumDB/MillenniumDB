@@ -25,7 +25,8 @@ public:
         upper(upper)
     { }
 
-    OpRepetition(std::unique_ptr<Op>&& op, std::unique_ptr<Repetition>&& repetition) :
+    // repetition is taken by value: that empties the caller's pointer, so it is not applied twice
+    OpRepetition(std::unique_ptr<Op>&& op, std::unique_ptr<Repetition> repetition) :
         op(std::move(op)),
         lower(repetition->lower),
         upper(repetition->upper)

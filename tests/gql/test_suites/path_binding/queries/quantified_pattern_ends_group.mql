@@ -1,0 +1,2 @@
+MATCH (x {name:"N0"}) ( (a)-[:Follows]->(b) ((c)-[:Owns]->(d)){0,1} ) (y)
+RETURN x.name, b.name, y.name
