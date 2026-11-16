@@ -988,13 +988,15 @@ std::any QueryVisitor::visitLabelPrimary(GQLParser::LabelPrimaryContext* ctx)
         return 0;
     }
 
+    // a node or an edge label, according to the variable the label is tested on
+    const VarType::Type type = singleton_types[*current_label_var_id];
+
     if (ctx->wildcardLabel()) {
-        VarType::Type type = current_pattern == Node ? VarType::Node : VarType::Edge;
         current_expr = std::make_unique<ExprWildcardLabel>(*current_label_var_id, type);
         return 0;
     }
 
-    if (current_pattern == Node) {
+    if (type == VarType::Node) {
         current_expr = std::make_unique<ExprHasNodeLabel>(
             *current_label_var_id,
             Conversions::pack_node_label(ctx->getText())
