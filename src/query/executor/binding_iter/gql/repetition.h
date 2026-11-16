@@ -15,7 +15,7 @@ public:
     void begin(Binding& binding) override;
 
     // set_left_boundary or set_right_boundary must be called before next
-    void set_left_boundary(ObjectId left_boundary) override;
+    void set_left_boundary(const PathElement& left_boundary) override;
     void set_right_boundary(ObjectId right_boundary) override;
     void reset() override;
     std::unique_ptr<PathBinding> next() override;
@@ -29,7 +29,7 @@ private:
     std::unique_ptr<PathBindingIter> child_iter;
 
     bool pending = false;
-    std::set<ObjectId> visited;
+    std::set<PathElement> visited;
     std::queue<std::pair<PathBinding, uint64_t>> queue;
     uint64_t cur_repetitions = 0;
     PathBinding cur_list;
@@ -40,7 +40,13 @@ private:
     // set when a search starts, as a Repetition may be asked for a result before it has a boundary
     bool return_zero_length = false;
 
-    ObjectId parent_boundary = ObjectId(0);
+    PathElement parent_boundary = PathElement::node(ObjectId(0));
 
     Binding* parent_binding;
+
+    // Starts the search at parent_boundary
+    void start_search();
+
+    // Concatenates an iteration to cur_list; returns the new path if it is a result
+    std::unique_ptr<PathBinding> add_iteration(const PathBinding& iteration);
 };

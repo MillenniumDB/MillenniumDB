@@ -11,10 +11,11 @@ void CheckRepeatedVariable::begin(Binding& _parent_binding)
     child_iter->begin(_parent_binding);
 }
 
-void CheckRepeatedVariable::set_left_boundary(ObjectId boundary)
+void CheckRepeatedVariable::set_left_boundary(const PathElement& boundary)
 {
+    // the repeated variable is the first node of the pattern
     ObjectId repeated_value = (*parent_binding)[repeated_var];
-    vars_are_good = boundary == repeated_value;
+    vars_are_good = boundary.end_node() == repeated_value;
     if (vars_are_good) {
         child_iter->set_left_boundary(boundary);
     }

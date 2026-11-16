@@ -13,7 +13,7 @@ public:
 
     void begin(Binding& binding) override;
     void reset() override;
-    void set_left_boundary(ObjectId boundary) override;
+    void set_left_boundary(const PathElement& boundary) override;
     void set_right_boundary(ObjectId boundary) override;
     std::unique_ptr<PathBinding> next() override;
     void assign_nulls() override;

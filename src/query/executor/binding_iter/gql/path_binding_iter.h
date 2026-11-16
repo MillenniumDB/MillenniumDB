@@ -17,8 +17,8 @@ public:
     // Assigns an empty list to each variable contained in the iterator
     virtual void assign_empty() = 0;
 
-    // Assigns the leftmost variable and resets the iterator
-    virtual void set_left_boundary(ObjectId left_boundary) = 0;
+    // Resets the iterator to the paths that can be concatenated to a path ending at left_boundary
+    virtual void set_left_boundary(const PathElement& left_boundary) = 0;
 
     // Assigns the rightmost variable and resets the iterator
     virtual void set_right_boundary(ObjectId left_boundary) = 0;

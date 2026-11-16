@@ -17,7 +17,7 @@ void ExtendRight::begin(Binding& binding)
 
     right->begin(binding);
     if (left_has_value) {
-        right->set_left_boundary(left_list->steps.back().node_value);
+        right->set_left_boundary(left_list->end_element());
     }
 }
 
@@ -29,11 +29,11 @@ void ExtendRight::reset()
     left_has_value = left_list != nullptr;
 
     if (left_has_value) {
-        right->set_left_boundary(left_list->steps.back().node_value);
+        right->set_left_boundary(left_list->end_element());
     }
 }
 
-void ExtendRight::set_left_boundary(ObjectId boundary)
+void ExtendRight::set_left_boundary(const PathElement& boundary)
 {
     left->set_left_boundary(boundary);
 
@@ -41,7 +41,7 @@ void ExtendRight::set_left_boundary(ObjectId boundary)
     left_has_value = left_list != nullptr;
 
     if (left_has_value) {
-        right->set_left_boundary(left_list->steps.back().node_value);
+        right->set_left_boundary(left_list->end_element());
     }
 }
 
@@ -56,14 +56,14 @@ std::unique_ptr<PathBinding> ExtendRight::next()
         right_list = right->next();
         if (right_list != nullptr) {
             auto final_list = left_list->clone();
-            final_list->merge_right(right_list);
+            final_list->concat(*right_list);
             return final_list;
         } else {
             left_list = left->next();
             left_has_value = left_list != nullptr;
 
             if (left_has_value) {
-                right->set_left_boundary(left_list->steps.back().node_value);
+                right->set_left_boundary(left_list->end_element());
             }
         }
     }

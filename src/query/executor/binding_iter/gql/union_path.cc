@@ -22,7 +22,7 @@ void UnionPath::reset()
     iters[0]->reset();
 }
 
-void UnionPath::set_left_boundary(ObjectId boundary)
+void UnionPath::set_left_boundary(const PathElement& boundary)
 {
     parent_boundary = boundary;
 
@@ -35,7 +35,7 @@ void UnionPath::set_left_boundary(ObjectId boundary)
 
 void UnionPath::set_right_boundary(ObjectId boundary)
 {
-    parent_boundary = boundary;
+    parent_boundary = PathElement::node(boundary);
 
     if (current_iter < iters.size()) {
         iters[current_iter]->assign_nulls();
