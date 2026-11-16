@@ -29,7 +29,8 @@ private:
     std::unique_ptr<PathBindingIter> child_iter;
 
     bool pending = false;
-    std::set<PathElement> visited;
+    // the elements reached, each with its number of iterations capped at the lower bound
+    std::set<std::pair<PathElement, uint64_t>> visited;
     std::queue<std::pair<PathBinding, uint64_t>> queue;
     uint64_t cur_repetitions = 0;
     PathBinding cur_list;
