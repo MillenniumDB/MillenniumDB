@@ -169,7 +169,8 @@ public:
                         break;
                     }
                 } else if (clause.first.first == "!=") {
-                    is_match = true;
+                    // a value of another type is different, unless one of them is null
+                    is_match = !case_value.is_null() && !when_value.is_null();
                 }
 
                 if (is_match) {

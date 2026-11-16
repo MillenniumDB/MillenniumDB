@@ -1,0 +1,4 @@
+MATCH (x: CaseNode)
+WHERE x.value1 IS NULL
+RETURN x.value2, x.value1 < 5 AS null_lt, 5 <= x.value1 AS le_null, x.value1 > 5 AS null_gt,
+       5 >= x.value1 AS ge_null, x.value1 <> 5 AS null_ne
