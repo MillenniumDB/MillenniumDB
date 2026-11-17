@@ -4,11 +4,7 @@
 
 #include "query/executor/binding_iter/gql/path_binding.h"
 
-// PathBinding::concat on the graph  n1 -e1-> n2.
-//
-// A GQL path pattern only produces fragments that start and end with a node, so the GQL tests only
-// join two nodes. This tests what they cannot reach: the joins that involve an edge, and the
-// empty path.
+// The parts of the path model that the GQL tests cannot check
 
 typedef bool TestFunction();
 
@@ -81,6 +77,15 @@ bool node_edge()
     return differs("node·edge", res, "n1{a} e1{x} n2{b}");
 }
 
+// (a:n1)-[x:e1]->(b:n2) · (b:n2): a variable that both sides bind is kept once
+bool same_variable()
+{
+    auto res = path({ n1, e1, n2 }, { a, x, b });
+    res.concat(path({ n2 }, { b }));
+
+    return differs("same variable", res, "n1{a} e1{x} n2{b}");
+}
+
 // The empty path is the identity
 bool empty_path()
 {
@@ -133,6 +138,7 @@ int main()
 
     tests.push_back(&edge_edge);
     tests.push_back(&node_edge);
+    tests.push_back(&same_variable);
     tests.push_back(&empty_path);
     tests.push_back(&path_element);
 
