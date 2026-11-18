@@ -154,9 +154,12 @@ private:
     Page* page;
     FileId leaf_file_id;
 
-    static uint32_t get_needed_page_size(std::bitset<N * 8> bitset, uint32_t n_records);
+    static uint32_t get_needed_page_size(const std::bitset<N * 8>& bitset, uint32_t n_records);
 
     std::bitset<N * 8> create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to);
+
+    // updates redundant_bitset, redundant_count
+    void update_bitset(const  std::bitset<N * 8>& new_bitset);
 
     // updates redundant_bitset, redundant_count, value_count and records
     void recompress_records(std::bitset<N * 8>& new_bitset, size_t n_records, const uint8_t* uncompressed_records);
@@ -173,4 +176,9 @@ private:
 
     bool equal_record(const Record<N>& record, uint_fast32_t index);
     void shift_right_records(int_fast32_t from, int_fast32_t to);
+
+    void print_leaf_debug(std::ostream& os) const;
+
+    // Returns true iff all records in this leaf are in strictly increasing order, for debugging purposes
+    bool is_ordered() const;
 };

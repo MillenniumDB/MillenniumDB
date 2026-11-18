@@ -1,6 +1,8 @@
 #include "bplus_tree_leaf.h"
 
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 
 #include "query/query_context.h"
 #include "system/buffer_manager.h"
@@ -155,7 +157,7 @@ bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record)
 }
 
 template<std::size_t N>
-uint32_t BPlusTreeLeaf<N>::get_needed_page_size(std::bitset<N * 8> bitset, uint32_t n_records)
+uint32_t BPlusTreeLeaf<N>::get_needed_page_size(const std::bitset<N * 8>& bitset, uint32_t n_records)
 {
     return 2 * sizeof(uint32_t) + N + bitset.count() + n_records * (sizeof(uint64_t) * N - bitset.count());
 }
@@ -210,16 +212,12 @@ void BPlusTreeLeaf<N>::compress_to_buffer(
 
 template<std::size_t N>
 void BPlusTreeLeaf<N>::recompress_records(
-    std::bitset<N * 8>& bitset,
+    std::bitset<N * 8>& new_bitset,
     size_t new_value_count,
     const uint8_t* uncompressed_records
 )
 {
-    // update the bitset
-    redundant_bitset = bitset;
-    redundant_count = bitset.count();
-    unsigned long bits_ul = bitset.to_ulong();
-    memcpy(bitset_ptr, &bits_ul, N);
+    update_bitset(new_bitset);
 
     // write redundant bytes
     uint8_t* current_write_byte = redundant_bytes;
@@ -246,18 +244,36 @@ void BPlusTreeLeaf<N>::recompress_records(
 }
 
 template<std::size_t N>
+void BPlusTreeLeaf<N>::update_bitset(const std::bitset<N * 8>& new_bitset)
+{
+    redundant_bitset = new_bitset;
+    redundant_count = new_bitset.count();
+    for (size_t i = 0; i < N; ++i) {
+        uint8_t byte_val = 0;
+        for (int bit = 0; bit < 8; ++bit) {
+            if (redundant_bitset[i * 8 + bit]) {
+                byte_val |= (1 << bit);
+            }
+        }
+        bitset_ptr[i] = byte_val;
+    }
+}
+
+template<std::size_t N>
 unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, bool& error)
 {
+    assert(this->is_ordered());
+
+    // print_leaf_debug(std::cout);
     const unsigned char* const new_record_bytes = (unsigned char*) &record;
 
     if (*value_count == 0) {
         upgrade_to_editable();
 
         // If leaf was empty, now every byte is redundant
-        redundant_bitset.set();
-        redundant_count = N * 8;
-        unsigned long bits_ul = redundant_bitset.to_ulong(); // TODO: probar aun cuando no hay compresion
-        memcpy(bitset_ptr, &bits_ul, N); // TODO: probar aun cuando no hay compresion
+        std::bitset<N * 8> new_bitset;
+        new_bitset.set();
+        update_bitset(new_bitset);
 
         records = redundant_bytes + redundant_count;
 
@@ -285,12 +301,13 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
     std::bitset<N * 8> new_bitset = redundant_bitset;
     for (size_t i = 0; i < N * 8; ++i) {
         if (new_record_bytes[i] != first_record_bytes[i]) {
-            new_bitset.set(i, 0);
+            new_bitset.set(i, false);
         }
     }
 
-    auto needed_size = get_needed_page_size(new_bitset, *value_count + 1);
-    if (needed_size < Page::SIZE) {
+    size_t new_count = *value_count + 1;
+    auto needed_size = get_needed_page_size(new_bitset, new_count);
+    if (needed_size <= Page::SIZE) {
         if (new_bitset == redundant_bitset) {
             // If the bitsets are equal, then the new record is added directly
             shift_right_records(index, *value_count - 1);
@@ -303,13 +320,15 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
                 }
             }
         } else {
-            // update the bitset
-            redundant_bitset = new_bitset;
-            redundant_count = new_bitset.count();
-            unsigned long bits_ul = new_bitset.to_ulong();
-            memcpy(bitset_ptr, &bits_ul, N);
+            // 1. Compress existing records into buffer using the new bitset
+            // WHILE the old leaf state (redundant_count, records) is still active.
+            auto compression_buffer = reinterpret_cast<uint8_t*>(get_query_ctx().get_buffer1());
+            compress_to_buffer(compression_buffer, new_bitset, 0, *value_count);
 
-            // write redundant bytes
+            // 2. Now update the leaf's bitset and redundant_count
+            update_bitset(new_bitset);
+
+            // 3. Write redundant bytes
             uint8_t* current_write_byte = redundant_bytes;
             for (uint64_t i = 0; i < N * 8; ++i) {
                 if (redundant_bitset[i]) {
@@ -318,16 +337,14 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
                 }
             }
 
-            // update the records with new compression
-            QueryContext& query_ctx = get_query_ctx();
-            auto compression_buffer = reinterpret_cast<uint8_t*>(query_ctx.get_buffer1());
-            compress_to_buffer(compression_buffer, redundant_bitset, 0, *value_count);
+            // 4. Update the records pointer and copy the recompressed data
             records = redundant_bytes + redundant_count;
             memcpy(records, compression_buffer, *value_count * (N * 8 - redundant_count));
 
+            // 5. Shift records to make space for the new insertion
             shift_right_records(index, *value_count - 1);
 
-            // write the new record
+            // 6. Write the new record
             current_write_byte = &records[index * (N * 8 - redundant_count)];
             for (uint_fast32_t i = 0; i < N * 8; i++) {
                 if (!redundant_bitset[i]) {
@@ -337,6 +354,8 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
             }
         }
         ++*value_count;
+        assert(this->is_ordered());
+
         return nullptr;
     }
 
@@ -348,90 +367,102 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         8 + N + 2036 * N * 8 <= QueryContext::buffer_size,
         "buffer in BPTreeLeaf is not big enough"
     );
-    QueryContext& query_ctx = get_query_ctx();
-    auto buffer = reinterpret_cast<uint8_t*>(query_ctx.get_buffer1());
+    auto buffer = reinterpret_cast<uint8_t*>(get_query_ctx().get_buffer1());
 
     // decompress in buffer the range [0, index)
     for (size_t i = 0; i < index; ++i) {
-        size_t redundant_pos = 0;
-        size_t unique_pos = 0;
+        uint8_t* redundant_ptr = &redundant_bytes[0];
+        uint8_t* unique_ptr = &records[i * (N * 8 - redundant_count)];
+        uint8_t* write_ptr = &buffer[i * (N * 8)];
+
         for (size_t j = 0; j < N * 8; ++j) {
             if (redundant_bitset[j]) {
-                buffer[i * (N * 8) + j] = redundant_bytes[redundant_pos];
-                redundant_pos++;
+                *write_ptr = *redundant_ptr;
+                redundant_ptr++;
             } else {
-                buffer[i * (N * 8) + j] = records[i * (N * 8 - redundant_count) + unique_pos];
-                unique_pos++;
+                *write_ptr = *unique_ptr;
+                unique_ptr++;
             }
+            write_ptr++;
         }
     }
 
     // add the new record to the buffer
     memcpy(&buffer[index * (N * 8)], &record, N * 8);
 
-    // decompress in buffer the range [index + 1, *value_count]
-    // include *value_count because it still does not increment at this point
-    for (size_t i = index + 1; i <= *value_count; ++i) {
-        size_t redundant_pos = 0;
-        size_t unique_pos = 0;
+    // decompress in buffer the range [index + 1, new_count)
+    for (size_t i = index + 1; i < new_count; ++i) {
+        uint8_t* redundant_ptr = &redundant_bytes[0];
+        uint8_t* unique_ptr = &records[(i - 1) * (N * 8 - redundant_count)];
+        uint8_t* write_ptr = &buffer[i * (N * 8)];
+
         for (size_t j = 0; j < N * 8; ++j) {
             if (redundant_bitset[j]) {
-                buffer[i * (N * 8) + j] = redundant_bytes[redundant_pos];
-                redundant_pos++;
+                *write_ptr = *redundant_ptr;
+                redundant_ptr++;
             } else {
-                buffer[i * (N * 8) + j] = records[i * (N * 8 - redundant_count) + unique_pos];
-                unique_pos++;
+                *write_ptr = *unique_ptr;
+                unique_ptr++;
             }
+            write_ptr++;
         }
     }
 
-    // calculate the number of records on each leaf
-    uint8_t* first_uncompressed_records = buffer;
-    uint8_t* last_uncompressed_records = buffer + *value_count * (N * 8);
+    uint8_t* first_uncompressed_record = buffer;
+    // at this moment we have (*value_count + 1) number of records
+    // *value_count has not been updated yet
+    uint8_t* last_uncompressed_record = buffer + (*value_count * N * 8);
 
     std::bitset<N * 8> bitset_tmp;
     bitset_tmp.set();
 
-    uint64_t possible_records_lhs = 0;
-    uint64_t possible_records_rhs = 0;
+    // calculate the number of records on each leaf
+    uint64_t possible_records_lhs = 1;
+    uint64_t possible_records_rhs = 1;
 
     // try to calculate how many contiguous records is possible to put in a new leaf
-    // counting from less to high
-    for (uint64_t i = 0; i < *value_count + 1; ++i) {
+    // counting from first record going up
+    // we skip comparing first record with itself, so we skip first pos
+    for (uint64_t i = 1; i < new_count; ++i) {
         uint8_t* current_record = buffer + i * (N * 8);
 
         for (uint64_t j = 0; j < N * 8; ++j) {
-            if (bitset_tmp[j] && current_record[j] != first_uncompressed_records[j]) {
-                bitset_tmp.set(j, 0);
+            if (bitset_tmp[j] && current_record[j] != first_uncompressed_record[j]) {
+                bitset_tmp.set(j, false);
             }
         }
-        if (get_needed_page_size(bitset_tmp, i) < Page::SIZE) {
+        if (get_needed_page_size(bitset_tmp, possible_records_lhs + 1) <= Page::SIZE) {
             possible_records_lhs++;
         } else {
             break;
         }
     }
+    assert(possible_records_lhs < new_count);
 
     bitset_tmp.set();
 
     // try to calculate how many contiguous records is possible to put in a new leaf
-    // counting from last to low
-    for (uint64_t i = 0; i < *value_count + 1; ++i) {
-        uint8_t* current_record = buffer + (*value_count - i) * (N * 8);
+    // counting from last record going down
+    // we skip comparing last record with itself, so we skip last pos (new_count - 1)
+    for (int64_t i = new_count - 2; i >= 0; --i) {
+        uint8_t* current_record = buffer + i * (N * 8);
 
         for (uint64_t j = 0; j < N * 8; ++j) {
-            if (bitset_tmp[j] && current_record[j] != last_uncompressed_records[j]) {
-                bitset_tmp.set(j, 0);
+            if (bitset_tmp[j] && current_record[j] != last_uncompressed_record[j]) {
+                bitset_tmp.set(j, false);
             }
         }
-        if (get_needed_page_size(bitset_tmp, i) < Page::SIZE) {
+        if (get_needed_page_size(bitset_tmp, possible_records_rhs + 1) <= Page::SIZE) {
             possible_records_rhs++;
         } else {
             break;
         }
     }
 
-    if (possible_records_lhs + possible_records_rhs >= *value_count + 1) {
+    assert(possible_records_rhs < new_count);
+
+    if (possible_records_lhs + possible_records_rhs >= new_count) {
+        std::cout << "SPLIT TYPE 1\n";
         // Case 1: the leaf does not require a double split
         auto& right_page = buffer_manager.append_page(leaf_file_id);
         auto right_leaf = BPlusTreeLeaf<N>(&right_page);
@@ -439,8 +470,24 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         *right_leaf.next_leaf = *next_leaf;
         *next_leaf = right_leaf.page->get_page_number();
 
-        auto n_records_lhs = (*value_count + 1 - possible_records_lhs + possible_records_rhs) / 2;
-        auto n_records_rhs = *value_count + 1 - n_records_lhs;
+        // auto n_records_lhs = (new_count - possible_records_lhs + possible_records_rhs) / 2;
+        // if (n_records_lhs > possible_records_lhs) {
+        //     n_records_lhs = possible_records_lhs
+        // }
+        // auto n_records_rhs = new_count - n_records_lhs;
+
+        // Ensure n_records_lhs respects both LHS and RHS page capacities
+        uint64_t min_lhs = (new_count > possible_records_rhs) ? (new_count - possible_records_rhs) : 1;
+        uint64_t max_lhs = possible_records_lhs;
+
+        // Take the midpoint of the valid range (or clamp safely)
+        auto n_records_lhs = (min_lhs + max_lhs) / 2;
+        if (n_records_lhs < 1)
+            n_records_lhs = 1;
+        if (n_records_lhs >= new_count)
+            n_records_lhs = new_count - 1;
+
+        auto n_records_rhs = new_count - n_records_lhs;
 
         // recalculate the left and right bitsets
         std::bitset<N * 8> lhs_bitset;
@@ -448,20 +495,21 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         lhs_bitset.set();
         rhs_bitset.set();
 
-        for (uint64_t i = 0; i < n_records_lhs; ++i) {
+        for (uint64_t i = 1; i < n_records_lhs; ++i) {
             uint8_t* current_record = buffer + i * (N * 8);
             for (size_t j = 0; j < N * 8; ++j) {
-                if (lhs_bitset[j] && current_record[j] != first_uncompressed_records[j]) {
-                    lhs_bitset.set(j, 0);
+                if (lhs_bitset[j] && current_record[j] != first_uncompressed_record[j]) {
+                    lhs_bitset.set(j, false);
                 }
             }
         }
 
-        for (uint64_t i = 0; i < n_records_rhs; ++i) {
-            uint8_t* current_record = buffer + (*value_count - i) * (N * 8);
+        uint8_t* rhs_uncompressed = buffer + n_records_lhs * (N * 8);
+        for (uint64_t i = n_records_lhs + 1; i < new_count; ++i) {
+            uint8_t* current_record = buffer + i * (N * 8);
             for (size_t j = 0; j < N * 8; ++j) {
-                if (lhs_bitset[j] && current_record[j] != last_uncompressed_records[j]) {
-                    lhs_bitset.set(j, 0);
+                if (rhs_bitset[j] && current_record[j] != rhs_uncompressed[j]) {
+                    rhs_bitset.set(j, false);
                 }
             }
         }
@@ -469,8 +517,26 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         this->recompress_records(lhs_bitset, n_records_lhs, buffer);
         right_leaf.recompress_records(rhs_bitset, n_records_rhs, buffer + n_records_lhs * (N * 8));
 
+        assert(this->is_ordered());
+
+        if (!right_leaf.is_ordered()) {
+            for (size_t i = 0; i < new_count; ++i) {
+                std::cout << "Record " << std::setw(3) << i << " (at index " << (i == index ? "new" : "old")
+                          << "): ";
+                uint8_t* rec_ptr = buffer + i * (N * 8);
+                for (size_t j = 0; j < N * 8; ++j) {
+                    std::cout << std::hex << std::setw(2) << std::setfill('0') << (int) rec_ptr[j] << " ";
+                }
+                std::cout << std::dec << "\n";
+            }
+            std::cout.flush();
+        }
+
+        assert(right_leaf.is_ordered());
+
         return std::make_unique<BPlusTreeSplit<N>>(right_leaf.get_record(0), right_page.get_page_number());
     } else {
+        std::cout << "SPLIT TYPE 2\n";
         // Case 2: the leaf requires a double split
         // Transform [THIS]->[OLD_NEXT] into [THIS]->[MIDDLE]->[RIGHT]->[OLD_NEXT]
         auto& middle_page = buffer_manager.append_page(leaf_file_id);
@@ -486,53 +552,58 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
         // middle left
         uint64_t n_records_lhs = possible_records_lhs;
         uint64_t n_records_rhs = possible_records_rhs;
-        uint64_t n_records_middle = (*value_count + 1) - (n_records_lhs + n_records_rhs);
+        uint64_t n_records_middle = new_count - (n_records_lhs + n_records_rhs);
 
         // not the middle of the list, but the first record to MIDDLE leaf
         uint8_t* middle_uncompressed = buffer + n_records_lhs * (N * 8);
+        uint8_t* rhs_uncompressed = buffer + (n_records_lhs + n_records_middle) * (N * 8);
 
-        std::bitset<N * 8> middle_bitset;
-        middle_bitset.set();
-        for (uint64_t i = 0; i < n_records_middle; ++i) {
-            unsigned char* current_record = buffer + (n_records_lhs + i) * (N * 8);
-            for (size_t j = 0; j < N * 8; ++j) {
-                if (middle_bitset[j] && current_record[j] != middle_uncompressed[j]) {
-                    middle_bitset.set(j, 0);
-                }
-            }
-        }
-
-        // recalculate the left and right bitsets
+        // recalculate bitsets
         std::bitset<N * 8> lhs_bitset;
         std::bitset<N * 8> rhs_bitset;
+        std::bitset<N * 8> mid_bitset;
         lhs_bitset.set();
         rhs_bitset.set();
+        mid_bitset.set();
 
-        for (uint64_t i = 0; i < n_records_lhs; ++i) {
+        for (uint64_t i = 1; i < n_records_lhs; ++i) {
             uint8_t* current_record = buffer + i * (N * 8);
             for (size_t j = 0; j < N * 8; ++j) {
-                if (lhs_bitset[j] && current_record[j] != first_uncompressed_records[j]) {
-                    lhs_bitset.set(j, 0);
+                if (lhs_bitset[j] && current_record[j] != first_uncompressed_record[j]) {
+                    lhs_bitset.set(j, false);
                 }
             }
         }
 
-        for (uint64_t i = 0; i < n_records_rhs; ++i) {
-            uint8_t* current_record = buffer + (*value_count - i) * (N * 8);
+        for (uint64_t i = n_records_lhs + 1; i < n_records_lhs + n_records_middle; ++i) {
+            uint8_t* current_record = buffer + i * (N * 8);
             for (size_t j = 0; j < N * 8; ++j) {
-                if (lhs_bitset[j] && current_record[j] != last_uncompressed_records[j]) {
-                    lhs_bitset.set(j, 0);
+                if (mid_bitset[j] && current_record[j] != middle_uncompressed[j]) {
+                    mid_bitset.set(j, false);
+                }
+            }
+        }
+
+        for (uint64_t i = n_records_lhs + n_records_middle + 1; i < new_count; ++i) {
+            uint8_t* current_record = buffer + i * (N * 8);
+            for (size_t j = 0; j < N * 8; ++j) {
+                if (rhs_bitset[j] && current_record[j] != rhs_uncompressed[j]) {
+                    rhs_bitset.set(j, false);
                 }
             }
         }
 
         this->recompress_records(lhs_bitset, n_records_lhs, buffer);
-        middle_leaf.recompress_records(middle_bitset, n_records_middle, middle_uncompressed);
+        middle_leaf.recompress_records(mid_bitset, n_records_middle, middle_uncompressed);
         right_leaf.recompress_records(
             rhs_bitset,
             n_records_rhs,
             buffer + (n_records_lhs + n_records_middle) * (N * 8)
         );
+
+        assert(this->is_ordered());
+        assert(middle_leaf.is_ordered());
+        assert(right_leaf.is_ordered());
 
         return std::make_unique<BPlusTreeSplit<N>>(
             middle_leaf.get_record(0),
@@ -548,6 +619,8 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 template<std::size_t N>
 uint_fast32_t BPlusTreeLeaf<N>::search_index(const Record<N>& record) const noexcept
 {
+    // print_leaf_debug(std::cout);
+
     int_fast32_t from = 0;
     int_fast32_t to = static_cast<int_fast32_t>(*value_count) - 1;
     Record<N> search_record;
@@ -700,6 +773,78 @@ bool BPlusTreeLeaf<N>::check(std::ostream& os) const
             x = y;
         }
     }
+    return true;
+}
+
+template<std::size_t N>
+void BPlusTreeLeaf<N>::print_leaf_debug(std::ostream& os) const
+{
+    os << "==================== BPlusTreeLeaf ====================\n";
+    os << "  Page Number   : " << (page != nullptr ? page->get_page_number() : 0) << "\n";
+    os << "  Value Count   : " << (*value_count) << "\n";
+    os << "  Next Leaf     : " << (*next_leaf) << "\n";
+    os << "  Redundant Cnt : " << redundant_count << ", " << (N * 8) << " bits\n";
+
+    // Print Bitset as a binary string and hex bytes
+    os << "  Bitset (bin)  : ";
+    for (int i = static_cast<int>(N * 8) - 1; i >= 0; --i) {
+        os << (redundant_bitset[i] ? '1' : '0');
+        if (i % 8 == 0 && i > 0)
+            os << " ";
+    }
+    os << "\n";
+
+    os << "  Bitset (hex)  : ";
+    for (size_t i = 0; i < N; ++i) {
+        os << std::hex << std::setw(2) << std::setfill('0') << (int) bitset_ptr[i] << " ";
+    }
+    os << std::dec << "\n";
+
+    // Print Redundant Bytes
+    os << "  Redundant Byt : ";
+    for (size_t i = 0; i < redundant_count; ++i) {
+        os << std::hex << std::setw(2) << std::setfill('0') << (int) redundant_bytes[i] << " ";
+    }
+    os << std::dec << "\n";
+
+    // Print All Reconstructed Records
+    os << "  --- Stored Records (" << (*value_count) << " records, N=" << N << ") ---\n";
+    for (uint_fast32_t i = 0; i < (*value_count); ++i) {
+        Record<N> rec = get_record(i);
+        unsigned char* rec_bytes = reinterpret_cast<unsigned char*>(&rec);
+
+        os << "    Rec " << std::setw(3) << i << ": [ ";
+        for (size_t j = 0; j < N * 8; ++j) {
+            os << std::hex << std::setw(2) << std::setfill('0') << (int) rec_bytes[j] << " ";
+        }
+        os << std::dec << "] (Decoded values: ";
+        for (size_t n = 0; n < N; ++n) {
+            os << rec[n] << (n + 1 < N ? ", " : "");
+        }
+        os << ")\n";
+    }
+    os << "=======================================================\n";
+    os.flush();
+}
+
+template<std::size_t N>
+bool BPlusTreeLeaf<N>::is_ordered() const
+{
+    if (*value_count <= 1) {
+        return true;
+    }
+
+    Record<N> prev = get_record(0);
+    Record<N> curr;
+
+    for (uint_fast32_t i = 1; i < (*value_count); ++i) {
+        set_record(i, curr);
+        if (curr <= prev) {
+            return false;
+        }
+        prev = curr;
+    }
+
     return true;
 }
 

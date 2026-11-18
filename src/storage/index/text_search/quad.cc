@@ -87,11 +87,11 @@ uint_fast32_t index_single(
         const auto [first, second] = compress(trie_node_id, score, table_pointer);
 
         // TODO: delete
-        // std::cout << std::hex << std::uppercase << std::setfill('0');
-        // std::cout << ", score: 0x" << score;
-        // std::cout << "\n  1: 0x" << std::setw(16) << first << "\n";
-        // std::cout << "  2: 0x" << std::setw(16) << second << "\n";
-        // std::cout << std::dec << std::nouppercase << std::setfill(' ');
+        std::cout << std::hex << std::uppercase << std::setfill('0');
+        std::cout << ", score: 0x" << score;
+        std::cout << "\n  1: 0x" << std::setw(16) << first << "\n";
+        std::cout << "  2: 0x" << std::setw(16) << second << "\n";
+        std::cout << std::dec << std::nouppercase << std::setfill(' ');
 
         // TODO: delete
         // if (token == "43760") {
