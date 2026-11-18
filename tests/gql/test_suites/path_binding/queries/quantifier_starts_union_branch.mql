@@ -1,0 +1,2 @@
+MATCH ({_id: "N1"})(((:Book)|((u)-[:Follows]-(v)){1}(m))(z)){1}
+RETURN u,v

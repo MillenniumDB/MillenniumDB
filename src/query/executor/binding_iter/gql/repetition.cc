@@ -14,6 +14,11 @@ void Repetition::begin(Binding& binding)
 {
     parent_binding = &binding;
     child_iter->begin(binding);
+
+    // no search until a boundary is set: one that was left unfinished must not go on
+    pending = false;
+    queue = {};
+    return_zero_length = false;
 }
 
 void Repetition::start_search()
