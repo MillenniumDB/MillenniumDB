@@ -8,8 +8,12 @@ class OpNode : public Op {
 public:
     VarId id;
 
-    OpNode(VarId id) :
-        id(id)
+    // false only for a node that MATCH COLLAPSE adds at an end of an edge pattern
+    bool on_path;
+
+    OpNode(VarId id, bool on_path = true) :
+        id(id),
+        on_path(on_path)
     { }
 
     bool operator<(const OpNode& other) const
@@ -42,7 +46,7 @@ public:
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
     {
         os << std::string(indent, ' ');
-        os << "OpNode: " << id << "\n";
+        os << "OpNode: " << id << (on_path ? "" : " (off-path)") << "\n";
         return os;
     }
 };

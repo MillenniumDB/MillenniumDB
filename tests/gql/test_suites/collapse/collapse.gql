@@ -1,0 +1,27 @@
+N0 :Account name:"Megan" balance:100
+N1 :Account name:"Jay" balance:150
+N2 :Account name:"Robben" balance:160
+N3 :Account name:"Rebecca" balance:200
+N4 :Account name:"Scott" balance:150
+N5 :Account name:"Mike" balance:180
+N6 :Account name:"a"
+N7 :Account name:"b"
+N8 :Account name:"b2"
+N9 :Account name:"c"
+N10 :Account name:"d"
+N11 :Account name:"e"
+N12 :Account name:"f"
+N0->N1 :Transfer name:"t1" ts:20260101 amount:10
+N1->N2 :Transfer name:"t2" ts:20260102 amount:10
+N2->N3 :Transfer name:"t3" ts:20260103 amount:10
+N3->N4 :Transfer name:"t4" ts:20260104 amount:10
+N4->N5 :Transfer name:"t5" ts:20260105 amount:10
+N5->N0 :Transfer name:"t6" ts:20251231 amount:10
+N1->N2 :Transfer name:"t7" ts:20260110 amount:10
+N1->N1 :Transfer name:"t8" ts:20260111 amount:10
+N6->N7 :Transfer name:"e11" ts:11 amount:10
+N7->N8 :Transfer name:"e12" ts:12 amount:10
+N8->N9 :Transfer name:"e13" ts:13 amount:10
+N9->N10 :Transfer name:"e1" ts:1 amount:10
+N10->N11 :Transfer name:"e2" ts:2 amount:10
+N11->N12 :Transfer name:"e3" ts:3 amount:10

@@ -8,6 +8,7 @@
 #include "query/parser/op/gql/op.h"
 #include "query/rewriter/gql/op/add_linear_patterns.h"
 #include "query/rewriter/gql/op/add_starting_enum.h"
+#include "query/rewriter/gql/op/check_path_variable.h"
 #include "query/rewriter/gql/op/check_statements.h"
 #include "query/rewriter/gql/op/check_unbounded_repetition.h"
 #include "query/rewriter/gql/op/check_var_existence.h"
@@ -61,6 +62,9 @@ public:
 
         CheckUnboundedRepetition repetition_visitor;
         op->accept_visitor(repetition_visitor);
+
+        CheckPathVariable path_variable_visitor;
+        op->accept_visitor(path_variable_visitor);
 
         // TODO: consider removing this
         CheckStatements statements_visitor;

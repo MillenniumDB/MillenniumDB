@@ -112,7 +112,7 @@ void AddLinearPatterns::visit(OpBasicGraphPattern& op_basic_graph_pattern)
 
 void AddLinearPatterns::visit(OpNode& op)
 {
-    tmp = std::make_unique<OpNode>(op.id);
+    tmp = std::make_unique<OpNode>(op);
 
     if (linear_pattern == Node) {
         consecutive_nodes_found = true;

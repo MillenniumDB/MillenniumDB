@@ -72,6 +72,9 @@ private:
     std::unique_ptr<OpRepetition::Repetition> current_repetition = nullptr;
     PatternType current_pattern;
 
+    // the match mode of the graph pattern being visited is COLLAPSE
+    bool collapse_mode = false;
+
     OpEdge create_edge(VarId left_node, VarId right_node, VarId edge_id, VarId direction_var, EdgeType type);
     uint64_t get_unsigned_integer(std::string& str);
 
@@ -127,6 +130,7 @@ public:
     std::any visitLetVariableDefinitionList(GQLParser::LetVariableDefinitionListContext* ctx) override;
     std::any visitLetVariableDefinition(GQLParser::LetVariableDefinitionContext* ctx) override;
 
+    std::any visitGraphPattern(GQLParser::GraphPatternContext* ctx) override;
     std::any visitPathPatternList(GQLParser::PathPatternListContext* ctx) override;
     std::any visitPathPatternUnion(GQLParser::PathPatternUnionContext* ctx) override;
     std::any visitPathTerm(GQLParser::PathTermContext* ctx) override;

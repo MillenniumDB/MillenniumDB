@@ -1,0 +1,2 @@
+MATCH COLLAPSE (a {name:"Jay"})-[x]->-[y]-(b)
+RETURN x.name, y.name, b.name

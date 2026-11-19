@@ -1,0 +1,2 @@
+MATCH COLLAPSE p = ANY SHORTEST (a {name:"Megan"}) ( -[x]->()-[y]-> WHERE x.ts < y.ts )+ (b)
+RETURN p, x, y

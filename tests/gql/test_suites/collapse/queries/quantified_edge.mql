@@ -1,0 +1,2 @@
+MATCH COLLAPSE ANY SHORTEST (a)-[e]->+(b)
+RETURN DISTINCT a.name, b.name
