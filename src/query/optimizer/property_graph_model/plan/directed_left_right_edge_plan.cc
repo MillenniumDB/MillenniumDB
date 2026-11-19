@@ -3,6 +3,7 @@
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/edge_direction_left.h"
 #include "query/executor/binding_iter/edge_direction_right.h"
+#include "query/executor/binding_iter/edge_lookup.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/union.h"
 
@@ -62,11 +63,14 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
     std::array<std::unique_ptr<ScanRange>, 3> ranges_left;
 
     if (edge_assigned) {
-        ranges_right[0] = ScanRange::get(edge, edge_assigned);
-        ranges_right[1] = ScanRange::get(from, from_assigned);
-        ranges_right[2] = ScanRange::get(to, to_assigned);
+        auto lookup = [&](Id source, bool source_assigned, Id target, bool target_assigned) {
+            std::vector<EdgeLookup<3>::IdAssigned> ends;
+            ends.emplace_back(source, source_assigned);
+            ends.emplace_back(target, target_assigned);
+            return std::make_unique<EdgeLookup<3>>(*gql_model.edge_from_to, edge, std::move(ends));
+        };
         auto directed_right = std::make_unique<EdgeDirectionRight>(
-            std::make_unique<IndexScan<3>>(*gql_model.edge_from_to, std::move(ranges_right)),
+            lookup(from, from_assigned, to, to_assigned),
             direction_var
         );
 
@@ -74,11 +78,8 @@ std::unique_ptr<BindingIter> DirectedLeftRightEdgePlan::get_binding_iter() const
             return directed_right;
         }
 
-        ranges_left[0] = ScanRange::get(edge, edge_assigned);
-        ranges_left[1] = ScanRange::get(to, to_assigned);
-        ranges_left[2] = ScanRange::get(from, from_assigned);
         auto directed_left = std::make_unique<EdgeDirectionLeft>(
-            std::make_unique<IndexScan<3>>(*gql_model.edge_from_to, std::move(ranges_left)),
+            lookup(to, to_assigned, from, from_assigned),
             direction_var
         );
 

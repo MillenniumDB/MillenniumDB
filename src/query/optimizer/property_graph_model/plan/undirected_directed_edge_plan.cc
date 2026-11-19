@@ -5,6 +5,7 @@
 #include "query/executor/binding_iter/edge_direction_left.h"
 #include "query/executor/binding_iter/edge_direction_right.h"
 #include "query/executor/binding_iter/edge_direction_undirected.h"
+#include "query/executor/binding_iter/edge_lookup.h"
 #include "query/executor/binding_iter/index_scan.h"
 #include "query/executor/binding_iter/union.h"
 
@@ -62,23 +63,17 @@ void UndirectedDirectedEdgePlan::set_input_vars(const std::set<VarId>& input_var
 std::unique_ptr<BindingIter> UndirectedDirectedEdgePlan::get_binding_iter() const
 {
     if (edge_assigned) {
-        std::array<std::unique_ptr<ScanRange>, 3> ranges;
-        ranges[0] = ScanRange::get(edge, edge_assigned);
-        ranges[1] = ScanRange::get(from, from_assigned);
-        ranges[2] = ScanRange::get(to, to_assigned);
-        auto directed = add_direction_iter(
-            std::make_unique<IndexScan<3>>(*gql_model.edge_from_to, std::move(ranges))
+        auto lookup = [&](BPlusTree<3>& bpt) {
+            std::vector<EdgeLookup<3>::IdAssigned> ends;
+            ends.emplace_back(from, from_assigned);
+            ends.emplace_back(to, to_assigned);
+            return std::make_unique<EdgeLookup<3>>(bpt, edge, std::move(ends));
+        };
+        auto directed = add_direction_iter(lookup(*gql_model.edge_from_to));
+        auto undirected = std::make_unique<EdgeDirectionUndirected>(
+            lookup(*gql_model.edge_n1_n2),
+            direction_var
         );
-
-        std::array<std::unique_ptr<ScanRange>, 3> ranges_undirected;
-        ranges_undirected[0] = ScanRange::get(edge, edge_assigned);
-        ranges_undirected[1] = ScanRange::get(from, from_assigned);
-        ranges_undirected[2] = ScanRange::get(to, to_assigned);
-        std::unique_ptr<BindingIter> undirected = std::make_unique<IndexScan<3>>(
-            *gql_model.edge_n1_n2,
-            std::move(ranges_undirected)
-        );
-        undirected = std::make_unique<EdgeDirectionUndirected>(std::move(undirected), direction_var);
 
         std::vector<std::unique_ptr<BindingIter>> iters;
         iters.push_back(std::move(directed));

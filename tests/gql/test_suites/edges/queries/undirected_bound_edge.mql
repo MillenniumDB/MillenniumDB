@@ -1,0 +1,3 @@
+MATCH ({name:"1"})~[e:friends]~()
+MATCH (x)~[e]~(y {name:"1"})
+RETURN x, e, y
