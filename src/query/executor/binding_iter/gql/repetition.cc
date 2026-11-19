@@ -1,5 +1,7 @@
 #include "repetition.h"
 
+#include <algorithm>
+
 Repetition::Repetition(
     std::unique_ptr<PathBindingIter> child_iter,
     uint64_t lower,
@@ -27,7 +29,7 @@ void Repetition::start_search()
     PathBinding start_list;
     start_list.elements.push_back({ parent_boundary, {} });
     queue.push({ start_list, 0 });
-    visited.insert(parent_boundary);
+    visited.insert({ parent_boundary, 0 });
 }
 
 // set_left_boundary or set_right_boundary must be called before next
@@ -53,15 +55,16 @@ void Repetition::reset()
 
 std::unique_ptr<PathBinding> Repetition::add_iteration(const PathBinding& iteration)
 {
-    // the search only goes on from an element the first time it is reached
-    if (!visited.insert(iteration.end_element()).second) {
+    // The search only goes on from an element the first time it is reached. Below the lower bound
+    // the number of iterations counts too: a path that is too short does not rule out a longer one.
+    const uint64_t repetitions = cur_repetitions + 1;
+    if (!visited.insert({ iteration.end_element(), std::min(repetitions, lower) }).second) {
         return nullptr;
     }
 
     auto path = cur_list.clone();
     path->concat(iteration);
 
-    const uint64_t repetitions = cur_repetitions + 1;
     if (repetitions < upper) {
         queue.push({ *path, repetitions });
     }

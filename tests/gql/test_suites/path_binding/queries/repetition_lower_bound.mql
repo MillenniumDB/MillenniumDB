@@ -1,0 +1,2 @@
+MATCH ({_id: "N1"})((a)-[:Follows]->(b)){2}
+RETURN a,b
