@@ -1,0 +1,2 @@
+MATCH COLLAPSE p = ANY SHORTEST ( ( (a)-[x]->(m) )* | (n) ) ( -[y]->(b) | (c)-[z]->(b) )
+RETURN p

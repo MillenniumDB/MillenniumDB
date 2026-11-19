@@ -467,6 +467,7 @@ void PathBindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
 {
     possible_disjoint_nodes.clear();
     linear_pattern_vars.clear();
+    linear_pattern_off_path_vars.clear();
     seen_nodes.clear();
     base_plans.clear();
 
@@ -541,6 +542,7 @@ void PathBindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
         std::move(linear_pattern_vars)
     );
     linear_pattern_path->set_outer_vars(std::move(outer_vars));
+    linear_pattern_path->set_off_path_vars(std::move(linear_pattern_off_path_vars));
     tmp_path = std::move(linear_pattern_path);
 
     if (graph_pattern_vars.count(first_var)) {
@@ -555,6 +557,9 @@ void PathBindingIterConstructor::visit(OpNode& op_node)
 {
     possible_disjoint_nodes.insert(op_node.id);
     linear_pattern_vars.push_back(op_node.id);
+    if (!op_node.on_path) {
+        linear_pattern_off_path_vars.insert(op_node.id);
+    }
 }
 
 void PathBindingIterConstructor::visit(OpEdge& op_edge)

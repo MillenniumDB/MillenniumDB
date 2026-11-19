@@ -1,0 +1,2 @@
+MATCH COLLAPSE ANY SHORTEST (a) ( ( -[x]->()-[y]-> WHERE x.ts < y.ts )+ | -> ) (b)
+RETURN DISTINCT a.name, b.name

@@ -25,8 +25,15 @@ void LinearPatternPath::reset()
 
 void LinearPatternPath::set_left_boundary(const PathElement& boundary)
 {
-    // the pattern starts with a node: the node at which the path on the left ends
-    parent_binding->add(variables_in_pattern.front(), boundary.end_node());
+    if (boundary.is_edge && off_path_vars.count(variables_in_pattern.front())) {
+        // edge·edge join: the pattern starts with the edge on the left
+        parent_binding->add(variables_in_pattern.front(), boundary.start_node());
+        required_first_edge = boundary;
+    } else {
+        // the pattern starts with a node: the node at which the path on the left ends
+        parent_binding->add(variables_in_pattern.front(), boundary.end_node());
+        required_first_edge.reset();
+    }
     // we call reset here, so that the child iter sets the ranges of the bpt iter and
     // the assign nulls function can be called safely
     child_iter->reset();
@@ -58,16 +65,24 @@ PathElement LinearPatternPath::edge_at(size_t i) const
 
 std::unique_ptr<PathBinding> LinearPatternPath::next()
 {
-    if (!child_iter->next()) {
-        return nullptr;
-    }
+    // an edge·edge join only takes the results that start with the edge on the left
+    do {
+        if (!child_iter->next()) {
+            return nullptr;
+        }
+    } while (required_first_edge && edge_at(1) != *required_first_edge);
 
     auto path = std::make_unique<PathBinding>();
     path->elements.reserve(pattern_size); // every element has a variable in the pattern
-    path->push_right(node_at(0), variables_in_pattern[0]);
+    auto push_node = [&](size_t i) {
+        if (!off_path_vars.count(variables_in_pattern[i])) {
+            path->push_right(node_at(i), variables_in_pattern[i]);
+        }
+    };
+    push_node(0);
     for (size_t i = 1; i < pattern_size; i += 3) {
         path->push_right(edge_at(i), variables_in_pattern[i]);
-        path->push_right(node_at(i + 2), variables_in_pattern[i + 2]);
+        push_node(i + 2);
     }
     return path;
 }
@@ -84,6 +99,11 @@ void LinearPatternPath::assign_nulls()
 void LinearPatternPath::set_outer_vars(std::set<VarId>&& vars)
 {
     outer_vars = std::move(vars);
+}
+
+void LinearPatternPath::set_off_path_vars(std::set<VarId>&& vars)
+{
+    off_path_vars = std::move(vars);
 }
 
 void LinearPatternPath::assign_empty()

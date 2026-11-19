@@ -1,0 +1,2 @@
+MATCH collapse = (a {name:"Megan"})-[t]->(b)
+RETURN b.name AS collapse

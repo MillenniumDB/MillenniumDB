@@ -134,6 +134,19 @@ std::any QueryVisitor::visitLetVariableDefinition(GQLParser::LetVariableDefiniti
     return 0;
 }
 
+std::any QueryVisitor::visitGraphPattern(GQLParser::GraphPatternContext* ctx)
+{
+    LOG_VISITOR
+    const bool outer_collapse_mode = collapse_mode;
+    auto match_mode = ctx->matchMode();
+    collapse_mode = match_mode != nullptr && match_mode->COLLAPSE() != nullptr;
+
+    visitChildren(ctx);
+
+    collapse_mode = outer_collapse_mode;
+    return 0;
+}
+
 std::any QueryVisitor::visitPathPatternList(GQLParser::PathPatternListContext* ctx)
 {
     LOG_VISITOR
@@ -580,6 +593,19 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
     auto it_bgp_patterns = bgp_patterns.begin();
     auto it_direction_vars = direction_vars.begin();
 
+    // a node for an end of an edge pattern: on the path in GQL, off it in MATCH COLLAPSE
+    auto internal_node = [this]() {
+        return std::make_unique<OpNode>(get_query_ctx().get_internal_var(), !collapse_mode);
+    };
+
+    // the type is Node only in GQL, where the next edge pattern shares the node
+    auto insert_node = [&](std::list<PatternInfo>::iterator pos) {
+        auto node = internal_node();
+        const VarId id = node->id;
+        bgp_patterns.emplace(pos, std::move(node), collapse_mode ? Other : Node, id, EdgeAnyDirection);
+        return id;
+    };
+
     // create the edges and add the element patterns to the bgp in order
     while (it_bgp_patterns != bgp_patterns.end()) {
         if (it_bgp_patterns->type != Edge) {
@@ -593,8 +619,8 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
         if (it_bgp_patterns->repetition != nullptr) {
             // if the edge has a quantifier, then we add 2 internal nodes
             std::vector<std::unique_ptr<Op>> rep_patterns;
-            auto left_node_op = std::make_unique<OpNode>(get_query_ctx().get_internal_var());
-            auto right_node_op = std::make_unique<OpNode>(get_query_ctx().get_internal_var());
+            auto left_node_op = internal_node();
+            auto right_node_op = internal_node();
 
             OpEdge edge = create_edge(
                 left_node_op->id,
@@ -626,10 +652,7 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
             if (it_bgp_patterns != bgp_patterns.begin() && (--it_last)->type == Node) {
                 left_node = it_last->id;
             } else {
-                auto node_id = get_query_ctx().get_internal_var();
-                PatternInfo pattern_info(std::make_unique<OpNode>(node_id), Node, node_id, EdgeAnyDirection);
-                bgp_patterns.insert(it_bgp_patterns, std::move(pattern_info));
-                left_node = node_id;
+                left_node = insert_node(it_bgp_patterns);
             }
 
             // find the right node id
@@ -638,10 +661,7 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
             if (it_next != bgp_patterns.end() && it_next->type == Node) {
                 right_node = it_next->id;
             } else {
-                auto node_id = get_query_ctx().get_internal_var();
-                PatternInfo pattern_info(std::make_unique<OpNode>(node_id), Node, node_id, EdgeAnyDirection);
-                bgp_patterns.insert(it_next, std::move(pattern_info));
-                right_node = node_id;
+                right_node = insert_node(it_next);
             }
             OpEdge edge = create_edge(
                 left_node,

@@ -66,6 +66,7 @@ private:
     std::set<VarId> assigned_vars;
     std::set<VarId> graph_pattern_vars;
     std::vector<VarId> linear_pattern_vars;
+    std::set<VarId> linear_pattern_off_path_vars;
     std::set<std::pair<VarId, ObjectId>> setted_vars;
     std::vector<std::unique_ptr<Plan>> base_plans;
 

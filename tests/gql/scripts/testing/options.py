@@ -56,6 +56,7 @@ TEST_SUITES: list[str] = [
     "path_binding",
     "group_by",
     "list_exprs",
+    "collapse",
 ]
 
 # Tests with the following query files fill be ignored
