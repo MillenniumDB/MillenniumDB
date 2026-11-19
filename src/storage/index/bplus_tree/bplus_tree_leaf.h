@@ -49,12 +49,10 @@ public:
         page(page),
         leaf_file_id(page->page_id.file_id)
     {
-        char* bitset_ptr = page->get_bytes() + 2 * sizeof(uint32_t);
-
-        int pos_bitset = 0;
+        int redundant_pos = 0;
         for (size_t i = 0; i < N; ++i) {
             for (int bit = 0; bit < 8; bit++) {
-                redundant_bitset.set(pos_bitset++, (bitset_ptr[i] >> bit) & 1);
+                redundant_bitset.set(redundant_pos++, (bitset_ptr[i] >> bit) & 1);
             }
         }
         redundant_count = redundant_bitset.count();
@@ -97,10 +95,12 @@ public:
     {
         return *page;
     }
+
     inline uint32_t get_value_count() const
     {
         return *value_count;
     }
+
     inline bool has_next() const
     {
         return *next_leaf != 0;
@@ -141,12 +141,12 @@ public:
     bool check_range(const Record<N>& r) const;
 
 private:
-    unsigned char* records;
+    uint8_t* records;
     uint32_t* value_count;
     uint32_t* next_leaf;
-    unsigned char* bitset_ptr;
-    unsigned char* redundant_bytes;
-    uint32_t redundant_count = 0;
+    uint8_t* bitset_ptr;
+    uint8_t* redundant_bytes;
+    uint32_t redundant_count = 0; // should be equal to redundant_bitset.count()
 
     // The bits set to true represent the byte position of the records that are redundant.
     std::bitset<N * 8> redundant_bitset;
@@ -154,23 +154,31 @@ private:
     Page* page;
     FileId leaf_file_id;
 
-    uint32_t get_page_size(std::bitset<N * 8> bitset, uint32_t n_records);
+    static uint32_t get_needed_page_size(const std::bitset<N * 8>& bitset, uint32_t n_records);
+
     std::bitset<N * 8> create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to);
 
-    void update_leaf(
-        BPlusTreeLeaf<N>& leaf,
-        std::bitset<N * 8>& bitset,
-        uint64_t n_records,
-        unsigned char* buffer
-    );
+    // updates redundant_bitset, redundant_count
+    void update_bitset(const  std::bitset<N * 8>& new_bitset);
+
+    // updates redundant_bitset, redundant_count, value_count and records
+    void recompress_records(std::bitset<N * 8>& new_bitset, size_t n_records, const uint8_t* uncompressed_records);
+
+    // writes records in range [from, to] with compression according to bitset
     void compress_to_buffer(
-        unsigned char* compression_buffer,
-        std::bitset<N * 8> bitset,
-        uint64_t from,
-        uint64_t to
-    );
+        uint8_t* compression_buffer,
+        const std::bitset<N * 8>& bitset,
+        size_t from,
+        size_t to
+    ) const;
+
     void upgrade_to_editable();
 
     bool equal_record(const Record<N>& record, uint_fast32_t index);
     void shift_right_records(int_fast32_t from, int_fast32_t to);
+
+    void print_leaf_debug(std::ostream& os) const;
+
+    // Returns true iff all records in this leaf are in strictly increasing order, for debugging purposes
+    bool is_ordered() const;
 };
