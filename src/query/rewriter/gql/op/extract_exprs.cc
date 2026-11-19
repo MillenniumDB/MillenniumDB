@@ -129,7 +129,7 @@ void ExtractExprs::visit(OpLinearPattern& op)
 
 void ExtractExprs::visit(OpNode& op)
 {
-    tmp = std::make_unique<OpNode>(op.id);
+    tmp = std::make_unique<OpNode>(op);
 }
 
 void ExtractExprs::visit(OpEdge& op)
