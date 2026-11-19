@@ -1,6 +1,5 @@
 #include "quad.h"
 
-// #include <iostream>
 #include <unordered_set>
 
 #include "graph_models/quad_model/conversions.h"
@@ -84,7 +83,6 @@ uint_fast32_t index_single(
                        - static_cast<uint32_t>(static_cast<double>(count) / tokens.size() * UINT32_MAX);
 
         const auto [first, second] = compress(trie_node_id, score, table_pointer);
-
         bpt.insert({ first, second });
     }
 
