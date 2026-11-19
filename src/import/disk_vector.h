@@ -434,9 +434,16 @@ private:
     {
         uint64_t buffer_pos = 0;
 
-        // bitset
-        unsigned long bits_ul = bitset.to_ulong();
-        memcpy(compression_buffer, &bits_ul, N);
+        // write bitset
+        for (size_t i = 0; i < N; ++i) {
+            uint8_t byte_val = 0;
+            for (int bit = 0; bit < 8; ++bit) {
+                if (bitset[i * 8 + bit]) {
+                    byte_val |= (1 << bit);
+                }
+            }
+            compression_buffer[i] = byte_val;
+        }
         buffer_pos += N;
 
         char* first_record_ptr = (char*) records_buffer;
@@ -543,7 +550,10 @@ private:
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[1] && new_permutation[1] == current_permutation[0] && new_permutation[2] == current_permutation[2])
+            } else if (
+                new_permutation[0] == current_permutation[1] && new_permutation[1] == current_permutation[0]
+                && new_permutation[2] == current_permutation[2]
+            )
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -552,7 +562,10 @@ private:
                     (*key_ptr)[0] = (*key_ptr)[1];
                     (*key_ptr)[1] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[1] && new_permutation[2] == current_permutation[0])
+            } else if (
+                new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[1]
+                && new_permutation[2] == current_permutation[0]
+            )
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -561,7 +574,10 @@ private:
                     (*key_ptr)[0] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[0] && new_permutation[2] == current_permutation[1])
+            } else if (
+                new_permutation[0] == current_permutation[2] && new_permutation[1] == current_permutation[0]
+                && new_permutation[2] == current_permutation[1]
+            )
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -589,7 +605,11 @@ private:
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[0] && new_permutation[1] == current_permutation[2] && new_permutation[2] == current_permutation[1] && new_permutation[3] == current_permutation[3])
+            } else if (
+                new_permutation[0] == current_permutation[0] && new_permutation[1] == current_permutation[2]
+                && new_permutation[2] == current_permutation[1]
+                && new_permutation[3] == current_permutation[3]
+            )
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
@@ -598,10 +618,12 @@ private:
                     (*key_ptr)[1] = (*key_ptr)[2];
                     (*key_ptr)[2] = aux;
                 }
-            } else if (new_permutation[0] == current_permutation[3] // edge
-                       && new_permutation[1] == current_permutation[2] // from
-                       && new_permutation[2] == current_permutation[1] // to
-                       && new_permutation[3] == current_permutation[0]) // type
+            } else if (
+                new_permutation[0] == current_permutation[3] // edge
+                && new_permutation[1] == current_permutation[2] // from
+                && new_permutation[2] == current_permutation[1] // to
+                && new_permutation[3] == current_permutation[0]
+            ) // type
             {
                 for (auto key_ptr = reinterpret_cast<std::array<uint64_t, N>*>(buffer); key_ptr < end_ptr;
                      ++key_ptr)
