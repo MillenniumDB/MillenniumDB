@@ -24,7 +24,7 @@ public:
         auto rhs_oid = rhs->eval(binding);
 
         bool error;
-        bool res = GQL::Comparisons::strict_compare_null_first(lhs_oid, rhs_oid, &error) <= 0;
+        bool res = GQL::Comparisons::strict_compare(lhs_oid, rhs_oid, &error) <= 0;
         if (error) {
             return ObjectId::get_null();
         }

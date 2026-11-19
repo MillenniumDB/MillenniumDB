@@ -1,5 +1,5 @@
 x.value1,x.value3,case_value
-NULL,10,true
+NULL,10,NULL
 1,9,true
 2,8,true
 5,7,true
@@ -8,6 +8,6 @@ NULL,10,true
 "hola",1,NULL
 4,4,true
 6,3,false
-NULL,2,false
+NULL,2,NULL
 8,5,false
 "test",5,NULL

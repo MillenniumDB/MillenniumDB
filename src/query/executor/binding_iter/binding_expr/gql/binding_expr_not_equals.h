@@ -21,6 +21,11 @@ public:
         auto lhs_oid = lhs->eval(binding);
         auto rhs_oid = rhs->eval(binding);
 
+        // a comparison with null is null, as for =
+        if (lhs_oid.is_null() || rhs_oid.is_null()) {
+            return ObjectId::get_null();
+        }
+
         // Check if the ids are equal
         if (lhs_oid != rhs_oid) {
             return ObjectId(ObjectId::BOOL_TRUE);

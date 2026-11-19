@@ -24,6 +24,12 @@ int64_t Comparisons::_compare(ObjectId lhs_oid, ObjectId rhs_oid, bool* error)
     if constexpr (mode == Comparisons::Mode::Strict) {
         assert(error != nullptr);
         *error = false;
+
+        // in an expression, a comparison with null is null: nulls only have an order for sorting
+        if (lhs_oid.is_null() || rhs_oid.is_null()) {
+            *error = true;
+            return 0;
+        }
     }
 
     if (lhs_oid == rhs_oid) {
@@ -169,5 +175,3 @@ template int64_t
     Comparisons::_compare<Comparisons::Mode::Strict, true>(ObjectId lhs_oid, ObjectId rhs_oid, bool* error);
 template int64_t
     Comparisons::_compare<Comparisons::Mode::Normal, false>(ObjectId lhs_oid, ObjectId rhs_oid, bool* error);
-template int64_t
-    Comparisons::_compare<Comparisons::Mode::Strict, false>(ObjectId lhs_oid, ObjectId rhs_oid, bool* error);

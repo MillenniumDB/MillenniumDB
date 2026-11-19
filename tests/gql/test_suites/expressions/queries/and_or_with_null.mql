@@ -1,0 +1,3 @@
+MATCH (x: CaseNode)
+WHERE x.value1 IS NULL
+RETURN x.value2, x.value1 = 5 OR x.value2 = 5 AS null_or_true, x.value1 = 5 AND x.value2 = 4 AS null_and_false
