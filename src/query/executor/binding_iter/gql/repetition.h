@@ -5,6 +5,7 @@
 #include "query/var_id.h"
 #include <memory>
 #include <queue>
+#include <set>
 
 class Repetition : public PathBindingIter {
 public:

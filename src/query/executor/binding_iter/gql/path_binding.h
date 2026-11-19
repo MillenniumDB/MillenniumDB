@@ -3,8 +3,10 @@
 #include <cassert>
 #include <memory>
 #include <ostream>
-#include <set>
 #include <vector>
+
+#include <boost/container/flat_set.hpp>
+#include <boost/container/small_vector.hpp>
 
 #include "path_element.h"
 #include "query/query_context.h"
@@ -20,7 +22,8 @@ public:
     // An element of the path and the variables of the pattern that are bound to it
     struct BoundElement {
         PathElement element;
-        std::set<VarId> vars;
+        // Up to two variables fit in the element, so copying a path allocates nothing for them
+        boost::container::small_flat_set<VarId, 2> vars;
     };
 
     std::vector<BoundElement> elements;
