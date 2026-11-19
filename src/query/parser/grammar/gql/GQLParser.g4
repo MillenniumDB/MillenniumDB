@@ -223,6 +223,8 @@ sqlIntervalType
 identifier
    : REGULAR_IDENTIFIER
    | delimitedIdentifier
+   // not a reserved word of GQL, so it is still an identifier
+   | COLLAPSE
    ;
 
 delimitedIdentifier
@@ -891,6 +893,8 @@ graphPattern
 matchMode
    : repeatableElementsMatchMode
    | differentEdgesMatchMode
+   // not in the GQL standard: Section 5.1 of Arenas, Libkin and Martens, arXiv 2606.23399
+   | COLLAPSE
    ;
 
 repeatableElementsMatchMode

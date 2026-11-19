@@ -272,6 +272,10 @@ COALESCE
    : 'COALESCE'
    ;
 
+COLLAPSE
+   : 'COLLAPSE'
+   ;
+
 COLLECT
    : 'COLLECT'
    ;
