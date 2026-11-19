@@ -1,6 +1,6 @@
 #include "quad.h"
 
-#include <iostream>
+// #include <iostream>
 #include <unordered_set>
 
 #include "graph_models/quad_model/conversions.h"
@@ -79,24 +79,12 @@ uint_fast32_t index_single(
 
     for (const auto& [token, count] : processed_tokens) {
         const auto trie_node_id = trie.insert_string(token);
-        std::cout << '"' << token << '"' << " trie_node_id: " << trie_node_id;
 
         uint32_t score = UINT32_MAX
                        - static_cast<uint32_t>(static_cast<double>(count) / tokens.size() * UINT32_MAX);
 
         const auto [first, second] = compress(trie_node_id, score, table_pointer);
 
-        // TODO: delete
-        std::cout << std::hex << std::uppercase << std::setfill('0');
-        std::cout << ", score: 0x" << score;
-        std::cout << "\n  1: 0x" << std::setw(16) << first << "\n";
-        std::cout << "  2: 0x" << std::setw(16) << second << "\n";
-        std::cout << std::dec << std::nouppercase << std::setfill(' ');
-
-        // TODO: delete
-        // if (token == "43760") {
-        //     trie.print_trie(std::cerr, {});
-        // }
         bpt.insert({ first, second });
     }
 
