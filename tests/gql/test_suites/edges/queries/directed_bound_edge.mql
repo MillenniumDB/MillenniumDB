@@ -1,0 +1,3 @@
+MATCH ()-[e:follows]->()
+MATCH (x {name:"1"})<-[e]-(y)
+RETURN x, e, y

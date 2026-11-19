@@ -9,6 +9,15 @@ EdgeLookup<N>::EdgeLookup(BPlusTree<N>& edge_bpt, Id edge, std::vector<IdAssigne
     id_assigned_info(std::move(_id_assigned_info))
 {
     assert(id_assigned_info.size() == N - 1);
+
+    // a variable that appears twice is bound at its first position and checked at the second
+    for (size_t i = 1; i < id_assigned_info.size(); ++i) {
+        for (size_t j = 0; j < i; ++j) {
+            if (id_assigned_info[i].id == id_assigned_info[j].id) {
+                id_assigned_info[i].assigned = true;
+            }
+        }
+    }
 }
 
 template<std::size_t N>
@@ -41,10 +50,6 @@ void EdgeLookup<N>::_reset()
 template<std::size_t N>
 bool EdgeLookup<N>::_next()
 {
-    auto record = it.next();
-    if (record == nullptr) {
-        return false;
-    }
     auto check_id = [](Binding& binding, Id id, bool assigned, ObjectId obj_id) -> bool {
         if (id.is_var()) {
             if (assigned) {
@@ -61,14 +66,24 @@ bool EdgeLookup<N>::_next()
         return true;
     };
 
-    size_t i = 1;
-    for (auto& info : id_assigned_info) {
-        if (!check_id(*parent_binding, info.id, info.assigned, ObjectId((*record)[i]))) {
-            return false;
+    auto fits = [&](const Record<N>& record) {
+        size_t i = 1;
+        for (auto& info : id_assigned_info) {
+            if (!check_id(*parent_binding, info.id, info.assigned, ObjectId(record[i]))) {
+                return false;
+            }
+            i++;
         }
-        i++;
+        return true;
+    };
+
+    // an undirected edge has a record for each of its two orientations
+    while (auto record = it.next()) {
+        if (fits(*record)) {
+            return true;
+        }
     }
-    return true;
+    return false;
 }
 
 template<std::size_t N>

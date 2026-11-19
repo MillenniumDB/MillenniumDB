@@ -2,6 +2,7 @@
 
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/edge_direction_undirected.h"
+#include "query/executor/binding_iter/edge_lookup.h"
 #include "query/executor/binding_iter/index_scan.h"
 
 using namespace GQL;
@@ -58,12 +59,13 @@ std::unique_ptr<BindingIter> UndirectedEdgePlan::get_binding_iter() const
 {
     std::array<std::unique_ptr<ScanRange>, 3> ranges;
     if (edge_assigned) {
-        ranges[0] = ScanRange::get(edge, edge_assigned);
-        ranges[1] = ScanRange::get(from, from_assigned);
-        ranges[2] = ScanRange::get(to, to_assigned);
-        std::unique_ptr<BindingIter> iter = std::make_unique<IndexScan<3>>(
+        std::vector<EdgeLookup<3>::IdAssigned> ends;
+        ends.emplace_back(from, from_assigned);
+        ends.emplace_back(to, to_assigned);
+        std::unique_ptr<BindingIter> iter = std::make_unique<EdgeLookup<3>>(
             *gql_model.edge_n1_n2,
-            std::move(ranges)
+            edge,
+            std::move(ends)
         );
         return std::make_unique<EdgeDirectionUndirected>(std::move(iter), direction_var);
     }
