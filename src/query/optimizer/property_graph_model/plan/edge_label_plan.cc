@@ -26,7 +26,14 @@ double EdgeLabelPlan::estimate_cost() const
 
 double EdgeLabelPlan::estimate_output_size() const
 {
-    return 100;
+    if (edge_assigned) {
+        // the scan is a check
+        return 1;
+    }
+    // the catalog counts the edges of each label; an unknown label has no entry
+    const auto& counts = gql_model.catalog.edge_label2total_count;
+    const auto it = counts.find(label.get_OID().id);
+    return it == counts.end() ? 0 : it->second;
 }
 
 std::set<VarId> EdgeLabelPlan::get_vars() const
