@@ -23,6 +23,8 @@ void CheckUnboundedRepetition::check_mode(const PathMode& mode)
 void CheckUnboundedRepetition::visit(OpGraphPatternList& op)
 {
     for (auto& pattern : op.patterns) {
+        // each path pattern is checked against its own mode
+        has_unbounded_repetition = false;
         pattern->accept_visitor(*this);
     }
 }
