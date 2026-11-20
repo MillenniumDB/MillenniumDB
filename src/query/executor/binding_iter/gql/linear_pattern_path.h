@@ -27,10 +27,14 @@ public:
     // MATCH COLLAPSE: nodes of the pattern that are not elements of the path
     void set_off_path_vars(std::set<VarId>&& vars);
 
+    // MATCH COLLAPSE: the scan of the pattern with its first edge bound, for an edge·edge join
+    void set_edge_join_iter(std::unique_ptr<BindingIter>&& iter);
+
     void print(std::ostream& os, int indent = 0, bool stats = false) override;
 
 private:
     std::unique_ptr<BindingIter> child_iter;
+    std::unique_ptr<BindingIter> edge_join_iter;
     const std::vector<VarId> variables_in_pattern;
     const uint64_t pattern_size;
     std::set<VarId> outer_vars;
@@ -39,6 +43,9 @@ private:
 
     // set by an edge·edge join: the pattern must start with this edge
     std::optional<PathElement> required_first_edge;
+
+    // the scan in use: edge_join_iter after an edge·edge join, if the pattern has one
+    BindingIter& scan();
 
     // the element that the current result of the scan has at position i of variables_in_pattern
     PathElement node_at(size_t i) const;

@@ -1,0 +1,3 @@
+MATCH ()-[y {name:"t2"}]->()
+MATCH COLLAPSE (a)-[x]->-[y]->(b)
+RETURN a.name, x.name, y.name, b.name

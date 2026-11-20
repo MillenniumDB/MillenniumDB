@@ -16,11 +16,14 @@ void LinearPatternPath::begin(Binding& binding)
 {
     parent_binding = &binding;
     child_iter->begin(binding);
+    if (edge_join_iter) {
+        edge_join_iter->begin(binding);
+    }
 }
 
 void LinearPatternPath::reset()
 {
-    child_iter->reset();
+    scan().reset();
 }
 
 void LinearPatternPath::set_left_boundary(const PathElement& boundary)
@@ -29,6 +32,10 @@ void LinearPatternPath::set_left_boundary(const PathElement& boundary)
         // edge·edge join: the pattern starts with the edge on the left
         parent_binding->add(variables_in_pattern.front(), boundary.start_node());
         required_first_edge = boundary;
+        if (edge_join_iter) {
+            // the edge is known: it is looked up, not searched among the edges of its node
+            parent_binding->add(variables_in_pattern[1], boundary.id);
+        }
     } else {
         // the pattern starts with a node: the node at which the path on the left ends
         parent_binding->add(variables_in_pattern.front(), boundary.end_node());
@@ -36,7 +43,7 @@ void LinearPatternPath::set_left_boundary(const PathElement& boundary)
     }
     // we call reset here, so that the child iter sets the ranges of the bpt iter and
     // the assign nulls function can be called safely
-    child_iter->reset();
+    scan().reset();
 }
 
 void LinearPatternPath::set_right_boundary(ObjectId boundary)
@@ -44,7 +51,12 @@ void LinearPatternPath::set_right_boundary(ObjectId boundary)
     parent_binding->add(variables_in_pattern.back(), boundary);
     // we call reset here, so that the child iter sets the ranges of the bpt iter and
     // the assign nulls function can be called safely
-    child_iter->reset();
+    scan().reset();
+}
+
+BindingIter& LinearPatternPath::scan()
+{
+    return required_first_edge && edge_join_iter ? *edge_join_iter : *child_iter;
 }
 
 PathElement LinearPatternPath::node_at(size_t i) const
@@ -67,7 +79,7 @@ std::unique_ptr<PathBinding> LinearPatternPath::next()
 {
     // an edge·edge join only takes the results that start with the edge on the left
     do {
-        if (!child_iter->next()) {
+        if (!scan().next()) {
             return nullptr;
         }
     } while (required_first_edge && edge_at(1) != *required_first_edge);
@@ -106,6 +118,11 @@ void LinearPatternPath::set_off_path_vars(std::set<VarId>&& vars)
     off_path_vars = std::move(vars);
 }
 
+void LinearPatternPath::set_edge_join_iter(std::unique_ptr<BindingIter>&& iter)
+{
+    edge_join_iter = std::move(iter);
+}
+
 void LinearPatternPath::assign_empty()
 {
     for (auto& var : variables_in_pattern) {
@@ -128,6 +145,9 @@ void LinearPatternPath::print(std::ostream& os, int indent, bool stats)
 
     os << ")\n";
     child_iter->print(os, indent + 2, stats);
+    if (edge_join_iter) {
+        edge_join_iter->print(os, indent + 2, stats);
+    }
 }
 
 } // namespace GQL
