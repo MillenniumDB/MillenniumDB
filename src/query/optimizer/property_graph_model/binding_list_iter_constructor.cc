@@ -1,5 +1,7 @@
 #include "binding_list_iter_constructor.h"
 
+#include <cassert>
+
 #include "graph_models/gql/comparisons.h"
 #include "graph_models/gql/conversions.h"
 #include "graph_models/gql/gql_model.h"
@@ -532,10 +534,31 @@ void PathBindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
     // get_vars leaves out input vars, such as the first node when the path on its left binds it
     assigned_vars.insert(linear_pattern_vars.front());
 
-    std::unique_ptr<Plan> root_plan = GreedyOptimizer::get_plan(base_plans);
+    auto first_var = linear_pattern_vars.front();
+
+    // MATCH COLLAPSE: the pattern starts with an edge, which may be bound before the pattern
+    const bool starts_with_edge = linear_pattern_off_path_vars.count(first_var);
+    const bool first_edge_is_outer = starts_with_edge && outer_vars.count(linear_pattern_vars[1]);
+
+    // bound before the pattern, the first edge is a lookup, base_plans[0]: the scan starts from it
+    std::optional<size_t> first_plan;
+    if (first_edge_is_outer) {
+        first_plan = 0;
+    }
+    std::unique_ptr<Plan> root_plan = GreedyOptimizer::get_plan(base_plans, first_plan);
     tmp_iter = root_plan->get_binding_iter();
 
-    auto first_var = linear_pattern_vars.front();
+    // after an edge the pattern starts with that edge: a second plan has it bound and starts there
+    std::unique_ptr<BindingIter> edge_join_iter;
+    if (!is_first_iter && starts_with_edge && !first_edge_is_outer) {
+        auto first_edge = linear_pattern_vars[1];
+        // visit(OpEdge) adds the plan of the first edge before any other plan of the pattern
+        assert(base_plans[0]->get_vars().count(first_edge));
+        for (auto& plan : base_plans) {
+            plan->set_input_vars({ first_edge });
+        }
+        edge_join_iter = GreedyOptimizer::get_plan(base_plans, 0)->get_binding_iter();
+    }
 
     auto linear_pattern_path = std::make_unique<LinearPatternPath>(
         std::move(tmp_iter),
@@ -543,6 +566,7 @@ void PathBindingIterConstructor::visit(OpLinearPattern& op_linear_pattern)
     );
     linear_pattern_path->set_outer_vars(std::move(outer_vars));
     linear_pattern_path->set_off_path_vars(std::move(linear_pattern_off_path_vars));
+    linear_pattern_path->set_edge_join_iter(std::move(edge_join_iter));
     tmp_path = std::move(linear_pattern_path);
 
     if (graph_pattern_vars.count(first_var)) {

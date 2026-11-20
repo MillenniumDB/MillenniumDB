@@ -4,7 +4,10 @@
 
 #include "query/optimizer/plan/join/index_nested_loop_plan.h"
 
-std::unique_ptr<Plan> GreedyOptimizer::get_plan(const std::vector<std::unique_ptr<Plan>>& real_base_plans)
+std::unique_ptr<Plan> GreedyOptimizer::get_plan(
+    const std::vector<std::unique_ptr<Plan>>& real_base_plans,
+    std::optional<size_t> first
+)
 {
     assert(!real_base_plans.empty());
     const auto base_plans_size = real_base_plans.size();
@@ -18,11 +21,16 @@ std::unique_ptr<Plan> GreedyOptimizer::get_plan(const std::vector<std::unique_pt
     // choose the first scan
     int best_index = 0;
     double best_cost = std::numeric_limits<double>::infinity();
-    for (size_t j = 0; j < base_plans_size; j++) {
-        auto current_element_cost = base_plans[j]->estimate_cost();
-        if (current_element_cost < best_cost) {
-            best_cost = current_element_cost;
-            best_index = j;
+    if (first.has_value()) {
+        assert(*first < base_plans_size);
+        best_index = *first;
+    } else {
+        for (size_t j = 0; j < base_plans_size; j++) {
+            auto current_element_cost = base_plans[j]->estimate_cost();
+            if (current_element_cost < best_cost) {
+                best_cost = current_element_cost;
+                best_index = j;
+            }
         }
     }
     auto root_plan = std::move(base_plans[best_index]);
