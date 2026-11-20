@@ -9,6 +9,8 @@ UnionPath::UnionPath(std::vector<std::unique_ptr<PathBindingIter>>&& iters) :
 void UnionPath::begin(Binding& binding)
 {
     parent_binding = &binding;
+    // the first branch is the current one again: its scan may bind variables as it begins
+    current_iter = 0;
     iters[0]->begin(binding);
 }
 

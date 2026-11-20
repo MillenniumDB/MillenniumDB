@@ -1,0 +1,2 @@
+MATCH (a) ((b {name:"B9"}) | (c)-[:Follows]->(d) ((e)<-[x {name:"F0"}]-(f) | (g)))
+RETURN DISTINCT b.name, x.name
