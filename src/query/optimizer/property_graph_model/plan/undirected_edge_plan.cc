@@ -1,5 +1,7 @@
 #include "undirected_edge_plan.h"
 
+#include <algorithm>
+
 #include "graph_models/gql/gql_model.h"
 #include "query/executor/binding_iter/edge_direction_undirected.h"
 #include "query/executor/binding_iter/edge_lookup.h"
@@ -24,7 +26,15 @@ double UndirectedEdgePlan::estimate_cost() const
 
 double UndirectedEdgePlan::estimate_output_size() const
 {
-    return gql_model.catalog.undirected_edges_count;
+    if (edge_assigned) {
+        return 1;
+    }
+    const double edges = gql_model.catalog.undirected_edges_count;
+    if (from_assigned || to_assigned) {
+        // about the edges of one node
+        return edges / std::max<double>(gql_model.catalog.nodes_count, 1);
+    }
+    return edges;
 }
 
 std::set<VarId> UndirectedEdgePlan::get_vars() const

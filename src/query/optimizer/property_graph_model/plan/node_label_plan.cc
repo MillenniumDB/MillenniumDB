@@ -24,7 +24,14 @@ double NodeLabelPlan::estimate_cost() const
 
 double NodeLabelPlan::estimate_output_size() const
 {
-    return 100;
+    if (node_assigned) {
+        // the scan is a check
+        return 1;
+    }
+    // the catalog counts the nodes of each label; an unknown label has no entry
+    const auto& counts = gql_model.catalog.node_label2total_count;
+    const auto it = counts.find(label.get_OID().id);
+    return it == counts.end() ? 0 : it->second;
 }
 
 std::set<VarId> NodeLabelPlan::get_vars() const
