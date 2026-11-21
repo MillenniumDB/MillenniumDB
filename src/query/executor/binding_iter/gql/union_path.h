@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "path_binding_iter.h"
 
 namespace GQL {
@@ -19,7 +21,8 @@ public:
     void print(std::ostream& os, int indent, bool stats) override;
 
 private:
-    PathElement parent_boundary = PathElement::node(ObjectId(0));
+    // the union has no boundary while it is the first thing in its path
+    std::optional<PathElement> parent_boundary;
     std::vector<std::unique_ptr<PathBindingIter>> iters;
     uint64_t current_iter = 0;
     Binding* parent_binding;
