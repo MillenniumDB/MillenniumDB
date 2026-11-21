@@ -551,10 +551,8 @@ std::any QueryVisitor::visitPathTerm(GQLParser::PathTermContext* ctx)
             bgp_patterns.emplace_back(nullptr, current_pattern, *current_id, edge_type);
             singleton_types[*current_id] = VarType::Edge;
 
-            VarId direction_var = get_query_ctx().get_or_create_var(
-                ".dir_" + get_query_ctx().get_var_name(*current_id)
-            );
-            direction_vars.push_back(direction_var);
+            // one for each edge pattern: a variable used twice may walk its edge both ways
+            direction_vars.push_back(get_query_ctx().get_internal_var());
 
             if (current_repetition) {
                 bgp_patterns.back().repetition = std::move(current_repetition);
