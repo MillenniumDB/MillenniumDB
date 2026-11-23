@@ -289,7 +289,10 @@ std::unique_ptr<BPlusTreeSplit<N>> BPlusTreeDir<N>::insert(const Record<N>& reco
         // key at middle_index is returned
         std::array<uint64_t, N> split_key;
         std::memcpy(split_key.data(), &keys[middle_index * N], N * sizeof(uint64_t));
-        return std::make_unique<BPlusTreeSplit<N>>(std::move(split_key), -new_page.get_page_number());
+        return std::make_unique<BPlusTreeSplit<N>>(
+            std::move(split_key),
+            -static_cast<int32_t>(new_page.get_page_number())
+        );
     }
 }
 

@@ -140,12 +140,12 @@ bool BPlusTreeLeaf<N>::delete_record(const Record<N>& record)
         return false;
     }
 
-    uint_fast32_t index = search_index(record);
+    auto index = search_index(record);
     if (equal_record(record, index)) {
         upgrade_to_editable();
-        --(*value_count);
-        for (auto i = index; i < (*value_count); i++) {
-            for (uint_fast32_t j = 0; j < N * 8 - redundant_count; j++) {
+        --*value_count;
+        for (auto i = index; i < *value_count; i++) {
+            for (size_t j = 0; j < N * 8 - redundant_count; j++) {
                 records[i * (N * 8 - redundant_count) + j] = records[(i + 1) * (N * 8 - redundant_count) + j];
             }
         }
@@ -159,29 +159,6 @@ template<std::size_t N>
 uint32_t BPlusTreeLeaf<N>::get_needed_page_size(const std::bitset<N * 8>& bitset, uint32_t n_records)
 {
     return 2 * sizeof(uint32_t) + N + bitset.count() + n_records * (sizeof(uint64_t) * N - bitset.count());
-}
-
-template<std::size_t N>
-std::bitset<N * 8> BPlusTreeLeaf<N>::create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to)
-{
-    std::bitset<N * 8> new_bitset;
-    new_bitset.set();
-
-    uint8_t* record_char_ptr = (uint8_t*) &reference;
-    Record<N> current_record;
-    set_redundant_record(current_record);
-
-    for (uint32_t i = from; i < to; ++i) {
-        update_record(i, current_record);
-        char* record_char = (char*) &current_record;
-
-        for (size_t j = 0; j < N * 8; ++j) {
-            if (new_bitset[j] && record_char[j] != record_char_ptr[j]) {
-                new_bitset.set(j, 0);
-            }
-        }
-    }
-    return new_bitset;
 }
 
 template<std::size_t N>
@@ -275,7 +252,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 
         records = redundant_bytes + redundant_count;
 
-        for (uint_fast32_t i = 0; i < N * 8; i++) {
+        for (size_t i = 0; i < N * 8; i++) {
             redundant_bytes[i] = new_record_bytes[i];
         }
         *value_count = 1;
@@ -311,7 +288,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
             shift_right_records(index, *value_count - 1);
 
             uint8_t* current_write_byte = &records[index * (N * 8 - redundant_count)];
-            for (uint_fast32_t i = 0; i < N * 8; i++) {
+            for (size_t i = 0; i < N * 8; i++) {
                 if (!redundant_bitset[i]) {
                     *current_write_byte = new_record_bytes[i];
                     current_write_byte++;
@@ -344,7 +321,7 @@ unique_ptr<BPlusTreeSplit<N>> BPlusTreeLeaf<N>::insert(const Record<N>& record, 
 
             // 6. Write the new record
             current_write_byte = &records[index * (N * 8 - redundant_count)];
-            for (uint_fast32_t i = 0; i < N * 8; i++) {
+            for (size_t i = 0; i < N * 8; i++) {
                 if (!redundant_bitset[i]) {
                     *current_write_byte = new_record_bytes[i];
                     current_write_byte++;
@@ -596,7 +573,7 @@ search_index_begin:
         auto middle = (from + to) / 2;
         update_record(middle, search_record);
 
-        for (uint_fast32_t i = 0; i < N; i++) {
+        for (size_t i = 0; i < N; i++) {
             if (record[i] < search_record[i]) { // record is smaller
                 to = middle - 1;
                 goto search_index_begin;
@@ -612,7 +589,7 @@ search_index_begin:
     // from >= to
     update_record(from, search_record);
 
-    for (uint_fast32_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
         if (record[i] < search_record[i]) {
             return from;
         } else if (record[i] > search_record[i]) {
@@ -676,12 +653,12 @@ template<std::size_t N>
 void BPlusTreeLeaf<N>::print(std::ostream& os) const
 {
     os << "Printing Leaf:\n";
-    for (uint_fast32_t i = 0; i < (*value_count); i++) {
+    for (size_t i = 0; i < (*value_count); i++) {
         os << "  (";
         uint8_t* current_record = records + i * (N * 8 - redundant_count);
         uint64_t pos_redundant = 0;
         uint64_t pos_unique = 0;
-        for (uint_fast32_t j = 0; j < N * 8; ++j) {
+        for (size_t j = 0; j < N * 8; ++j) {
             if (j == 8 || j == 16) {
                 os << ", ";
             }
@@ -719,7 +696,7 @@ bool BPlusTreeLeaf<N>::check(std::ostream& os) const
         }
 
         Record<N> y;
-        for (uint_fast32_t k = 1; k < (*value_count); k++) {
+        for (size_t k = 1; k < *value_count; k++) {
             set_record(k, y);
             if (y <= x) {
                 os << "  ERROR: bad record order at BPlusTreeLeaf(page: " << page->get_page_number() << ")\n";
@@ -747,9 +724,9 @@ void BPlusTreeLeaf<N>::print_leaf_debug(std::ostream& os) const
 {
     os << "==================== BPlusTreeLeaf ====================\n";
     os << "  Page Number   : " << (page != nullptr ? page->get_page_number() : 0) << "\n";
-    os << "  Value Count   : " << (*value_count) << "\n";
-    os << "  Next Leaf     : " << (*next_leaf) << "\n";
-    os << "  Redundant Cnt : " << redundant_count << ", " << (N * 8) << " bits\n";
+    os << "  Value Count   : " << *value_count << "\n";
+    os << "  Next Leaf     : " << *next_leaf << "\n";
+    os << "  Redundant Cnt : " << redundant_count << "\n";
 
     // Print Bitset as a binary string and hex bytes
     os << "  Bitset (bin)  : ";
@@ -774,8 +751,8 @@ void BPlusTreeLeaf<N>::print_leaf_debug(std::ostream& os) const
     os << std::dec << "\n";
 
     // Print All Reconstructed Records
-    os << "  --- Stored Records (" << (*value_count) << " records, N=" << N << ") ---\n";
-    for (uint_fast32_t i = 0; i < (*value_count); ++i) {
+    os << "  --- Stored Records (" << *value_count << " records, N=" << N << ") ---\n";
+    for (size_t i = 0; i < *value_count; ++i) {
         Record<N> rec = get_record(i);
         uint8_t* rec_bytes = reinterpret_cast<uint8_t*>(&rec);
 
@@ -803,7 +780,7 @@ bool BPlusTreeLeaf<N>::is_ordered() const
     Record<N> prev = get_record(0);
     Record<N> curr;
 
-    for (uint_fast32_t i = 1; i < (*value_count); ++i) {
+    for (size_t i = 1; i < *value_count; ++i) {
         set_record(i, curr);
         if (curr <= prev) {
             // print_leaf_debug(std::cout);

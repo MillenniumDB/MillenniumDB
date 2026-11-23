@@ -8,8 +8,8 @@
 class System {
 public:
     static constexpr uint8_t MAJOR_VER = 1;
-    static constexpr uint8_t MINOR_VER = 0;
-    static constexpr uint8_t PATCH_VER = 0;
+    static constexpr uint8_t MINOR_VER = 1;
+    static constexpr uint8_t PATCH_VER = 1;
 
     System(
         const std::string& db_folder,
