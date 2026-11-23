@@ -1,0 +1,2 @@
+MATCH ANY SHORTEST (a {name:"N3"})-[:Follows]->+(b), (b)-[:Owns]->(c)
+RETURN b.name, c.name
