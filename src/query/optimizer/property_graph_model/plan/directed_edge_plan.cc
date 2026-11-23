@@ -1,5 +1,7 @@
 #include "directed_edge_plan.h"
 
+#include <algorithm>
+
 #include "graph_models/gql/gql_model.h"
 #include "query/exceptions.h"
 #include "query/executor/binding_iter/edge_direction_left.h"
@@ -27,7 +29,15 @@ double DirectedEdgePlan::estimate_cost() const
 
 double DirectedEdgePlan::estimate_output_size() const
 {
-    return gql_model.catalog.directed_edges_count;
+    if (edge_assigned) {
+        return 1;
+    }
+    const double edges = gql_model.catalog.directed_edges_count;
+    if (from_assigned || to_assigned) {
+        // about the edges of one node
+        return edges / std::max<double>(gql_model.catalog.nodes_count, 1);
+    }
+    return edges;
 }
 
 std::set<VarId> DirectedEdgePlan::get_vars() const
