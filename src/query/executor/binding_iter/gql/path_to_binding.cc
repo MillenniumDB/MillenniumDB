@@ -17,6 +17,7 @@ PathToBinding::PathToBinding(
 void PathToBinding::_begin(Binding& parent_binding)
 {
     this->parent_binding = &parent_binding;
+    empty_list = GQL::Conversions::pack_list({});
     child_iter->begin(parent_binding);
 }
 
@@ -43,6 +44,14 @@ bool PathToBinding::_next()
         return false;
     }
 
+    // every group variable gets a list: the empty one, unless the path has elements for it
+    for (auto& [var, type] : types) {
+        if (type.is_group()) {
+            overwritten_values.emplace_back(var, (*parent_binding)[var]);
+            parent_binding->add(var, empty_list);
+        }
+    }
+
     std::map<VarId, std::vector<ObjectId>> groups;
 
     for (auto& [element, vars] : list->elements) {
@@ -56,7 +65,6 @@ bool PathToBinding::_next()
     }
 
     for (auto&& [var, oids] : groups) {
-        overwritten_values.emplace_back(var, (*parent_binding)[var]);
         parent_binding->add(var, GQL::Conversions::pack_list(oids));
     }
     if (path_var.has_value()) {
