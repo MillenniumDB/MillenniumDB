@@ -156,8 +156,6 @@ private:
 
     static uint32_t get_needed_page_size(const std::bitset<N * 8>& bitset, uint32_t n_records);
 
-    std::bitset<N * 8> create_new_bitset(const Record<N>& reference, uint64_t from, uint64_t to);
-
     // updates redundant_bitset, redundant_count
     void update_bitset(const  std::bitset<N * 8>& new_bitset);
 
