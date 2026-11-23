@@ -57,7 +57,12 @@ std::unique_ptr<PathBinding> UnionPath::next()
             current_iter++;
             if (current_iter < iters.size()) {
                 iters[current_iter]->begin(*parent_binding);
-                iters[current_iter]->set_left_boundary(parent_boundary);
+                if (parent_boundary) {
+                    iters[current_iter]->set_left_boundary(*parent_boundary);
+                } else {
+                    // begin alone does not start every scan again
+                    iters[current_iter]->reset();
+                }
             }
         }
     }
