@@ -1951,7 +1951,7 @@ std::any QueryVisitor::visitTimeFunction(GQLParser::TimeFunctionContext* ctx)
         current_expr = std::make_unique<ExprTerm>(Conversions::pack_date(date));
     } else {
         // CURRENT_TIME
-        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%H:%M:%S");
+        auto time_str = mdb_format_time(get_query_ctx().thread_info.time_start, "%H:%M:%SZ");
         ObjectId oid(DateTime::from_zoned_time(time_str));
         current_expr = std::make_unique<ExprTerm>(oid);
     }
