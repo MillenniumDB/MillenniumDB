@@ -35,5 +35,8 @@ private:
     // Elements replaced by group lists in the binding; put back before the child is asked again
     std::vector<std::pair<VarId, ObjectId>> overwritten_values;
 
+    // made once: the list of a group variable that has no element on the path
+    ObjectId empty_list;
+
     void restore_overwritten_values();
 };
