@@ -13,6 +13,12 @@ namespace SPARQL {
 // transform_child_if_necessary instead of accept_visitor
 class ChangeJoinToSequence : public OpVisitor {
 public:
+    // entry point: the op itself may be a join, as the pattern of an EXISTS expression can be
+    void transform(std::unique_ptr<Op>& op)
+    {
+        transform_child_if_necessary(op);
+    }
+
     void visit(OpConstruct&) override;
     void visit(OpDescribe&) override;
     void visit(OpBasicGraphPattern&) override;

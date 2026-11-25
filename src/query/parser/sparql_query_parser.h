@@ -84,7 +84,7 @@ public:
         return res;
     }
 
-    static std::unique_ptr<Op> rewrite(std::unique_ptr<Op> op)
+    static std::unique_ptr<Op> rewrite(std::unique_ptr<Op> op, bool exists_pattern = false)
     {
         logger.debug() << "Initial logical plan:\n" << *op;
 
@@ -97,13 +97,16 @@ public:
         CheckScopedBlankNodes check_scoped_blank_nodes;
         op->accept_visitor(check_scoped_blank_nodes);
 
-        ReplaceUnscopedVariables replace_unscoped_variables;
-        op->accept_visitor(replace_unscoped_variables);
+        // the pattern of an EXISTS also sees the variables of the outer query
+        if (!exists_pattern) {
+            ReplaceUnscopedVariables replace_unscoped_variables;
+            op->accept_visitor(replace_unscoped_variables);
+        }
 
         QueryParser::use_all_rewrite_rules(op);
 
         ChangeJoinToSequence join_to_sequence_visitor;
-        op->accept_visitor(join_to_sequence_visitor);
+        join_to_sequence_visitor.transform(op);
 
         ReplaceSingleValues replace_single_values;
         op->accept_visitor(replace_single_values);

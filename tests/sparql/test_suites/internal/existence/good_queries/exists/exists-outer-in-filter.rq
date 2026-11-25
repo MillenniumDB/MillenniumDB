@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?y
+WHERE {
+  ?x :p ?y
+  FILTER (!EXISTS { :t :p ?o FILTER (?o = ?y) })
+}
