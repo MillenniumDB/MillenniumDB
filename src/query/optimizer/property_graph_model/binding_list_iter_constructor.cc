@@ -360,6 +360,7 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
     // a branch sees the variables bound before the union, not those of the branches before it
     std::set<VarId> previous_graph_pattern_vars = graph_pattern_vars;
     std::set<VarId> union_graph_pattern_vars = graph_pattern_vars;
+    std::set<VarId> union_assigned_vars = assigned_vars;
 
     for (auto& pattern : op_union.op_list) {
         is_first_iter = previous_is_first_iter;
@@ -368,9 +369,12 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
         iters.push_back(std::move(tmp_path));
 
         union_graph_pattern_vars.insert(graph_pattern_vars.begin(), graph_pattern_vars.end());
+        union_assigned_vars.insert(assigned_vars.begin(), assigned_vars.end());
         assigned_vars = previous_assigned_vars;
     }
+    // what follows the union sees the variables of all its branches
     graph_pattern_vars = std::move(union_graph_pattern_vars);
+    assigned_vars = std::move(union_assigned_vars);
 
     tmp_path = std::make_unique<UnionPath>(std::move(iters));
 }
