@@ -1,0 +1,9 @@
+# The right side uses ?x, which comes from before the OPTIONAL.
+PREFIX : <http://www.path.com/>
+SELECT *
+WHERE
+{
+  ?x :p ?y . OPTIONAL {
+    ?x :p ?b MINUS { ?x :p :o . ?x :p ?b }
+  }
+}

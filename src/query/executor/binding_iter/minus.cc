@@ -61,6 +61,10 @@ bool Minus::_next()
 
 void Minus::_reset()
 {
+    // the right side reads the parent's variables from its own binding
+    for (const auto& var : parent_safe_vars) {
+        rhs_binding->add(var, (*parent_binding)[var]);
+    }
     lhs->reset();
 }
 
