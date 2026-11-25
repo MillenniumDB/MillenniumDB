@@ -1,0 +1,12 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?b ?y ?z
+WHERE {
+    ?x :t4 ?t
+    OPTIONAL {
+        { :0 :p1 ?b }
+        UNION
+        { SELECT ?b WHERE { ?c ?q ?b } ORDER BY DESC(?b) LIMIT 2 }
+        UNION
+        { ?b :t1 ?y OPTIONAL { ?y :t2 ?z } }
+    }
+}

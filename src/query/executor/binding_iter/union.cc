@@ -17,8 +17,13 @@ bool Union::_next()
             iters[current_iter]->assign_nulls();
             ++current_iter;
             if (current_iter < iters.size()) {
-                iters[current_iter]->begin(*parent_binding);
-                begun[current_iter] = true;
+                // an iter is begun once; then a reset starts it again
+                if (!begun[current_iter]) {
+                    iters[current_iter]->begin(*parent_binding);
+                    begun[current_iter] = true;
+                } else {
+                    iters[current_iter]->reset();
+                }
             }
         }
     }
@@ -31,11 +36,8 @@ void Union::_reset()
         iters[current_iter]->assign_nulls();
     }
     current_iter = 0;
-    for (size_t i = 0; i < iters.size(); i++) {
-        if (begun[i]) {
-            iters[i]->reset();
-        }
-    }
+    // later iters are reset when the union reaches them: a reset may bind variables
+    iters[0]->reset();
 }
 
 void Union::assign_nulls()

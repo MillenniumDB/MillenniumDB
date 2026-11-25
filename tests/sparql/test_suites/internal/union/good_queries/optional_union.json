@@ -1,0 +1,45 @@
+{
+  "head": {
+    "vars": [ "x", "b", "y", "z" ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/1" },
+        "b": { "type": "uri", "value": "http://www.path.com/1" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/1" },
+        "b": { "type": "uri", "value": "http://www.path.com/4" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/1" },
+        "b": { "type": "uri", "value": "http://www.path.com/3" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/1" },
+        "b": { "type": "uri", "value": "http://www.path.com/1" },
+        "y": { "type": "uri", "value": "http://www.path.com/2" },
+        "z": { "type": "uri", "value": "http://www.path.com/3" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/2" },
+        "b": { "type": "uri", "value": "http://www.path.com/1" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/2" },
+        "b": { "type": "uri", "value": "http://www.path.com/4" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/2" },
+        "b": { "type": "uri", "value": "http://www.path.com/3" }
+      },
+      {
+        "x": { "type": "uri", "value": "http://www.path.com/2" },
+        "b": { "type": "uri", "value": "http://www.path.com/1" },
+        "y": { "type": "uri", "value": "http://www.path.com/2" },
+        "z": { "type": "uri", "value": "http://www.path.com/3" }
+      }
+    ]
+  }
+}
