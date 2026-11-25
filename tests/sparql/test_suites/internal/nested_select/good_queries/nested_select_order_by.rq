@@ -1,0 +1,7 @@
+PREFIX prop: <http://example.org/property/>
+PREFIX item: <http://example.org/item/>
+
+SELECT ?person ?value WHERE {
+  ?person prop:hasOccupation item:engineer .
+  { SELECT ?person ?value WHERE { ?person prop:hasID ?value } ORDER BY ?value }
+}
