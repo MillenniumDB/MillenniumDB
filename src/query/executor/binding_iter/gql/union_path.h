@@ -26,6 +26,8 @@ private:
     std::vector<std::unique_ptr<PathBindingIter>> iters;
     uint64_t current_iter = 0;
     Binding* parent_binding;
+    // branches are begun lazily, when the union reaches them; only those can be reset
+    std::vector<bool> begun;
 };
 
 } // namespace GQL

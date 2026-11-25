@@ -12,6 +12,8 @@ void UnionPath::begin(Binding& binding)
     // the first branch is the current one again: its scan may bind variables as it begins
     current_iter = 0;
     iters[0]->begin(binding);
+    begun.assign(iters.size(), false);
+    begun[0] = true;
 }
 
 void UnionPath::reset()
@@ -56,12 +58,15 @@ std::unique_ptr<PathBinding> UnionPath::next()
             iters[current_iter]->assign_nulls();
             current_iter++;
             if (current_iter < iters.size()) {
-                iters[current_iter]->begin(*parent_binding);
+                // a branch is begun once; then its boundary or a reset starts it again
+                if (!begun[current_iter]) {
+                    iters[current_iter]->begin(*parent_binding);
+                    begun[current_iter] = true;
+                } else if (!parent_boundary) {
+                    iters[current_iter]->reset();
+                }
                 if (parent_boundary) {
                     iters[current_iter]->set_left_boundary(*parent_boundary);
-                } else {
-                    // begin alone does not start every scan again
-                    iters[current_iter]->reset();
                 }
             }
         }
