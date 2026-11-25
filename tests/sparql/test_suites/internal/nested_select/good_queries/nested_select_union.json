@@ -1,0 +1,29 @@
+{
+  "head": {
+    "vars": [ "person", "value", "occupation" ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "person": { "type": "uri", "value": "http://example.org/item/person1" },
+        "value": { "type": "literal", "value": "ID123" }
+      },
+      {
+        "person": { "type": "uri", "value": "http://example.org/item/person2" },
+        "value": { "type": "literal", "value": "ID456" }
+      },
+      {
+        "person": { "type": "uri", "value": "http://example.org/item/person1" },
+        "occupation": { "type": "uri", "value": "http://example.org/item/engineer" }
+      },
+      {
+        "person": { "type": "uri", "value": "http://example.org/item/person2" },
+        "occupation": { "type": "uri", "value": "http://example.org/item/engineer" }
+      },
+      {
+        "person": { "type": "uri", "value": "http://example.org/item/person3" },
+        "occupation": { "type": "uri", "value": "http://example.org/item/engineer" }
+      }
+    ]
+  }
+}

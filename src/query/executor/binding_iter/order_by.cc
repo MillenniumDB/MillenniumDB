@@ -85,7 +85,7 @@ bool OrderBy::_next()
 void OrderBy::assign_nulls()
 {
     for (auto& var : order_info.saved_vars) {
-        (*parent_binding)[var] = ObjectId::get_null();
+        parent_binding->add(var, ObjectId::get_null());
     }
 }
 

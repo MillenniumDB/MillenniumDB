@@ -54,7 +54,7 @@ bool OrderByWithLimit::_next()
 void OrderByWithLimit::assign_nulls()
 {
     for (const auto& var : order_info.saved_vars) {
-        (*parent_binding)[var] = ObjectId::get_null();
+        parent_binding->add(var, ObjectId::get_null());
     }
 }
 

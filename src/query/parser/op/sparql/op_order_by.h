@@ -93,15 +93,8 @@ public:
 
     std::set<VarId> get_fixable_vars() const override
     {
-        for (auto& item : items) {
-            if (std::holds_alternative<std::unique_ptr<Expr>>(item)) {
-                auto expr = std::get<std::unique_ptr<Expr>>(item).get();
-                if (expr->has_aggregation()) {
-                    return {};
-                }
-            }
-        }
-        return op->get_fixable_vars();
+        // OrderBy sorts at begin and only rewinds on reset, so it takes nothing from outside
+        return {};
     }
 
     std::ostream& print_to_ostream(std::ostream& os, int indent = 0) const override
