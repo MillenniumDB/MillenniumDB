@@ -8,6 +8,13 @@ using namespace SPARQL;
 void RewriteExprSubqueries::visit(OpSelect& op_select)
 {
     op_select.op->accept_visitor(*this);
+
+    RewriteExprSubqueriesExpr rewriter;
+    for (auto& expr : op_select.vars_exprs) {
+        if (expr != nullptr) {
+            expr->accept_visitor(rewriter);
+        }
+    }
 }
 
 void RewriteExprSubqueries::visit(OpDescribe& op_describe)
@@ -53,6 +60,13 @@ void RewriteExprSubqueries::visit(OpOptional& op_optional)
 void RewriteExprSubqueries::visit(OpOrderBy& op_order_by)
 {
     op_order_by.op->accept_visitor(*this);
+
+    RewriteExprSubqueriesExpr rewriter;
+    for (auto& item : op_order_by.items) {
+        if (std::holds_alternative<std::unique_ptr<Expr>>(item)) {
+            std::get<std::unique_ptr<Expr>>(item)->accept_visitor(rewriter);
+        }
+    }
 }
 
 void RewriteExprSubqueries::visit(OpFrom& op_from)
@@ -68,11 +82,21 @@ void RewriteExprSubqueries::visit(OpGraph& op_graph)
 void RewriteExprSubqueries::visit(OpGroupBy& op_group_by)
 {
     op_group_by.op->accept_visitor(*this);
+
+    RewriteExprSubqueriesExpr rewriter;
+    for (auto& [expr, var] : op_group_by.items) {
+        expr->accept_visitor(rewriter);
+    }
 }
 
 void RewriteExprSubqueries::visit(OpHaving& op_having)
 {
     op_having.op->accept_visitor(*this);
+
+    RewriteExprSubqueriesExpr rewriter;
+    for (auto& expr : op_having.exprs) {
+        expr->accept_visitor(rewriter);
+    }
 }
 
 void RewriteExprSubqueries::visit(OpProcedure& op_procedure)
@@ -126,6 +150,9 @@ void RewriteExprSubqueries::visit(OpSequence& op_sequence)
 void RewriteExprSubqueries::visit(OpBind& op_bind)
 {
     op_bind.op->accept_visitor(*this);
+
+    RewriteExprSubqueriesExpr rewriter;
+    op_bind.expr->accept_visitor(rewriter);
 }
 
 // +---------------------------------------------------------------------------+
@@ -241,12 +268,12 @@ void RewriteExprSubqueriesExpr::visit(ExprNotIn& expr)
 
 void RewriteExprSubqueriesExpr::visit(ExprExists& expr)
 {
-    expr.op = QueryParser::rewrite(std::move(expr.op));
+    expr.op = QueryParser::rewrite(std::move(expr.op), true);
 }
 
 void RewriteExprSubqueriesExpr::visit(ExprNotExists& expr)
 {
-    expr.op = QueryParser::rewrite(std::move(expr.op));
+    expr.op = QueryParser::rewrite(std::move(expr.op), true);
 }
 
 void RewriteExprSubqueriesExpr::visit(ExprAggAvg& expr)
