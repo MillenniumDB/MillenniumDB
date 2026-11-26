@@ -1,5 +1,7 @@
 #include "sub_select.h"
 
+#include <algorithm>
+
 void SubSelect::_begin(Binding& _parent_binding)
 {
     parent_binding = &_parent_binding;
@@ -38,7 +40,10 @@ void SubSelect::assign_nulls()
     child_iter->assign_nulls();
 
     for (auto var : projection_vars) {
-        (*parent_binding).add(var, (*child_binding)[var]);
+        // a variable taken from outside is the parent's; the child may hold an old value of it
+        if (std::count(safe_assigned_vars.begin(), safe_assigned_vars.end(), var) == 0) {
+            (*parent_binding).add(var, (*child_binding)[var]);
+        }
     }
 }
 

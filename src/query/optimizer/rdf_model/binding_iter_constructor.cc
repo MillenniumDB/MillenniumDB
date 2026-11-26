@@ -361,12 +361,14 @@ void BindingIterConstructor::handle_select(OpSelect& op_select)
 void BindingIterConstructor::visit(OpSelect& op_select)
 {
     if (op_select.is_sub_select) {
+        // the variables taken from outside, before the subselect's own pattern adds to them
+        auto fixed_vars = set_to_vector(safe_assigned_vars);
         auto old_grouping = grouping;
         grouping = false;
         handle_select(op_select);
         grouping = old_grouping;
 
-        tmp = std::make_unique<SubSelect>(std::move(tmp), op_select.vars, set_to_vector(safe_assigned_vars));
+        tmp = std::make_unique<SubSelect>(std::move(tmp), op_select.vars, std::move(fixed_vars));
         return;
     } else {
         handle_select(op_select);
