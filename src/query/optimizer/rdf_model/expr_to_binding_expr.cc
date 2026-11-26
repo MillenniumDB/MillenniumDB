@@ -5,6 +5,7 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "macros/time.h"
+#include "misc/set_operations.h"
 #include "query/executor/binding_iter/aggregation/sparql/aggs.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_term.h"
 #include "query/executor/binding_iter/binding_expr/binding_expr_var.h"
@@ -239,7 +240,11 @@ void ExprToBindingExpr::visit(ExprNotExists& expr_not_exists) {
     at_root = false;
     BindingIterConstructor binding_iter_visitor;
     if (bic != nullptr) {
-        binding_iter_visitor.safe_assigned_vars = bic->safe_assigned_vars;
+        // only what the pattern can take from outside, as for the right side of a semi-join
+        binding_iter_visitor.safe_assigned_vars = misc::set_intersection(
+            bic->safe_assigned_vars,
+            expr_not_exists.op->get_fixable_vars()
+        );
     }
 
     expr_not_exists.op->accept_visitor(binding_iter_visitor);
@@ -256,7 +261,11 @@ void ExprToBindingExpr::visit(ExprExists& expr_exists) {
 
     BindingIterConstructor binding_iter_visitor;
     if (bic != nullptr) {
-        binding_iter_visitor.safe_assigned_vars = bic->safe_assigned_vars;
+        // only what the pattern can take from outside, as for the right side of a semi-join
+        binding_iter_visitor.safe_assigned_vars = misc::set_intersection(
+            bic->safe_assigned_vars,
+            expr_exists.op->get_fixable_vars()
+        );
     }
 
     expr_exists.op->accept_visitor(binding_iter_visitor);
