@@ -14,6 +14,7 @@ public:
 private:
     std::set<VarId> op_vars;
     std::unique_ptr<Binding> previous_lhs;
+    std::unique_ptr<Binding> rhs_binding;
     bool previous_had_a_match;
 
 public:
@@ -46,9 +47,15 @@ private:
         }
         previous_lhs->add_all(lhs_binding);
 
-        auto rhs_binding = std::make_unique<Binding>(lhs_binding.size);
-        rhs_binding->add_all(lhs_binding);
-        op_iter->begin(*rhs_binding);
+        // the pattern is begun once, on a binding it keeps; for each later binding it is reset
+        if (rhs_binding == nullptr) {
+            rhs_binding = std::make_unique<Binding>(lhs_binding.size);
+            rhs_binding->add_all(lhs_binding);
+            op_iter->begin(*rhs_binding);
+        } else {
+            rhs_binding->add_all(lhs_binding);
+            op_iter->reset();
+        }
 
         while (op_iter->next()) {
             auto match = true;

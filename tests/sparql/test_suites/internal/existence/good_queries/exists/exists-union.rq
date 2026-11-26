@@ -1,0 +1,7 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?y
+  (EXISTS { { ?x :p :o } UNION { ?x :parent ?z } } as ?exists)
+  (NOT EXISTS { { ?x :p :o } UNION { ?x :parent ?z } } as ?not_exists)
+WHERE {
+  ?x ?q ?y
+}
