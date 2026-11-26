@@ -1,0 +1,6 @@
+PREFIX : <http://www.path.com/>
+SELECT ?x ?y
+WHERE {
+  ?x ?q ?y
+  FILTER EXISTS { { SELECT ?x WHERE { ?x :p :o } } UNION { ?x :parent ?b } }
+}
