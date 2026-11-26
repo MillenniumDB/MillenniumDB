@@ -1,0 +1,2 @@
+MATCH (x {name:"N0"}) ((x)-[e:Follows]->(b)){0,2} (t)
+RETURN t.name, x, e

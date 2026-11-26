@@ -58,6 +58,12 @@ public:
 
         for (auto& pattern : patterns) {
             for (auto& [var, type] : pattern->get_var_types()) {
+                if (result.count(var) && !(result[var].is_unconditional() && type.is_unconditional())) {
+                    throw QuerySemanticException(
+                        "Variable \"" + get_query_ctx().get_var_name(var)
+                        + "\" is joined, but not every match binds it once."
+                    );
+                }
                 if (result.count(var) && result[var].type != type.type) {
                     throw QuerySemanticException(
                         "Variable \"" + get_query_ctx().get_var_name(var) + "\" has more than one type."

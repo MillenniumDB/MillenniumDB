@@ -45,9 +45,16 @@ public:
             auto op_types = op->get_var_types();
 
             for (auto&& [var, type] : op_types) {
-                if (result.count(var) && result[var] != type) {
+                if (result.count(var) && result[var].type != type.type) {
                     throw QuerySemanticException(
                         "Variable \"" + get_query_ctx().get_var_name(var) + "\" has more than one type."
+                    );
+                }
+                // an earlier conditional variable may be NULL, which joins nothing; a list cannot be joined
+                if (result.count(var) && (result[var].is_group() || type.is_group())) {
+                    throw QuerySemanticException(
+                        "Variable \"" + get_query_ctx().get_var_name(var)
+                        + "\" is joined, but not every match binds it once."
                     );
                 }
                 result[var] = std::move(type);
