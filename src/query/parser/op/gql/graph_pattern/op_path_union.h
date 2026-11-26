@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+
+#include "query/exceptions.h"
 #include "query/parser/op/gql/op.h"
 
 namespace GQL {
@@ -40,29 +43,31 @@ public:
     std::map<VarId, VarType> get_var_types() const override
     {
         std::map<VarId, VarType> res;
-        std::map<VarId, bool> checked;
+        std::map<VarId, size_t> branches;
 
         for (auto& op : op_list) {
-            std::map<VarId, VarType> op_types = op->get_var_types();
-
-            for (auto& [var, type] : op_types) {
-                if (!checked[var]) {
+            for (auto& [var, type] : op->get_var_types()) {
+                branches[var]++;
+                auto it = res.find(var);
+                if (it == res.end()) {
                     res[var] = type;
-                } else {
                     continue;
                 }
-
-                if (type.is_conditional()) {
-                    res[var].degree = VarType::Conditional;
-                    checked[var] = true;
+                if (it->second.type != type.type) {
+                    throw QuerySemanticException(
+                        "Variable \"" + get_query_ctx().get_var_name(var) + "\" has more than one type."
+                    );
                 }
-                else if (type.is_group()) {
-                    res[var].degree = VarType::Group;
-                    checked[var] = true;
-                }
+                // whatever the order of the branches: group over conditional over unconditional
+                it->second.degree = std::max(it->second.degree, type.degree);
             }
         }
-
+        // a variable that some branch does not bind is a conditional singleton
+        for (auto& [var, count] : branches) {
+            if (count < op_list.size() && res[var].is_unconditional()) {
+                res[var].degree = VarType::Conditional;
+            }
+        }
         return res;
     }
 
