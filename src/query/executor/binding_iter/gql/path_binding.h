@@ -3,6 +3,8 @@
 #include <cassert>
 #include <memory>
 #include <ostream>
+#include <set>
+#include <tuple>
 #include <vector>
 
 #include <boost/container/flat_set.hpp>
@@ -24,14 +26,59 @@ public:
         PathElement element;
         // Up to two variables fit in the element, so copying a path allocates nothing for them
         boost::container::small_flat_set<VarId, 2> vars;
+
+        bool operator<(const BoundElement& other) const
+        {
+            return std::tie(element, vars) < std::tie(other.element, other.vars);
+        }
+
+        bool operator==(const BoundElement& other) const
+        {
+            return std::tie(element, vars) == std::tie(other.element, other.vars);
+        }
     };
 
     std::vector<BoundElement> elements;
+
+    // Any strict order, to keep paths in a set
+    bool operator<(const PathBinding& other) const
+    {
+        return elements < other.elements;
+    }
+
+    bool operator==(const PathBinding& other) const
+    {
+        return elements == other.elements;
+    }
 
     // The element at which the path ends
     const PathElement& end_element() const
     {
         return elements.back().element;
+    }
+
+    // Whether an edge occurs twice, either way round. An edge that concat joins occurs once.
+    bool repeats_edge() const
+    {
+        std::set<ObjectId> edges;
+        for (auto& bound : elements) {
+            if (bound.element.is_edge && !edges.insert(bound.element.id).second) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The same path without the variables of anonymous elements, which do not tell paths apart
+    PathBinding without_internal_vars() const
+    {
+        PathBinding res = *this;
+        for (auto& bound : res.elements) {
+            for (auto it = bound.vars.begin(); it != bound.vars.end();) {
+                it = get_query_ctx().is_internal(*it) ? bound.vars.erase(it) : it + 1;
+            }
+        }
+        return res;
     }
 
     void push_right(const PathElement& element, VarId var)

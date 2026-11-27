@@ -333,17 +333,16 @@ void PathBindingIterConstructor::visit(OpGraphPattern& op_graph_pattern)
     // if there are nested graph patterns, we ignore the inner patterns
     if (is_first_gp) {
         is_first_gp = false;
+        trail = op_graph_pattern.mode.restrictor == PathMode::TRAIL
+             && op_graph_pattern.mode.selector == PathMode::ALL;
         op_graph_pattern.op->accept_visitor(*this);
 
-        if (op_graph_pattern.path_var_id.has_value()) {
-            tmp_iter = std::make_unique<PathToBinding>(
-                std::move(tmp_path),
-                op_graph_pattern.get_var_types(),
-                *op_graph_pattern.path_var_id
-            );
-        } else {
-            tmp_iter = std::make_unique<PathToBinding>(std::move(tmp_path), op_graph_pattern.get_var_types());
-        }
+        tmp_iter = std::make_unique<PathToBinding>(
+            std::move(tmp_path),
+            op_graph_pattern.get_var_types(),
+            op_graph_pattern.path_var_id,
+            trail
+        );
         is_first_gp = true;
     } else {
         op_graph_pattern.op->accept_visitor(*this);
@@ -377,6 +376,7 @@ void PathBindingIterConstructor::visit(OpPathUnion& op_union)
     assigned_vars = std::move(union_assigned_vars);
 
     tmp_path = std::make_unique<UnionPath>(std::move(iters));
+    union_or_quantifier = true;
 }
 
 void PathBindingIterConstructor::visit(OpWhere& op_filter)
@@ -422,6 +422,7 @@ void PathBindingIterConstructor::visit(OpWhere& op_filter)
 
 void PathBindingIterConstructor::visit(OpRepetition& op_repetition)
 {
+    union_or_quantifier = false;
     if (is_first_iter) {
         is_first_iter = false;
         op_repetition.op->accept_visitor(*this);
@@ -436,7 +437,9 @@ void PathBindingIterConstructor::visit(OpRepetition& op_repetition)
         tmp_path = std::make_unique<Repetition>(
             std::move(tmp_path),
             op_repetition.lower,
-            op_repetition.upper
+            op_repetition.upper,
+            trail,
+            !union_or_quantifier
         );
         tmp_path = std::make_unique<ExtendRight>(std::move(node_list_iter), std::move(tmp_path));
     } else {
@@ -444,9 +447,12 @@ void PathBindingIterConstructor::visit(OpRepetition& op_repetition)
         tmp_path = std::make_unique<Repetition>(
             std::move(tmp_path),
             op_repetition.lower,
-            op_repetition.upper
+            op_repetition.upper,
+            trail,
+            !union_or_quantifier
         );
     }
+    union_or_quantifier = true;
 }
 
 void PathBindingIterConstructor::visit(OpBasicGraphPattern& op_basic_graph_pattern)

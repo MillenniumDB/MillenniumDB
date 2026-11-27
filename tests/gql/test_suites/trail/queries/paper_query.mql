@@ -1,0 +1,2 @@
+MATCH COLLAPSE TRAIL (:Start) ( ( -[x]->()-[y]-> WHERE x.prop < y.prop )+ | -> ) (:End)
+RETURN count(*) AS c

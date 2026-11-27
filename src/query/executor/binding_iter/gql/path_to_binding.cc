@@ -7,11 +7,13 @@
 PathToBinding::PathToBinding(
     std::unique_ptr<PathBindingIter> iter,
     std::map<VarId, GQL::VarType> types,
-    std::optional<VarId> path_var
+    std::optional<VarId> path_var,
+    bool trail
 ) :
     child_iter(std::move(iter)),
     path_var(path_var),
-    types(types)
+    types(types),
+    trail(trail)
 { }
 
 void PathToBinding::_begin(Binding& parent_binding)
@@ -40,6 +42,9 @@ bool PathToBinding::_next()
     restore_overwritten_values();
 
     auto list = child_iter->next();
+    while (trail && list != nullptr && list->repeats_edge()) {
+        list = child_iter->next();
+    }
     if (list == nullptr) {
         return false;
     }
