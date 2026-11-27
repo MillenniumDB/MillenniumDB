@@ -1,0 +1,5 @@
+SELECT ?o
+WHERE {
+  ?s ?p ?o .
+}
+LIMIT 99999999999999999999

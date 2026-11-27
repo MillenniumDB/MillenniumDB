@@ -65,7 +65,12 @@ public:
     {
         QueryVisitor::GlobalInfo global_info;
         QueryVisitor visitor(global_info);
-        visitor.visitQuery(root);
+        try {
+            visitor.visitQuery(root);
+        } catch (const std::out_of_range&) {
+            // std::stoull and std::stoul throw it for a number that does not fit
+            throw QuerySemanticException("Number out of range");
+        }
 
         if (!input_parameters.empty()) {
             std::map<VarId, ObjectId> query_parameters;

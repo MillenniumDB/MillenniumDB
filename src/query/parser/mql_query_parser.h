@@ -50,7 +50,12 @@ public:
     std::unique_ptr<Op> get_query_plan(const std::map<std::string, ObjectId>& input_parameters)
     {
         QueryVisitor visitor;
-        visitor.visitRoot(root);
+        try {
+            visitor.visitRoot(root);
+        } catch (const std::out_of_range&) {
+            // std::stoll and std::stoul throw it for a number that does not fit
+            throw QuerySemanticException("Number out of range");
+        }
 
         auto res = std::move(visitor.current_op);
 

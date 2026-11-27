@@ -41,7 +41,12 @@ public:
 
         GQLParser::RootContext* tree = parser.root();
         QueryVisitor visitor;
-        visitor.visitRoot(tree);
+        try {
+            visitor.visitRoot(tree);
+        } catch (const std::out_of_range&) {
+            // std::stoull and std::stof throw it for a number that does not fit
+            throw QuerySemanticException("Number out of range");
+        }
 
         auto res = std::move(visitor.current_op);
 
