@@ -1,0 +1,2 @@
+MATCH (x {name:"N0"})-[:Follows]->(y) | (x {name:"N0"})-[:Owns]->(z) WHERE z.name = "B9"
+RETURN x.name, y.name, z.name

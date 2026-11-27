@@ -114,6 +114,13 @@ void PushLabels::visit(OpWhere& op_filter)
     std::vector<std::unique_ptr<Expr>> exprs;
 
     visitor.clear_labels();
+    // push a condition only onto a variable that every match of the pattern binds
+    visitor.pushable_vars.clear();
+    for (auto& [var, type] : op_filter.op->get_var_types()) {
+        if (!type.is_conditional()) {
+            visitor.pushable_vars.insert(var);
+        }
+    }
     for (auto& expr : op_filter.exprs) {
         expr->accept_visitor(visitor);
 
