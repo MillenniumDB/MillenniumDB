@@ -56,6 +56,11 @@ private:
     bool is_first_iter = true;
     bool is_first_gp = true;
 
+    // TRAIL, alone or as ALL TRAIL, for the path pattern being built
+    bool trail = false;
+    // whether the body being built has a union or a quantifier: if not, TRAIL reaches each path once
+    bool union_or_quantifier = false;
+
     std::vector<VarId> return_op_vars;
 
     std::set<VarId> group_vars;

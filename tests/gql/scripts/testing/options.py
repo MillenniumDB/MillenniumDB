@@ -57,6 +57,7 @@ TEST_SUITES: list[str] = [
     "group_by",
     "list_exprs",
     "collapse",
+    "trail",
 ]
 
 # Tests with the following query files fill be ignored

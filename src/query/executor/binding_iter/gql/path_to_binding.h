@@ -12,7 +12,8 @@ public:
     PathToBinding(
         std::unique_ptr<PathBindingIter> iter,
         std::map<VarId, GQL::VarType> types,
-        std::optional<VarId> path_var = std::nullopt
+        std::optional<VarId> path_var = std::nullopt,
+        bool trail = false
     );
 
     void _begin(Binding& parent_binding) override;
@@ -31,6 +32,9 @@ private:
     Binding* parent_binding;
 
     std::map<VarId, GQL::VarType> types;
+
+    // TRAIL: a path that repeats an edge is not a match
+    const bool trail;
 
     // Elements replaced by group lists in the binding; put back before the child is asked again
     std::vector<std::pair<VarId, ObjectId>> overwritten_values;

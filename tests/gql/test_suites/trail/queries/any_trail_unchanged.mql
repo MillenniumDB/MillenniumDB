@@ -1,0 +1,2 @@
+MATCH ANY TRAIL (a {name:"c1"})-[e:C]->+(b)
+RETURN count(*) AS c

@@ -1,0 +1,2 @@
+MATCH TRAIL (a {name:"c1"})-[e:C]->(b)-[g:C]->(c), (c)-[f:C]->(d)-[h:C]->(x)
+RETURN count(*) AS c
