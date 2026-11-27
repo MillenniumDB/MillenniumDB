@@ -7,6 +7,8 @@ namespace GQL {
 class ExtractPropertiesFromExpr : public ExprVisitor {
 public:
     std::vector<Property> properties;
+    // the variables that every match of the pattern under the WHERE binds
+    std::set<VarId> pushable_vars;
 
     std::unique_ptr<Expr> tmp;
     bool key_setted = false;
@@ -60,7 +62,7 @@ public:
         expr_equals.rhs->accept_visitor(*this);
         auto rhs = std::move(tmp);
 
-        if (key_setted && value_setted) {
+        if (key_setted && value_setted && pushable_vars.count(current_object)) {
             properties.emplace_back(
                 current_object,
                 current_key,

@@ -8,6 +8,8 @@ namespace GQL {
 class ExtractLabelsFromExpr : public ExprVisitor {
 public:
     std::set<Label> labels;
+    // the variables that every match of the pattern under the WHERE binds
+    std::set<VarId> pushable_vars;
     std::unique_ptr<Expr> tmp;
 
     void clear_labels()
@@ -35,11 +37,19 @@ public:
 
     void visit(ExprHasNodeLabel& expr)
     {
+        if (!pushable_vars.count(expr.node_id)) {
+            tmp = expr.clone();
+            return;
+        }
         labels.emplace(expr.node_id, expr.label_id, VarType::Type::Node);
     }
 
     void visit(ExprHasEdgeLabel& expr)
     {
+        if (!pushable_vars.count(expr.edge_id)) {
+            tmp = expr.clone();
+            return;
+        }
         labels.emplace(expr.edge_id, expr.label_id, VarType::Type::Edge);
     }
 
